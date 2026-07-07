@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- Api = composition root → Application, Infrastructure. -->
+  <ItemGroup>
+    <ProjectReference Include="..\ResortQr.Application\ResortQr.Application.csproj" />
+    <ProjectReference Include="..\ResortQr.Infrastructure\ResortQr.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Serilog.AspNetCore" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,139 @@
+{
+    "Common": {
+        "Loading": "Loading...",
+        "LoadingData": "Loading data...",
+        "LoadMore": "Load more",
+        "NoData": "No data"
+    },
+    "Events": {
+        "MapDashboard": {
+            "CameraInfo": {
+                "LiveView": "Live View",
+                "Close": "Close",
+                "Events": "Events",
+                "DailyStatistics": "Daily Statistics",
+                "NoEvents": "No events for current device",
+                "LoadingMore": "Loading more...",
+                "AllEventsLoaded": "All events loaded",
+                "Status": "Status",
+                "AlertImage": "Alert Image",
+                "Statistics": {
+                    "FaceRecognition": {
+                        "Registered": "Registered",
+                        "Unregistered": "Unregistered"
+                    },
+                    "ProtectiveGear": {
+                        "Sufficient": "Sufficient",
+                        "Insufficient": "Insufficient"
+                    },
+                    "Vehicle": {
+                        "CarIn": "Car In",
+                        "CarOut": "Car Out",
+                        "MotorbikeIn": "Motorbike In",
+                        "MotorbikeOut": "Motorbike Out"
+                    },
+                    "RestrictedZone": {
+                        "People": "People",
+                        "Vehicles": "Vehicles"
+                    },
+                    "FireSmoke": {
+                        "Fire": "Fire",
+                        "Smoke": "Smoke"
+                    },
+                    "ConveyorBelt": {
+                        "Torn": "Torn",
+                        "Overflow": "Overflow",
+                        "Deviation": "Deviation",
+                        "Oversized": "Oversized"
+                    }
+                },
+                "Warnings": {
+                    "MissingHelmet": "Missing Helmet",
+                    "MissingMask": "Missing Face Mask",
+                    "MissingGloves": "Missing Gloves",
+                    "Sufficient": "Sufficient",
+                    "Insufficient": "Insufficient",
+                    "UnregisteredPerson": "Unregistered Person",
+                    "VehicleInRestrictedArea": "Vehicle in Restricted Area",
+                    "PersonInRestrictedArea": "Person in Restricted Area",
+                    "FireDetected": "Fire Detected",
+                    "SmokeDetected": "Smoke Detected",
+                    "ConveyorTorn": "Conveyor Belt Torn",
+                    "ConveyorOverflow": "Conveyor Belt Overflow"
+                }
+            },
+            "MonitoringStatistics": "Monitoring Statistics",
+            "RealtimeData": "Realtime Data",
+            "Identification": "Identification",
+            "Registered": "Registered",
+            "UnRegistered": "Unregistered",
+            "Vehicle": "Vehicle",
+            "In": "In",
+            "Out": "Out",
+            "ForbiddenZone": "Forbidden Zone",
+            "Employee": "Employee",
+            "FireSmoke": "Fire & Smoke",
+            "Fire": "Fire",
+            "Smoke": "Smoke",
+            "Conveyor": "Conveyor Belt",
+            "Torn": "Torn",
+            "Overflow": "Overflow",
+            "Deviated": "Deviated",
+            "Size": "Size",
+            "ProtectiveGear": "Protective Gear",
+            "Enough": "Enough",
+            "Lack": "Lack",
+            "ListCamera": "Camera List"
+        },
+        "EventModals": {
+            "Recognition": "Recognition",
+            "RegisteredPeople": "Registered",
+            "UnregisteredPeople": "Unregistered",
+            "VehicleType": "Vehicle Type",
+            "People": "People",
+            "VirtualFence": "Virtual Fence",
+            "FireAndSmoke": "Fire & Smoke",
+            "ConveyorBelt": "Conveyor Belt",
+            "Ripped": "Ripped",
+            "Spilled": "Spilled", 
+            "Deviated": "Deviated",
+            "Oversized": "Oversized",
+            "ProtectiveEquipment": "Protective Equipment Event",
+            "MissingEquipment": "Missing Equipment",
+            "Quantity": "Quantity",
+            "None": "None",
+            "Helmet": "Helmet",
+            "FaceMask": "Face Mask", 
+            "Gloves": "Gloves",
+            "HelmetGloves": "Helmet + Gloves",
+            "HelmetMask": "Helmet + Face Mask",
+            "MaskGloves": "Face Mask + Gloves",
+            "HelmetMaskGloves": "Helmet + Face Mask + Gloves",
+            "Motorcycle": "Motorcycle",
+            "Truck": "Truck",
+            "Car5Seats": "5 Seats",
+            "Car7Seats": "7 Seats",
+            "Car9Seats": "9 Seats", 
+            "Car16Seats": "16 Seats",
+            "Car29Seats": "29 Seats",
+            "Car40Seats": "40 Seats"
+        }
+    },
+    "Map": {
+        "Controls": {
+            "ShowInfo": "Show Info",
+            "HideInfo": "Hide Info",
+            "ShowCameraEvents": "Show Camera Events",
+            "HideCameraEvents": "Hide Camera Events",
+            "ShowCameraNames": "Show Camera Names",
+            "HideCameraNames": "Hide Camera Names",
+            "ToggleCameraEvents": "Monitoring Data",
+            "ToggleCameraNames": "Camera List"
+        },
+        "Sidebar": {
+            "Title": "Event List",
+            "Loading": "Loading...",
+            "NoEvents": "No events"
+        }
+    }
+}

@@ -1,0 +1,373 @@
+// Colors
+// Blue
+$v-blue: #0d6efd;
+$v-blue-100: #cfe2ff;
+$v-blue-200: #9ec5fe;
+$v-blue-300: #6ea8fe;
+$v-blue-400: #3d8bfd;
+$v-blue-500: #0d6efd;
+$v-blue-600: #0a58ca;
+$v-blue-700: #084298;
+$v-blue-800: #052c65;
+$v-blue-900: #031633;
+$v-blue-atin: #045da5;
+// Indigo
+$v-indigo: #6610f2;
+$v-indigo-100: #e0cffc;
+$v-indigo-200: #cbbff8;
+$v-indigo-300: #a87ff5;
+$v-indigo-400: #9453f7;
+$v-indigo-500: #6610f2;
+$v-indigo-600: #520dc2;
+$v-indigo-700: #3d0a91;
+$v-indigo-800: #290661;
+$v-indigo-900: #140330;
+// Purple
+$v-purple: #6f42c1;
+$v-purple-100: #e2d9f3;
+$v-purple-200: #c5b3e6;
+$v-purple-300: #a98eda;
+$v-purple-400: #8c68cd;
+$v-purple-500: #6f42c1;
+$v-purple-600: #59339d;
+$v-purple-700: #45267d;
+$v-purple-800: #301d5c;
+$v-purple-900: #1a123b;
+$v-purple-atin: #7367f0;
+// Pink
+$v-pink: #d63384;
+$v-pink-100: #f5d0e0;
+$v-pink-200: #eea9ce;
+$v-pink-300: #e772bc;
+$v-pink-400: #e04ba9;
+$v-pink-500: #d63384;
+$v-pink-600: #ab296a;
+$v-pink-700: #801f4f;
+$v-pink-800: #561435;
+$v-pink-900: #2b0a1a;
+// Red
+$v-red: #dc3545;
+$v-red-100: #f8d7da;
+$v-red-200: #f1b0b7;
+$v-red-300: #ea868f;
+$v-red-400: #e35d6a;
+$v-red-500: #dc3545;
+$v-red-600: #b02a37;
+$v-red-700: #842029;
+$v-red-800: #58151c;
+$v-red-900: #2c0b0e;
+$v-red-atin: #ea5455;
+// Orange
+$v-orange: #fd7e14;
+$v-orange-100: #ffe5d0;
+$v-orange-200: #fecba1;
+$v-orange-300: #feb272;
+$v-orange-400: #fd9d49;
+$v-orange-500: #fd7e14;
+$v-orange-600: #ca6510;
+$v-orange-700: #984c0c;
+$v-orange-800: #653208;
+$v-orange-900: #332904;
+$v-orange-atin: #ff9f43;
+// Yellow
+$v-yellow: #ffc107;
+$v-yellow-100: #fff3cd;
+$v-yellow-200: #ffe69c;
+$v-yellow-300: #ffda6a;
+$v-yellow-400: #ffcd39;
+$v-yellow-500: #ffc107;
+$v-yellow-600: #cc9a06;
+$v-yellow-700: #997404;
+$v-yellow-800: #665d03;
+$v-yellow-900: #332701;
+// Green
+$v-green: #198754;
+$v-green-100: #d1e7dd;
+$v-green-200: #a3cfbb;
+$v-green-300: #75b798;
+$v-green-400: #479f76;
+$v-green-500: #198754;
+$v-green-600: #146c43;
+$v-green-700: #0f5132;
+$v-green-800: #0a3622;
+$v-green-900: #051b11;
+$v-green-atin: #28c76f;
+// Teal
+$v-teal: #20c997;
+$v-teal-100: #d2f3f5;
+$v-teal-200: #a0e6e9;
+$v-teal-300: #75d5db;
+$v-teal-400: #4dc4d6;
+$v-teal-500: #20c997;
+$v-teal-600: #1aa179;
+$v-teal-700: #13795b;
+$v-teal-800: #0d503c;
+$v-teal-900: #06281e;
+// Cyan
+$v-cyan: #0dcaf0;
+$v-cyan-100: #cff4fc;
+$v-cyan-200: #9eeaf9;
+$v-cyan-300: #6edff6;
+$v-cyan-400: #3dd5f3;
+$v-cyan-500: #0dcaf0;
+$v-cyan-600: #0aa2c0;
+$v-cyan-700: #087990;
+$v-cyan-800: #055160;
+$v-cyan-900: #032830;
+$v-cyan-atin: #00cfe8;
+// White
+$v-white: #fff;
+$v-gray-100: #f8f9fa;
+$v-gray-200: #e9ecef;
+$v-gray-300: #dee2e6;
+$v-gray-400: #ced4da;
+$v-gray-500: #adb5bd;
+$v-gray-600: #868e96;
+$v-gray-700: #495057;
+$v-gray-800: #343a40;
+$v-gray-900: #212529;
+$v-gray-atin-100: #d7d8de;
+$v-gray-atin-200: #a8aaae;
+$v-gray-atin-300: #4b4b4b;
+$v-black: #000;
+
+
+$v-theme-colors:(
+    primary: $v-blue-atin,
+    secondary: $v-gray-atin-200,
+    success: $v-green-atin,
+    info: $v-cyan-atin,
+    warning: $v-orange-atin,
+    danger: $v-red-atin,
+    light: $v-gray-atin-100,
+    dark: $v-gray-atin-300,
+    yellow: $v-yellow-400,
+    purple: $v-purple-atin,
+    white: $v-white,
+    black: $v-black,
+);
+
+$v-weights: (
+    thin: 100,
+    extra-light: 200,
+    ultra-light: 200,
+    light: 300,
+    normal: 400,
+    book: 400,
+    regular: 400,
+    medium: 500,
+    semi-bold: 600,
+    demi-bold: 600,
+    bold: 700,
+    extra-bold: 800,
+    ultra-bold: 900,
+    heavy: 900,
+    black: 900,
+    ultra: 900,
+    ultra-black: 900,
+    extra-ultra: 900,
+);
+:root {
+    --primary-color: #045da5;
+    --secondary-color: #a8aaae;
+    --success-color: #28c76f;
+    --danger-color: #ea5455;
+    --warning-color: #ff9f43;
+    --info-color: #00cfe8;
+    --dark-color: #4b4b4b;
+    --light-color: #d7d8de;
+    --purple-color: #7367f0;
+    --yellow-color: #ffcd39;
+    --white-color: #ffffff;
+
+    --primary-soft-color: #e9e7fd;
+    --secondary-soft-color: #f1f1f2;
+    --success-soft-color: #ddf6e8;
+    --danger-soft-color: #fce4e4;
+    --warning-soft-color: #fff0e1;
+    --info-soft-color: #d6f7fb;
+    --dark-soft-color: #e2e2e2;
+    --yellow-soft-color: #fff3cd;
+    --purple-soft-color: #c2c1f5;
+
+    --primary-soft-hover-color: #dddbfb;
+    --secondary-soft-hover-color: #eaebec;
+    --success-soft-hover-color: #cbf2dc;
+    --danger-soft-hover-color: #fad6d6;
+    --warning-soft-hover-color: #ffe8d2;
+    --info-soft-hover-color: #c2f3f9;
+    --dark-soft-hover-color: #d4d4d4;
+
+    --primary-soft-dark-color: #3a3b64;
+    --secondary-soft-dark-color: #424659;
+    --success-soft-dark-color: #2e4b4f;
+    --danger-soft-dark-color: #4d384b;
+    --warning-soft-dark-color: #504448;
+    --info-soft-dark-color: #274c62;
+    --dark-soft-dark-color: #484c5f;
+
+    --primary-soft-dark-hover-color: #3f3f71;
+    --secondary-soft-dark-hover-color: #4c5061;
+    --success-soft-dark-hover-color: #2d5752;
+    --danger-soft-dark-hover-color: #5c3b4c;
+    --warning-soft-dark-hover-color: #614d48;
+    --info-soft-dark-hover-color: #24586f;
+    --dark-soft-dark-hover-color: #575b6d;
+
+    --primary-linear-gradient-color: linear-gradient(
+        270deg,
+        rgba(var(--primary-color), 0.7),
+        rgb(var(--primary-color))
+    ) !important;
+    --secondary-linear-gradient-color: linear-gradient(
+        to right,
+        #a8aaae,
+        #28c76f
+    );
+    --success-linear-gradient-color: linear-gradient(
+        to right,
+        #28c76f,
+        #ea5455
+    );
+    --danger-linear-gradient-color: linear-gradient(to right, #ea5455, #ff9f43);
+    --warning-linear-gradient-color: linear-gradient(
+        to right,
+        #ff9f43,
+        #00cfe8
+    );
+    --info-linear-gradient-color: linear-gradient(to right, #00cfe8, #7367f0);
+    --dark-linear-gradient-color: linear-gradient(to right, #7367f0, #4b4b4b);
+
+    --box-shadow: 0 2px 6px rgba(var(--v-global-theme-primary), 0.3);
+}
+
+$color-map: (
+    primary: var(--primary-color),
+    secondary: var(--secondary-color),
+    success: var(--success-color),
+    danger: var(--danger-color),
+    warning: var(--warning-color),
+    info: var(--info-color),
+    dark: var(--dark-color),
+    light: var(--light-color),
+    purple: var(--purple-color),
+    yellow: var(--yellow-color),
+    white: var(--white-color),
+);
+$soft-color-map: (
+    primary: var(--primary-soft-color),
+    secondary: var(--secondary-soft-color),
+    success: var(--success-soft-color),
+    danger: var(--danger-soft-color),
+    warning: var(--warning-soft-color),
+    info: var(--info-soft-color),
+    dark: var(--dark-soft-color),
+    yellow: var(--yellow-soft-color),
+);
+
+
+
+$label-color-map: (
+    primary: (
+        color: var(--primary-color),
+        background: var(--primary-soft-color),
+        background-hover: var(--primary-soft-hover-color),
+        background-dark: var(--primary-soft-dark-color),
+        background-dark-hover: var(--primary-soft-dark-hover-color),
+    ),
+    secondary: (
+        color: var(--secondary-color),
+        background: var(--secondary-soft-color),
+        background-hover: var(--secondary-soft-hover-color),
+        background-dark: var(--secondary-soft-dark-color),
+        background-dark-hover: var(--secondary-soft-dark-hover-color),
+    ),
+    success: (
+        color: var(--success-color),
+        background: var(--success-soft-color),
+        background-hover: var(--success-soft-hover-color),
+        background-dark: var(--success-soft-dark-color),
+        background-dark-hover: var(--success-soft-dark-hover-color),
+    ),
+    danger: (
+        color: var(--danger-color),
+        background: var(--danger-soft-color),
+        background-hover: var(--danger-soft-hover-color),
+        background-dark: var(--danger-soft-dark-color),
+        background-dark-hover: var(--danger-soft-dark-hover-color),
+    ),
+    warning: (
+        color: var(--warning-color),
+        background: var(--warning-soft-color),
+        background-hover: var(--warning-soft-hover-color),
+        background-dark: var(--warning-soft-dark-color),
+        background-dark-hover: var(--warning-soft-dark-hover-color),
+    ),
+    info: (
+        color: var(--info-color),
+        background: var(--info-soft-color),
+        background-hover: var(--info-soft-hover-color),
+        background-dark: var(--info-soft-dark-color),
+        background-dark-hover: var(--info-soft-dark-hover-color),
+    ),
+    dark: (
+        color: var(--dark-color),
+        background: var(--dark-soft-color),
+        background-hover: var(--dark-soft-hover-color),
+        color-dark: var(--dark-dark-color),
+        background-dark: var(--dark-soft-dark-color),
+        background-dark-hover: var(--dark-soft-dark-hover-color),
+    ),
+);
+$linear-gradient-map: (
+    primary: (
+        start: rgba(4, 93, 165, 0.7),
+        end: rgb(4, 93, 165),
+        shadow: rgba(4, 93, 165, 0.3),
+    ),
+    secondary: (
+        start: rgba(168, 170, 174, 0.7),
+        end: rgb(168, 170, 174),
+        shadow: rgba(168, 170, 174, 0.3),
+    ),
+    success: (
+        start: rgba(40, 199, 111, 0.7),
+        end: rgb(40, 199, 111),
+        shadow: rgba(40, 199, 111, 0.3),
+    ),
+    danger: (
+        start: rgba(234, 84, 85, 0.7),
+        end: rgb(234, 84, 85),
+        shadow: rgba(234, 84, 85, 0.3),
+    ),
+    warning: (
+        start: rgba(255, 159, 67, 0.7),
+        end: rgb(255, 159, 67),
+        shadow: rgba(255, 159, 67, 0.3),
+    ),
+    info: (
+        start: rgba(0, 207, 232, 0.7),
+        end: rgb(0, 207, 232),
+        shadow: rgba(0, 207, 232, 0.3),
+    ),
+    dark: (
+        start: rgba(75, 75, 75, 0.7),
+        end: rgb(75, 75, 75),
+        shadow: rgba(75, 75, 75, 0.3),
+    ),
+    light: (
+        start: rgba(215, 216, 222, 0.7),
+        end: rgb(215, 216, 222),
+        shadow: rgba(215, 216, 222, 0.3),
+    ),
+    purple: (
+        start: rgba(115, 103, 240, 0.7),
+        end: rgb(115, 103, 240),
+        shadow: rgba(115, 103, 240, 0.3),
+    ),
+    yellow: (
+        start: rgba(255, 205, 57, 0.7),
+        end: rgb(255, 205, 57),
+        shadow: rgba(255, 205, 57, 0.3),
+    ),
+);

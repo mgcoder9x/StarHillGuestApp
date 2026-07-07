@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink"
+    x="0" y="0" viewBox="0 0 511.854 511.854" style="enable-background: new 0 0 512 512"
+    xml:space="preserve">
+    <g>
+        <path
+          d="M68.627 327.018H26.854c-10.689 0-19.354-8.665-19.354-19.354V176.64c0-10.689 8.665-19.354 19.354-19.354h404.065c16.216 0 30.573 10.48 35.515 25.924l19.15 59.841a94.007 94.007 0 0 1 4.473 28.652v35.961c0 10.689-8.665 19.354-19.354 19.354h-84.392M331.211 327.018H123.727M423.945 327.018l-62.796-140.892"
+          style="
+            stroke-width: 15;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-miterlimit: 10;
+          " fill="none" stroke="#000000" stroke-width="15" stroke-linecap="round"
+          stroke-linejoin="round" stroke-miterlimit="10" data-original="#000000" class=""></path>
+        <path
+          d="m420.717 246.175 4.454 9.45a4.78 4.78 0 0 0 4.326 2.743h59.607a93.128 93.128 0 0 0-3.518-15.318l-19.124-59.759h-67.845c-3.507 0-5.821 3.649-4.326 6.821l11.627 24.666M85.878 183.291H7.5v79.075h387.629l-33.98-76.24a4.783 4.783 0 0 0-4.368-2.835H121.222M288.398 183.291l35.244 79.075M213.041 183.291l35.244 79.075M137.683 183.291l35.244 79.075M62.326 183.291l35.244 79.075M471.818 196.675h15.322c4.945 0 9.337 3.16 10.908 7.849l6.306 18.814M444.382 281.047h-12.124"
+          style="
+            stroke-width: 15;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-miterlimit: 10;
+          " fill="none" stroke="#000000" stroke-width="15" stroke-linecap="round"
+          stroke-linejoin="round" stroke-miterlimit="10" data-original="#000000" class=""></path>
+        <circle cx="96.177" cy="327.019" r="27.55" style="
+            stroke-width: 15;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-miterlimit: 10;
+          " fill="none" stroke="#000000" stroke-width="15" stroke-linecap="round"
+          stroke-linejoin="round" stroke-miterlimit="10" data-original="#000000" class="">
+        </circle>
+        <circle cx="358.761" cy="327.019" r="27.55" style="
+            stroke-width: 15;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-miterlimit: 10;
+          " fill="none" stroke="#000000" stroke-width="15" stroke-linecap="round"
+          stroke-linejoin="round" stroke-miterlimit="10" data-original="#000000" class="">
+        </circle>
+      </g>                          
+</svg>

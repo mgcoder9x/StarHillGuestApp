@@ -1,0 +1,27 @@
+/* Event Modal Global Styles */
+.custom-cell {
+  max-width: 10px;
+}
+
+.svg-size {
+  width: 18px;
+  height: 18px;
+}
+
+/* Hide scrollbar utility */
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  
+  &::-webkit-scrollbar {
+    width: 0;
+    display: none;
+  }
+}
+
+/* Map overlay positioning */
+.map-overlay-card {
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}

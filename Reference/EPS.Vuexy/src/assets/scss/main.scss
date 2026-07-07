@@ -1,0 +1,33 @@
+/*= ===============================================================================
+
+NOTE:
+------
+PLACE HERE YOUR OWN SCSS CODES AND IF NEEDED, OVERRIDE THE STYLES FROM THE OTHER STYLESHEETS.
+WE WILL RELEASE FUTURE UPDATES SO IN ORDER TO NOT OVERWRITE YOUR STYLES IT'S BETTER LIKE THIS.  */
+@use 'abstracts' as *;
+@use 'base' as *;
+@use 'components' as *;
+@import 'core-custom';
+@import 'custom';
+@import 'custom-dark';
+@import '../fonts/stylesheet.css';
+//Default Layout
+.col-form-label.required:after {
+    padding-left: 3px;
+    content: '*';
+    color: red;
+}
+.btn-120 {
+    min-width: 8rem;
+}
+
+// Dark Layout
+body {
+    &.dark-layout {
+        .col-form-label.required:after {
+            padding-left: 3px;
+            content: '*';
+            color: #ea5455;
+        }
+    }
+}

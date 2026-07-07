@@ -1,0 +1,21 @@
+:root {
+  --sh-brand: #0f766e;
+  --sh-brand-dark: #0b5850;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  font-family: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  background: #f4f6f8;
+  color: #1c2733;
+}

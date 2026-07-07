@@ -1,0 +1,48 @@
+<Project>
+  <!-- Central Package Management. Version pin MỘT chỗ. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <ItemGroup Label="Version pin thật (verify qua dotnet add / build — không bịa)">
+    <PackageVersion Include="EFCore.NamingConventions" Version="10.0.1" />
+    <PackageVersion Include="FluentValidation" Version="12.1.1" />
+    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageVersion Include="HtmlSanitizer" Version="9.0.892" />
+    <PackageVersion Include="Konscious.Security.Cryptography.Argon2" Version="1.3.1" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageVersion>
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
+    <PackageVersion Include="Scrutor" Version="7.0.0" />
+    <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.19.1" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="NetArchTest.Rules" Version="1.3.2" />
+  </ItemGroup>
+  <ItemGroup Label="Security — transitive pin (fix tận gốc, không tắt NuGet audit)">
+    <!--
+      EF Core Sqlite 10.0.9 kéo transitive SQLitePCLRaw.lib.e_sqlite3 2.1.11 chứa native SQLite
+      < 3.50.2 → dính CVE-2025-6965 (GHSA-2m69-gcr7-jv3q, HIGH). TreatWarningsAsErrors + NuGet audit
+      biến thành lỗi NU1903. Pin transitive lên 3.50.3 (native SQLite ≥ 3.50.2 đã vá).
+      CentralPackageTransitivePinningEnabled=true nên pin này promote đúng transitive. Chỉ test project
+      tham chiếu Sqlite → chỉ nó nạp native lib. KHÔNG dùng NoWarn để che (giữ audit sống cho tương lai).
+    -->
+    <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.50.3" />
+  </ItemGroup>
+  <!--
+    Package runtime của base (EF Core/Npgsql, Scrutor, FluentValidation, Serilog, Ganss.Xss,
+    JwtBearer, Riok.Mapperly...) sẽ được `dotnet add package` PIN version thật ở đúng bước
+    khi introduce (Wave 1/2). KHÔNG khai số version bịa ở đây.
+  -->
+</Project>

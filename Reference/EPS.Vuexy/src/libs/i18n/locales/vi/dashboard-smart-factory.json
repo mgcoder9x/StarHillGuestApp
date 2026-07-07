@@ -1,0 +1,112 @@
+{
+    "Meiko": {
+        "Dashboard": {
+            "Title": "Báo cáo GSQT D.E.S",
+            "Step": "Công đoạn",
+            "Realtime": "Realtime",
+            "ShiftStats": "Thống kê theo Ca",
+            "Completed": "Hoàn thành",
+            "Violation": "Vi phạm",
+            "InProgress": "Đang thực hiện",
+            "Pending": "Chưa thực hiện",
+            "CompletedShort": "HT",
+            "InProgressShort": "Đang TH",
+            "PendingShort": "Chưa TH",
+            "StepUnit": "bước",
+            "TypeTime": "phút",
+            "Duration": "Thời gian",
+            "UpdatedAt": "Cập nhật lúc",
+            "ContextRealtime": "Đang xem dữ liệu realtime",
+            "ContextShift": "Đang xem: Ngày {date}, Ca {shift}",
+            "NoShiftSelected": "Chưa chọn ca",
+            "LoadingDashboard": "Đang tải dữ liệu...",
+            "ErrorTitle": "Có lỗi xảy ra",
+            "Retry": "Thử lại",
+            "Refresh": "Làm mới",
+            "EmptyRealtimeTitle": "Không có dây chuyền nào đang hoạt động",
+            "EmptyRealtimeDescription": "Hệ thống sẽ tự động cập nhật khi có dây chuyền mới",
+            "EmptyShiftTitle": "Không có dữ liệu cho ca này",
+            "EmptyShiftDescription": "Vui lòng chọn ngày hoặc ca khác",
+            "ErrorLoadDashboard": "Không thể tải dữ liệu dashboard",
+            "ErrorLoadRealtime": "Không thể tải dữ liệu realtime",
+            "ErrorLoadShift": "Không thể tải dữ liệu ca làm việc",
+            "ErrorLoadNewLine": "Không thể tải dây chuyền mới",
+            "ErrorSignalR": "Không thể kết nối realtime",
+            "Message": "Dây chuyền {lineName} bắt đầu hoạt động",
+            "ProcessConfigLoading": "Đang tải cấu hình quy trình...",
+            "Participating": "Tham gia",
+            "People": "người",
+            "ViolationCountUnit": "vi phạm",
+            "ValidCountUnit": "hợp lệ",
+            "Connection": {
+                "Connecting": "Đang kết nối...",
+                "Error": "Lỗi kết nối",
+                "Connected": "Đã kết nối",
+                "Disconnected": "Mất kết nối"
+            },
+            "AutoScroll": {
+                "Title": "Cài đặt",
+                "Enabled": "Tự động cuộn đã bật",
+                "Disabled": "Tự động cuộn đã tắt"
+            },
+            "Filters": {
+                "Label": "Bộ lọc",
+                "Date": "Ngày",
+                "Shift": "Ca",
+                "DateFrom": "Từ ngày",
+                "DateTo": "Đến ngày",
+                "Apply": "Xem",
+                "Viewing": "Đang xem",
+                "SelectShift": "-- Chọn ca --",
+                "Update": "Cập nhật"
+            },
+            "Chart": {
+                "PerformanceCompareTitle": "So sánh hiệu suất hoàn thành",
+                "ErrorRateTitle": "Tỷ lệ lỗi theo ngày (%)",
+                "NoData": "Không có dữ liệu",
+                "CompletedSteps": "Số bước hoàn thành",
+                "ErrorRateAxisTitle": "Tỷ lệ lỗi (%)"
+            },
+            "Shift": {
+                "ShiftCompletionRate": "Tỷ lệ hoàn thành theo ca",
+                "NoShiftData": "Không có dữ liệu cho ca này",
+                "HourlyViolationTrend": "Xu hướng vi phạm theo giờ trong ca",
+                "NoViolationsInShift": "Không có dữ liệu vi phạm trong ca",
+                "TopViolatedSteps": "Top bước vi phạm nhiều nhất",
+                "NoData": "Không có dữ liệu",
+                "ViolationRanking": "Xếp hạng bước vi phạm nhiều nhất",
+                "NoViolationData": "Không có dữ liệu vi phạm",
+                "ViolationCount": "Số vi phạm"
+            },
+            "LineStarted": {
+                "Title": "Thêm mới",
+                "Message": "Công đoạn mới bắt đầu hoạt động"
+            },
+            "StepStarted": {
+                "Title": "Cập nhật",
+                "Message": "Bước {stepName} phát sinh sự kiện mới"
+            },
+            "Overview": {
+                "Tab": "Tổng quan",
+                "ViewingRange": "Đang xem",
+                "DateFrom": "Từ ngày",
+                "DateTo": "Đến ngày",
+                "Apply": "Xem",
+                "CompletionRateTitle": "Tỷ lệ hoàn thành công đoạn",
+                "ViolationsTitle": "Cảnh báo thao tác sai",
+                "NoViolations": "Không có vi phạm trong khoảng thời gian này",
+                "ViolationDefault": "Vi phạm quy trình",
+                "ViolationsFooter": "Lấy {count} bản ghi gần nhất",
+                "PerformanceChartTitle": "So sánh hiệu suất",
+                "PerformanceChartNote": "Lấy tổng số lượng bước hoàn thành của cả dây chuyền",
+                "ErrorRateChartTitle": "Tỷ lệ lỗi theo ngày",
+                "AxisCompleted": "Số lượng hoàn thành",
+                "AxisErrorRate": "Tỷ lệ lỗi (%)",
+                "StepUnit": "bước",
+                "NoChartData": "Không có dữ liệu biểu đồ trong khoảng thời gian này",
+                "EmptyTitle": "Chưa có dữ liệu tổng quan",
+                "EmptyDescription": "Chọn khoảng thời gian và nhấn Xem để tải dữ liệu"
+            }
+        }
+    }
+}

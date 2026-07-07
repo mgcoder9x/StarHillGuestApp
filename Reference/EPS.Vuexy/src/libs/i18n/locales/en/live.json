@@ -1,0 +1,31 @@
+{
+    "FormGroupName": {
+        "StreamConfig": "Stream config"
+    },
+    "Response": {
+        "ErrorCode": {
+            "G_STREAM_CONFIG_419": "Maximum number of camera configurations exceeded",
+            "G_STREAM_CONFIG_200": "Save config stream succssfully",
+            "G_STREAM_CONFIG_409": "Config stream name is already exist",
+            "D_STREAM_CONFIG_200": "Delete config stream successfully!"
+        }
+    },
+    "Title": {
+        "Add": "Add",
+        "Update": "Update",
+        "Delete": "Delete",
+        "ViewCamera": "View camera",
+        "ViewEvent": "View event"
+    },
+    "StreamConfig": {
+        "Create": "Create stream config",
+        "Save": "Save stream config",
+        "Name": "Stream config name"
+    },
+    "EventLive":{
+        "Name": "Name",
+        "Position": "Position",
+        "Area": "Area",
+        "Time": "Time"
+    }
+}

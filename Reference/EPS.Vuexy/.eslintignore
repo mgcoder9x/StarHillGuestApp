@@ -1,0 +1,4 @@
+node_modules/
+src/@core/scss/
+src/views/pages/
+src/views/events/waterEvent

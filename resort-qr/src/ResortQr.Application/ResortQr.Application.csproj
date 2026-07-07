@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Application → Domain, SharedKernel. KHÔNG Api/Infrastructure. -->
+  <ItemGroup>
+    <ProjectReference Include="..\ResortQr.Domain\ResortQr.Domain.csproj" />
+    <ProjectReference Include="..\ResortQr.SharedKernel\ResortQr.SharedKernel.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+</Project>

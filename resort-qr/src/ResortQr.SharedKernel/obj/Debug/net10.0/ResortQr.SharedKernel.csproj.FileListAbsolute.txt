@@ -1,0 +1,11 @@
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\PERSONAL\system-prompt\StarHillGuestApp\resort-qr\src\ResortQr.SharedKernel\bin\Debug\net10.0\ResortQr.SharedKernel.deps.json
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\PERSONAL\system-prompt\StarHillGuestApp\resort-qr\src\ResortQr.SharedKernel\bin\Debug\net10.0\ResortQr.SharedKernel.dll
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\PERSONAL\system-prompt\StarHillGuestApp\resort-qr\src\ResortQr.SharedKernel\bin\Debug\net10.0\ResortQr.SharedKernel.pdb
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\PERSONAL\system-prompt\StarHillGuestApp\resort-qr\src\ResortQr.SharedKernel\obj\Debug\net10.0\ResortQr.SharedKernel.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\PERSONAL\system-prompt\StarHillGuestApp\resort-qr\src\ResortQr.SharedKernel\obj\Debug\net10.0\ResortQr.SharedKernel.AssemblyInfoInputs.cache
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\PERSONAL\system-prompt\StarHillGuestApp\resort-qr\src\ResortQr.SharedKernel\obj\Debug\net10.0\ResortQr.SharedKernel.AssemblyInfo.cs
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\PERSONAL\system-prompt\StarHillGuestApp\resort-qr\src\ResortQr.SharedKernel\obj\Debug\net10.0\ResortQr.SharedKernel.csproj.CoreCompileInputs.cache
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\PERSONAL\system-prompt\StarHillGuestApp\resort-qr\src\ResortQr.SharedKernel\obj\Debug\net10.0\ResortQr.SharedKernel.dll
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\PERSONAL\system-prompt\StarHillGuestApp\resort-qr\src\ResortQr.SharedKernel\obj\Debug\net10.0\refint\ResortQr.SharedKernel.dll
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\PERSONAL\system-prompt\StarHillGuestApp\resort-qr\src\ResortQr.SharedKernel\obj\Debug\net10.0\ResortQr.SharedKernel.pdb
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\PERSONAL\system-prompt\StarHillGuestApp\resort-qr\src\ResortQr.SharedKernel\obj\Debug\net10.0\ref\ResortQr.SharedKernel.dll

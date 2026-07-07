@@ -1,0 +1,20 @@
+@use '../abstracts/variables' as variables;
+// Text-colors
+@each $key, $value in variables.$v-theme-colors {
+    .a-text-#{"" + $key} {
+        color: $value !important;
+    }
+}
+// Text-weight
+@each $key, $value in variables.$v-weights {
+    .a-fw-#{"" + $key} {
+        font-weight: $value !important;
+    }
+}
+// Text-background-color
+@each $key, $value in variables.$v-theme-colors {
+    .a-text-bg-#{"" + $key} {
+        color: variables.$v-white !important;
+        background-color: $value !important;
+    }
+}

@@ -1,0 +1,114 @@
+{
+    "Meiko": {
+        "Dashboard": {
+            "Title": "DES Monitoring Report",
+            "Step": "Step",
+            "ShiftTab": "Shift",
+            "Realtime": "Realtime",
+            "ShiftStats": "Shift Statistics",
+            "Completed": "Completed",
+            "Violation": "Violation",
+            "InProgress": "In progress",
+            "Pending": "Pending",
+            "CompletedShort": "Done",
+            "InProgressShort": "In prog",
+            "PendingShort": "Pending",
+            "StepUnit": "steps",
+            "TypeTime": "min",
+            "Duration": "Duration",
+            "UpdatedAt": "Updated at",
+            "ContextRealtime": "Viewing realtime data",
+            "ContextShift": "Viewing: Date {date}, Shift {shift}",
+            "NoShiftSelected": "No shift selected",
+            "LoadingDashboard": "Loading dashboard data...",
+            "ErrorTitle": "Something went wrong",
+            "Retry": "Retry",
+            "Refresh": "Refresh",
+            "EmptyRealtimeTitle": "No active production lines",
+            "EmptyRealtimeDescription": "The system will update automatically when a new line starts",
+            "EmptyShiftTitle": "No data for this shift",
+            "EmptyShiftDescription": "Please choose another date or shift",
+            "ErrorLoadDashboard": "Unable to load dashboard data",
+            "ErrorLoadRealtime": "Unable to load realtime data",
+            "ErrorLoadShift": "Unable to load shift data",
+            "ErrorLoadNewLine": "Unable to load new production line",
+            "ErrorSignalR": "Unable to connect realtime",
+            "Message": "Line {lineName} started",
+            "ProcessConfigLoading": "Loading process configuration...",
+            "Participating": "Participants",
+            "People": "people",
+            "ViolationCountUnit": "violations",
+            "ValidCountUnit": "valid",
+            "Connection": {
+                "Connecting": "Connecting...",
+                "Error": "Connection error",
+                "Connected": "Connected",
+                "Disconnected": "Disconnected"
+            },
+            "AutoScroll": {
+                "Title": "Settings",
+                "Enabled": "Auto-scroll enabled",
+                "Disabled": "Auto-scroll disabled"
+            },
+            "Filters": {
+                "Label": "Filters",
+                "Date": "Date",
+                "Shift": "Shift",
+                "DateFrom": "From",
+                "DateTo": "To",
+                "Apply": "Apply",
+                "Viewing": "Viewing",
+                "SelectShift": "-- Select shift --",
+                "Update": "Update"
+            },
+            "Chart": {
+                "PerformanceCompareTitle": "Completion performance comparison",
+                "ErrorRateTitle": "Daily error rate (%)",
+                "NoData": "No data",
+                "CompletedSteps": "Completed steps",
+                "ErrorRateAxisTitle": "Error rate (%)"
+            },
+            "Shift": {
+                "ShiftCompletionRate": "Shift completion rate",
+                "NoShiftData": "No data for this shift",
+                "HourlyViolationTrend": "Hourly violation trend in shift",
+                "NoViolationsInShift": "No violation data in this shift",
+                "TopViolatedSteps": "Top violated steps",
+                "NoData": "No data",
+                "ViolationRanking": "Violation step ranking",
+                "NoViolationData": "No violation data",
+                "ViolationCount": "Violation count"
+            },
+            
+            "LineStarted": {
+                "Title": "New",
+                "Message": "New step started"
+            },
+            "StepStarted": {
+                "Title": "Update",
+                "Message": "Step {stepName} has new events"
+            },
+            "Overview": {
+                "Tab": "Overview",
+                "ViewingRange": "Viewing",
+                "DateFrom": "From",
+                "DateTo": "To",
+                "Apply": "Apply",
+                "CompletionRateTitle": "Step completion rate",
+                "ViolationsTitle": "Incorrect operation warnings",
+                "NoViolations": "No violations in this period",
+                "ViolationDefault": "Process violation",
+                "ViolationsFooter": "Showing {count} most recent records",
+                "PerformanceChartTitle": "Performance comparison",
+                "PerformanceChartNote": "Total completed steps across lines",
+                "ErrorRateChartTitle": "Daily error rate",
+                "AxisCompleted": "Completed count",
+                "AxisErrorRate": "Error rate (%)",
+                "StepUnit": "steps",
+                "NoChartData": "No chart data for this period",
+                "EmptyTitle": "No overview data",
+                "EmptyDescription": "Choose a date range and click Apply to load data"
+            }
+        }
+    }
+}

@@ -1,0 +1,459 @@
+{
+    "events": {
+        "fireEvent": {
+            "list": {
+                "table": {
+                    "label": {
+                        "level": "Incident Severity",
+                        "image": "Image",
+                        "fireType": "Incident Type",
+                        "time": "Time",
+                        "area": "Area",
+                        "device": "Device",
+                        "date": "Date"
+                    }
+                }
+            }
+        },
+        "restrictedZonesEvent": {
+            "excel": {
+                "header": "Research fire and smoke data",
+                "dateTimeTo": "To date",
+                "device": "Device",
+                "area": "Area",
+                "dateTimeFrom": "From date"
+            },
+            "table": {
+                "userCode": "Mã",
+                "image": "Image",
+                "userName": "Họ tên",
+                "isRegistered": "Trạng thái",
+                "time": "Time",
+                "area": "Area",
+                "status": "Status",
+                "device": "Device",
+                "date": "Date",
+                "action": "Action"
+            }
+        }
+    },
+    "VirtualFenceEvent": {
+        "Common": {
+            "TroubleType": {
+                "None": "None",
+                "PERSON": "Person",
+                "VEHICLE": "Vehicle"
+            }
+        },
+        "SearchForm": {
+            "PersonType": "Person Type",
+            "Person": "Name"
+        },
+        "Field": {
+            "Device": "Device",
+            "Image": "Image",
+            "TroubleType": "Trouble type",
+            "Time": "Time",
+            "UserName": "User Name",
+            "LicensePlate": "License plate",
+            "Operation": "Operation",
+            "Date": "Date",
+            "Area": "Area",
+            "PersonType": "Person Type",
+            "ObjectType": "Object type",
+            "Category": "Category",
+            "CodeOrPlate": "Code / license plate"
+        },
+        "Header": {
+            "Excel": "Research virtual fence data"
+        },
+        "Detail": {
+            "Device": "Device",
+            "Image": "Image",
+            "Header": "Restricted area data lookup",
+            "TroubleType": "Trouble type",
+            "Operation": "Operation",
+            "Date": "Date"
+        },
+        "PersonType": {
+            "Registered": "Registered",
+            "Unregistered": "Unregistered"
+        },
+        "Unknown": "Unknown"
+    },
+    "FaceEvent": {
+        "Options": {
+            "Stranger": "Stranger",
+            "Employee": "Employee",
+            "Guest": "Guest",
+            "Contractor": "Contractor",
+            "BlackList": "Black List"
+        },
+        "Common": {
+            "Identification": {
+                "Yes": "Qualified",
+                "No": "Not violated"
+            },
+            "LoadingData": "Loading data..."
+        },
+        "Field": {
+            "Identification": "Identification conditions",
+            "Department": "Phòng ban",
+            "Status": "Status",
+            "Name": "Name",
+            "ToDate": "To Date",
+            "AdvancedSearch": "Advanced Search",
+            "EventType": "Warning type",
+            "Device": "Device",
+            "FromDate": "From Date",
+            "SimilarityNote": "Filter results with similarity ≥ {percent}%.",
+            "Code": "Code",
+            "IdentificationScore": "Recognition Score",
+            "NameOrCode": "Name or code",
+            "DropZoneText": "Drag/drop or select face image",
+            "FaceImage": "Face Image",
+            "Area": "Area"
+        },
+        "Header": {
+            "Excel": "Face data report"
+        },
+        "Detail": {
+            "RecognitionObject": "Recognition Object",
+            "Status": "Status",
+            "UserCode": "Code",
+            "AccessTime": "Access time",
+            "Gender": "Gender",
+            "Time": "Time",
+            "UserName": "User Name",
+            "AreaName": "Processing location",
+            "EventType": "Warning type",
+            "Operation": "Operation",
+            "Date": "Date",
+            "Device": "Device",
+            "Image": "Image",
+            "Female": "Female",
+            "Age": "Age",
+            "Male": "Male",
+            "DepName": "Department"
+        }
+    },
+    "CarEvent": {
+        "Common": {
+            "Header": {
+                "Excel": "Research car event data"
+            },
+            "WarningType": {
+                "Less": "Less",
+                "Suspect": "Suspect",
+                "In": "In",
+                "Empty": "Vehicle empty",
+                "Out": "Out",
+                "None": "None",
+                "Other": "Other",
+                "Iron": "Iron",
+                "Wooden": "Wooden",
+                "HasMerchandise": "In stock"
+            },
+            "Error": {
+                "LicenseValid": "The license only included letter and number (4–12 characters).",
+                "License": "License"
+            },
+            "Placeholder": {
+                "License": "License"
+            }
+        }
+    },
+    "VehicleEvent": {
+        "Common": {
+            "Header": {
+                "Excel": "Research vehicle event data"
+            },
+            "DeptType": {
+                "Car": "Car",
+                "Contractor": "Contractor"
+            },
+            "Color": {
+                "Golden": "Golden",
+                "White": "White",
+                "Green": "Green",
+                "Red": "red",
+                "Yellow": "Yellow",
+                "Blue": "Blue",
+                "Shadow": "Shadow",
+                "Unknown": "Unknown"
+            },
+            "CarType": {
+                "Diplomatic": "Diplomatic vehicle",
+                "Civilian": "Civilian vehicle",
+                "International": "International vehicle",
+                "Utility": "Utility vehicle",
+                "Official": "Official vehicle",
+                "Military": "Military vehicle",
+                "Foreign": "Foreign vehicle",
+                "Container": "Container vehicle"
+            },
+            "Violation": {
+                "NoHelmet": "No helmet",
+                "WrongLane": "Wrong lane",
+                "OverSpeed": "Over speed",
+                "No": "Not violated",
+                "OverrideLine": "Override the road marking",
+                "RunRedLight": "Run a red light"
+            },
+            "Direction": {
+                "Exit": "Exit",
+                "Entrance": "Entrance"
+            },
+            "VehicleType": {
+                "Moto": "Motobike",
+                "Car": "Car"
+            },
+            "BlackList": {
+                "Yes": "Qualified",
+                "No": "Not violated"
+            },
+            "BackgroundColor": {
+                "White": "White",
+                "Red": "red",
+                "Yellow": "Yellow",
+                "Blue": "Blue",
+                "Unknown": "Unknown"
+            }
+        },
+        "Detail": {
+            "ToDate": "To Date",
+            "Operation": "Operation",
+            "Date": "Date",
+            "DateColumn": "Date",
+            "Device": "Device",
+            "Image": "Image",
+            "VehicleType": "Vehicle type",
+            "IsBlackList": "Object type",
+            "Media": "Image / Video",
+            "AccessType": "Access type",
+            "CarType": "Car type",
+            "BackgroundColor": "License plate color",
+            "Direction": "Direction",
+            "Time": "Time",
+            "EventType": "Warning type",
+            "Seats": "Seats",
+            "LicensePlateImage": "License plate image",
+            "Manufacturer": "Manufacturer",
+            "FromDate": "From Date",
+            "Color": "Car color",
+            "LicensePlate": "License plate",
+            "Area": "Area"
+        },
+        "Field": {
+            "Status": "Status",
+            "Header": "Vehicle data lookup",
+            "TotalNumberOfSeats": "Total number of seats",
+            "ToDate": "To Date",
+            "DeptOrContractor": "Department/Contractor",
+            "Classify": "Classify",
+            "Operation": "Operation",
+            "Date": "Date",
+            "DateColumn": "Date",
+            "Device": "Device",
+            "Image": "Image",
+            "VehicleType": "Vehicle type",
+            "IsBlackList": "Object type",
+            "Identification": "Identification conditions",
+            "AccessType": "Access type",
+            "CarType": "Car type",
+            "BackgroundColor": "License plate color",
+            "Direction": "Direction",
+            "Time": "Time",
+            "Owner": "Owner",
+            "EventType": "Warning type",
+            "Seats": "Seats",
+            "LicensePlateImage": "License plate image",
+            "Manufacturer": "Manufacturer",
+            "FromDate": "From Date",
+            "Merchandise": "Merchandise",
+            "NameOrCode": "Name or code",
+            "Color": "Car color",
+            "LicensePlate": "License plate",
+            "DeviceGateType": "Device",
+            "Area": "Area"
+        }
+    },
+    "FireWorkEvent": {
+        "Common": {
+            "Status": {
+                "Active": "Active",
+                "InActive": "Lỗi"
+            },
+            "Header": {
+                "Excel": "Research fire work event data"
+            },
+            "FireWork": {
+                "FLOWER_SPECIAL": "Giàn phun hoa đặc biệt",
+                "PELLETS_SPECIAL": "Giàn phun viên đặc biệt",
+                "FLOWER": "Giàn phun hoa",
+                "PELLETS": "Giàn phun viên"
+            }
+        },
+        "Detail": {
+            "Status": "Status",
+            "FireWorkType": "Fire work type",
+            "Time": "Time",
+            "ToDate": "To Date",
+            "Hole": "Hole",
+            "Operation": "Operation",
+            "Date": "Date",
+            "Device": "Device",
+            "FromDate": "From Date",
+            "Image": "Image",
+            "CascadeFW": "Factory line",
+            "ClassFW": "ClassFW"
+        },
+        "Field": {
+            "Status": "Status",
+            "FireWorkType": "Fire work type",
+            "Time": "Time",
+            "ToDate": "To Date",
+            "Hole": "Hole",
+            "Operation": "Operation",
+            "Date": "Date",
+            "Device": "Device",
+            "FromDate": "From Date",
+            "Image": "Image",
+            "CascadeFW": "Factory line",
+            "ClassFW": "ClassFW"
+        }
+    },
+    "TrafficViolationEvent": {
+        "Detail": {
+            "AccessTime": "Access time",
+            "WarningLevel": "Violation type",
+            "Time": "Time",
+            "AreaName": "Processing location",
+            "Operation": "Operation",
+            "Date": "Date",
+            "Device": "Device",
+            "Image": "Image",
+            "VehicleType": "Vehicle type",
+            "LicensePlate": "License plate"
+        }
+    },
+    "WaterEvents": {
+        "Field": {
+            "Device": "Device",
+            "Image": "Image",
+            "Action": "Action",
+            "WaterLevel": "Water Level",
+            "Time": "Time",
+            "Warning": "Warning",
+            "Date": "Date",
+            "Area": "Area"
+        },
+        "Button": {
+            "Detail": "View Details"
+        },
+        "Label": {
+            "FromDate": "From Date",
+            "Image": "Image",
+            "Devices": "Devices",
+            "WaterLevel": "Water Level",
+            "Areas": "Areas",
+            "Time": "Time",
+            "ToDate": "To Date",
+            "Warning": "Warning",
+            "Date": "Date"
+        },
+        "Placeholder": {
+            "Select": "All",
+            "Datetime": "No Time Selected"
+        }
+    },
+    "Blacklist": {
+        "Error": {
+            "InvalidFormat": "Invalid file format. Only image files are accepted."
+        }
+    },
+    "ProtectiveEquipmentEvent": {
+        "Excel": {
+            "Header": "Protective gear monitoring data"
+        }
+    },
+    "Issue": {
+        "Header": "Create new issue",
+        "Label": {
+            "Status": "Status",
+            "Action": "Action",
+            "CloseTime": "Close time",
+            "NewComment": "NewComment",
+            "CreatedBy": "Issue giver",
+            "Code": "Code",
+            "NewValue": "New value",
+            "Title": "Title",
+            "Description": "Description",
+            "OldValue": "Old value",
+            "History": "History",
+            "Comment": "Comment",
+            "Deadline": "Deadline",
+            "Priority": "Priority",
+            "User": "User",
+            "Type": "Status Type",
+            "Attachment": "Attachment",
+            "Project": "Project",
+            "CreatedAt": "Created time"
+        }
+    },
+    "fireEvent": {
+        "common": {
+            "dateFrom": "From Date",
+            "header": "Research fire and smoke data",
+            "alt": "Image",
+            "time": "Time",
+            "area": "Area",
+            "media": "Image/Video",
+            "level": "Incident Severity",
+            "dateTo": "To Date",
+            "fireType": "Incident Type",
+            "device": "Device",
+            "date": "Date",
+            "action": "Action"
+        },
+        "fireType": {
+            "smoke": "Smoke",
+            "fire": "Fire"
+        },
+        "level": {
+            "medium": "MEDIUM",
+            "high": "HIGH",
+            "low": "LOW",
+            "critical": "CRITTICAL"
+        }
+    },
+    "file": {
+        "image": "Image",
+        "video": "Video",
+        "licensePlateImage": "License plate"
+    },
+    "ProductionLineEvent": {
+        "SearchForm": {
+            "WarningLevel": "Warning level",
+            "ProductionLine": "Production line",
+            "ProductionLinePlaceholder": "Enter production line name",
+            "Step": "Step",
+            "StepPlaceholder": "Enter step name"
+        },
+        "Table": {
+            "Step": "Step",
+            "Person": "Operator",
+            "EventType": "Event type",
+            "WarningLevel": "Warning level",
+            "ProductionLine": "Production line",
+            "Status": "Status"
+        },
+        "Status": {
+            "Completed": "Completed",
+            "Violation": "Violation"
+        },
+        "Excel": {
+            "Header": "Production line event lookup"
+        }
+    }
+}

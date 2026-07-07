@@ -1,0 +1,9 @@
+@use '../abstracts' as *;
+[dir] .form-control input {
+    &:hover {
+        border-color: $v-gray-400 !important;
+    }
+    &:focus{
+        border-color: $v-purple-atin !important;
+    }
+}

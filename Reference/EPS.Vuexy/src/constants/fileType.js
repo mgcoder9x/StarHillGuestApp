@@ -1,0 +1,18 @@
+const FILETYPE = {
+    IMAGE: 1,
+    VIDEO: 2,
+    LICENSE_PLATE_IMAGE: 3,
+    IMAGE_OVERVIEW: 101,
+    IMAGE_LICENSE_PLATE: 102,
+    IMAGE_CARGO: 103,
+    VIDEO_OVERVIEW: 201,
+    VIDEO_CARGO: 203,
+}
+
+const FILETYPE_NAME = {
+    [FILETYPE.IMAGE]: 'image',
+    [FILETYPE.VIDEO]: 'video',
+    [FILETYPE.LICENSE_PLATE_IMAGE]: 'licensePlateImage',
+}
+
+export { FILETYPE_NAME, FILETYPE }

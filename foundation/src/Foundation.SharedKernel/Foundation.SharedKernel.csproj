@@ -1,0 +1,3 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Dependency rule: SharedKernel KHÔNG reference project nào (sạch tuyệt đối). -->
+</Project>

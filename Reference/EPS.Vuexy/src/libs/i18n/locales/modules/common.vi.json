@@ -1,0 +1,554 @@
+{
+    "route": {
+        "common": {
+            "systemManagement": "Quản lý hệ thống",
+            "issue": "Sự cố",
+            "question": "Quản Lý câu hỏi",
+            "tosSyncInfo": "Kế hoạch",
+            "information": "Thông tin",
+            "reports": "Báo cáo",
+            "live": "Theo dõi giám sát",
+            "test": "Quản lý bài thi",
+            "itinerary": "Tra cứu hành trình",
+            "dashboard": "Dashboard",
+            "categories": "Danh mục",
+            "study": "Quản lý học",
+            "events": "Sự kiện"
+        },
+        "privileges": "Phân quyền",
+        "create": "Thêm mới",
+        "report": "Báo cáo",
+        "list": "Danh sách",
+        "live": "Giám sát",
+        "notification": "Cảnh báo",
+        "detail": "Chi tiết",
+        "lookup": "Tra cứu",
+        "breadcrumb": {
+            "workFlows": "Dây chuyền",
+            "productionLines": "Dây chuyền",
+            "workingShifts": "Ca làm việc",
+            "machines": "Thiết bị",
+            "countConveyorReport": "Thống kê băng tải",
+            "lesson": "Bài giảng",
+            "contractors": "Nhà thầu",
+            "issue": "Sự cố",
+            "priority": "Mức độ",
+            "companies": "Đơn vị",
+            "employees": "Nhân viên",
+            "conveyorEvent": "Giám sát băng tải",
+            "Problem": "Sự cố",
+            "virtualFenceEvent": "Giám sát vùng cấm",
+            "faceEvent": "Nhận diện khuôn mặt",
+            "projects": "Dự án",
+            "events": "Sự kiện chung",
+            "reportFireworkInspectionStatistics25": "Thống kê số lượng kiểm tra sản phẩm pháo hoa phun viên 25",
+            "peopleCountEvent": "Thống kê người",
+            "areas": "Khu vực",
+            "dashboardEvents": "Thống kê",
+            "protectiveEquipmentEvent": "Giám sát đồ bảo hộ",
+            "departments": "Phòng ban",
+            "reportTest": "Test Báo Cáo",
+            "reportVehicleWarning": "Báo cáo vi phạm vùng cấm",
+            "timeAccesses": "Khung giờ",
+            "course": "Khóa học",
+            "notifications": "Cảnh báo",
+            "dashboardMap": "Bản đồ",
+            "live": "Giám sát trực tiếp",
+            "restrictedZonesEvent": "Theo dõi người vào vùng cấm",
+            "vehicleEvent": "Giám sát phương tiện",
+            "student": "Học viên",
+            "test": "Bài kiểm tra",
+            "waterEvent": "Giám sát mực nước",
+            "fireEvent": "Giám sát cháy khói",
+            "CarEvent": "Giám sát xe hàng",
+            "dashboardItinerary": "Tra cứu hành trình",
+            "commonEvents": "Sự kiện chung",
+            "roles": "Nhóm người dùng",
+            "reportFireEvent": "Thống kê cháy khói",
+            "question": "Câu hỏi",
+            "groupAccesses": "Phân quyền truy cập",
+            "notificationTemplates": "Mẫu cảnh báo",
+            "tosSyncInfo": "Kế hoạch ra vào cảng",
+            "countSupervisionReport": "Thống kê xe ra vào",
+            "vehicleDetailReport": "Chi tiết phương tiện",
+            "devices": "Camera giám sát",
+            "waterWarning": "Cảnh báo mực nước",
+            "vehicles": "Phương tiện",
+            "users": "Người dùng",
+            "issueType": "Loại vấn đề",
+            "groups": "Nhóm truy cập",
+            "auditLogs": "Logs hệ thống",
+            "trafficViolationEvent": "Vi phạm giao thông",
+            "auditlogs": "Logs hệ thống",
+            "classes": "Lớp học",
+            "dashboardFirework": "Pháo hoa",
+            "courses": "Khóa học",
+            "statuses": "Trạng thái",
+            "dashboardSystem": "Hệ thống",
+            "config": "Cấu hình ma trận",
+            "fireWorkEvent": "Giám sát dây chuyền",
+            "result": "Kết quả",
+            "guest": "Khách",
+            "vehicleViolationReport": "Báo cáo vi phạm",
+            "fireSmokeStatistics": "Thống kê sự cố cháy khói",
+            "attendanceMonitor": "Theo dõi điểm danh",
+            "blackLists": "Black list",
+            "dashboardMeiko": "Báo cáo tổng hợp dữ liệu MES",
+            "productionLineEvent": "Sự kiện theo công đoạn",
+            "eventTypes": "Loại sự kiện",
+            "eventWarningLevel": "Cấp độ cảnh báo",
+            "eventWarningLevels": "Cấp độ cảnh báo",
+            "monitorSopDes": "Giám sát quy trình"
+        }
+    },
+    "common": {
+        "confirmation": {
+            "delete": {
+                "message": "Dữ liệu sẽ không thể khôi phục lại!",
+                "error": "Xoá thất bại",
+                "title": "Bạn chắc chắn muốn xóa?",
+                "success": "Đã xoá thành công"
+            }
+        },
+        "form": {
+            "placeholder": {
+                "selectValue": "Chọn giá trị",
+                "enterValue": "Nhập giá trị"
+            },
+            "label": {
+                "media": "Hình ảnh / Video",
+                "employeeImage": "Ảnh nhân viên",
+                "guestImage": "Ảnh khách"
+            }
+        },
+        "message": {
+            "addSuccessfully": "Thêm mới thành công",
+            "addFail": "Thêm mới thất bại"
+        },
+        "input": {
+            "placeholder": "Nhập giá trị"
+        },
+        "select": {
+            "placeholder": "Chọn giá trị"
+        },
+        "options": {
+            "departmentVehicleType": {
+                "contractorVehicle": "Xe nhà thầu",
+                "departmentVehicle": "Xe công ty"
+            },
+            "vehicleType": {
+                "car": "Ô tô",
+                "motorbike": "Xe máy",
+                "truck": "Xe tài"
+            }
+        },
+        "button": {
+            "search": "Tìm kiếm",
+            "edit": "Sửa",
+            "create": "Thêm mới",
+            "account-unlock": "Mở khoá tài khoản",
+            "save": "Ghi lại",
+            "close": "Đóng",
+            "back": "Quay lại",
+            "show": "Xem trước",
+            "device-permission": "Phân quyền thiết bị",
+            "refresh": "Làm mới",
+            "cancel": "Hủy",
+            "confirm": "Đồng ý",
+            "sync": "Đồng bộ",
+            "account-lock": "Khoá tài khoản",
+            "update": "Cập nhật",
+            "export": "Xuất dữ liệu",
+            "delete": "Xóa",
+            "detail": "Chi tiết",
+            "setup-privileges": "Phân quyền",
+            "setup-notification": "Cấu hình cảnh báo",
+            "import": "Nhập dữ liệu"
+        }
+    },
+    "Button": {
+        "ZaloConfig": "Cấu hình zalo",
+        "Detail": "Xem chi tiết",
+        "Config": "Cấu hình",
+        "AddComment": "Thêm bình luận",
+        "Cancel": "Hủy",
+        "Back": "Quay lại",
+        "Delete": "Xóa",
+        "Checkout": "Checkout",
+        "ExportExcel": "Xuất excel",
+        "Edit": "Sửa",
+        "CreateIssue": "Thêm mới sự cố",
+        "ChangePassword": "Đổi mật khẩu",
+        "Save": "Ghi lại",
+        "ImportExcel": "Import Excel",
+        "CreateWarningForm": "Thêm mẫu",
+        "Luu": "Lưu",
+        "Refresh": "Làm mới",
+        "Exit": "Thoát",
+        "CheckZalo": "Kiểm tra zalo",
+        "Create": "Thêm mới",
+        "Hide": "Ẩn",
+        "Coordinate": "Tọa độ",
+        "AddVehicle": "Thêm phương tiện",
+        "Search": "Tìm kiếm",
+        "Reset": "Đặt lại"
+    },
+    "Swal": {
+        "Ok": "Đồng ý!",
+        "ConfirmDelete": {
+            "Title": "Bạn chắc chắn muốn xóa?",
+            "Text": "Bản ghi này sẽ không thể khôi phục lại!"
+        },
+        "DeleteSuccess": "Xóa bản ghi thành công!",
+        "Cancel": "Thoát"
+    },
+    "Message": {
+        "MessageDelete2": "Dữ liệu sẽ không thể khôi phục lại!",
+        "Exit": "Thoát",
+        "Agree": "Đồng ý",
+        "MessageDelete1": "Bạn chắc chắn muốn xóa?",
+        "CheckoutMessage1": "Bạn chắc chắn muốn checkout?",
+        "CheckoutMessage2": "Bạn có muốn tiếp tục không?"
+    },
+    "Success": {
+        "CreateTemplate": "Thêm mới mẫu cảnh báo thành công",
+        "ValidInformation": "Thông tin hợp lệ",
+        "CreateNotification": "Cấu hình cảnh báo thành công",
+        "Update": "Cập nhật thành công",
+        "UpdateTemplate": "Cập nhật mẫu cảnh báo thành công",
+        "CreateCamera": "Thêm camera thành công",
+        "Delete": "Xóa bản ghi thành công",
+        "Create": "Thêm mới thành công",
+        "Checkout": "Checkout thành công",
+        "Warning": "Cảnh báo",
+        "CreateCompany": "Thêm mới đơn vị thành công",
+        "UpdateCamera": "Cập nhật camera thành công",
+        "UpdateCompany": "Cập nhật đơn vị thành công"
+    },
+    "Error": {
+        "Device": {
+            "Duplicate": "Mã thiết bị đã tồn tại trong hệ thống"
+        },
+        "Status": {
+            "Duplicate": "Mã trạng thái đã tồn tại trong hệ thống"
+        },
+        "IssueType": {
+            "Duplicate": "Mã loại vấn đề đã tồn tại trong hệ thống"
+        },
+        "Project": {
+            "Duplicate": "Mã dự án đã tồn tại trong hệ thống"
+        },
+        "Priority": {
+            "Duplicate": "Mã mức độ đã tồn tại trong hệ thống",
+            "PriorityUsed": "Mức độ đã được sử dụng trong hệ thống. Không thể xóa!",
+            "Ex": "Lỗi xóa mức độ"
+        },
+        "License": {
+            "AlreadyExists": "Giấy phép đã tồn tại trong hệ thống",
+            "NotFound": "Giấy phép không tồn tại",
+            "HasExpired": "Giấy phép đã hết hạn",
+            "Incorrect": "Không đúng mã thiết bị hoặc sai địa chỉ Mac"
+        },
+        "STDUsers": {
+            "Duplicate": "Mã học viên đã tồn tại trong hệ thống"
+        },
+        "Error": "Lỗi",
+        "NotValid": "Thông tin không hợp lệ",
+        "Title": "Có lỗi xảy ra"
+    },
+    "Warning": {
+        "List": {
+            "SearchForm": {
+                "FromDate": "Từ ngày",
+                "Status": "Trạng thái",
+                "Name": "Tên mẫu cảnh báo",
+                "Read": "Đã xem",
+                "ToDate": "Đến ngày",
+                "NoRead": "Chưa xem",
+                "EventType": "Loại giám sát"
+            },
+            "Table": {
+                "Status": "Trạng thái",
+                "Name": "Tên mẫu cảnh báo",
+                "Title": "Tiêu đề",
+                "Link": "Đường dẫn",
+                "Content": "Nội dung",
+                "EventType": "Loại cảnh báo",
+                "Operation": "Thao tác"
+            }
+        },
+        "Detail": {
+            "Form": {
+                "Name": "Tên mẫu cảnh báo",
+                "Icon": "Icon",
+                "Content": "Nội dung cảnh báo",
+                "EventType": "Sự kiện cảnh báo",
+                "AddCondition": "Thêm điều kiện",
+                "NotePlaceholder": "Nhập ghi chú...",
+                "Note": "Ghi chú",
+                "Title": "Tiêu đề cảnh báo",
+                "Link": "Đường dẫn cảnh báo",
+                "AlertCondition": "Điều kiện cảnh báo",
+                "SqlPlaceholder": "Nhập điều kiện SQL..."
+            }
+        },
+        "Condition": {
+            "Common": {
+                "Condition": "Điều kiện",
+                "GroupType": "Nhóm"
+            },
+            "Grid": {
+                "Column": {
+                    "Property": "Thuộc tính",
+                    "Value": "Giá trị",
+                    "Operator": "Toán tử",
+                    "ConditionType": "Loại điều kiện",
+                    "GroupType": "Kiểu điều kiện"
+                }
+            },
+            "ButtonTitle": {
+                "Add": "Thêm điều kiện",
+                "AddGroup": "Thêm nhóm điều kiện"
+            }
+        }
+    },
+    "Refresh": {
+        "5s": "Mỗi 5 giây",
+        "Never": "Không bao giờ",
+        "15m": "Mỗi 15 phút",
+        "1h": "Mỗi 1 giờ",
+        "2h": "Mỗi 2 giờ",
+        "5m": "Mỗi 5 phút"
+    },
+    "Export": {
+        "All": "Tất cả"
+    },
+    "Notification": "Cảnh báo",
+    "AllNotification": "Tất cả cảnh báo",
+    "VueGoodTable": {
+        "NextLabel": "Trang sau",
+        "PrevLabel": "Trang trước",
+        "PageLabel": "Trang",
+        "OfLabel": "Tổng số",
+        "RowsPerPageLabel": "Số bản ghi trên trang"
+    },
+    "Bgrid": {
+        "Index": "STT",
+        "Sentence": {
+            "Intotal": "Trong",
+            "Record": "Bản ghi",
+            "ShowResultFrom": "Từ",
+            "To": "Đến"
+        },
+        "Columns": "Danh sách cột",
+        "Pagesize": ""
+    },
+    "Components": {
+        "ImageUpload": {
+            "OrClick": "hoặc chọn từ thư mục",
+            "DragFiles": "Kéo thả tệp tin",
+            "Uploading": "Đang tải lên",
+            "Success": "Tệp tin thành công.",
+            "UploadImages": "Upload ảnh",
+            "Uploaded": "Đã tải lên",
+            "UploadAgain": "Tiếp tục tải lên"
+        },
+        "Noti": {
+            "File": "tệp tin",
+            "Success": "Upload thành công"
+        }
+    },
+    "constants": {
+        "registerStatus": {
+            "registed": "Đã đăng ký",
+            "unregisted": "Chưa đăng ký"
+        },
+        "cargoStatus": {
+            "empty": "Trống",
+            "full": "Đầy",
+            "half": "Nửa"
+        }
+    },
+    "dayOfWeek": {
+        "monday": "Thứ hai",
+        "thursday": "Thứ năm",
+        "sunday": "Chủ nhật",
+        "saturday": "Thứ bảy",
+        "tuesday": "Thứ ba",
+        "friday": "Thứ sáu",
+        "wednesday": "Thứ tư"
+    },
+    "direction": {
+        "in": "Vào",
+        "out": "Ra"
+    },
+    "errorCode": {
+        "C_VEHICLE_500": "Lỗi khi tạo phương tiện",
+        "LU_GROUPS_500": "Lỗi khi tải dữ liệu nhóm truy cập",
+        "C_VEHICLE_200": "Thêm mới phương tiện thành công",
+        "U_VEHICLE_500": "Lỗi khi cập nhật phương tiện",
+        "U_VEHICLE_200": "Cập nhật phương tiện thành công",
+        "LU_CONTRACTORS_TREE_500": "Lỗi khi tải dữ liệu nhà thầu",
+        "LU_DEPARTMENTS/EMPLOYEES_500": "Lỗi khi tải dữ liệu phòng ban/nhân viên",
+        "LU_DEPARTMENTS_TREE_500": "Lỗi khi tải dữ liệu phòng ban"
+    },
+    "label": {
+        "nameOrCode": "Mã/Tên",
+        "status": "Trạng thái",
+        "type": "Loại",
+        "device": "Thiết bị",
+        "area": "Khu vực",
+        "dateTime": "Thời gian"
+    },
+    "StatusList": {
+        "Inactive": "Ngưng hoạt động",
+        "Active": "Hoạt động"
+    },
+    "Statuses": {
+        "List": {
+            "ListStatus": {
+                "Inprogress": "Đang làm",
+                "Done": "Xong",
+                "ToDo": "Việc cần làm"
+            },
+            "SearchForm": {
+                "StatusId": "Mã trạng thái"
+            },
+            "Table": {
+                "Operation": "Thao tác",
+                "Type": "Loại trạng thái",
+                "statusId": "Mã trạng thái",
+                "Name": "Tên trạng thái",
+                "Color": "Màu"
+            }
+        },
+        "Detail": {
+            "Form": {
+                "StatusId": "Mã trạng thái",
+                "Type": "Loại trạng thái",
+                "Name": "Tên trạng thái",
+                "Color": "Màu"
+            }
+        },
+        "error": {
+            "STATUS_500": "Có lỗi xảy ra, vui lòng thử lại sau!",
+            "U_STATUS_409": "Mã trạng thái đã tồn tại!",
+            "C_STATUS_200": "Thêm trạng thái thành công!",
+            "U_STATUS_200": "Cập nhật trạng thái thành công!",
+            "C_STATUS_404": "Trạng thái cha không tồn tại!",
+            "C_STATUS_409": "Mã trạng thái đã tồn tại!",
+            "D_STATUS_200": "Xóa trạng thái thành công!",
+            "D_STATUS_400": "Trạng thái đang được sử dụng ở nơi khác, không thể xóa!"
+        }
+    },
+    "Nav": {
+        "Groups": "Nhóm truy cập",
+        "TosSyncInfo": "Kế hoạch ra vào cảng",
+        "Classes": "Lớp học",
+        "VirtualFenceEvent": "Giám sát vùng cấm",
+        "Devices": "Camera giám sát",
+        "Student": "Học viên",
+        "Problem": "Sự cố",
+        "Areas": "Khu vực",
+        "VehicleEvent": "Giám sát phương tiện",
+        "Dashboard": "Dashboard",
+        "Config": "Cấu hình ma trận",
+        "Roles": "Nhóm người dùng",
+        "VehicleDetailReport": "Báo cáo chi tiết phương tiện",
+        "EventManagement": "Sự kiện",
+        "Courses": "Khóa học",
+        "WaterWarning": "Mức nước",
+        "MapDashboard": "Bản đồ",
+        "TimeAccesses": "Khung giờ",
+        "WaterEvent": "Giám sát mực nước",
+        "FaceEvent": "Nhận diện khuôn mặt",
+        "Test": "Bài kiểm tra",
+        "FireEvent": "Giám sát cháy khói",
+        "Guest": "Khách",
+        "Manufacturing": "Báo cáo sản lượng",
+        "Company": "Đơn vị",
+        "restrictedZonesEvent": "Theo dõi người vào vùng cấm",
+        "ReportVehicleWarning": "Báo cáo vi phạm vùng cấm",
+        "SystemDashboard": "Hệ thống",
+        "NotificationEventTemplate": "Mẫu cảnh báo",
+        "CarEvent": "Giám sát xe hàng",
+        "FireworkDashboard": "Pháo hoa",
+        "Issue": "Sự cố",
+        "PeopleCountEvent": "Thống kê người",
+        "reportFireEvent": "Thống kê sự cố cháy khói",
+        "ReportsFireworkInspectionStatistics25": "Thống kê số lượng kiểm tra sản phẩm pháo hoa phun viên 25",
+        "Users": "Người dùng",
+        "Employees": "Nhân viên",
+        "Event": "Sự kiện",
+        "DashboardItinerary": "Tra cứu hành trình",
+        "Reports": "Báo cáo",
+        "Question": "Câu hỏi",
+        "ConveyorReport": "Báo cáo thống kê bằng chuyền",
+        "TrafficViolationEvent": "Vi phạm giao thông",
+        "Result": "Kết quả",
+        "SystemManagement": "Quản lý hệ thống",
+        "Vehicles": "Phương tiện",
+        "Departments": "Phòng ban",
+        "ConveyorEvent": "Giám sát băng tải",
+        "Contractors": "Nhà thầu",
+        "CategoryManagement": "Danh mục",
+        "AuditLogs": "Logs hệ thống",
+        "ProtectiveEquipmentEvent": "Giám sát đồ bảo hộ",
+        "Lesson": "Bài giảng",
+        "Machines": "Thiết bị",
+        "Live": "Theo dõi giám sát",
+        "VehicleViolationReports": "Báo cáo tổng hợp phương tiện vi phạm",
+        "EventDashboard": "Dashboard sự kiện",
+        "FireWorkEvent": "Giám sát dây chuyền",
+        "SupervisorReport": "Báo cáo số lượng phương tiện",
+        "GroupAccesses": "Phân quyền truy cập",
+        "DashboardMeiko": "Báo cáo GSQT DES",
+        "productionLineEvent": "Sự kiện theo công đoạn"
+    },
+    "AccountSetting": {
+        "Time": {
+            "Start": "Bắt đầu",
+            "End": "Kết thúc",
+            "InValid": "Giờ kết thúc phải lớn hơn giờ bắt đầu"
+        },
+        "Title": "Cấu hình cảnh báo",
+        "Feature": {
+            "Sound": "Âm thanh",
+            "Email": "Email",
+            "Zalo": "Zalo",
+            "App": "App",
+            "Browser": "Browser"
+        }
+    },
+    "ChangePassword": {
+        "Header": {
+            "Account": "Tài khoản",
+            "ChangePass": "Đổi mật khẩu"
+        },
+        "Label": {
+            "NewPass": "Mật khẩu mới",
+            "RePass": "Nhập lại mật khẩu",
+            "OldPass": "Mật khẩu cũ"
+        },
+        "Message": {
+            "ChangeSuccess": "Đổi mật khẩu thành công. Vui lòng đăng nhập lại"
+        }
+    },
+    "message": {
+        "tableHeader": {
+            "status": "Status",
+            "email": "Email",
+            "name": "Name",
+            "salary": "Salary",
+            "date": "Date",
+            "action": "Action"
+        },
+        "seachLabel": "Search",
+        "SearchPlaceholder": "Search",
+        "title": "Card Title",
+        "pageText2": "entries",
+        "pagelength": "Showing 1 to",
+        "of": "of",
+        "text": "Cake sesame snaps cupcake gingerbread danish I love gingerbread. Apple pie pie jujubes chupa chups muffin halvah lollipop. Chocolate cake oat cake tiramisu marzipan sugar plum. Donut sweet pie oat cake dragée fruitcake cotton candy lemon drops."
+    }
+}

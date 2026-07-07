@@ -1,0 +1,235 @@
+{
+    "reports": {
+        "title": {
+            "reportFireworkInspectionStatistics25": "Firework Inspection Statistics 25"
+        },
+        "Validate": {
+            "Date": "From date must be before to date"
+        },
+        "labels": {
+            "cascade": "Cascade",
+            "end_date": "End date",
+            "start_date": "Start date"
+        }
+    },
+    "Report": {
+        "vehicleViolationReport": {
+            "SearchForm": {
+                "Device": "Device",
+                "startDate": "Start date",
+                "endDate": "End date",
+                "Color": "Car color",
+                "Type": "Status Type",
+                "VehicleType": "Vehicle type",
+                "LicensePlate": "License plate",
+                "All": "All",
+                "Area": "Area"
+            },
+            "button": {
+                "exportReport": "Report"
+            }
+        }
+    },
+    "study": {
+        "student": {
+            "common": {
+                "form": {
+                    "placeholder": {
+                        "avatarPath": "Avatar path",
+                        "jobDuties": "Job duties",
+                        "birthday": "Birthday",
+                        "code": "Code",
+                        "gender": "Gender",
+                        "citizenId": "Identification number",
+                        "position": "Position",
+                        "groupName": "Access group name",
+                        "compName": "Company",
+                        "phoneNumber": "Phone number",
+                        "status": "Status",
+                        "email": "Email",
+                        "depName": "Department",
+                        "fullname": "Fullname"
+                    },
+                    "label": {
+                        "avartarPath": "avartar path",
+                        "avatarPath": "Avatar path",
+                        "jobDuties": "Job duties",
+                        "code": "Code",
+                        "birthday": "Birthday",
+                        "gender": "Gender",
+                        "citizenId": "Identification number",
+                        "position": "Position",
+                        "groupName": "Access group name",
+                        "compName": "Company",
+                        "phoneNumber": "Phone number",
+                        "status": "Status",
+                        "email": "Email",
+                        "depName": "Department",
+                        "fullname": "Fullname"
+                    }
+                }
+            },
+            "error": {
+                "D_EMPLOYEES_200": "Delete employee successfully!",
+                "STDUsersS_489": "Mã học viên đã bị trùng!",
+                "C_EMPLOYEES_200": "Create employee successfully!",
+                "IMPORT_SUCCESS": "Import successful",
+                "U_EMPLOYEES_200": "Update employee successfully!",
+                "EMPLOYEES_500": "An error occurred, please try again later!"
+            },
+            "import": {
+                "importPlaceholder": "Please select employee list file",
+                "importSample": "Download sample file",
+                "fileInputXlxs": "Please select a file with .xlsx format",
+                "importRequire": "Please select file",
+                "header": "Research fire and smoke data",
+                "import": "Select file:",
+                "fileInput50Mb": "Please select a file less than 5MB in size."
+            },
+            "list": {
+                "table": {
+                    "label": {
+                        "departmentName": "Department",
+                        "citizenId": "Identification number",
+                        "compName": "Company",
+                        "status": "Status",
+                        "code": "Code",
+                        "image": "Image",
+                        "name": "Name",
+                        "gender": "Gender",
+                        "action": "Action"
+                    }
+                },
+                "searchForm": {
+                    "placeholder": {
+                        "citizenId": "Identification number",
+                        "department": "Department",
+                        "compName": "Company",
+                        "status": "Status",
+                        "imageStatus": "Image status",
+                        "gender": "Gender",
+                        "nameCode": "Enter value"
+                    },
+                    "label": {
+                        "citizenId": "Identification number",
+                        "department": "Department",
+                        "compName": "Company",
+                        "advancedSearch": "Advanced search",
+                        "status": "Status",
+                        "imageStatus": "Image status",
+                        "gender": "Gender",
+                        "nameCode": "Enter value"
+                    }
+                }
+            }
+        }
+    },
+    "test": {
+        "student": {
+            "common": {
+                "form": {
+                    "placeholder": {
+                        "avatarPath": "Avatar path",
+                        "jobDuties": "Job duties",
+                        "birthday": "Birthday",
+                        "code": "Code",
+                        "gender": "Gender",
+                        "citizenId": "Identification number",
+                        "position": "Position",
+                        "groupName": "Access group name",
+                        "compName": "Company",
+                        "phoneNumber": "Phone number",
+                        "status": "Status",
+                        "email": "Email",
+                        "depName": "Department",
+                        "fullname": "Fullname"
+                    },
+                    "label": {
+                        "avartarPath": "avartar path",
+                        "avatarPath": "Avatar path",
+                        "jobDuties": "Job duties",
+                        "code": "Code",
+                        "birthday": "Birthday",
+                        "gender": "Gender",
+                        "citizenId": "Identification number",
+                        "position": "Position",
+                        "groupName": "Access group name",
+                        "compName": "Company",
+                        "phoneNumber": "Phone number",
+                        "status": "Status",
+                        "email": "Email",
+                        "depName": "Department",
+                        "fullname": "Fullname"
+                    }
+                }
+            },
+            "error": {
+                "D_EMPLOYEES_200": "Delete employee successfully!",
+                "STDUsersS_489": "Mã học viên đã bị trùng!",
+                "C_EMPLOYEES_200": "Create employee successfully!",
+                "IMPORT_SUCCESS": "Import successful",
+                "U_EMPLOYEES_200": "Update employee successfully!",
+                "EMPLOYEES_500": "An error occurred, please try again later!"
+            },
+            "import": {
+                "importPlaceholder": "Please select employee list file",
+                "importSample": "Download sample file",
+                "fileInputXlxs": "Please select a file with .xlsx format",
+                "importRequire": "Please select file",
+                "header": "Research fire and smoke data",
+                "import": "Select file:",
+                "fileInput50Mb": "Please select a file less than 5MB in size."
+            },
+            "list": {
+                "table": {
+                    "label": {
+                        "departmentName": "Department",
+                        "citizenId": "Identification number",
+                        "compName": "Company",
+                        "status": "Status",
+                        "code": "Code",
+                        "image": "Image",
+                        "name": "Name",
+                        "gender": "Gender",
+                        "action": "Action"
+                    }
+                },
+                "searchForm": {
+                    "placeholder": {
+                        "citizenId": "Identification number",
+                        "department": "Department",
+                        "compName": "Company",
+                        "status": "Status",
+                        "imageStatus": "Image status",
+                        "gender": "Gender",
+                        "nameCode": "Enter value"
+                    },
+                    "label": {
+                        "citizenId": "Identification number",
+                        "department": "Department",
+                        "compName": "Company",
+                        "advancedSearch": "Advanced search",
+                        "status": "Status",
+                        "imageStatus": "Image status",
+                        "gender": "Gender",
+                        "nameCode": "Enter value"
+                    }
+                }
+            }
+        }
+    },
+    "Conveyor": {
+        "Common": {
+            "WarningType": {
+                "Overflow": "Overflow",
+                "Size": "Size",
+                "Deviated": "Deviated",
+                "Torn": "Torn",
+                "TooTall": "Over height limit"
+            }
+        },
+        "Excel": {
+            "Header": "Conveyor monitoring data"
+        }
+    }
+}

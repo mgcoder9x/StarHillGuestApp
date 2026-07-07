@@ -1,0 +1,139 @@
+{
+    "Common": {
+        "Loading": "Đang tải...",
+        "LoadingData": "Đang tải dữ liệu...",
+        "LoadMore": "Tải thêm",
+        "NoData": "Không có dữ liệu"
+    },
+    "Events": {
+        "MapDashboard": {
+            "CameraInfo": {
+                "LiveView": "Xem trực tiếp",
+                "Close": "Đóng",
+                "Events": "Sự kiện",
+                "DailyStatistics": "Thống kê trong ngày",
+                "NoEvents": "Không có sự kiện nào của thiết bị hiện tại",
+                "LoadingMore": "Đang tải thêm...",
+                "AllEventsLoaded": "Đã hiển thị tất cả sự kiện",
+                "Status": "Tình trạng",
+                "AlertImage": "Ảnh cảnh báo",
+                "Statistics": {
+                    "FaceRecognition": {
+                        "Registered": "Đã đăng ký",
+                        "Unregistered": "Chưa đăng ký"
+                    },
+                    "ProtectiveGear": {
+                        "Sufficient": "Đủ",
+                        "Insufficient": "Thiếu"
+                    },
+                    "Vehicle": {
+                        "CarIn": "Ô tô vào",
+                        "CarOut": "Ô tô ra",
+                        "MotorbikeIn": "Xe máy vào",
+                        "MotorbikeOut": "Xe máy ra"
+                    },
+                    "RestrictedZone": {
+                        "People": "Người",
+                        "Vehicles": "Phương tiện"
+                    },
+                    "FireSmoke": {
+                        "Fire": "Cháy",
+                        "Smoke": "Khói"
+                    },
+                    "ConveyorBelt": {
+                        "Torn": "Rách",
+                        "Overflow": "Tràn",
+                        "Deviation": "Lệch",
+                        "Oversized": "Kích thước"
+                    }
+                },
+                "Warnings": {
+                    "MissingHelmet": "Thiếu mũ",
+                    "MissingMask": "Thiếu khẩu trang",
+                    "MissingGloves": "Thiếu găng tay",
+                    "Sufficient": "Đủ",
+                    "Insufficient": "Không đủ",
+                    "UnregisteredPerson": "Người chưa đăng ký",
+                    "VehicleInRestrictedArea": "Phương tiện vào vùng cấm",
+                    "PersonInRestrictedArea": "Người vào vùng cấm",
+                    "FireDetected": "Phát hiện cháy",
+                    "SmokeDetected": "Phát hiện khói",
+                    "ConveyorTorn": "Băng chuyền bị rách",
+                    "ConveyorOverflow": "Băng chuyền tràn"
+                }
+            },
+            "MonitoringStatistics": "Thống kê giám sát",
+            "RealtimeData": "Dữ liệu thời gian thực",
+            "Identification": "Nhận diện",
+            "Registered": "Đã đăng ký",
+            "UnRegistered": "Chưa đăng ký",
+            "Vehicle": "Phương tiện",
+            "In": "Vào",
+            "Out": "Ra",
+            "ForbiddenZone": "Vùng cấm",
+            "Employee": "Nhân viên",
+            "FireSmoke": "Cháy khói",
+            "Fire": "Cháy",
+            "Smoke": "Khói",
+            "Conveyor": "Băng tải",
+            "Torn": "Rách",
+            "Overflow": "Tràn",
+            "Deviated": "Lệch",
+            "Size": "Kích thước",
+            "ProtectiveGear": "Đồ bảo hộ",
+            "Enough": "Đủ",
+            "Lack": "Thiếu",
+            "ListCamera": "Danh sách camera"
+        },
+        "EventModals": {
+            "Recognition": "Nhận diện",
+            "RegisteredPeople": "Đã đăng ký",
+            "UnregisteredPeople": "Chưa đăng ký",
+            "VehicleType": "Loại phương tiện",
+            "People": "Người",
+            "VirtualFence": "Vùng cấm",
+            "FireAndSmoke": "Cháy khói",
+            "ConveyorBelt": "Băng tải",
+            "Ripped": "Rách",
+            "Spilled": "Tràn",
+            "Deviated": "Lệch",
+            "Oversized": "Kích thước",
+            "ProtectiveEquipment": "Sự kiện đồ bảo hộ",
+            "MissingEquipment": "Đồ thiếu",
+            "Quantity": "Số lượng",
+            "None": "Không",
+            "Helmet": "Mũ",
+            "FaceMask": "Khẩu trang",
+            "Gloves": "Găng tay",
+            "HelmetGloves": "Mũ + găng tay",
+            "HelmetMask": "Mũ + khẩu trang",
+            "MaskGloves": "Găng + khẩu trang",
+            "HelmetMaskGloves": "Mũ + găng tay + khẩu trang",
+            "Motorcycle": "Xe máy",
+            "Truck": "Xe tải",
+            "Car5Seats": "5 chỗ",
+            "Car7Seats": "7 chỗ",
+            "Car9Seats": "9 chỗ",
+            "Car16Seats": "16 chỗ",
+            "Car29Seats": "29 chỗ",
+            "Car40Seats": "40 chỗ"
+        }
+    },
+    "Map": {
+        "Controls": {
+            "ShowInfo": "Xem thông tin",
+            "HideInfo": "Ẩn thông tin",
+            "ShowCameraEvents": "Hiển thị sự kiện camera",
+            "HideCameraEvents": "Ẩn sự kiện camera",
+            "ShowCameraNames": "Hiển thị tên camera",
+            "HideCameraNames": "Ẩn tên camera",
+            "ToggleCameraEvents": "Dữ liệu giám sát",
+            "ToggleCameraNames": "Danh sách camera"
+        },
+        "Sidebar": {
+            "Title": "Danh sách sự kiện",
+            "Loading": "Đang tải...",
+            "NoEvents": "Không có sự kiện nào"
+        }
+    }
+}

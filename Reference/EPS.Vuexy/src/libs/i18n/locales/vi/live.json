@@ -1,0 +1,31 @@
+{
+    "FormGroupName": {
+        "StreamConfig": "Chọn cấu hình"
+    },
+    "Response": {
+        "ErrorCode": {
+            "G_STREAM_CONFIG_419": "Quá số lượng cấu hình camera tối đa",
+            "G_STREAM_CONFIG_200": "Lưu cấu hình thành công",
+            "G_STREAM_CONFIG_409": "Tên cấu hình camera đã tồn tại",
+            "D_STREAM_CONFIG_200": "Xóa cấu hình thành công"
+        }
+    },
+    "Title": {
+        "Add": "Thêm mới",
+        "Update": "Cập nhật",
+        "Delete": "Xóa",
+        "ViewCamera": "Xem camera",
+        "ViewEvent": "Xem sự kiện"
+    },
+    "StreamConfig": {
+        "Create": "Thêm mới cấu hình",
+        "Save": "Lưu cấu hình",
+        "Name": "Tên cấu hình"
+    },
+    "EventLive":{
+        "Name": "Tên",
+        "Position": "Chức vụ",
+        "Area": "Khu vực",
+        "Time": "Thời gian"
+    }
+}

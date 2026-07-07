@@ -1,0 +1,17 @@
+@use 'variables' as *;
+@function get-label-style($class, $property) {
+    @return map-get(map-get($label-color-map, $class), $property);
+}
+@function get-linear-style($class, $property) {
+    @if map-has-key($linear-gradient-map, $class) {
+        @if map-has-key(map-get($linear-gradient-map, $class), $property) {
+            @return map-get(map-get($linear-gradient-map, $class), $property);
+        } @else {
+            @warn "Property `#{$property}` not found in class `#{$class}`.";
+            @return null;
+        }
+    } @else {
+        @warn "Class `#{$class}` not found in the linear-gradient map.";
+        @return null;
+    }
+}

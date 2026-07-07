@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\Core\FresherDev.HMS.Auth\FresherDev.HMS.Auth.csproj" />
+        <ProjectReference Include="..\..\Core\FresherDev.HMS.EntityFramework\FresherDev.HMS.EntityFramework.csproj" />
+        <ProjectReference Include="..\..\Core\FresherDev.HMS.Infrastructure\FresherDev.HMS.Infrastructure.csproj" />
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,558 @@
+{
+    "events": {
+        "fireEvent": {
+            "list": {
+                "table": {
+                    "label": {
+                        "level": "Mức độ sự cố",
+                        "image": "Ảnh",
+                        "fireType": "Loại sự cố",
+                        "time": "Thời gian",
+                        "area": "Khu vực",
+                        "device": "Thiết bị",
+                        "date": "Ngày"
+                    }
+                }
+            }
+        },
+        "restrictedZonesEvent": {
+            "excel": {
+                "header": "Tra cứu dữ liệu người vào vùng cấm",
+                "dateTimeTo": "Đến ngày",
+                "device": "Thiết bị",
+                "area": "Khu vực",
+                "dateTimeFrom": "Từ ngày"
+            },
+            "table": {
+                "userCode": "Mã",
+                "image": "Ảnh",
+                "userName": "Họ tên",
+                "isRegistered": "Trạng thái",
+                "time": "Giờ",
+                "area": "Khu vực",
+                "status": "Trạng thái",
+                "device": "Thiết bị",
+                "date": "Ngày",
+                "action": "Thao tác"
+            }
+        }
+    },
+    "VirtualFenceEvent": {
+        "Common": {
+            "TroubleType": {
+                "None": "Không xác định",
+                "PERSON": "Người",
+                "VEHICLE": "Phương tiện"
+            }
+        },
+        "SearchForm": {
+            "PersonType": "Loại đối tượng",
+            "ObjectType": "Đối tượng",
+            "Category": "Phân loại",
+            "Person": "Tên"
+        },
+        "Field": {
+            "Device": "Thiết bị",
+            "Image": "Ảnh",
+            "TroubleType": "Loại vùng cấm",
+            "Time": "Giờ",
+            "UserName": "Tên đối tượng",
+            "LicensePlate": "Biển số xe",
+            "ObjectType": "Loại đối tượng",
+            "Category": "Phân loại",
+            "CodeOrPlate": "Mã / biển số",
+            "Operation": "Thao tác",
+            "Date": "Ngày",
+            "Area": "Khu vực",
+            "PersonType": "Loại đối tượng"
+        },
+        "Header": {
+            "Excel": "Tra cứu dữ liệu vùng cấm"
+        },
+        "ObjectType": {
+            "Person": "Người",
+            "Vehicle": "Phương tiện"
+        },
+        "Detail": {
+            "Device": "Thiết bị",
+            "Image": "Ảnh",
+            "Header": "Tra cứu dữ liệu vùng cấm",
+            "TroubleType": "Loại vùng cấm",
+            "Operation": "Thao tác",
+            "Date": "Ngày"
+        },
+        "Unknown": "Người lạ",
+        "PersonType": {
+            "Registered": "Đã đăng ký",
+            "Unregistered": "Chưa đăng ký"
+        }
+    },
+    "FaceEvent": {
+        "Options": {
+            "Stranger": "Người lạ",
+            "Employee": "Nhân viên",
+            "Guest": "Khách",
+            "Contractor": "Nhà thầu",
+            "BlackList": "Black list"
+        },
+        "Common": {
+            "Identification": {
+                "Yes": "Đủ điều kiện nhận diện",
+                "No": "Không đủ điều kiện nhận diện"
+            },
+            "LoadingData": "Đang tải dữ liệu..."
+        },
+        "Field": {
+            "Identification": "Nhận diện",
+            "Department": "Phòng ban",
+            "Status": "Trạng thái",
+            "Name": "Người dùng",
+            "ToDate": "Đến ngày",
+            "AdvancedSearch": "Tìm kiếm nâng cao",
+            "EventType": "Loại nhận diện",
+            "Device": "Thiết bị",
+            "FromDate": "Từ ngày",
+            "SimilarityNote": "Lọc kết quả có độ tương đồng ≥ {percent}%.",
+            "Code": "Mã",
+            "IdentificationScore": "Điểm nhận diện",
+            "NameOrCode": "Mã/Tên đối tượng",
+            "DropZoneText": "Kéo/thả hoặc chọn ảnh khuôn mặt",
+            "FaceImage": "Ảnh khuôn mặt",
+            "Area": "Khu vực",
+            "ObjectType": "Loại đối tượng",
+            "PersonType": "Đối tượng"
+        },
+        "Header": {
+            "Excel": "Báo cáo dữ liệu khuôn mặt"
+        },
+        "Detail": {
+            "Status": "Trạng thái",
+            "UserCode": "Mã",
+            "AccessTime": "Thời gian",
+            "Gender": "Giới tính",
+            "Time": "Giờ",
+            "UserName": "Tên",
+            "AreaName": "Khu vực",
+            "EventType": "Loại nhận diện",
+            "Operation": "Thao tác",
+            "RecognitionObject": "Đối tượng",
+            "Date": "Ngày",
+            "Device": "Thiết bị",
+            "Image": "Hình ảnh",
+            "Female": "Nữ",
+            "Age": "Tuổi",
+            "Male": "Nam",
+            "DepName": "Phòng ban"
+        }
+    },
+    "CarEvent": {
+        "Common": {
+            "Header": {
+                "Excel": "Tra cứu dữ liệu xe hàng"
+            },
+            "WarningType": {
+                "Less": "Ít hàng",
+                "Suspect": "Nghi ngờ còn hàng",
+                "In": "Vào",
+                "Empty": "Xe rỗng",
+                "Out": "Ra",
+                "None": "Không có hàng",
+                "Other": "Khác",
+                "Iron": "Sắt phế liệu",
+                "Wooden": "Dăm gỗ",
+                "HasMerchandise": "Có hàng"
+            },
+            "Error": {
+                "LicenseValid": "Biển số chỉ được chứa chữ và số (4–12 ký tự).",
+                "License": "Biển số bắt buộc nhập(chỉ chữ và số)"
+            },
+            "Placeholder": {
+                "License": "Nhập biển số (chỉ chữ và số)"
+            }
+        }
+    },
+    "VehicleEvent": {
+        "Common": {
+            "Header": {
+                "Excel": "Tra cứu dữ liệu khuôn mặt"
+            },
+            "DeptType": {
+                "Car": "Xe công ty",
+                "Contractor": "Nhà thầu"
+            },
+            "Color": {
+                "Golden": "Vàng kim",
+                "White": "Trắng",
+                "Green": "Xanh lá",
+                "Red": "Đỏ",
+                "Yellow": "Vàng",
+                "Blue": "Xanh",
+                "Shadow": "Tối",
+                "Unknown": "Không xác định"
+            },
+            "CarType": {
+                "Diplomatic": "Xe ngoại giao",
+                "Civilian": "Xe dân sự",
+                "International": "Xe quốc tế",
+                "Utility": "Xe dịch vụ",
+                "Official": "Xe công vụ",
+                "Military": "Xe quân sự",
+                "Foreign": "Xe nước ngoài",
+                "Container": "Xe công"
+            },
+            "Violation": {
+                "NoHelmet": "Không đội mũ",
+                "WrongLane": "Sai làn",
+                "OverSpeed": "Vượt quá tốc độ",
+                "No": "Không vi phạm",
+                "OverrideLine": "Đè vạch",
+                "RunRedLight": "Vượt đèn đỏ"
+            },
+            "Direction": {
+                "Exit": "Đi ra",
+                "Entrance": "Đi vào"
+            },
+            "VehicleType": {
+                "Moto": "Xe máy",
+                "Car": "Ô tô"
+            },
+            "BlackList": {
+                "Yes": "Theo dõi",
+                "No": "Không theo dõi"
+            },
+            "BackgroundColor": {
+                "White": "Trắng",
+                "Red": "Đỏ",
+                "Yellow": "Vàng",
+                "Blue": "Xanh",
+                "Unknown": "Không xác định"
+            }
+        },
+        "Detail": {
+            "ToDate": "Đến ngày",
+            "Operation": "Thao tác",
+            "Date": "Ngày",
+            "Device": "Thiết bị",
+            "Image": "Ảnh nhận diện",
+            "VehicleType": "Loại phương tiện",
+            "IsBlackList": "Loại đối tượng",
+            "Media": "Hình ảnh / Video",
+            "AccessType": "Loại truy cập",
+            "CarType": "Phân loại xe",
+            "BackgroundColor": "Màu sắc biển số",
+            "Direction": "Hướng",
+            "Time": "Giờ",
+            "EventType": "Hành vi",
+            "Seats": "Số ghế ngồi",
+            "LicensePlateImage": "Ảnh biển số",
+            "Manufacturer": "Hãng xe",
+            "FromDate": "Từ ngày",
+            "Color": "Màu xe",
+            "LicensePlate": "Biển số xe",
+            "Area": "Khu vực"
+        },
+        "Field": {
+            "Status": "Trạng thái",
+            "Header": "Tra cứu dữ liệu phương tiện",
+            "TotalNumberOfSeats": "Số ghế ngồi",
+            "ToDate": "Đến ngày",
+            "DeptOrContractor": "Phòng ban/Nhà thầu",
+            "Classify": "Phân loại",
+            "Operation": "Thao tác",
+            "Date": "Ngày",
+            "DateColumn": "Ngày",
+            "Device": "Thiết bị",
+            "Image": "Ảnh nhận diện",
+            "VehicleType": "Loại",
+            "IsBlackList": "Loại đối tượng",
+            "Identification": "Điều kiện nhận diện",
+            "AccessType": "Loại truy cập",
+            "CarType": "Phân loại xe",
+            "BackgroundColor": "Màu sắc biển số",
+            "Direction": "Hướng",
+            "Time": "Giờ",
+            "Owner": "Chủ sở hữu",
+            "EventType": "Hành vi",
+            "Seats": "Số ghế ngồi",
+            "LicensePlateImage": "Ảnh biển số",
+            "Manufacturer": "Hãng xe",
+            "FromDate": "Từ ngày",
+            "Merchandise": "Hàng hóa",
+            "NameOrCode": "Mã/Tên đối tượng",
+            "Color": "Màu xe",
+            "LicensePlate": "Biển số xe",
+            "DeviceGateType": "Thiết bị",
+            "Area": "Khu vực"
+        }
+    },
+    "FireWorkEvent": {
+        "Common": {
+            "Status": {
+                "Active": "Thông qua",
+                "InActive": "Lỗi"
+            },
+            "Header": {
+                "Excel": "Tra cứu dữ liệu dây chuyền"
+            },
+            "FireWork": {
+                "FLOWER_SPECIAL": "Giàn phun hoa đặc biệt",
+                "PELLETS_SPECIAL": "Giàn phun viên đặc biệt",
+                "FLOWER": "Giàn phun hoa",
+                "PELLETS": "Giàn phun viên"
+            }
+        },
+        "Detail": {
+            "Status": "Trạng thái",
+            "FireWorkType": "Loại giàn phun",
+            "Time": "Giờ",
+            "ToDate": "Đến ngày",
+            "Hole": "Lỗ hỏng",
+            "Operation": "Thao tác",
+            "Date": "Ngày",
+            "Device": "Thiết bị",
+            "FromDate": "Từ ngày",
+            "Image": "Ảnh",
+            "CascadeFW": "Dây chuyền",
+            "ClassFW": "Lớp"
+        },
+        "Field": {
+            "Status": "Trạng thái",
+            "FireWorkType": "Loại giàn phun",
+            "Time": "Giờ",
+            "ToDate": "Đến ngày",
+            "Hole": "Lỗ hỏng",
+            "Operation": "Thao tác",
+            "Date": "Ngày",
+            "Device": "Thiết bị",
+            "FromDate": "Từ ngày",
+            "Image": "Ảnh",
+            "CascadeFW": "Dây chuyền",
+            "ClassFW": "Lớp"
+        }
+    },
+    "TrafficViolationEvent": {
+        "Detail": {
+            "AccessTime": "Thời gian",
+            "WarningLevel": "Loại vi phạm",
+            "Time": "Giờ",
+            "AreaName": "Địa điểm xử lý",
+            "Operation": "Thao tác",
+            "Date": "Ngày",
+            "Device": "Thiết bị",
+            "Image": "Ảnh nhận diện",
+            "VehicleType": "Loại phương tiện",
+            "LicensePlate": "Biển số"
+        }
+    },
+    "WaterEvents": {
+        "Field": {
+            "Device": "Thiết bị",
+            "Image": "Ảnh sự kiện",
+            "Action": "Thao tác",
+            "WaterLevel": "Mực nước (m)",
+            "Time": "Thời gian",
+            "Warning": "Cảnh báo",
+            "Date": "Ngày",
+            "Area": "Khu vực"
+        },
+        "Button": {
+            "Detail": "Xem chi tiết"
+        },
+        "Label": {
+            "FromDate": "Từ ngày",
+            "Image": "Ảnh sự kiện",
+            "Devices": "Thiết bị",
+            "WaterLevel": "Mực nước",
+            "Areas": "Khu vực",
+            "Time": "Thời gian",
+            "ToDate": "Đến ngày",
+            "Warning": "Cảnh báo",
+            "Date": "Ngày"
+        },
+        "Placeholder": {
+            "Select": "Tất cả",
+            "Datetime": "Không lựa thời gian"
+        }
+    },
+    "AuditLogs": {
+        "Field": {
+            "Action": "Thao tác",
+            "Username": "Tài khoản",
+            "DurationMs": "Phản hồi (ms)",
+            "IpAddress": "IP",
+            "EventType": "Hành động",
+            "DateTime": "Thời gian"
+        },
+        "FormSearch": {
+            "DateTimeTo": "Đến ngày",
+            "Username": "Tài khoản",
+            "DurationMs": "Phản hồi (ms)",
+            "DateTimeFrom": "Từ ngày",
+            "IpAddress": "IP",
+            "EventType": "Hành động"
+        },
+        "EventType": {
+            "Department": {
+                "Create": "Tạo phòng ban/nhà thầu",
+                "Update": "Cập nhật phòng ban/nhà thầu",
+                "Delete": "Xóa phòng ban/nhà thầu"
+            },
+            "User": {
+                "DeleteUsers": "Xóa danh sách người dùng",
+                "Delete": "Xóa người dùng",
+                "Create": "Tạo người dùng",
+                "SaveUserPrivileges": "Cập nhật quyền người dùng",
+                "Update": "Cập nhật người dùng",
+                "ChangePassword": "Đổi mật khẩu"
+            },
+            "TimeAccess": {
+                "Create": "Tạo khung giờ",
+                "Update": "Cập nhật khung giờ",
+                "Delete": "Xóa khung giờ"
+            },
+            "GroupAccess": {
+                "Create": "Tạo quyền truy cập",
+                "Update": "Cập nhật quyền truy cập",
+                "Delete": "Xóa quyền truy cập"
+            },
+            "Vehicle": {
+                "Create": "Tạo phương tiện",
+                "Update": "Cập nhật phương tiện",
+                "Delete": "Xóa phương tiện"
+            },
+            "Company": {
+                "Create": "Tạo đơn vị",
+                "Update": "Cập nhật đơn vị",
+                "Delete": "Xóa đơn vị"
+            },
+            "Roles": {
+                "Create": "Tạo nhóm quyền",
+                "Update": "Cập nhật nhóm quyền",
+                "Delete": "Xóa nhóm quyền"
+            },
+            "Group": {
+                "Create": "Tạo nhóm truy cập",
+                "Update": "Cập nhật nhóm truy cập",
+                "Delete": "Xóa nhóm truy cập"
+            },
+            "Device": {
+                "Create": "Tạo camera",
+                "Update": "Cập nhật camera",
+                "Delete": "Xóa camera"
+            },
+            "Notification": {
+                "Create": "Tạo mẫu cảnh báo",
+                "Update": "Cập nhật mẫu cảnh báo",
+                "Delete": "Xóa mẫu cảnh báo"
+            },
+            "Project": {
+                "Update": "Cập nhật dự án",
+                "Create": "Tạo dự án",
+                "Delete": "Xóa dự án"
+            },
+            "Employee": {
+                "Import": "Import nhân viên",
+                "Delete": "Xóa nhân viên",
+                "Create": "Tạo nhân viên",
+                "Update": "Cập nhật nhân viên"
+            },
+            "Token": {
+                "Auth": "Đăng nhập"
+            },
+            "Area": {
+                "Create": "Tạo khu vực",
+                "Update": "Cập nhật khu vực",
+                "Delete": "Xóa khu vực"
+            }
+        }
+    },
+    "Blacklist": {
+        "Error": {
+            "InvalidFormat": "Định dạng file không hợp lệ. Chỉ chấp nhận file ảnh."
+        }
+    },
+    "ProductionLineEvent": {
+        "SearchForm": {
+            "WarningLevel": "Phân loại",
+            "ProductionLine": "Dây chuyền",
+            "ProductionLinePlaceholder": "Nhập tên dây chuyền",
+            "Step": "Công đoạn",
+            "StepPlaceholder": "Nhập tên công đoạn"
+        },
+        "Table": {
+            "Step": "Công đoạn/Bước",
+            "Person": "Người thao tác",
+            "EventType": "Loại giám sát",
+            "WarningLevel": "Phân loại",
+            "ProductionLine": "Dây chuyền",
+            "Status": "Trạng thái"
+        },
+        "Status": {
+            "Completed": "Hoàn thành",
+            "Violation": "Vi phạm"
+        },
+        "Excel": {
+            "Header": "Tra cứu sự kiện theo công đoạn"
+        }
+    },
+    "ProtectiveEquipmentEvent": {
+        "Excel": {
+            "Header": "Dữ liệu giám sát đồ bảo hộ"
+        }
+    },
+    "Issue": {
+        "Header": "Thêm mới sự cố",
+        "Label": {
+            "Status": "Trạng thái",
+            "Action": "Thao tác",
+            "CloseTime": "Thời gian đóng",
+            "NewComment": "Bình luận mới",
+            "CreatedBy": "Người giao",
+            "Code": "Mã sự cố",
+            "NewValue": "Giá trị mới",
+            "Title": "Tiêu đề",
+            "Description": "Mô tả",
+            "OldValue": "Giá trị cũ",
+            "History": "Lịch sử",
+            "Comment": "Bình luận",
+            "Deadline": "Hạn hoàn thành",
+            "Priority": "Mức độ",
+            "User": "Người xử lý",
+            "Type": "Phân loại",
+            "Attachment": "Tệp đính kèm",
+            "Project": "Dự án",
+            "CreatedAt": "Thời gian tạo"
+        }
+    },
+    "fireEvent": {
+        "common": {
+            "dateFrom": "Từ ngày",
+            "header": "Tra cứu dữ liệu cháy, khói",
+            "alt": "Hình ảnh",
+            "time": "Thời gian",
+            "area": "Khu vực",
+            "media": "Ảnh/Video",
+            "level": "Mức độ",
+            "dateTo": "Đến ngày",
+            "fireType": "Loại sự cố",
+            "device": "Thiết bị",
+            "date": "Ngày",
+            "action": "Thao tác"
+        },
+        "fireType": {
+            "smoke": "Khói",
+            "fire": "Cháy"
+        },
+        "level": {
+            "medium": "TRUNG BÌNH",
+            "high": "CAO",
+            "low": "THẤP",
+            "critical": "NGUY HIỂM"
+        }
+    },
+    "file": {
+        "image": "Ảnh sự kiện",
+        "video": "Video",
+        "licensePlateImage": "Biển số xe"
+    }
+}

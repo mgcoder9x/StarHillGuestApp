@@ -1,0 +1,548 @@
+{
+    "route": {
+        "common": {
+            "systemManagement": "System Management",
+            "issue": "Issue",
+            "question": "Question Management",
+            "tosSyncInfo": "Plan",
+            "information": "Information",
+            "reports": "Reports",
+            "live": "Live",
+            "test": "Quản lý bài thi",
+            "itinerary": "Find itinerary",
+            "dashboard": "Dashboard",
+            "categories": "Categories",
+            "study": "Quản lý học",
+            "events": "Events"
+        },
+        "privileges": "Setup privileges",
+        "create": "Add new",
+        "report": "Report",
+        "list": "List",
+        "live": "Live",
+        "notification": "Notification",
+        "detail": "Detail",
+        "lookup": "Lookup",
+        "breadcrumb": {
+            "workFlows": "Work Flow",
+            "productionLines": "Production Line",
+            "workingShifts": "Working shifts",
+            "machines": "Devices",
+            "countConveyorReport": "Conveyor Statistics",
+            "lesson": "Lesson",
+            "contractors": "Contractors",
+            "issue": "Issue",
+            "priority": "Priority",
+            "companies": "Companies",
+            "employees": "Employees",
+            "conveyorEvent": "Conveyor Monitoring",
+            "Problem": "Problem",
+            "virtualFenceEvent": "Virtual Fence Monitoring",
+            "faceEvent": "Face Monitoring",
+            "projects": "Project",
+            "events": "Events",
+            "reportFireworkInspectionStatistics25": "Firework Inspection Statistics 25",
+            "peopleCountEvent": "People Statistics",
+            "areas": "Areas",
+            "dashboardEvents": "Events",
+            "protectiveEquipmentEvent": "Protective Equipment Monitoring",
+            "departments": "Departments",
+            "reportTest": "Test Report",
+            "reportVehicleWarning": "Report Vehicle Warning",
+            "timeAccesses": "Time Frames",
+            "course": "Courses",
+            "notifications": "Notifications",
+            "dashboardMap": "Map",
+            "productionLineEvent": "Production line events",
+            "live": "Live",
+            "restrictedZonesEvent": "Restricted zones event",
+            "vehicleEvent": "Vehicle Monitoring",
+            "student": "Student",
+            "test": "Unit test",
+            "waterEvent": "Water Level Monitoring",
+            "fireEvent": "Smoke and Fire Monitoring",
+            "CarEvent": "Truck monitoring",
+            "dashboardItinerary": "Itinerary",
+            "commonEvents": "Events",
+            "roles": "Roles",
+            "reportFireEvent": "Fire And Smoke Incident Statistics",
+            "question": "Question",
+            "groupAccesses": "Access Permissions",
+            "notificationTemplates": "Notification Template",
+            "tosSyncInfo": "Plan",
+            "countSupervisionReport": "Vehicle Count Statistics",
+            "vehicleDetailReport": "Vehicel Detail Report",
+            "devices": "Cameras",
+            "waterWarning": "Water Level Warning",
+            "vehicles": "Vehicles",
+            "users": "Users",
+            "issueType": "Issue Type",
+            "groups": "Access Groups",
+            "auditLogs": "Logs system",
+            "trafficViolationEvent": "Traffic Violation",
+            "auditlogs": "Audit Logs",
+            "classes": "Classes",
+            "dashboardFirework": "Firework",
+            "courses": "Course",
+            "statuses": "Status",
+            "dashboardSystem": "System",
+            "config": "Matrix configuration",
+            "fireWorkEvent": "Production Line Monitoring",
+            "result": "Result",
+            "guest": "Guest",
+            "vehicleViolationReport": "Vehicle Violation Report",
+            "fireSmokeStatistics": "Fire Smoke Accident Statistics",
+            "attendanceMonitor": "Attendance Monitor",
+            "eventTypes": "Event Types",
+            "eventWarningLevel": "Warning Levels",
+            "eventWarningLevels": "Warning Levels",
+            "dashboardMeiko": "MES Summary Report",
+            "monitorSopDes": "Process Monitoring"
+        }
+    },
+    "common": {
+        "confirmation": {
+            "delete": {
+                "message": "Data cannot be recovered!",
+                "error": "Error deleting data",
+                "title": "Are you sure you want to delete?",
+                "success": "Deleted successfully"
+            }
+        },
+        "form": {
+            "placeholder": {
+                "selectValue": "Select value",
+                "enterValue": "Enter value"
+            },
+            "label": {
+                "media": "Image / Video",
+                "employeeImage": "Employee image",
+                "guestImage": "Guest Image"
+            }
+        },
+        "message": {
+            "addSuccessfully": "Add new successfully",
+            "addFail": "Add new failed"
+        },
+        "select": {
+            "placeholder": "Select value"
+        },
+        "input": {
+            "placeholder": "Enter value"
+        },
+        "options": {
+            "departmentVehicleType": {
+                "contractorVehicle": "Contractor vehicle",
+                "departmentVehicle": "Company vehicle"
+            },
+            "vehicleType": {
+                "car": "Car",
+                "motorbike": "Motorbike",
+                "truck": "Truck"
+            }
+        },
+        "button": {
+            "search": "Search",
+            "edit": "Edit",
+            "create": "Add new",
+            "account-unlock": "Unlock account",
+            "save": "Save",
+            "close": "Close",
+            "back": "Back",
+            "show": "Xem trước",
+            "device-permission": "Device permission",
+            "refresh": "Refresh",
+            "cancel": "Cancel",
+            "confirm": "Confirm",
+            "sync": "synchronization",
+            "account-lock": "Lock account",
+            "update": "Update",
+            "export": "Xuất dữ liệu",
+            "delete": "Delete",
+            "detail": "Detail",
+            "setup-privileges": "Setup privileges",
+            "setup-notification": "Setup notification",
+            "import": "Select file:"
+        }
+    },
+    "Button": {
+        "ZaloConfig": "Zalo config",
+        "Detail": "View Details",
+        "Config": "Config",
+        "AddComment": "Add comment",
+        "Cancel": "Cancel",
+        "Back": "Back",
+        "Delete": "Delete",
+        "Checkout": "Checkout",
+        "ExportExcel": "Export excel",
+        "Edit": "Edit",
+        "CreateIssue": "Create issue",
+        "ChangePassword": "Change Password",
+        "Save": "Save",
+        "ImportExcel": "Import Excel",
+        "CreateWarningForm": "Add sample",
+        "Luu": "Save",
+        "Refresh": "Refresh",
+        "Exit": "Exit",
+        "CheckZalo": "Check zalo",
+        "Create": "Create new",
+        "Hide": "Hide",
+        "Coordinate": "Coordinate",
+        "AddVehicle": "Add new vehicle"
+    },
+    "Swal": {
+        "Ok": "OK",
+        "ConfirmDelete": {
+            "Title": "Title",
+            "Text": "This record cannot be restored!"
+        },
+        "DeleteSuccess": "Delete role successfully!",
+        "Cancel": "Cancel"
+    },
+    "Message": {
+        "MessageDelete2": "This recording cannot be restored!",
+        "Exit": "Exit",
+        "Agree": "Agree",
+        "MessageDelete1": "Are you sure you want to delete?",
+        "CheckoutMessage1": "Are you sure you want to checkout?",
+        "CheckoutMessage2": "Do you want to continue?"
+    },
+    "Success": {
+        "CreateTemplate": "Create template successfully",
+        "ValidInformation": "Information valid",
+        "CreateNotification": "Save config successfully",
+        "Update": "Update successfully",
+        "UpdateTemplate": "Update template successfully",
+        "CreateCamera": "Create camera successfully",
+        "Delete": "Delete successfully",
+        "Create": "Create successfully",
+        "Checkout": "Checkout successfully",
+        "Warning": "Warning",
+        "CreateCompany": "Added company successfully",
+        "UpdateCompany": "Update company successfully",
+        "UpdateCamera": "Update camera successfully"
+    },
+    "Error": {
+        "Device": {
+            "Duplicate": "Status code already exists in the system"
+        },
+        "Status": {
+            "Duplicate": "Status code already exists in the system"
+        },
+        "IssueType": {
+            "Duplicate": "Status code already exists in the system"
+        },
+        "Project": {
+            "Duplicate": "Status code already exists in the system"
+        },
+        "Priority": {
+            "Duplicate": "Status code already exists in the system",
+            "PriorityUsed": "The priority is already in use. The priority cannot be deleted directly!"
+        },
+        "License": {
+            "AlreadyExists": "License already exists",
+            "NotFound": "License not found",
+            "HasExpired": "License has expired",
+            "Incorrect": "Incorrect device ID or incorrect Mac address"
+        },
+        "STDUsers": {
+            "Duplicate": "Status code already exists in the system"
+        },
+        "Error": "Error",
+        "NotValid": "Invalid information"
+    },
+    "Warning": {
+        "List": {
+            "SearchForm": {
+                "FromDate": "From Date",
+                "Status": "Status",
+                "Name": "Name",
+                "Read": "Read",
+                "ToDate": "To Date",
+                "NoRead": "Unread",
+                "EventType": "Warning type"
+            },
+            "Table": {
+                "Status": "Status",
+                "Name": "Name",
+                "Title": "Title",
+                "Link": "Link",
+                "Content": "Content",
+                "EventType": "Warning type",
+                "Operation": "Operation"
+            }
+        },
+        "Detail": {
+            "Form": {
+                "Name": "Name",
+                "Icon": "Icon",
+                "Content": "Content",
+                "EventType": "Warning type",
+                "AddCondition": "Add Condition",
+                "NotePlaceholder": "Enter notes...",
+                "Note": "Note",
+                "Title": "Title",
+                "Link": "Link",
+                "AlertCondition": "Alert Condition",
+                "SqlPlaceholder": "Enter SQL condition..."
+            }
+        },
+        "Condition": {
+            "Common": {
+                "Condition": "Điều kiện",
+                "GroupType": "Nhóm"
+            },
+            "Grid": {
+                "Column": {
+                    "Property": "Thuộc tính",
+                    "Value": "Giá trị",
+                    "Operator": "Toán tử",
+                    "ConditionType": "Loại điều kiện",
+                    "GroupType": "Kiểu điều kiện"
+                }
+            },
+            "ButtonTitle": {
+                "Add": "Add",
+                "AddGroup": "Thêm nhóm điều kiện"
+            }
+        }
+    },
+    "Refresh": {
+        "5s": "Every 5 seconds",
+        "Never": "Never",
+        "15m": "Every 15 minutes",
+        "1h": "Every 1 hours",
+        "2h": "Every 2 hours",
+        "5m": "Every 5 minutes"
+    },
+    "Export": {
+        "All": "All"
+    },
+    "Notification": "Notification",
+    "AllNotification": "All notification",
+    "VueGoodTable": {
+        "NextLabel": "Next",
+        "PrevLabel": "Previous",
+        "PageLabel": "page",
+        "OfLabel": "of",
+        "RowsPerPageLabel": "Rows per page"
+    },
+    "Bgrid": {
+        "Index": "No.",
+        "Sentence": {
+            "Intotal": "In total of",
+            "Record": "Records",
+            "ShowResultFrom": "Show results from",
+            "To": "To"
+        },
+        "Columns": "Columns",
+        "Pagesize": "Page size"
+    },
+    "Components": {
+        "ImageUpload": {
+            "OrClick": "or select from folder",
+            "DragFiles": "Drag files",
+            "Uploading": "Uploading",
+            "Success": "Upload success",
+            "UploadImages": "Upload images",
+            "Uploaded": "Uploaded",
+            "UploadAgain": "Upload again"
+        },
+        "Noti": {
+            "File": "File",
+            "Success": "Upload success"
+        }
+    },
+    "constants": {
+        "registerStatus": {
+            "registed": "Đã đăng ký",
+            "unregisted": "Chưa đăng ký"
+        },
+        "cargoStatus": {
+            "empty": "Empty",
+            "full": "Full",
+            "half": "Half"
+        }
+    },
+    "dayOfWeek": {
+        "monday": "Monday",
+        "thursday": "Thursday",
+        "sunday": "Sunday",
+        "saturday": "Saturday",
+        "tuesday": "Tuesday",
+        "friday": "Friday",
+        "wednesday": "Wednesday"
+    },
+    "direction": {
+        "in": "In",
+        "out": "Out"
+    },
+    "errorCode": {
+        "C_VEHICLE_500": "Error when creating vehicle",
+        "LU_GROUPS_500": "Error when loading groups",
+        "C_VEHICLE_200": "Vehicle created successfully",
+        "U_VEHICLE_500": "Error when updating vehicle",
+        "U_VEHICLE_200": "Vehicle updated successfully",
+        "LU_CONTRACTORS_TREE_500": "Error when loading contractors",
+        "LU_DEPARTMENTS/EMPLOYEES_500": "Lỗi khi tải dữ liệu phòng ban/nhân viên",
+        "LU_DEPARTMENTS_TREE_500": "Error when loading departments"
+    },
+    "label": {
+        "nameOrCode": "Mã/Tên",
+        "status": "Status",
+        "type": "Vehicle type",
+        "device": "Device",
+        "area": "Area",
+        "dateTime": "Date time"
+    },
+    "StatusList": {
+        "Inactive": "Inactive",
+        "Active": "Active"
+    },
+    "Statuses": {
+        "List": {
+            "ListStatus": {
+                "Inprogress": "In Progress",
+                "Done": "Done",
+                "ToDo": "To Do"
+            },
+            "SearchForm": {
+                "StatusId": "Status Code"
+            },
+            "Table": {
+                "Operation": "Operation",
+                "Type": "Status Type",
+                "statusId": "Status Code",
+                "Name": "Name",
+                "Color": "Car color"
+            }
+        },
+        "Detail": {
+            "Form": {
+                "StatusId": "Status Code",
+                "Type": "Status Type",
+                "Name": "Name",
+                "Color": "Car color"
+            }
+        },
+        "error": {
+            "STATUS_500": "An error occurred, please try again later!",
+            "U_STATUS_409": "Status code already exists!",
+            "C_STATUS_200": "Status added successfully!",
+            "U_STATUS_200": "Status updated successfully!",
+            "C_STATUS_404": "Parent status does not exist!",
+            "C_STATUS_409": "Status code already exists!",
+            "D_STATUS_200": "Status deleted successfully!",
+            "D_STATUS_400": "Status is in use elsewhere, cannot be deleted!"
+        }
+    },
+    "Nav": {
+        "Groups": "Groups",
+        "TosSyncInfo": "Port Entry/Exit Schedule",
+        "Classes": "Classes",
+        "VirtualFenceEvent": "Virtual fence event",
+        "Devices": "Devices",
+        "Student": "Students",
+        "Problem": "Issues",
+        "Areas": "Areas",
+        "VehicleEvent": "Vehicle event",
+        "Dashboard": "Dashboard",
+        "Config": "Config",
+        "Roles": "Roles",
+        "VehicleDetailReport": "Vehicle detail report",
+        "EventManagement": "Event management",
+        "Courses": "Courses",
+        "WaterWarning": "Water warning",
+        "MapDashboard": "Map",
+        "TimeAccesses": "Time accesses",
+        "WaterEvent": "Water level monitoring",
+        "FaceEvent": "Face event",
+        "Test": "Tests",
+        "FireEvent": "Fire event",
+        "Guest": "Guest",
+        "Manufacturing": "Production reports",
+        "Company": "Company",
+        "restrictedZonesEvent": "Restricted zones event",
+        "ReportVehicleWarning": "Report Vehicle Warning",
+        "SystemDashboard": "System resources",
+        "NotificationEventTemplate": "Notification event template",
+        "CarEvent": "Truck monitoring",
+        "FireworkDashboard": "Firework",
+        "Issue": "Issue",
+        "PeopleCountEvent": "People count event",
+        "reportFireEvent": "Fire And Smoke Incident Statistics",
+        "ReportsFireworkInspectionStatistics25": "Firework inspection statistics 25",
+        "Users": "Users",
+        "Employees": "Employees",
+        "Event": "Event",
+        "DashboardItinerary": "Itinerary dashboard",
+        "Reports": "Reports",
+        "Question": "Questions",
+        "ConveyorReport": "Conveyor report",
+        "TrafficViolationEvent": "Traffic Violation Event",
+        "Result": "Results",
+        "SystemManagement": "System management",
+        "Vehicles": "Vehicles",
+        "Departments": "Departments",
+        "ConveyorEvent": "Conveyor event",
+        "Contractors": "Contractors",
+        "CategoryManagement": "Category management",
+        "AuditLogs": "AuditLogs",
+        "ProtectiveEquipmentEvent": "Protective equipment event",
+        "Lesson": "Lesson",
+        "Machines": "Machines",
+        "Live": "Live",
+        "VehicleViolationReports": "VehicleViolation reports",
+        "EventDashboard": "Dashboard events",
+        "FireWorkEvent": "Fire work event",
+        "SupervisorReport": "Supervisor report",
+        "GroupAccesses": "Group accesses",
+        "productionLineEvent": "Production line events"
+    },
+    "AccountSetting": {
+        "Time": {
+            "Start": "Start time",
+            "End": "End time",
+            "InValid": "End time must be greater than start time"
+        },
+        "Title": "Title",
+        "Feature": {
+            "Sound": "Sound",
+            "Email": "Email",
+            "Zalo": "Zalo",
+            "App": "App",
+            "Browser": "Browser"
+        }
+    },
+    "ChangePassword": {
+        "Header": {
+            "Account": "Account",
+            "ChangePass": "Change password"
+        },
+        "Label": {
+            "NewPass": "New password",
+            "RePass": "Re-enter the password",
+            "OldPass": "Old password"
+        },
+        "Message": {
+            "ChangeSuccess": "Password changed successfully. Please log in again."
+        }
+    },
+    "message": {
+        "tableHeader": {
+            "status": "Status",
+            "email": "Email",
+            "name": "Name",
+            "salary": "Salary",
+            "date": "Date",
+            "action": "Action"
+        },
+        "seachLabel": "Search",
+        "SearchPlaceholder": "Search",
+        "title": "Card Title",
+        "pageText2": "entries",
+        "pagelength": "Showing 1 to",
+        "of": "of",
+        "text": "Cake sesame snaps cupcake gingerbread danish I love gingerbread. Apple pie pie jujubes chupa chups muffin halvah lollipop. Chocolate cake oat cake tiramisu marzipan sugar plum. Donut sweet pie oat cake dragée fruitcake cotton candy lemon drops."
+    }
+}

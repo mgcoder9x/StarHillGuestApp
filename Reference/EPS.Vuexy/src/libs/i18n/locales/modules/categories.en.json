@@ -1,0 +1,1950 @@
+{
+    "categories": {
+        "machines": {
+            "common": {
+                "form": {
+                    "placeholder": {
+                        "mac": "MAC address should be 17 digits",
+                        "autoLaunch": "Auto-launch application",
+                        "machineName": "Device name",
+                        "screenSaver": "Screen saver mode",
+                        "fraudProof": "Fraud proof",
+                        "serverIp": "Server IP address should be IPv4 format or domain name",
+                        "machineFunction": "Device function",
+                        "areaName": "Area",
+                        "autoStart": "Start/Stop auto-start time",
+                        "description": "Description",
+                        "delay": "Delay time between 2 identifications (mili seconds)",
+                        "identificationDistance": "Identification distance (cm)",
+                        "identificationThreshold": "Identification threshold",
+                        "compName": "Company",
+                        "led": "Use LED",
+                        "imei": "IMEI number should be 15 digits",
+                        "language": "Language",
+                        "temperatureThreshold": "Temperature alert threshold (°C)",
+                        "logoSelect": "Drag logo here..."
+                    },
+                    "label": {
+                        "logo": "Logo",
+                        "mac": "MAC address should be 17 digits",
+                        "autoLaunch": "Auto-launch application",
+                        "machineName": "Device name",
+                        "screenSaver": "Screen saver mode",
+                        "fraudProof": "Fraud proof",
+                        "serverIp": "Server IP address",
+                        "machineFunction": "Device function",
+                        "areaName": "Area",
+                        "restartTime": "Restart time",
+                        "autoStart": "Start/Stop auto-start time",
+                        "description": "Description",
+                        "delay": "Delay time between 2 identifications (mili seconds)",
+                        "identificationDistance": "Identification distance (cm)",
+                        "identificationThreshold": "Identification threshold",
+                        "compName": "Company",
+                        "led": "Use LED",
+                        "imei": "IMEI number",
+                        "language": "Language",
+                        "temperatureThreshold": "Temperature alert threshold (°C)",
+                        "logoSelect": "Drag logo here..."
+                    }
+                }
+            },
+            "error": {
+                "C_MACHINE_200": "Add device successfully!",
+                "C_MACHINE_409": "Device code already exists!",
+                "D_MACHINE_200": "Delete device successfully!",
+                "U_MACHINE_409": "Device code already exists!",
+                "MACHINE_500": "Some error occurred. Please try again later!",
+                "U_MACHINE_200": "Update device successfully!"
+            },
+            "validation": {
+                "serverIp": "Server IP address should be IPv4 format or domain name",
+                "mac": "MAC address should be 17 digits",
+                "imei": "IMEI number should be 15 digits"
+            },
+            "list": {
+                "table": {
+                    "label": {
+                        "status": "Status",
+                        "machineName": "Device name",
+                        "areaName": "Area",
+                        "description": "Description",
+                        "updateTime": "Last synchronization time",
+                        "companyName": "Company",
+                        "action": "Action"
+                    }
+                },
+                "searchForm": {
+                    "placeholder": {
+                        "areaName": "Area",
+                        "machineNameDescript": "Enter value",
+                        "compName": "Company"
+                    },
+                    "label": {
+                        "areaName": "Area",
+                        "machineNameDescript": "Enter value",
+                        "compName": "Company"
+                    }
+                }
+            }
+        },
+        "contractors": {
+            "common": {
+                "form": {
+                    "placeholder": {
+                        "contractorCode": "Code",
+                        "note": "Note",
+                        "parentContractor": "Select parent contractor",
+                        "contractorName": "Contractor name"
+                    },
+                    "label": {
+                        "contractorCode": "Code",
+                        "note": "Note",
+                        "parentContractor": "Select parent contractor",
+                        "contractorName": "Contractor name"
+                    }
+                }
+            },
+            "list": {
+                "table": {
+                    "label": {
+                        "contractorCode": "Code",
+                        "note": "Note",
+                        "action": "Action",
+                        "contractorName": "Contractor name"
+                    }
+                },
+                "searchForm": {
+                    "placeholder": {
+                        "contractorCodeName": "Contractor code or name"
+                    },
+                    "label": {
+                        "contractorCodeName": "Contractor code or name"
+                    }
+                }
+            },
+            "error": {
+                "C_DEPARTMENT_404": "Parent department is not exist!",
+                "D_DEPARTMENT_200": "Delete department successfully!",
+                "C_DEPARTMENT_200": "Create department successfully!",
+                "C_DEPARTMENT_409": "Department code is already exist!",
+                "U_DEPARTMENT_200": "Update department successfully!",
+                "U_DEPARTMENT_409": "Department code is already exist!",
+                "DEPARTMENT_500": "Some error occurred. Please try again later!"
+            }
+        },
+        "Tour": "Tour",
+        "Form Wizard": "Form Wizard",
+        "Checkbox": "Checkbox",
+        "Without Menu": "Without Menu",
+        "Menu Level 2.2": "Menu Level 2.2",
+        "BS Table": "BS Table",
+        "Todo": "Todo",
+        "Sidebar": "Sidebar",
+        "Details": "Details",
+        "Layout Boxed": "Layout Boxed",
+        "Promotional": "Promotional",
+        "Context Menu": "Context Menu",
+        "User": "User",
+        "departments": {
+            "common": {
+                "form": {
+                    "placeholder": {
+                        "parentDepartment": "Select parent department",
+                        "departmentName": "Department",
+                        "note": "Note",
+                        "departmentCode": "Code"
+                    },
+                    "label": {
+                        "parentDepartment": "Select parent department",
+                        "departmentName": "Department",
+                        "note": "Note",
+                        "departmentCode": "Code"
+                    }
+                }
+            },
+            "list": {
+                "table": {
+                    "label": {
+                        "departmentName": "Department",
+                        "note": "Note",
+                        "departmentCode": "Code",
+                        "action": "Action"
+                    }
+                },
+                "searchForm": {
+                    "placeholder": {
+                        "departmentCodeName": "Department code or name"
+                    },
+                    "label": {
+                        "departmentCodeName": "Department code or name"
+                    }
+                }
+            },
+            "error": {
+                "C_DEPARTMENT_404": "Parent department is not exist!",
+                "D_DEPARTMENT_200": "Delete department successfully!",
+                "C_DEPARTMENT_200": "Create department successfully!",
+                "C_DEPARTMENT_409": "Department code is already exist!",
+                "U_DEPARTMENT_200": "Update department successfully!",
+                "U_DEPARTMENT_409": "Department code is already exist!",
+                "DEPARTMENT_500": "Some error occurred. Please try again later!"
+            }
+        },
+        "Menu Level 3.1": "Menu Level 3.1",
+        "Colors": "Colors",
+        "Wishlist": "Wishlist",
+        "Textarea": "Textarea",
+        "Dashboards": "Dashboards",
+        "Tab": "Tab",
+        "Preview": "Preview",
+        "Carousel": "Carousel",
+        "Drag & Drop": "Drag & Drop",
+        "guess": {
+            "common": {
+                "form": {
+                    "placeholder": {
+                        "avatarPath": "Avatar path",
+                        "jobDuties": "Job duties",
+                        "birthday": "Birthday",
+                        "code": "Code",
+                        "gender": "Gender",
+                        "citizenId": "Identification number",
+                        "position": "Position",
+                        "groupName": "Access group name",
+                        "compName": "Company",
+                        "phoneNumber": "Phone number",
+                        "status": "Status",
+                        "email": "Email",
+                        "depName": "Department",
+                        "fullname": "Fullname"
+                    },
+                    "label": {
+                        "avartarPath": "avartar path",
+                        "avatarPath": "Avatar path",
+                        "jobDuties": "Job duties",
+                        "code": "Code",
+                        "birthday": "Birthday",
+                        "gender": "Gender",
+                        "citizenId": "Identification number",
+                        "position": "Position",
+                        "groupName": "Access group name",
+                        "compName": "Company",
+                        "phoneNumber": "Phone number",
+                        "status": "Status",
+                        "email": "Email",
+                        "depName": "Department",
+                        "fullname": "Fullname"
+                    }
+                }
+            },
+            "error": {
+                "D_EMPLOYEES_200": "Delete employee successfully!",
+                "C_EMPLOYEES_200": "Create employee successfully!",
+                "IMPORT_SUCCESS": "Import successful",
+                "U_EMPLOYEES_200": "Update employee successfully!",
+                "EMPLOYEES_422": "Please select a valid image!",
+                "EMPLOYEES_488": "Identification number already exists, please re-enter",
+                "EMPLOYEES_487": "Please enter a image!",
+                "EMPLOYEES_500": "An error occurred, please try again later!"
+            },
+            "import": {
+                "importPlaceholder": "Please select employee list file",
+                "importSample": "Download sample file",
+                "fileInputXlxs": "Please select a file with .xlsx format",
+                "importRequire": "Please select file",
+                "header": "Research fire and smoke data",
+                "import": "Select file:",
+                "fileInput50Mb": "Please select a file less than 5MB in size."
+            },
+            "list": {
+                "table": {
+                    "label": {
+                        "departmentName": "Department",
+                        "citizenId": "Identification number",
+                        "compName": "Company",
+                        "status": "Status",
+                        "code": "Code",
+                        "image": "Image",
+                        "name": "Name",
+                        "gender": "Gender",
+                        "action": "Action"
+                    }
+                },
+                "searchForm": {
+                    "placeholder": {
+                        "citizenId": "Identification number",
+                        "department": "Department",
+                        "compName": "Company",
+                        "status": "Status",
+                        "imageStatus": "Image status",
+                        "gender": "Gender",
+                        "nameCode": "Enter value"
+                    },
+                    "label": {
+                        "citizenId": "Identification number",
+                        "department": "Department",
+                        "compName": "Company",
+                        "advancedSearch": "Advanced search",
+                        "status": "Status",
+                        "imageStatus": "Image status",
+                        "gender": "Gender",
+                        "nameCode": "Enter value"
+                    }
+                }
+            }
+        },
+        "Alert": "Alert",
+        "Layout Blank": "Layout Blank",
+        "Charts": "Charts",
+        "Tooltip": "Tooltip",
+        "Echart": "Echart",
+        "Dropdown": "Dropdown",
+        "Pagination Nav": "Pagination Nav",
+        "Welcome": "Welcome",
+        "Good Table": "Good Table",
+        "Menu Levels": "Menu Levels",
+        "eCommerce": "eCommerce",
+        "Pill": "Pill",
+        "Charts & Maps": "Charts & Maps",
+        "Analytic": "Analytic",
+        "Pages": "Pages",
+        "Pagination": "Pagination",
+        "Form Timepicker": "Form Timepicker",
+        "Apps & Pages": "Apps & Pages",
+        "Button Group": "Button Group",
+        "Verify Email": "Verify Email",
+        "Toasts": "Toasts",
+        "Menu Level 2.1": "Menu Level 2.1",
+        "Quill Editor": "Quill Editor",
+        "Apex Chart": "Apex Chart",
+        "employees": {
+            "common": {
+                "form": {
+                    "placeholder": {
+                        "fullName": "Full name",
+                        "avatarPath": "Avatar path",
+                        "jobDuties": "Job duties",
+                        "birthday": "Birthday",
+                        "code": "Code",
+                        "gender": "Gender",
+                        "citizenId": "Identification number",
+                        "position": "Position",
+                        "groupName": "Access group name",
+                        "compName": "Company",
+                        "phoneNumber": "Phone number",
+                        "status": "Status",
+                        "email": "Email",
+                        "depName": "Department",
+                        "cardNumber": "Card number",
+                        "receiver": "Receiver",
+                        "address": "Address",
+                        "startTime": "Checkin",
+                        "endTime": "Checkout",
+                        "notes": "Job content",
+                        "personType": "Choose customer type",
+                        "fullname": "Fullname",
+                        "contactor": "Contactor",
+                        "blacklist": "Blacklist name"
+                    },
+                    "label": {
+                        "blacklist": "Blacklist name",
+                        "fullName": "Full name",
+                        "readQRCode": "Read QR code",
+                        "avartarPath": "avartar path",
+                        "avatarPath": "Avatar path",
+                        "jobDuties": "Job duties",
+                        "code": "Code",
+                        "birthday": "Birthday",
+                        "gender": "Gender",
+                        "citizenId": "Identification number",
+                        "position": "Position",
+                        "groupName": "Access group name",
+                        "compName": "Company",
+                        "phoneNumber": "Phone number",
+                        "status": "Status",
+                        "email": "Email",
+                        "depName": "Department",
+                        "fullname": "Fullname",
+                        "findFace": "Find by face",
+                        "pointIdentify": "Identification point",
+                        "filterResult": "Filter results by similarity",
+                        "cardNumber": "Card number",
+                        "receiver": "Receiver",
+                        "address": "Address",
+                        "startTime": "Start time",
+                        "endTime": "End time",
+                        "notes": "Job content",
+                        "personType": "Type",
+                        "faceImage": "Drag & drop or select a face image",
+                        "contactor": "Contactor"
+                    },
+                    "roles": {
+                        "title": "Access",
+                        "area": "Area",
+                        "timeFrom": "From time",
+                        "timeTo": "To time",
+                        "action": "Action"
+                    },
+                    "validation": {
+                        "endTimeGreaterThanStartTime": "End time must be greater than start time"
+                    },
+                    "error": {
+                        "invalidImageFormat": "Invalid file format. Please select an image file (JPG, PNG, GIF, BMP, WEBP)",
+                        "cannotReadFile": "Cannot read file, please try again"
+                    }
+                },
+                "imageStatus": {
+                    "has": "Has image",
+                    "none": "No image"
+                }
+            },
+            "readIdentification": {
+                "noDevices": "No devices found",
+                "deviceConnect": "Device connect: "
+            },
+            "error": {
+                "D_EMPLOYEES_200": "Delete employee successfully!",
+                "C_EMPLOYEES_200": "Create employee successfully!",
+                "IMPORT_SUCCESS": "Import successful",
+                "U_EMPLOYEES_200": "Update employee successfully!",
+                "EMPLOYEES_422": "Please select a valid image!",
+                "EMPLOYEES_488": "Identification number already exists, please re-enter",
+                "EMPLOYEES_487": "Please enter a image!",
+                "EMPLOYEES_500": "An error occurred, please try again later!"
+            },
+            "status": {
+                "active": "Active",
+                "inActive": "Ngưng hoạt động"
+            },
+            "gender": {
+                "female": "Female",
+                "male": "Male"
+            },
+            "import": {
+                "IMPORT_ERROR_COUNT": "Failed records",
+                "Download": "Download",
+                "importSample": "Download sample file",
+                "IMPORT_TOTAL_COUNT": "Total records",
+                "header": "Research fire and smoke data",
+                "importRequire": "Please select file",
+                "Close": "Close",
+                "importPlaceholder": "Please select employee list file",
+                "IMPORT_SUCCESS": "Import successful",
+                "fileInputXlxs": "Please select a file with .xlsx format",
+                "IMPORT_SUCCESS_COUNT": "Successfully imported",
+                "IMPORT_ERROR": "Import failed",
+                "import": "Select file:",
+                "resultsTitle": "Import Complete",
+                "fileInput50Mb": "Please select a file less than 5MB in size."
+            },
+            "list": {
+                "table": {
+                    "label": {
+                        "fullname": "Full name",
+                        "contractor": "Contractor",
+                        "departmentName": "Department",
+                        "citizenId": "Identification number",
+                        "compName": "Company",
+                        "status": "Status",
+                        "code": "Code",
+                        "image": "Image",
+                        "name": "Name",
+                        "gender": "Gender",
+                        "cardNumber": "Card number",
+                        "receiver": "Receiver",
+                        "startTime": "Check-in time",
+                        "endTime": "Check-out time",
+                        "action": "Action"
+                    }
+                },
+                "searchForm": {
+                    "placeholder": {
+                        "citizenId": "Identification number",
+                        "department": "Department",
+                        "compName": "Company",
+                        "status": "Status",
+                        "imageStatus": "Image status",
+                        "gender": "Gender",
+                        "nameCode": "Enter value",
+                        "contractor": "Select value"
+                    },
+                    "label": {
+                        "contractor": "Contractor",
+                        "citizenId": "Identification number",
+                        "department": "Department",
+                        "compName": "Company",
+                        "advancedSearch": "Advanced search",
+                        "status": "Status",
+                        "imageStatus": "Image status",
+                        "gender": "Gender",
+                        "nameCode": "Enter value",
+                        "startTime": "Entry Time",
+                        "endTime": "Exit Time"
+                    }
+                }
+            },
+            "createDetail": {
+                "takePhoto": "Take photo",
+                "choosePhoto": "Choose photo",
+                "verify": "Verify",
+                "chooseNewPhoto": "Choose new photo",
+                "infoPhoto": "Document photo",
+                "guestInfo": "GUEST INFOMATION",
+                "entryAndExitInfo": "ENTRY AND EXIT INFOMATION"
+            }
+        },
+        "blacklist": {
+            "common": {
+                "form": {
+                    "placeholder": {
+                        "fullName": "Full name",
+                        "avatarPath": "Avatar path",
+                        "jobDuties": "Job duties",
+                        "birthday": "Birthday",
+                        "code": "Code",
+                        "gender": "Gender",
+                        "citizenId": "Identification number",
+                        "position": "Position",
+                        "groupName": "Access group name",
+                        "compName": "Company",
+                        "phoneNumber": "Phone number",
+                        "status": "Status",
+                        "email": "Email",
+                        "depName": "Department",
+                        "cardNumber": "Card number",
+                        "receiver": "Receiver",
+                        "address": "Address",
+                        "startTime": "Checkin",
+                        "endTime": "Checkout",
+                        "notes": "Job content",
+                        "personType": "Choose customer type",
+                        "fullname": "Fullname",
+                        "contactor": "Contactor",
+                        "blacklist": "Blacklist name"
+                    },
+                    "label": {
+                        "blacklist": "Blacklist name",
+                        "fullName": "Full name",
+                        "readQRCode": "Read QR code",
+                        "avartarPath": "avartar path",
+                        "avatarPath": "Avatar path",
+                        "jobDuties": "Job duties",
+                        "code": "Code",
+                        "birthday": "Birthday",
+                        "gender": "Gender",
+                        "citizenId": "Identification number",
+                        "position": "Position",
+                        "groupName": "Access group name",
+                        "compName": "Company",
+                        "phoneNumber": "Phone number",
+                        "status": "Status",
+                        "email": "Email",
+                        "depName": "Department",
+                        "fullname": "Fullname",
+                        "findFace": "Find by face",
+                        "pointIdentify": "Identification point",
+                        "filterResult": "Filter results by similarity",
+                        "cardNumber": "Card number",
+                        "receiver": "Receiver",
+                        "address": "Address",
+                        "startTime": "Start time",
+                        "endTime": "End time",
+                        "notes": "Job content",
+                        "personType": "Type",
+                        "faceImage": "Drag & drop or select a face image",
+                        "contactor": "Contactor"
+                    },
+                    "roles": {
+                        "title": "Access",
+                        "area": "Area",
+                        "timeFrom": "From time",
+                        "timeTo": "To time",
+                        "action": "Action"
+                    },
+                    "validation": {
+                        "endTimeGreaterThanStartTime": "End time must be greater than start time"
+                    },
+                    "error": {
+                        "invalidImageFormat": "Invalid file format. Please select an image file (JPG, PNG, GIF, BMP, WEBP)",
+                        "cannotReadFile": "Cannot read file, please try again"
+                    }
+                },
+                "imageStatus": {
+                    "has": "Has image",
+                    "none": "No image"
+                }
+            },
+            "readIdentification": {
+                "noDevices": "No devices found",
+                "deviceConnect": "Device connect: "
+            },
+            "error": {
+                "D_EMPLOYEES_200": "Delete employee successfully!",
+                "C_EMPLOYEES_200": "Create employee successfully!",
+                "IMPORT_SUCCESS": "Import successful",
+                "U_EMPLOYEES_200": "Update employee successfully!",
+                "EMPLOYEES_422": "Please select a valid image!",
+                "EMPLOYEES_488": "Identification number already exists, please re-enter",
+                "EMPLOYEES_487": "Please enter a image!",
+                "EMPLOYEES_500": "An error occurred, please try again later!"
+            },
+            "status": {
+                "active": "Active",
+                "inActive": "Ngưng hoạt động"
+            },
+            "gender": {
+                "female": "Female",
+                "male": "Male"
+            },
+            "import": {
+                "IMPORT_ERROR_COUNT": "Failed records",
+                "Download": "Download",
+                "importSample": "Download sample file",
+                "IMPORT_TOTAL_COUNT": "Total records",
+                "header": "Import blacklist",
+                "importRequire": "Please select file",
+                "Close": "Close",
+                "importPlaceholder": "Please select blacklist list file",
+                "IMPORT_SUCCESS": "Import successful",
+                "fileInputXlxs": "Please select a file with .xlsx format",
+                "IMPORT_SUCCESS_COUNT": "Successfully imported",
+                "IMPORT_ERROR": "Import failed",
+                "import": "Select file:",
+                "resultsTitle": "Import Complete",
+                "fileInput50Mb": "Please select a file less than 5MB in size."
+            },
+            "list": {
+                "table": {
+                    "label": {
+                        "fullname": "Full name",
+                        "contractor": "Contractor",
+                        "departmentName": "Department",
+                        "citizenId": "Identification number",
+                        "compName": "Company",
+                        "status": "Status",
+                        "code": "Code",
+                        "image": "Image",
+                        "name": "Name",
+                        "gender": "Gender",
+                        "cardNumber": "Card number",
+                        "receiver": "Receiver",
+                        "startTime": "Check-in time",
+                        "endTime": "Check-out time",
+                        "action": "Action"
+                    }
+                },
+                "searchForm": {
+                    "placeholder": {
+                        "citizenId": "Identification number",
+                        "department": "Department",
+                        "compName": "Company",
+                        "status": "Status",
+                        "imageStatus": "Image status",
+                        "gender": "Gender",
+                        "nameCode": "Enter value",
+                        "contractor": "Select value"
+                    },
+                    "label": {
+                        "contractor": "Contractor",
+                        "citizenId": "Identification number",
+                        "department": "Department",
+                        "compName": "Company",
+                        "advancedSearch": "Advanced search",
+                        "status": "Status",
+                        "imageStatus": "Image status",
+                        "gender": "Gender",
+                        "nameCode": "Enter value",
+                        "startTime": "Entry Time",
+                        "endTime": "Exit Time"
+                    }
+                }
+            },
+            "createDetail": {
+                "takePhoto": "Take photo",
+                "choosePhoto": "Choose photo",
+                "verify": "Verify",
+                "chooseNewPhoto": "Choose new photo",
+                "infoPhoto": "Document photo",
+                "guestInfo": "GUEST INFOMATION",
+                "entryAndExitInfo": "ENTRY AND EXIT INFOMATION"
+            }
+        },
+        "Tree": "Tree",
+        "Miscellaneous": "Miscellaneous",
+        "Form Tag": "Form Tag",
+        "Menu Level 3.2": "Menu Level 3.2",
+        "Authentication": "Authentication",
+        "View": "View",
+        "Aspect": "Aspect",
+        "Login v2": "Login v2",
+        "Add": "Add",
+        "Checkout": "Checkout",
+        "Shop": "Shop",
+        "Under Maintenance": "Under Maintenance",
+        "Faq": "Faq",
+        "Form Repeater": "Form Repeater",
+        "Form Rating": "Form Rating",
+        "Register v2": "Register v2",
+        "Calendar": "Calendar",
+        "Page Layouts": "Page Layouts",
+        "Access Control": "Access Control",
+        "Collapsed Menu": "Collapsed Menu",
+        "Progress": "Progress",
+        "Coming Soon": "Coming Soon",
+        "tosSyncInfo": {
+            "accessAt": "Access time",
+            "eta": "ETA",
+            "dateTimeTo": "To date",
+            "cargoCode": "Cargo Code",
+            "licensePlate": "License plate",
+            "dateTime": "Date time",
+            "dateTimeFrom": "From date",
+            "planCode": "Plan Code",
+            "vesselCode": "Vessel Code",
+            "vehicleLicensePlate": "License plate"
+        },
+        "Form Datepicker": "Form Datepicker",
+        "Basic": "Basic",
+        "Support": "Support",
+        "Image": "Image",
+        "waterWarning": {
+            "Field": {
+                "Action": "Action",
+                "Name": "Name",
+                "MaxValue": "Max (m)",
+                "Description": "Description",
+                "MinValue": "Min (m)"
+            },
+            "Label": {
+                "search": {
+                    "name": "Name"
+                },
+                "name": "Name",
+                "notification": {
+                    "success": "Deleted successfully",
+                    "error": "Error deleting data"
+                },
+                "button": {
+                    "detail": "Detail",
+                    "update": "Update",
+                    "create": "Add new",
+                    "add": "Add",
+                    "save": "Save",
+                    "cancel": "Cancel",
+                    "back": "Back",
+                    "delete": "Delete"
+                }
+            }
+        },
+        "I18n": "I18n",
+        "Overlay": "Overlay",
+        "Swiper": "Swiper",
+        "Input": "Input",
+        "Time": "Time",
+        "Reset Password v2": "Reset Password v2",
+        "Input Group": "Input Group",
+        "List": "List",
+        "Search": "Search",
+        "Analytics": "Analytics",
+        "Login v1": "Login v1",
+        "Radio": "Radio",
+        "Leaflet": "Leaflet",
+        "Detail": "View Details",
+        "Statistics": "Statistics",
+        "spinner": "spinner",
+        "Date Time Picker": "Date Time Picker",
+        "Cards": "Cards",
+        "Extensions": "Extensions",
+        "Switch": "Switch",
+        "Clipboard": "Clipboard",
+        "Forms Elements": "Forms elements",
+        "Media": "Image / Video",
+        "Spinbutton": "Spinbutton",
+        "Auto Suggest": "Auto Suggest",
+        "Forget Password v2": "Forget Password v2",
+        "Chat": "Chat",
+        "timeAccesses": {
+            "common": {
+                "form": {
+                    "placeholder": {
+                        "name": "Name",
+                        "compName": "Company",
+                        "weekDays": "Time slots"
+                    },
+                    "label": {
+                        "startTime": "Start",
+                        "compName": "Company",
+                        "weekDays": "Time slots",
+                        "endTime": "End",
+                        "name": "Name",
+                        "timeSlot": "Time slot"
+                    }
+                }
+            },
+            "list": {
+                "table": {
+                    "label": {
+                        "name": "Name",
+                        "compName": "Company",
+                        "action": "Action"
+                    }
+                },
+                "searchForm": {
+                    "placeholder": {
+                        "compName": "Company",
+                        "name": "Name"
+                    },
+                    "label": {
+                        "compName": "Company",
+                        "name": "Name"
+                    }
+                }
+            },
+            "error": {
+                "C_TIMEACCESS_200": "Add time slot successfully!",
+                "C_TIMEACCESS_409": "Start time must be earlier than end time!",
+                "D_TIMEACCESS_200": "Delete time slot successfully!",
+                "TIMEACCESS_500": "Some error occurred. Please try again later!",
+                "U_TIMEACCESS_409": "Start time must be earlier than end time!",
+                "U_GROUPACCESS_200": "Update access successfully!",
+                "U_TIMEACCESS_200": "Update time slot successfully!"
+            }
+        },
+        "Deactivate Account": "Deactivate Account",
+        "Advance": "Advance",
+        "Forms & Tables": "Forms & Tables",
+        "Collapse": "Collapse",
+        "Popover": "Popover",
+        "Breadcrumb": "Breadcrumb",
+        "Components": "Components",
+        "Toastification": "Toastification",
+        "Sweet Alert": "Sweet Alert",
+        "Documentation": "Documentation",
+        "groupAccesses": {
+            "common": {
+                "form": {
+                    "placeholder": {
+                        "deviceName": "Chọn giá trị",
+                        "groupName": "Access group name",
+                        "compName": "Company",
+                        "machineName": "Device name",
+                        "areaName": "Area",
+                        "timeAccessName": "Time slot"
+                    },
+                    "label": {
+                        "effectiveFrom": "Effective start date",
+                        "deviceName": "Camera",
+                        "groupName": "Access group name",
+                        "compName": "Company",
+                        "machineName": "Device name",
+                        "areaName": "Area",
+                        "timeAccessName": "Time slot",
+                        "effectiveTo": "Effective end date"
+                    }
+                }
+            },
+            "list": {
+                "table": {
+                    "label": {
+                        "effectiveFrom": "Effective start date",
+                        "groupName": "Access group name",
+                        "compName": "Company",
+                        "areaName": "Area",
+                        "timeAccessName": "Time slot",
+                        "effectiveTo": "Effective end date",
+                        "action": "Action"
+                    }
+                },
+                "searchForm": {
+                    "placeholder": {
+                        "effectiveFrom": "Effective start date",
+                        "groupName": "Access group name",
+                        "compName": "Company",
+                        "areaName": "Area",
+                        "timeAccessName": "Time slot",
+                        "effectiveTo": "Effective end date"
+                    },
+                    "label": {
+                        "effectiveFrom": "Effective start date",
+                        "groupName": "Access group name",
+                        "compName": "Company",
+                        "areaName": "Area",
+                        "timeAccessName": "Time slot",
+                        "effectiveTo": "Effective end date"
+                    }
+                }
+            },
+            "error": {
+                "C_GROUPACCESS_200": "Add access successfully!",
+                "D_GROUPACCESS_200": "Delete access successfully!",
+                "U_GROUPACCESS_200": "Update access successfully!",
+                "GROUPACCESS_500": "An error occurred, please try again later!"
+            }
+        },
+        "Account Settings": "Account Settings",
+        "devices": {},
+        "Blog": "Blog",
+        "Edit": "Edit",
+        "Select": "All",
+        "Register v1": "Register v1",
+        "Video Player": "Video Player",
+        "Layout Empty": "Layout Empty",
+        "Card Action": "Card Action",
+        "Avatar": "Avatar",
+        "Embed": "Embed",
+        "Modal": "Modal",
+        "Disabled Menu": "Disabled Menu",
+        "Timeline": "Timeline",
+        "File Input": "File Input",
+        "Pill Badge": "Pill Badge",
+        "Knowledge Base": "Knowledge Base",
+        "Apps": "Apps",
+        "Reset Password": "Reset Password",
+        "areas": {
+            "common": {
+                "form": {
+                    "placeholder": {
+                        "note": "Note",
+                        "parentArea": "Select parent area",
+                        "areaCode": "Code",
+                        "areaName": "Area"
+                    },
+                    "label": {
+                        "maptypeValue": {
+                            "map": "Map",
+                            "img": "Image"
+                        },
+                        "note": "Note",
+                        "parentArea": "Select parent area",
+                        "areaCode": "Code",
+                        "areaName": "Area",
+                        "coordinate": "Coordinate",
+                        "maptype": "Map type",
+                        "treeIndex": "Index"
+                    }
+                }
+            },
+            "list": {
+                "table": {
+                    "label": {
+                        "note": "Note",
+                        "areaCode": "Code",
+                        "areaName": "Area",
+                        "treeIndex": "Index",
+                        "action": "Action"
+                    }
+                },
+                "searchForm": {
+                    "placeholder": {
+                        "areaCodeName": "Area code or name"
+                    },
+                    "label": {
+                        "areaCodeName": "Area code or name"
+                    }
+                }
+            },
+            "error": {
+                "C_AREA_409": "Area code is already exist!",
+                "D_AREA_200": "Delete area successfully!",
+                "U_AREA_409": "Area code is already exist!",
+                "AREA_500": "Some error occurred. Please try again later!",
+                "C_AREA_404": "Parent area is not exist!",
+                "U_AREA_200": "Update area successfully!",
+                "C_AREA_200": "Create area successfully!",
+                "C_TREEINDEX_409": "Tree index already exists!",
+                "U_TREEINDEX_409": "Tree index already exists!"
+            }
+        },
+        "workingShifts": {
+            "common": {
+                "form": {
+                    "placeholder": {
+                        "code": "Shift code",
+                        "name": "Working shift name",
+                        "startTime": "Start time",
+                        "endTime": "End time",
+                        "status": "Status"
+                    },
+                    "label": {
+                        "code": "Shift code",
+                        "name": "Working shift name",
+                        "startTime": "Start time",
+                        "endTime": "End time",
+                        "status": "Status"
+                    }
+                }
+            },
+            "list": {
+                "table": {
+                    "label": {
+                        "name": "Working shift name",
+                        "startTime": "Start time",
+                        "endTime": "End time",
+                        "status": "Status"
+                    }
+                },
+                "searchForm": {
+                    "placeholder": {
+                        "name": "Working shift name",
+                        "startTime": "Start time",
+                        "endTime": "End time",
+                        "status": "Status"
+                    },
+                    "label": {
+                        "name": "Name",
+                        "startTime": "Start time",
+                        "endTime": "End time",
+                        "status": "Status"
+                    },
+                    "options": {
+                        "active": "Active",
+                        "inactive": "Inactive"
+                    }
+                }
+            },
+            "error": {
+                "InvalidStartTime": "Start time must be earlier than end time",
+                "InvalidEndTime": "End time must be later than start time",
+                "UpdateFail": "Update working shift failed!",
+                "CreateFail": "Create working shift failed!",
+                "C_WORKINGSHIFT_409": "Working shift is overlap!",
+                "C_WORKINGSHIFT_410": "Working shift code already exists!",
+                "D_WORKINGSHIFT_200": "Delete Working shift successfully!",
+                "U_WORKINGSHIFT_409": "Working shift code is overlap!",
+                "WORKINGSHIFT_500": "Some error occurred. Please try again later!",
+                "WORKINGSHIFT_422": "Code or name is invalid (contains special characters)!",
+                "C_WORKINGSHIFT_404": "Parent Working shift is not exist!",
+                "U_WORKINGSHIFT_200": "Update Working shift successfully!",
+                "C_WORKINGSHIFT_200": "Create Working shift successfully!"
+            }
+        },
+        "productionLines": {
+            "common": {
+                "form": {
+                    "placeholder": {
+                        "name": "Name",
+                        "code": "Code",
+                        "status": "Status"
+                    },
+                    "label": {
+                        "name": "Name",
+                        "code": "Code",
+                        "status": "Status"
+                    }
+                }
+            },
+            "list": {
+                "table": {
+                    "label": {
+                        "name": "Name",
+                        "code": "Code",
+                        "status": "Status"
+                    }
+                },
+                "searchForm": {
+                    "placeholder": {
+                        "status": "All statuses"
+                    },
+                    "label": {
+                        "filterText": "Name/Code",
+                        "status": "Status"
+                    },
+                    "options": {
+                        "active": "Active",
+                        "inactive": "Inactive"
+                    }
+                }
+            },
+            "error": {
+                "UpdateFail": "Update production line failed!",
+                "CreateFail": "Create production line failed!",
+                "C_PRODUCTIONLINE_409": "Production line code is already exist!",
+                "D_PRODUCTIONLINE_200": "Delete production line successfully!",
+                "U_PRODUCTIONLINE_409": "Production line code is already exist!",
+                "PRODUCTIONLINE_500": "Some error occurred. Please try again later!",
+                "C_PRODUCTIONLINE_404": "Parent production line is not exist!",
+                "U_PRODUCTIONLINE_200": "Update production line successfully!",
+                "C_PRODUCTIONLINE_200": "Create production line successfully!"
+            }
+        },
+        "workFlows": {
+            "common": {
+                "form": {
+                    "placeholder": {
+                        "name": "Name",
+                        "code": "Code",
+                        "status": "Status"
+                    },
+                    "label": {
+                        "name": "Name",
+                        "code": "Code",
+                        "status": "Status",
+                        "productionLine": "Production Line",
+                        "estimateTime": "Estimate Time",
+                        "itemName": "Name",
+                        "itemCode": "Code",
+                        "step": "Step",
+                        "device": "Device",
+                        "eventType": "Event Type",
+                        "no": "No"
+                    },
+                    "button": {
+                        "add": "Add",
+                        "delete": "Delete"
+                    }
+                }
+            },
+            "list": {
+                "table": {
+                    "label": {
+                        "name": "Name",
+                        "code": "Code",
+                        "productionLine": "Production Line",
+                        "estimateTime": "Estimate Time",
+                        "status": "Status"
+                    }
+                },
+                "searchForm": {
+                    "placeholder": {
+                        "status": "All statuses",
+                        "productionLine": "All production lines"
+                    },
+                    "label": {
+                        "filterText": "Name/Code",
+                        "productionLine": "Production Line",
+                        "status": "Status"
+                    },
+                    "options": {
+                        "active": "Active",
+                        "inactive": "Inactive"
+                    }
+                }
+            },
+            "error": {
+                "duplicateCode": "Duplicate code!",
+                "UpdateFail": "Update work flow failed!",
+                "CreateFail": "Create work flow failed!",
+                "C_WORKFLOW_409": "Work flow code is already exist!",
+                "D_WORKFLOW_200": "Delete work flow successfully!",
+                "U_WORKFLOW_409": "Work flow code is already exist!",
+                "WORKFLOW_500": "Some error occurred. Please try again later!",
+                "C_WORKFLOW_404": "Parent work flow is not exist!",
+                "U_WORKFLOW_200": "Update work flow successfully!",
+                "C_WORKFLOW_200": "Create work flow successfully!"
+            }
+        },
+        "Slider": "Slider",
+        "UI Elements": "UI Elements",
+        "Invoice": "Invoice",
+        "Not Authorized": "Not Authorized",
+        "User Interface": "User Interface",
+        "Forgot Password v2": "Forgot Password v2",
+        "Profile": "Profile",
+        "Pricing": "Pricing",
+        "Badge": "Badge",
+        "List Group": "List Group",
+        "Typography": "Typography",
+        "Mail Templates": "Mail Templates",
+        "Vue Select": "Vue Select",
+        "Form Validation": "Form Validation",
+        "Raise Support": "Raise Support",
+        "Forget Password v1": "Forget Password v1",
+        "Forgot Password v1": "Forgot Password v1",
+        "Card Actions": "Card Actions",
+        "Statistic": "Statistic",
+        "vehicles": {
+            "common": {
+                "department/contractor": "Department/Contractor",
+                "department": "Department",
+                "group": "Access group",
+                "departmentType": "Department type",
+                "type": "Vehicle type",
+                "employeeName": "Employee name",
+                "form": {
+                    "label": {
+                        "department": "Department",
+                        "group": "Access group",
+                        "departmentType": "Department type",
+                        "employee": "Employee name",
+                        "type": "Vehicle type",
+                        "contractor": "Contractor",
+                        "licensePlate": "License plate",
+                        "vehicle": "Vehicle"
+                    }
+                },
+                "contractor": "Contractor",
+                "licensePlate": "License plate"
+            },
+            "message": {
+                "duplicateVehicle": "Duplicate license plate"
+            }
+        },
+        "groups": {
+            "common": {
+                "form": {
+                    "placeholder": {
+                        "groupCode": "Access group code",
+                        "groupName": "Access group name",
+                        "compName": "Company"
+                    },
+                    "label": {
+                        "groupCode": "Access group code",
+                        "groupName": "Access group name",
+                        "compName": "Company"
+                    }
+                }
+            },
+            "list": {
+                "table": {
+                    "label": {
+                        "groupName": "Access group name",
+                        "groupCode": "Access group code",
+                        "companyName": "Company",
+                        "action": "Action"
+                    }
+                },
+                "searchForm": {
+                    "placeholder": {
+                        "compName": "Company",
+                        "groupCodeName": "Access group code/name"
+                    },
+                    "label": {
+                        "compName": "Company",
+                        "groupCodeName": "Access group code/name"
+                    }
+                }
+            },
+            "error": {
+                "D_GROUP_200": "Delete access group successfully!",
+                "GROUP_500": "Some error occurred. Please try again later!",
+                "U_GROUP_409": "Access group code already exists!",
+                "C_GROUP_409": "Access group code already exists!",
+                "C_GROUP_404": "Parent access group does not exist!",
+                "U_GROUP_200": "Update access group successfully!",
+                "C_GROUP_200": "Add access group successfully!"
+            }
+        },
+        "Form Layout": "Form Layout",
+        "Others": "Others",
+        "Media Objects": "Media Objects",
+        "Email": "Email",
+        "Feather": "Feather",
+        "Input Mask": "Input Mask",
+        "Reset Password v1": "Reset Password v1",
+        "Chartjs": "Chartjs",
+        "Button Toolbar": "Button Toolbar"
+    },
+    "Device": {
+        "List": {
+            "SearchForm": {
+                "Status": "Status",
+                "Function": "Function",
+                "NameOrCode": "Name or code",
+                "Area": "Area"
+            },
+            "Table": {
+                "Status": "Status",
+                "Server": "Serve",
+                "Code": "Code",
+                "Name": "Name",
+                "Function": "Function",
+                "Link": "Link",
+                "Operation": "Operation",
+                "Area": "Area"
+            }
+        },
+        "Detail": {
+            "Form": {
+                "Status": "Status",
+                "Name": "Name",
+                "Latitude": "Latitude",
+                "SoundFileHolder": "Choose a file or pull here...",
+                "License": "License",
+                "Direction": "Direction",
+                "Server": "Serve",
+                "SoundFileType": "Only accept file type .mp3, .wav,.ogg",
+                "Code": "Code",
+                "Function": "Function",
+                "Coordinate": "Coordinate",
+                "Link": "Link",
+                "Longitude": "Longitude",
+                "SoundFile": "Warning sound file",
+                "Area": "Area"
+            }
+        }
+    },
+    "Employees": {
+        "Excel": {
+            "Header": "Guest Registration List"
+        },
+        "Report": {
+            "Title": "Electronic Duty Book"
+        }
+    },
+    "EventType": {
+        "List": {
+            "SearchForm": {
+                "FilterText": "Search keyword..."
+            },
+            "Table": {
+                "Id": "ID",
+                "Name": "Event Type Name",
+                "Description": "Description",
+                "Action": "Action"
+            }
+        },
+        "Detail": {
+            "Form": {
+                "Id": "ID",
+                "Name": "Name",
+                "Description": "Description"
+            }
+        }
+    },
+    "EventWarningLevel": {
+        "List": {
+            "SearchForm": {
+                "FilterText": "Search keyword..."
+            },
+            "Table": {
+                "Title": "Title",
+                "Level": "Level",
+                "Color": "Color",
+                "Description": "Description",
+                "EventTypeId": "Event Type",
+                "Action": "Action"
+            }
+        },
+        "Detail": {
+            "Form": {
+                "Title": "Title",
+                "Level": "Level",
+                "Color": "Color",
+                "Description": "Description",
+                "EventTypeId": "Event Type"
+            }
+        }
+    },
+    "Events": {
+        "Header": {
+            "ParentHeader": "Lookup data",
+            "ExcelConveyor": "Research conveyor data",
+            "Excel": "Research event data",
+            "ExcelFaceEvent": "List face event",
+            "ChildHeader": "Event",
+            "ExcelProtectiveEquip": "Excel protective equipment",
+            "ExcelTrafficViolation": "Excel traffic violation",
+            "PeopleCount": "People count",
+            "ExcelProtective": "Research protective data"
+        },
+        "SearchForm": {
+            "Direction": "Direction",
+            "ToDate": "To Date",
+            "EventType": "Warning type",
+            "Device": "Device",
+            "FromDate": "From Date",
+            "CascadeFW": "Factory line",
+            "ClassFW": "ClassFW",
+            "Warning": "Warning",
+            "Placeholder": {
+                "Device": "Device",
+                "FromDate": "From Date",
+                "CascadeFW": "Factory line",
+                "ClassFW": "ClassFW",
+                "Feature": "Feature",
+                "FindArea": "Find area",
+                "ToDate": "To Date",
+                "EventType": "Warning type",
+                "Area": "Area"
+            },
+            "EventPhotos": "Event photos/videos",
+            "Area": "Area"
+        },
+        "ProtectiveEquipmentEvent": {
+            "Table": {
+                "AccessDate": "Date",
+                "AreaName": "Area",
+                "DeviceName": "Device",
+                "Status": "Status",
+                "Safe": "Safe",
+                "Time": "Time",
+                "DateFrom": "From Date",
+                "DateTo": "To Date",
+                "Classify": "Classify",
+                "Image": "Image",
+                "Action": "Operation"
+            },
+            "ProtectiveEquipmentType": {
+                "Enough": "Enough",
+                "FaceMask": "Lack face mask",
+                "Gloves": "Lack gloves",
+                "Helmet": "Lack helmet",
+                "HelmetGloves": "Lack helmets and gloves",
+                "HelmetMask": "Lack of helmets and masks",
+                "MaskGloves": "Lack of masks and gloves",
+                "Unknown": "Unknown",
+                "Safe": "Safe",
+                "Unsafe": "Unsafe",
+                "MissingEverything": "Lack of helmets, masks and gloves",
+                "RawMaterialSize": "Raw material size warning",
+                "ConveyorBeltMisalignment": "Conveyor belt misalignment",
+                "ConveyorBeltTear": "Conveyor belt tear",
+                "ConveyorBeltOverflow": "Conveyor belt overflow"
+            }
+        },
+        "Table": {
+            "Device": "Device",
+            "Image": "Image",
+            "PeopleCount": "People count",
+            "Equipment": "Equipment",
+            "Direction": "Direction",
+            "Time": "Time",
+            "Warning": "Warning",
+            "EventType": "Warning type",
+            "Area": "Area"
+        },
+        "OverView": {
+            "AREA": "AREA",
+            "SuspectInStock": "Suspect in stock",
+            "InOut": {
+                "Header": "Entry and exit statistics by gate",
+                "Empty": "Vehicle empty",
+                "Still": "In stock",
+                "Cargo": "Cargo",
+                "Area": "Area"
+            },
+            "Empty": "Vehicle empty",
+            "DataOverview": "Data overview",
+            "IN": "IN",
+            "WrongPlan": "Wrong plan",
+            "FireSmoke": "Fire Smoke",
+            "ForbiddenArea": "Forbidden area",
+            "LastUpdate": "LastUpdate",
+            "GoodsOut": "Goods out",
+            "VehicleOut": "Vehicle out",
+            "ProtectiveEquipment": "Protective Equipment",
+            "VirtualFence": "Virtual Fence",
+            "Fire": "Fire",
+            "InStock": "In stock",
+            "Cont": {
+                "WoodChips": "Wood chips",
+                "ScrapIron": "Scrap iron",
+                "Other": "Other"
+            },
+            "TopAreaMostVehicle": "Top area of most vehicle",
+            "Visitor": "Visitor",
+            "ConveyorAccidentStat": "Conveyor accident statistic",
+            "Smoke": "Smoke",
+            "Conveyor": "Conveyor",
+            "RateShortageEquip": "Rate shortage equipment",
+            "VehicleControl": "Vehicle control",
+            "VehicleIn": "Vehicle in",
+            "NumberOfTurns": "Number of turns",
+            "OUT": "OUT",
+            "Employee": "Employee",
+            "Transport": {
+                "Header": "Freight statistics",
+                "In": "In",
+                "Total": "Total",
+                "Out": "Out"
+            },
+            "GoodsIn": "Goods in",
+            "Warning": "Warning"
+        },
+        "DashBoard": {
+            "Overview": "Overview",
+            "VehicleMonitoring": "Vehicle monitoring",
+            "AutoRefresh": "AutoRefresh:",
+            "Period": "Period:",
+            "FaceMonitoring": "Face monitoring"
+        },
+        "VehicleMonitor": {
+            "Never": "Never",
+            "In": "In",
+            "LastUpdate": "LastUpdate",
+            "Out": "Out",
+            "VehicleAccessComplex": "Vehicle Access Complex",
+            "Vehicle": "Vehicle",
+            "TotalVehicelIn": "Total Vehicel In",
+            "EveryMonth": "Every month",
+            "OneHour": "One Hour",
+            "TwoHour": "Two Hours",
+            "OverviewAccessSystems": "Overview Access Systems",
+            "TotalVehicelFactory": "TotalVehicelFactory",
+            "VehicleAccessGate": "Vehicle Access Gate",
+            "EveryWeek": "Every week",
+            "RateAccessComplex": "Rate Access Complex",
+            "InFactory": "In Factory",
+            "FiveSecond": "Five Seconds",
+            "FiveMinute": "Five Minutes",
+            "FifteenMinute": "Fifteen Minutes",
+            "TotalVehicelOut": "Total Vehicel Out",
+            "EveryDay": "Every day",
+            "Area": "Area"
+        },
+        "MapDashboard": {
+            "Height": "Height",
+            "Registered": "Registered",
+            "In": "In",
+            "FireSmoke": "Fire Smoke",
+            "Out": "Out",
+            "RealtimeData": "Realtime data",
+            "MonitoringStatistics": "MONITORING STATISTICS",
+            "Vehicle": "Vehicle",
+            "Lack": "Lack",
+            "Overflow": "Overflow",
+            "MissingVestMask": "Missing Vest & Mask",
+            "Fire": "Fire",
+            "MissingHelmetMask": "Missing Helmet & Mask",
+            "Smoke": "Smoke",
+            "Torn": "Torn",
+            "MissingMask": "Missing Mask",
+            "Identification": "Identification conditions",
+            "MissingHelmetVest": "Missing Helmet & Vest",
+            "Conveyor": "Conveyor",
+            "ForbiddenZone": "Forbidden Zone",
+            "MissingVestMask80": "Missing Vest & Mask 80",
+            "MissingVest": "Missing Vest",
+            "Size": "Size",
+            "Deviated": "Deviated",
+            "Employee": "Employee",
+            "MissingHelmet": "Missing Helmet",
+            "ProtectiveGear": "Protective Gear",
+            "Enough": "Enough",
+            "ListCamera": "LIST CAMERA",
+            "UnRegistered": "UnRegistered"
+        },
+        "Direction": {
+            "in": "In",
+            "out": "Out"
+        }
+    },
+    "IssueTypes": {
+        "List": {
+            "SearchForm": {
+                "IssueTypeId": "Issue Type Id"
+            },
+            "Table": {
+                "Operation": "Operation",
+                "IssueTypeId": "Issue Type Id",
+                "Name": "Name",
+                "Color": "Car color"
+            }
+        },
+        "Detail": {
+            "Form": {
+                "IssueTypeId": "Issue Type Id",
+                "Name": "Name",
+                "Color": "Car color"
+            }
+        },
+        "error": {
+            "C_ISSUETYPE_409": "Issue type code already exists!",
+            "U_ISSUETYPE_409": "Issue type code already exists!",
+            "C_ISSUETYPE_404": "Parent issue type does not exist!",
+            "D_ISSUETYPE_200": "Successfully deleted issue type!",
+            "D_ISSUETYPE_400": "Issue type is in use elsewhere, cannot be deleted!",
+            "C_ISSUETYPE_200": "Successfully added issue type!",
+            "U_ISSUETYPE_200": "Successfully updated issue type!",
+            "ISSUETYPE_500": "An error occurred, please try again later!"
+        }
+    },
+    "Priority": {
+        "List": {
+            "Table": {
+                "PriorityId": "Priority Code",
+                "Name": "Name",
+                "Color": "Car color",
+                "Operation": "Operation"
+            },
+            "SearchForm": {
+                "PriorityId": "Priority Code"
+            }
+        },
+        "Detail": {
+            "Form": {
+                "PriorityId": "Priority Code",
+                "Name": "Name",
+                "Color": "Car color"
+            }
+        },
+        "error": {
+            "C_PRIORYTY_404": "Parent priority does not exist!",
+            "U_PRIORYTY_409": "Priority code already exists!",
+            "U_PRIORYTY_200": "Updated priority successfully!",
+            "C_PRIORYTY_409": "Priority code already exists!",
+            "D_PRIORYTY_200": "Deleted priority successfully!",
+            "D_PRIORYTY_400": "Priority is in use elsewhere, cannot be deleted!",
+            "C_PRIORYTY_200": "Added priority successfully!",
+            "PRIORYTY_500": "An error occurred, please try again later!"
+        }
+    },
+    "Privilege": {
+        "ViewWorkFlow": "View work flow",
+        "ManageWorkFlow": "Manage work flow",
+        "ViewProductionLine": "View production line",
+        "ManageProductionLine": "Manage production line",
+        "ViewWorkingShift": "View working shift",
+        "ManageWorkingShift": "Manage working shift",
+        "ViewGuess": "View guess",
+        "ManageCompany": "Manage company",
+        "ViewVehicleDetailReport": "View vehicle detail report",
+        "ManageTimeAccess": "Manage time access",
+        "ManageRole": "Manage role",
+        "ManageAuditLogs": "Manage AuditLogs",
+        "ManageCarEvent": "Manage car event",
+        "ManageSTDQuestion": "Edit questions",
+        "IdentificationZone": "Identification zone",
+        "ViewFireEvent": "View fire event",
+        "ManageEventTemplate": "Manage event template",
+        "ViewFireworkDashboard": "View firework dashboard",
+        "ViewUser": "View user",
+        "ManageGroup": "Manage group",
+        "ManageArea": "Manage area",
+        "ManageGroupAccess": "Manage group access",
+        "ViewSTDClasses": "View classes",
+        "ManageSTDCourse": "Edit courses",
+        "ViewEventTemplate": "View event template",
+        "ViewVehicle": "View vehicle",
+        "ManageTosSyncInfo": "Manage port entry/exit schedule",
+        "ViewAuditLogs": "View AuditLogs",
+        "ViewGroupAccess": "View group access",
+        "ManageProjects": "Manage project",
+        "ViewReportFireEvent": "View report fire event",
+        "ViewRestrictedZonesEvent": "View restricted zones event",
+        "ViewDashboardItinerary": "View itinerary dashboard",
+        "ViewGroup": "View group",
+        "ViewEvent": "View event",
+        "ViewEventsDashboard": "View events dashboard",
+        "ViewSupervisorReport": "View supervisor report",
+        "ManageWaterWarning": "Manage water warning",
+        "ViewManufacturing": "View production reports",
+        "ViewTrafficViolationEvent": "View traffic violation event",
+        "ViewSTDLesson": "View lesson",
+        "ViewMapDashboard": "View MapDashboard",
+        "ViewPeopleCountEvent": "View people count event",
+        "ManageEmployee": "Manage employee",
+        "ViewFireWorkEvent": "View fire work event",
+        "ManageSTDClasses": "Manage classes",
+        "ViewSTDUsers": "View students",
+        "ViewIssue": "View issue",
+        "ViewVehicleViolationReports": "View vehicle violation reports",
+        "ManageGuess": "Manage guess",
+        "PostEvent": "Post event",
+        "ViewProjects": "View project",
+        "ViewDevice": "View device",
+        "ViewFaceEvent": "View face event",
+        "ViewSystemDashboard": "View system dashboard",
+        "ManageSTDConfig": "Edit configuration",
+        "ViewReports": "View reports",
+        "ManageContractor": "Manage contractor",
+        "ViewProtectiveEquipmentEvent": "View protective equipment event",
+        "ViewMachine": "View machine",
+        "ManageMachine": "Manage machine",
+        "ViewWaterEvent": "View water event",
+        "ViewProblem": "View incidents",
+        "ManageDepartment": "Manage department",
+        "ManageSTDLesson": "Manage lesson",
+        "ViewWaterWarning": "View water warning",
+        "ViewVirtualFenceEvent": "View virtual fence event",
+        "ViewSTDTest": "View tests",
+        "ManageDevice": "Manage device",
+        "ManageSTDTest": "Edit tests",
+        "ViewRole": "View role",
+        "ViewArea": "View area",
+        "ViewVehicleEvent": "View vehicle event",
+        "ViewContractor": "View contractor",
+        "ViewReportVehicleWarning": "View report vehicle warning",
+        "ViewTosSyncInfo": "View Port Entry/Exit Schedule",
+        "ManageIssue": "Manage issue",
+        "ManageUser": "Manage user",
+        "ViewEmployee": "View employee",
+        "ViewCarEvent": "View car event",
+        "ManageProblem": "Edit incidents",
+        "ViewDepartment": "View department",
+        "ViewTimeAccess": "View time access",
+        "ViewConveyorEvent": "View conveyor event",
+        "ViewConveyorReport": "View conveyor report",
+        "ViewSTDConfig": "View configuration",
+        "ManageSTDUsers": "Edit students",
+        "ManageVehicle": "Manage vehicle",
+        "ViewSTDQuestion": "View questions",
+        "ViewSTDCourse": "View courses",
+        "ViewLive": "View live",
+        "ViewReportFireworkInspectionStatistics25": "View report firework inspection statistics 25",
+        "ViewCompany": "View company",
+        "ManageIssueType": "Edit issue type",
+        "ViewIssueType": "View issue type",
+        "ManageStatuses": "Edit status",
+        "ViewStatuses": "View status",
+        "ManagePriority": "Edit priority",
+        "ViewPriority": "View priority",
+        "Live": "Live monitoring",
+        "RemoveIssue": "Remove issue",
+        "ViewProductionLineEvent": "View events by stage"
+    },
+    "AuthorizationService": {
+        "Message": {
+            "UserPrivileges2": "An error occurred! Please contact the administrator!",
+            "DuplicateArea": "Area code already exists!",
+            "CompanyPrivilage": "Company code already exists!",
+            "DuplicateGroup": "Group code already exists!",
+            "UserPrivileges": "Binding data already exists, cannot be deleted!",
+            "DuplicateDepartment": "Code already exists!",
+            "DuplicateEmployee": "Employee code already exists!",
+            "DuplicateUserName": "Account name already exists in the system",
+            "PasswordIncorrect": "Old password is incorrect. Please try again"
+        }
+    },
+    "Project": {
+        "List": {
+            "SearchForm": {
+                "ProjectCodeName": "Name/Code project"
+            },
+            "Table": {
+                "Code": "Code",
+                "Name": "Name",
+                "Operation": "Operation"
+            }
+        },
+        "Detail": {
+            "Form": {
+                "Code": "Code",
+                "Name": "Name"
+            }
+        },
+        "error": {
+            "PROJECT_500": "An error occurred, please try again later!",
+            "C_PROJECT_404": "Parent project does not exist!",
+            "C_PROJECT_200": "Project added successfully!",
+            "D_PROJECT_200": "Project deleted successfully!",
+            "D_PROJECT_400": "The project is being used elsewhere, cannot be deleted!",
+            "U_PROJECT_200": "Project updated successfully!",
+            "C_PROJECT_409": "Project code already exists!",
+            "U_PROJECT_409": "Project code already exists!"
+        }
+    },
+    "System": {
+        "Role": {
+            "Field": {
+                "Status": "Status",
+                "Action": "Action",
+                "Name": "Name",
+                "Description": "Description"
+            },
+            "SearchForm": {
+                "Name": "Name"
+            },
+            "Detail": {
+                "Header": "Role information",
+                "Label": {
+                    "Status": "Status",
+                    "Name": "Name",
+                    "Description": "Description",
+                    "CodeRequire": "Role code is required",
+                    "NameRequire": "Role name is required"
+                }
+            },
+            "Message": {
+                "CreateSuccess": "Create role successfully!",
+                "CreateFailure": "Create role failed!",
+                "UpdateSuccess": "Update role successfully!",
+                "PrivilegeSuccess": "Role privileges updated successfully!",
+                "DeleteSuccess": "Delete role successfully!",
+                "UpdateFailure": "Update role failed!",
+                "PrivilegeFailure": "Role privileges update failed!",
+                "DeleteFailure": "Delete role failed!"
+            }
+        },
+        "User": {
+            "Field": {
+                "Action": "Action",
+                "Role": "Role",
+                "Name": "Name",
+                "PhoneNumber": "Phone number",
+                "Company": "Company"
+            },
+            "Valid": {
+                "PhoneNumber": "Invalid phone number",
+                "Username": {
+                    "Space": "Username must not contain spaces.",
+                    "Accent": "Invalid username. Please remove Vietnamese diacritics.",
+                    "Special": "Username may contain only letters, numbers, and _.",
+                    "Invalid": "Invalid username."
+                }
+            },
+            "SearchForm": {
+                "Company": "Company",
+                "Name": "Name"
+            },
+            "DevicePermissions": {
+                "DeviceAuthorization": "Device authorization",
+                "NoDevice": "There are no devices in the selected area.",
+                "ListDevice": "List device"
+            },
+            "Detail": {
+                "Label": {
+                    "Name": "Name",
+                    "PhoneNumber": "Phone number",
+                    "WarningForm": "Warning form",
+                    "Company": "Company",
+                    "Email": "Email",
+                    "Role": "Role",
+                    "Password": "Password",
+                    "FullName": "Fullname",
+                    "RePassword": "Re-enter the password",
+                    "Area": "Area"
+                }
+            },
+            "Message": {
+                "UnlockSuccess": "Account unlocked successfully!",
+                "LockSuccess": "Account locked successfully!"
+            },
+            "Swal": {
+                "UnlockSuccess": "Account unlocked successfully!",
+                "LockSuccess": "Account locked successfully!"
+            }
+        },
+        "AuditLogs": {
+            "Field": {
+                "Action": "Action",
+                "Username": "Username",
+                "DurationMs": "Response Time (ms)",
+                "IpAddress": "IP Address",
+                "EventType": "Warning type",
+                "DateTime": "Date Time"
+            },
+            "FormSearch": {
+                "DateTimeTo": "To Date",
+                "Username": "Username",
+                "DurationMs": "Response Time (ms)",
+                "DateTimeFrom": "From Date",
+                "IpAddress": "IP Address",
+                "EventType": "Warning type"
+            },
+            "EventType": {
+                "Department": {
+                    "Create": "Create department/contractor",
+                    "Update": "Update department/contractor",
+                    "Delete": "Delete department/contractor"
+                },
+                "User": {
+                    "DeleteUsers": "Delete List of Users",
+                    "Delete": "Delete User",
+                    "Create": "Create User",
+                    "SaveUserPrivileges": "Update User Privileges",
+                    "Update": "Update User",
+                    "ChangePassword": "Change Password"
+                },
+                "TimeAccess": {
+                    "Create": "Create Time Access",
+                    "Update": "Update Time Access",
+                    "Delete": "Delete Time Access"
+                },
+                "GroupAccess": {
+                    "Create": "Create Group Access",
+                    "Update": "Update Group Access",
+                    "Delete": "Delete Group Access"
+                },
+                "Vehicle": {
+                    "Create": "Create Vehicle",
+                    "Update": "Update Vehicle",
+                    "Delete": "Delete Vehicle"
+                },
+                "Company": {
+                    "Create": "Create Company",
+                    "Update": "Update Company",
+                    "Delete": "Delete Company"
+                },
+                "Roles": {
+                    "Create": "Create Roles",
+                    "Update": "Update Roles",
+                    "Delete": "Delete Roles"
+                },
+                "Group": {
+                    "Create": "Create Group",
+                    "Update": "Update Group",
+                    "Delete": "Delete Group"
+                },
+                "Device": {
+                    "Create": "Create Device",
+                    "Update": "Update Device",
+                    "Delete": "Delete Device"
+                },
+                "Notification": {
+                    "Create": "Create Notification",
+                    "Update": "Update Notification",
+                    "Delete": "Delete Notification"
+                },
+                "Project": {
+                    "Update": "Update Project",
+                    "Create": "Create Project",
+                    "Delete": "Delete Project"
+                },
+                "Employee": {
+                    "Import": "Import Employee",
+                    "Delete": "Delete Employee",
+                    "Create": "Create Employee",
+                    "Update": "Update Employee"
+                },
+                "Token": {
+                    "Auth": "Login"
+                },
+                "Area": {
+                    "Create": "Create Area",
+                    "Update": "Update Area",
+                    "Delete": "Delete Area"
+                },
+                "IssueType": {
+                    "Create": "Create Issue Type",
+                    "Update": "Update Issue Type",
+                    "Delete": "Delete Issue Type"
+                },
+                "Status": {
+                    "Create": "Create Status",
+                    "Update": "Update Status",
+                    "Delete": "Delete Status"
+                },
+                "Priority": {
+                    "Create": "Create Priority",
+                    "Update": "Update Priority",
+                    "Delete": "Delete Priority"
+                }
+            }
+        },
+        "Company": {
+            "Field": {
+                "Action": "Action",
+                "Code": "Code",
+                "Name": "Name"
+            },
+            "SearchForm": {
+                "Name": "Name"
+            },
+            "Detail": {
+                "Header": "Company information",
+                "Label": {
+                    "Parent": "Parent company",
+                    "Code": "Code",
+                    "Name": "Name",
+                    "CodeRequire": "Company code is required",
+                    "NameRequire": "Company name is required"
+                }
+            },
+            "Messages": {
+                "DeleteArea": "Unable delete, due to relevant data",
+                "DeleteGroup": "Unable delete, due to relevant data",
+                "CannotDelete": "Unable delete, due to relevant data"
+            }
+        }
+    },
+    "accessType": {
+        "deny": "UnRegistered",
+        "allow": "Allow",
+        "wrongTime": "Wrong time",
+        "noPermission": "No permission",
+        "expired": "Expired",
+        "wrongArea": "Wrong area"
+    }
+}

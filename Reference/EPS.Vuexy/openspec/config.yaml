@@ -1,0 +1,192 @@
+# OpenSpec Configuration for EPS.Vuexy Project
+# Event Processing System - Surveillance and Monitoring Platform
+
+schema: spec-driven
+
+context: |
+    # Tech Stack
+    ## Frontend (Vue 2 SPA)
+    - Vue 2.6.11 with Vue Composition API (@vue/composition-api)
+    - BootstrapVue 2.21.1 for UI components
+    - Vee-validate 3.4.5 for form validation
+    - Vuex for state management
+    - Vue Router (history mode) for routing
+    - Axios 0.21.1 for HTTP requests
+    - Iconify for dynamic icons
+    - SCSS with custom theme under src/@core/scss
+
+    ## Backend
+    - .NET Core 3.1 Web Host (minimal host serving SPA)
+    - SignalR 8.0.7 for real-time communication
+    - Socket.io-client 4.8.1 for WebSocket connections
+
+    ## Key Libraries & Integrations
+    - @casl/ability & @casl/vue for ACL/permissions
+    - Leaflet 1.6.0 for map visualization
+    - Telerik Report Viewer for reporting
+    - ApexCharts, Chart.js, ECharts for data visualization
+    - FullCalendar 5.5.0 for calendar views
+    - ExcelJS & SheetJS for Excel export/import
+    - Konva for canvas drawing
+    - Swiper for media carousels
+    - Vue-Treeselect for hierarchical selection
+    - JWT for authentication
+
+    ## Build & Dev Tools
+    - Vue CLI service
+    - Webpack with custom aliases (@core, @, @axios, @themeConfig, @validations)
+    - Node.js with increased memory allocation (--max-old-space-size=8192)
+    - PostCSS with RTL support
+    - Babel for transpilation
+
+    # Domain: Event Processing System (EPS)
+    ## Purpose
+    Surveillance and monitoring platform for real-time event detection, tracking, and management in security/safety contexts.
+
+    ## Core Features
+    - Event Management: Face detection, equipment monitoring, safety harness detection, fence intrusion, forbidden area alerts, fire/smoke detection, people counting, vehicle tracking
+    - Real-time Monitoring: Live video streaming (FLV), real-time event notifications via SignalR/Socket.io
+    - Dashboards: Event dashboards, vehicle dashboards, system info monitoring
+    - Map Integration: OpenStreetMap/Leaflet for geographic visualization of events and assets
+    - Reports: Telerik-based reporting system with export capabilities
+    - User Management: Authentication with JWT, role-based access control (ACL)
+    - Multi-language Support: i18n with locale files (Vietnamese and other languages)
+    - Notifications: Real-time alerts and issue tracking system
+
+    ## Event Types
+    - FACE (200): Face detection events
+    - EQUIPMENT (205): Equipment monitoring
+    - HARNESS (209): Safety harness detection
+    - FENCE (212): Fence intrusion detection
+    - FORBIDDEN_AREA (400): Unauthorized area access
+    - FIRE_SMOKE (500): Fire and smoke detection
+    - PEOPLE (700): People counting and tracking
+    - TRUNK (800): Vehicle trunk monitoring
+
+    # Architecture
+    ## Application Structure
+    - Single Page Application (SPA) architecture
+    - Vue 2 frontend embedded in .NET Core 3.1 web host
+    - Frontend source in src/ directory
+    - Static assets served from public/ directory
+    - Runtime configuration via public/config.json for dynamic routing
+
+    ## Key Directories
+    - src/@core/: Theme, shared utilities, layouts, components, directives
+    - src/components/: Reusable Vue components
+    - src/views/: Page components organized by feature (dashboard, event, live, reports, systems, etc.)
+    - src/libs/: Plugin wrappers (axios, i18n, acl, clipboard, toasts, tours)
+    - src/router/: Vue Router configuration with project-based routing
+    - src/store/: Vuex modules (app, app-config, vertical-menu)
+    - src/navigation/: Navigation menu definitions (vertical/horizontal)
+    - src/services/: API service layer and lookup services
+    - src/utils/: Helper utilities (cache, array helpers, socket clients)
+    - src/constants/: Application constants (event types, statuses, vehicle types)
+    - src/@fake-db/: Mock data for development
+
+    ## Routing Pattern
+    - History mode routing with dynamic route injection
+    - main.js fetches public/config.json at startup
+    - Dynamic routes added via router.addRoutes() for iframe-based external integrations
+    - Project-specific routes in src/router/projects/
+
+    ## State Management
+    - Vuex with namespaced modules
+    - Modules: app (layout, theme), app-config (RTL, skin), vertical-menu (collapsed state)
+    - Mutations and actions follow namespace pattern: store.commit('module/MUTATION')
+
+    ## HTTP & Real-time Communication
+    - Axios instance configured in src/libs/axios.js
+    - Attached to Vue.prototype.$http
+    - SignalR for real-time server events
+    - Socket.io-client for WebSocket connections (e.g., card reader integration)
+
+    ## Styling Approach
+    - Bootstrap 4.6.0 base with BootstrapVue components
+    - Custom SCSS in src/@core/scss and src/assets/scss
+    - Theme configuration in themeConfig.js
+    - RTL support via postcss-rtl
+    - Responsive design with Bootstrap grid
+
+    # Conventions & Patterns
+    ## Import Aliases (always use these)
+    - @: src/
+    - @core: src/@core/
+    - @axios: src/libs/axios
+    - @themeConfig: themeConfig.js
+    - @validations: src/@core/utils/validations/validations.js
+
+    ## Component Patterns
+    - Global components registered in src/global-components.js
+    - Options API or Composition API (both supported)
+    - Event handling with BootstrapVue events
+    - Form validation with Vee-validate ValidationProvider/ValidationObserver
+
+    ## i18n Pattern
+    - Translation keys in src/libs/i18n/locales/*.json
+    - Use $t('key.path') in templates
+    - Keys organized by domain (System, Events, route)
+
+    ## API Service Pattern
+    - Services in src/services/ directory
+    - Use axios instance from @axios
+    - Centralize API calls in service layer
+
+    ## File Naming
+    - Vue components: PascalCase.vue
+    - JavaScript utilities: camelCase.js
+    - SCSS files: kebab-case.scss
+
+    ## Code Style
+    - ESLint disabled (lintOnSave: false in vue.config.js)
+    - Use semicolons
+    - Prefer const/let over var
+    - Use arrow functions where appropriate
+
+    # Deployment Notes
+    - Frontend built with: npm run build (requires increased Node memory)
+    - Production build outputs to dist/ directory
+    - .NET Core host expects static files from build output
+    - Environment variables: VUE_APP_ICONIFY_API for Iconify API endpoint
+
+rules:
+    proposal:
+        - Keep proposals concise and focused on user value
+        - Always include "Goals" and "Non-goals" sections
+        - Consider real-time performance implications for event monitoring features
+        - Document any new event types or status codes
+        - Consider i18n requirements - add translation keys for new UI text
+        - Specify which webpack aliases should be used for imports
+        - Consider ACL/permission requirements for new features
+
+    tasks:
+        - Break tasks into chunks of max 2-3 hours
+        - Always specify which directory/module the task affects
+        - Include validation and error handling requirements
+        - For UI tasks, reference BootstrapVue components to use
+        - For API tasks, specify service layer changes needed
+        - Add i18n translation keys as separate task items
+        - Consider mobile/responsive requirements
+        - Include testing approach (dev, staging considerations)
+
+    design:
+        - Follow existing Vue 2 patterns (Options API or Composition API)
+        - Use BootstrapVue components before creating custom ones
+        - Leverage existing utilities in src/@core/utils
+        - Follow the Vuex module pattern for state management
+        - Use existing SCSS variables and mixins from @core/scss
+        - Keep components focused and reusable
+        - Consider real-time updates via SignalR/Socket.io for live data
+        - Follow the service layer pattern for API calls
+
+    implementation:
+        - Always use webpack aliases (@, @core, @axios) in imports
+        - Register global components in src/global-components.js
+        - Add new routes to appropriate project router file
+        - Use Vee-validate for form validation
+        - Implement proper error handling with try-catch and user feedback (toasts)
+        - Use i18n for all user-facing text (never hardcode strings)
+        - Follow the existing file structure conventions
+        - Test with Vue DevTools for state and props debugging
+        - Consider browser console errors and warnings
+        - Ensure responsive design on mobile/tablet viewports

@@ -1,0 +1,222 @@
+:root {
+    --primary-color: #045da5;
+    --secondary-color: #a8aaae;
+    --success-color: #28c76f;
+    --danger-color: #ea5455;
+    --warning-color: #ff9f43;
+    --info-color: #00cfe8;
+    --dark-color: #4b4b4b;
+    --light-color: #d7d8de;
+    --purple-color: #7367f0;
+    --yellow-color: #ffcd39;
+    --white-color: #ffffff;
+
+    --primary-soft-color: #e9e7fd;
+    --secondary-soft-color: #f1f1f2;
+    --success-soft-color: #ddf6e8;
+    --danger-soft-color: #fce4e4;
+    --warning-soft-color: #fff0e1;
+    --info-soft-color: #d6f7fb;
+    --dark-soft-color: #e2e2e2;
+    --yellow-soft-color: #fff3cd;
+    --purple-soft-color: #c2c1f5;
+
+    --primary-soft-hover-color: #dddbfb;
+    --secondary-soft-hover-color: #eaebec;
+    --success-soft-hover-color: #cbf2dc;
+    --danger-soft-hover-color: #fad6d6;
+    --warning-soft-hover-color: #ffe8d2;
+    --info-soft-hover-color: #c2f3f9;
+    --dark-soft-hover-color: #d4d4d4;
+
+    --primary-soft-dark-color: #3a3b64;
+    --secondary-soft-dark-color: #424659;
+    --success-soft-dark-color: #2e4b4f;
+    --danger-soft-dark-color: #4d384b;
+    --warning-soft-dark-color: #504448;
+    --info-soft-dark-color: #274c62;
+    --dark-soft-dark-color: #484c5f;
+
+    --primary-soft-dark-hover-color: #3f3f71;
+    --secondary-soft-dark-hover-color: #4c5061;
+    --success-soft-dark-hover-color: #2d5752;
+    --danger-soft-dark-hover-color: #5c3b4c;
+    --warning-soft-dark-hover-color: #614d48;
+    --info-soft-dark-hover-color: #24586f;
+    --dark-soft-dark-hover-color: #575b6d;
+
+    --primary-linear-gradient-color: linear-gradient(
+        270deg,
+        rgba(var(--primary-color), 0.7),
+        rgb(var(--primary-color))
+    ) !important;
+    --secondary-linear-gradient-color: linear-gradient(
+        to right,
+        #a8aaae,
+        #28c76f
+    );
+    --success-linear-gradient-color: linear-gradient(
+        to right,
+        #28c76f,
+        #ea5455
+    );
+    --danger-linear-gradient-color: linear-gradient(to right, #ea5455, #ff9f43);
+    --warning-linear-gradient-color: linear-gradient(
+        to right,
+        #ff9f43,
+        #00cfe8
+    );
+    --info-linear-gradient-color: linear-gradient(to right, #00cfe8, #7367f0);
+    --dark-linear-gradient-color: linear-gradient(to right, #7367f0, #4b4b4b);
+
+    --box-shadow: 0 2px 6px rgba(var(--v-global-theme-primary), 0.3);
+}
+$color-map: (
+    primary: var(--primary-color),
+    secondary: var(--secondary-color),
+    success: var(--success-color),
+    danger: var(--danger-color),
+    warning: var(--warning-color),
+    info: var(--info-color),
+    dark: var(--dark-color),
+    light: var(--light-color),
+    purple: var(--purple-color),
+    yellow: var(--yellow-color),
+    white: var(--white-color),
+);
+$soft-color-map: (
+    primary: var(--primary-soft-color),
+    secondary: var(--secondary-soft-color),
+    success: var(--success-soft-color),
+    danger: var(--danger-soft-color),
+    warning: var(--warning-soft-color),
+    info: var(--info-soft-color),
+    dark: var(--dark-soft-color),
+    yellow: var(--yellow-soft-color),
+);
+$weights: (
+    thin: 100,
+    extra-light: 200,
+    ultra-light: 200,
+    light: 300,
+    normal: 400,
+    book: 400,
+    regular: 400,
+    medium: 500,
+    semi-bold: 600,
+    demi-bold: 600,
+    bold: 700,
+    extra-bold: 800,
+    ultra-bold: 900,
+    heavy: 900,
+    black: 900,
+    ultra: 900,
+    ultra-black: 900,
+    extra-ultra: 900,
+);
+
+
+$label-color-map: (
+    primary: (
+        color: var(--primary-color),
+        background: var(--primary-soft-color),
+        background-hover: var(--primary-soft-hover-color),
+        background-dark: var(--primary-soft-dark-color),
+        background-dark-hover: var(--primary-soft-dark-hover-color),
+    ),
+    secondary: (
+        color: var(--secondary-color),
+        background: var(--secondary-soft-color),
+        background-hover: var(--secondary-soft-hover-color),
+        background-dark: var(--secondary-soft-dark-color),
+        background-dark-hover: var(--secondary-soft-dark-hover-color),
+    ),
+    success: (
+        color: var(--success-color),
+        background: var(--success-soft-color),
+        background-hover: var(--success-soft-hover-color),
+        background-dark: var(--success-soft-dark-color),
+        background-dark-hover: var(--success-soft-dark-hover-color),
+    ),
+    danger: (
+        color: var(--danger-color),
+        background: var(--danger-soft-color),
+        background-hover: var(--danger-soft-hover-color),
+        background-dark: var(--danger-soft-dark-color),
+        background-dark-hover: var(--danger-soft-dark-hover-color),
+    ),
+    warning: (
+        color: var(--warning-color),
+        background: var(--warning-soft-color),
+        background-hover: var(--warning-soft-hover-color),
+        background-dark: var(--warning-soft-dark-color),
+        background-dark-hover: var(--warning-soft-dark-hover-color),
+    ),
+    info: (
+        color: var(--info-color),
+        background: var(--info-soft-color),
+        background-hover: var(--info-soft-hover-color),
+        background-dark: var(--info-soft-dark-color),
+        background-dark-hover: var(--info-soft-dark-hover-color),
+    ),
+    dark: (
+        color: var(--dark-color),
+        background: var(--dark-soft-color),
+        background-hover: var(--dark-soft-hover-color),
+        color-dark: var(--dark-dark-color),
+        background-dark: var(--dark-soft-dark-color),
+        background-dark-hover: var(--dark-soft-dark-hover-color),
+    ),
+);
+$linear-gradient-map: (
+    primary: (
+        start: rgba(4, 93, 165, 0.7),
+        end: rgb(4, 93, 165),
+        shadow: rgba(4, 93, 165, 0.3),
+    ),
+    secondary: (
+        start: rgba(168, 170, 174, 0.7),
+        end: rgb(168, 170, 174),
+        shadow: rgba(168, 170, 174, 0.3),
+    ),
+    success: (
+        start: rgba(40, 199, 111, 0.7),
+        end: rgb(40, 199, 111),
+        shadow: rgba(40, 199, 111, 0.3),
+    ),
+    danger: (
+        start: rgba(234, 84, 85, 0.7),
+        end: rgb(234, 84, 85),
+        shadow: rgba(234, 84, 85, 0.3),
+    ),
+    warning: (
+        start: rgba(255, 159, 67, 0.7),
+        end: rgb(255, 159, 67),
+        shadow: rgba(255, 159, 67, 0.3),
+    ),
+    info: (
+        start: rgba(0, 207, 232, 0.7),
+        end: rgb(0, 207, 232),
+        shadow: rgba(0, 207, 232, 0.3),
+    ),
+    dark: (
+        start: rgba(75, 75, 75, 0.7),
+        end: rgb(75, 75, 75),
+        shadow: rgba(75, 75, 75, 0.3),
+    ),
+    light: (
+        start: rgba(215, 216, 222, 0.7),
+        end: rgb(215, 216, 222),
+        shadow: rgba(215, 216, 222, 0.3),
+    ),
+    purple: (
+        start: rgba(115, 103, 240, 0.7),
+        end: rgb(115, 103, 240),
+        shadow: rgba(115, 103, 240, 0.3),
+    ),
+    yellow: (
+        start: rgba(255, 205, 57, 0.7),
+        end: rgb(255, 205, 57),
+        shadow: rgba(255, 205, 57, 0.3),
+    ),
+);

@@ -1,0 +1,15 @@
+.treeselect-nowrap .vue-treeselect__control {
+    overflow-x: hidden;
+    white-space: nowrap;
+}
+
+.treeselect-nowrap .vue-treeselect__multi-value {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    overflow-x: hidden;
+}
+
+.treeselect-nowrap .vue-treeselect__limit-tip {
+    display: inline;
+}

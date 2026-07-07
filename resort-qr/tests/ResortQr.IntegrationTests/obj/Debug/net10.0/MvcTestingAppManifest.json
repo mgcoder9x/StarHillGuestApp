@@ -1,0 +1,7 @@
+{
+  "ResortQr.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\PERSONAL\\system-prompt\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Api",
+  "ResortQr.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\PERSONAL\\system-prompt\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application",
+  "ResortQr.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\PERSONAL\\system-prompt\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain",
+  "ResortQr.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\PERSONAL\\system-prompt\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Infrastructure",
+  "ResortQr.SharedKernel, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\PERSONAL\\system-prompt\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel"
+}

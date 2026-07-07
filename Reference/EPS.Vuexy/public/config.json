@@ -1,0 +1,10 @@
+{
+    "routes": [
+        {
+            "path": "/dashboard/dashboard-events",
+            "icon": "solar:cpu-bold",
+            "requiresPrivileges": [],
+            "name": "dashboard-system-info"
+        }
+    ]
+}

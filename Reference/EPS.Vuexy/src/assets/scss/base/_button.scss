@@ -1,0 +1,39 @@
+@use '../abstracts' as *;
+
+[class*='btn-label-'] {
+    border-color: rgba(0, 0, 0, 0) !important;
+}
+
+@each $key, $value in $soft-color-map {
+    .bg-soft-#{"" + $key} {
+        background-color: $value !important;
+    }
+}
+
+
+@each $class, $styles in $label-color-map {
+    .btn-label-#{"" + $class},
+    .bg-label-#{"" + $class} {
+        color: get-label-style(#{"" + $class}, color) !important;
+        background: get-label-style(#{"" + $class}, background) !important;
+        &:hover {
+            background: get-label-style(#{"" + $class}, background-hover) !important;
+        }
+    }
+}
+@each $class, $styles in $linear-gradient-map {
+    .btn-linear-#{"" + $class},
+    .bg-linear-#{"" + $class} {
+        color: #ffffff !important;
+        background: linear-gradient(
+            270deg,
+            map-get($styles, start),
+            map-get($styles, end)
+        ) !important;
+        box-shadow: 0 2px 6px map-get($styles, shadow);
+        &:hover {
+            background: map-get($styles, end) !important;
+        }
+        border: none !important;
+    }
+}

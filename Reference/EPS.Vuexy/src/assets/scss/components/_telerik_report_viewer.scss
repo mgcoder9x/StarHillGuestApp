@@ -1,0 +1,24 @@
+@use '../abstracts/variables' as *;
+.k-menu-link {
+    color: $v-blue-atin !important;
+}
+.k-menu-item.k-selected {
+    background-color: $v-blue-atin !important;
+}
+.trv-nav {
+    display: flex !important;
+    justify-content: center !important;
+}
+.trv-side-menu .k-panelbar {
+    > .k-item {
+        > .k-link {
+            color: $v-blue-atin !important;
+        }
+    }
+    > .k-item.k-highlight {
+        > .k-link {
+            color: $v-white !important;
+            background-color: $v-blue-atin !important;
+        }
+    }
+}

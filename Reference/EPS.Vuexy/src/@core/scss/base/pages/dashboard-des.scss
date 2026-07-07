@@ -1,0 +1,634 @@
+// ─────────────────────────────────────────────────────────────────────────────
+//  Dashboard DES - Meiko  (design v2 — matches HTML reference)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Design tokens ──────────────────────────────────────────────────────────
+$bg: #f0f3f8;
+$surf: #ffffff;
+$surf2: #f7f9fc;
+$surf3: #eef2f8;
+$border: #e2e8f2;
+$border2: #c9d4e8;
+
+$tx: #0d1421;
+$tx2: #3d4f6b;
+$tx3: #7e92b0;
+$tx4: #aebdd4;
+
+$blue: #1a6cf6;
+$blue-bg: #e8f0fe;
+$blue-b: #93bbfd;
+
+$green: #0d9e5c;
+$green-bg: #d4f5e5;
+$green-b: #6dd8a8;
+
+$orange: #e06318;
+$orange-bg: #fdeee4;
+$orange-b: #f5b280;
+
+$red: #d93a3a;
+$red-bg: #fce8e8;
+$red-b: #f09090;
+
+$gray: #8fa3bf;
+$gray-bg: #edf1f7;
+$gray-b: #c8d4e4;
+
+$radius: 10px;
+$radius-s: 7px;
+$shadow-s:
+    0 1px 4px rgba(13, 20, 33, 0.06),
+    0 3px 12px rgba(13, 20, 33, 0.04);
+$shadow-m:
+    0 4px 20px rgba(13, 20, 33, 0.1),
+    0 1px 4px rgba(13, 20, 33, 0.05);
+
+// ── Global container ────────────────────────────────────────────────────────
+.dashboard-container {
+    padding: 16px 20px 32px;
+    min-height: calc(100vh - 80px);
+    background: $bg;
+}
+
+// ── Header / Tab Navigation ─────────────────────────────────────────────────
+.dashboard-header {
+    background: $surf;
+    border-radius: $radius;
+    padding: 8px 14px;
+    box-shadow: $shadow-s;
+    border: 1px solid $border;
+    margin-bottom: 14px;
+}
+
+.dash-tabs {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.dash-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: $radius-s;
+    font-size: 12px;
+    font-weight: 700;
+    color: $tx3;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition:
+        color 0.18s,
+        background 0.18s;
+    white-space: nowrap;
+    letter-spacing: 0.1px;
+
+    &:hover {
+        color: $blue;
+        background: $blue-bg;
+    }
+
+    &--active {
+        color: $blue;
+        background: $blue-bg;
+        border-bottom: 2px solid $blue;
+        border-radius: $radius-s $radius-s 0 0;
+    }
+}
+
+// ── Step status colors ───────────────────────────────────────────────────────
+.step-completed {
+    background: $green !important;
+}
+.step-violation {
+    background: $orange !important;
+}
+.step-inProgress {
+    background: $blue !important;
+}
+.step-pending {
+    background: $gray-b !important;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  REALTIME VIEW
+// ─────────────────────────────────────────────────────────────────────────────
+
+.rt-view {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+// ── Section title ───────────────────────────────────────────────────────────
+.sec-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: $tx;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+
+    .sec-ico {
+        flex-shrink: 0;
+    }
+
+    &--detail {
+        margin-top: 4px;
+    }
+}
+
+// ── KPI row ─────────────────────────────────────────────────────────────────
+.kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+
+    @media (max-width: 1200px) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    @media (max-width: 640px) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.kpi-card {
+    background: $surf;
+    border: 1px solid $border;
+    border-radius: $radius;
+    padding: 13px 16px;
+    box-shadow: $shadow-s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: box-shadow 0.2s;
+
+    &:hover {
+        box-shadow: $shadow-m;
+    }
+}
+
+.kpi-icon-wrap {
+    width: 40px;
+    height: 40px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.kpi-body {
+}
+
+.kpi-num {
+    font-size: 28px;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.kpi-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: $tx3;
+    margin-top: 2px;
+    letter-spacing: 0.3px;
+}
+
+// KPI variants
+.kpi-card--done .kpi-icon-wrap {
+    background: $green-bg;
+    color: $green;
+}
+.kpi-card--done .kpi-num {
+    color: $green;
+}
+.kpi-card--vio .kpi-icon-wrap {
+    background: $orange-bg;
+    color: $orange;
+}
+.kpi-card--vio .kpi-num {
+    color: $orange;
+}
+.kpi-card--doing .kpi-icon-wrap {
+    background: $blue-bg;
+    color: $blue;
+}
+.kpi-card--doing .kpi-num {
+    color: $blue;
+}
+.kpi-card--pend .kpi-icon-wrap {
+    background: $gray-bg;
+    color: $gray;
+}
+.kpi-card--pend .kpi-num {
+    color: $gray;
+}
+
+// ── Section row (ratio + alert) ─────────────────────────────────────────────
+.rt-section-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 12px;
+    align-items: start;
+
+    @media (max-width: 1024px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+// ── Ratio area ───────────────────────────────────────────────────────────────
+.rt-ratio-area {
+}
+
+.ratio-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+
+    @media (max-width: 1024px) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    @media (max-width: 640px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.ratio-empty {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px;
+    background: $surf;
+    border: 1px dashed $border2;
+    border-radius: $radius;
+    font-size: 12px;
+}
+
+// ── Ratio Card ───────────────────────────────────────────────────────────────
+.rc-wrap {
+    background: $surf2;
+    border: 1px solid $border;
+    border-radius: $radius-s;
+    padding: 12px;
+
+    &:hover {
+        border-color: $border2;
+        box-shadow: $shadow-s;
+    }
+}
+
+.rc-name {
+    font-size: 11px;
+    font-weight: 800;
+    color: $tx2;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 9px;
+
+    .rc-ico {
+        flex-shrink: 0;
+        color: $tx3;
+    }
+}
+
+.rc-stack-bar {
+    height: 18px;
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    background: $gray-bg;
+    margin-bottom: 10px;
+}
+
+.rc-seg {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: #fff;
+    transition: width 0.5s ease;
+    overflow: hidden;
+    white-space: nowrap;
+
+    &--done {
+        background: $green;
+    }
+    &--vio {
+        background: $orange;
+    }
+    &--doing {
+        background: $blue;
+    }
+    &--pend {
+        background: $gray-b;
+    }
+}
+
+.rc-donut-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.rc-donut-wrap {
+    position: relative;
+    width: 68px;
+    height: 68px;
+    flex-shrink: 0;
+}
+
+.rc-donut-ctr {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.rc-donut-pct {
+    font-size: 14px;
+    font-weight: 900;
+    line-height: 1;
+    color: $green;
+}
+
+.rc-donut-lbl {
+    font-size: 8px;
+    color: $tx3;
+    font-weight: 600;
+}
+
+.rc-stat-list {
+    flex: 1;
+    min-width: 0;
+}
+
+.rc-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 0;
+    border-bottom: 1px solid $border;
+
+    &:last-child {
+        border: none;
+    }
+}
+
+.rc-stat-name {
+    font-size: 10px;
+    font-weight: 600;
+    &--done {
+        color: $green;
+    }
+    &--vio {
+        color: $orange;
+    }
+    &--doing {
+        color: $blue;
+    }
+    &--pend {
+        color: $gray;
+    }
+}
+
+.rc-stat-val {
+    font-size: 10px;
+    font-weight: 800;
+    &--done {
+        color: $green;
+    }
+    &--vio {
+        color: $orange;
+    }
+    &--doing {
+        color: $blue;
+    }
+    &--pend {
+        color: $gray;
+    }
+}
+
+// ── Alert feed ───────────────────────────────────────────────────────────────
+.rt-alert-area {
+}
+
+.alert-count-badge {
+    font-size: 10px;
+    font-weight: 700;
+    background: $red-bg;
+    color: $red;
+    border: 1px solid $red-b;
+    padding: 1px 7px;
+    border-radius: 10px;
+    margin-left: 4px;
+}
+
+.alert-feed {
+    background: $surf;
+    border: 1px solid $border;
+    border-radius: $radius;
+    padding: 4px 0;
+    max-height: 220px;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+        width: 3px;
+    }
+    &::-webkit-scrollbar-thumb {
+        background: $red-b;
+        border-radius: 3px;
+    }
+}
+
+.alert-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 24px 16px;
+    font-size: 11px;
+    color: $tx4;
+}
+
+.alert-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 7px 12px;
+    border-bottom: 1px solid $border;
+    transition: background 0.15s;
+
+    &:last-child {
+        border: none;
+    }
+    &:hover {
+        background: $surf2;
+    }
+}
+
+.alert-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: $orange;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.alert-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.alert-line {
+    font-size: 11px;
+    font-weight: 700;
+    color: $tx;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.alert-meta {
+    font-size: 10px;
+    color: $tx3;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.alert-count {
+    font-size: 10px;
+    font-weight: 700;
+    color: $orange;
+    flex-shrink: 0;
+}
+
+// ── Detail section (LineCard step carousel) ─────────────────────────────────
+.rt-detail-section {
+}
+
+// ── Line Card ────────────────────────────────────────────────────────────────
+.line-card {
+    background: $surf;
+    border: 1px solid $border;
+    border-radius: $radius;
+    box-shadow: $shadow-s;
+    margin-bottom: 12px;
+
+    > .card-body {
+        padding: 14px 16px 12px !important;
+    }
+
+    .line-card-header {
+        padding: 10px 16px;
+        background: $surf2;
+        border-bottom: 1px solid $border;
+        border-radius: $radius $radius 0 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+}
+
+// Line header stats badges
+.stat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid;
+
+    &.text-success {
+        color: $green;
+        background: $green-bg;
+        border-color: $green-b;
+    }
+    &.text-warning {
+        color: $orange;
+        background: $orange-bg;
+        border-color: $orange-b;
+    }
+    &.text-primary {
+        color: $blue;
+        background: $blue-bg;
+        border-color: $blue-b;
+    }
+    &.text-default,
+    &.text-secondary {
+        color: $gray;
+        background: $gray-bg;
+        border-color: $gray-b;
+    }
+}
+
+// ── Step Grid ────────────────────────────────────────────────────────────────
+.step-grid {
+    display: grid;
+    gap: 6px;
+}
+
+.step-box {
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    transition: transform 0.15s;
+    min-height: 100%;
+    &:hover {
+        transform: translateY(-1px);
+    }
+}
+
+// ── Header updated-at ────────────────────────────────────────────────────────
+.hdr-updated-at {
+    font-size: 11px;
+    color: $tx3;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    strong {
+        color: $tx2;
+    }
+}
+
+// ── Utility ──────────────────────────────────────────────────────────────────
+.font-weight-500 {
+    font-weight: 500;
+}
+.text-nowrap {
+    white-space: nowrap;
+}
+.gap-2 {
+    gap: 0.5rem;
+}
+.min-w-0 {
+    min-width: 0;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────

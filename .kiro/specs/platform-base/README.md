@@ -1,0 +1,59 @@
+# platform-base — Bản đồ định hướng (đọc file này TRƯỚC)
+
+> Trang này để **một AI/người mới** hiểu đủ trong ~2 phút: ta đang xây gì, file nào là chuẩn, đang ở đâu, kiểm tra thế nào. Đọc xong mới đi vào chi tiết.
+
+## 1. Ta đang xây gì (một câu)
+
+Một **base/platform backend domain-agnostic, modular-monolith-ready** (.NET 10, C#): *lõi biết "cần gì" (port), adapter biết "làm bằng gì" (tech), module biết "nghiệp vụ gì", Host biết "bật cái nào" → thêm công nghệ/nghiệp vụ = thêm adapter/module, KHÔNG sửa lõi.*
+
+Cấu trúc 4 tầng: **Bedrock** (lõi) → **Adapters** (công nghệ) → **Modules** (nghiệp vụ) → **Host** (composition root). Code **sẽ** nằm ở thư mục `platform/` (solution `Platform.slnx`) — hiện chưa dựng (xem §4).
+
+> ✅ **Quyết định đã chốt:** (a) prefix lõi = **`Bedrock.*`** (một từ); (b) `Result` = **`sealed class`** + factory `Success()/Failure()` (design §4.4); (c) dead-letter = cột `dead_lettered_at` (không bảng DLQ riêng). Thư mục giải pháp giữ `platform/`.
+
+## 2. File nào là gì
+
+**Thứ tự ĐỌC cho người mới:** README (file này) → `requirements.md` (WHAT/WHY) → `design.md` (HOW) → `tasks.md` (WHEN/checklist).
+**Thứ tự THẨM QUYỀN khi mâu thuẫn:** `design.md` thắng (nguồn sự thật duy nhất về thiết kế); hai file `foundation/*.md` đóng băng làm lịch sử/nguồn rationale.
+
+| File | Vai trò | Ghi chú |
+|---|---|---|
+| `design.md` | **THIẾT KẾ CHÍNH — nguồn sự thật duy nhất (HOW)** | Contract C#, thuật toán (outbox claim/backoff, inbox idempotency, rotation, domain-event dispatch), dependency matrix, DI, Correctness Properties CP1–CP15. Chỗ tinh chỉnh khác blueprint có nhãn `[Tinh chỉnh so với Blueprint]` kèm lý do. |
+| `requirements.md` | **CÁI GÌ + TẠI SAO (EARS, R1–R34)** | Tiêu chí chấp nhận, truy vết F#/I#. |
+| `tasks.md` | **KẾ HOẠCH + CHECKLIST (21 task, 10 wave, DoD)** | Nơi theo dõi tiến độ; mỗi task có dòng "Nghiệm thu". |
+| `../../foundation/FOUNDATION-BLUEPRINT.md` | Nguồn gốc (thiết kế đích ban đầu, invariants I1–I10) | **Đã hấp thụ vào `design.md`** — chỉ tham chiếu, KHÔNG sửa. |
+| `../../foundation/ARCHITECTURE-REVIEW.md` | Nguồn gốc (chẩn đoán F1–F35 — lý do) | Tra "vì sao có quyết định này". KHÔNG sửa. |
+
+## 3. Các phase triển khai (bám build order design §15)
+
+| Phase | Mục tiêu | Task | Findings chính |
+|---|---|---|---|
+| **Giai đoạn 0** | Khởi tạo solution + lõi Domain/Application + architecture-test làm lưới | 1–4 | nền tảng |
+| **P0** | Api mechanism thuần (không rò nghiệp vụ, không ref Infrastructure) + masker + health | 5 | F1–F4, F14, F15 |
+| **P1** | Infrastructure/EF (UoW/Repo/DomainEvents) + Outbox/Inbox + refresh store + crypto/JWT + DI/startup validation + HTTP hardening | 6–11 | F5–F11, F16–F19, F22 |
+| **P1.5** | Đặt "ổ cắm" mở rộng: ports contract-first + extension architecture + adapter mẫu RabbitMQ | 12–14 | F24–F29, F33 |
+| **P2** | Pipeline behaviors đầy đủ + Modules/Host + versioning/telemetry/secrets + contract tests + DoD | 15–21 | F12/F13, F20/F21, F23, F30–F35 |
+
+Thứ tự & song song hóa chi tiết: xem **Task Dependency Graph** + khối `json` waves trong `tasks.md`.
+
+## 4. Đang ở đâu (trạng thái hiện tại)
+
+- ⛔ **Greenfield — CHƯA có code trên đĩa.** Thư mục `platform/` **không tồn tại** (bản dựng thử trước đó đã bị hoàn tác bởi checkpoint restore — đã kiểm chứng).
+- ⛔ Chưa có: khung solution (`Platform.slnx`, config), `Bedrock.Domain/Application/Infrastructure/Api`, `Adapters.*`, `Modules.*`, `Host`, `tests/*`.
+- ℹ️ Chỉ tồn tại: bộ tài liệu spec này + các file nguồn `foundation/*.md`.
+
+→ **Điểm bắt đầu:** task 1 (khung solution `platform/`) → task 2 (Domain + test) → task 3 (Application) → task 4 (architecture tests). Các quyết định nền đã chốt (§1).
+
+## 5. Kiểm tra / nghiệm thu như thế nào (3 lớp)
+
+1. **Hành vi** → Acceptance Criteria trong `requirements.md` (R1–R34, EARS).
+2. **Đúng đắn kỹ thuật** → **Correctness Properties CP1–CP15** trong `design.md` (mỗi CP có `Validates: Requirements` + test tương ứng: architecture test hoặc integration test). Ví dụ: CP1 no-business-in-core, CP2 Api⊥Infrastructure, CP6 Outbox atomicity, CP7 rotation atomicity, CP8 Inbox idempotency, CP14 domain-event atomic, CP15 outbox exclusive claim.
+3. **Tiến độ & hoàn thành** → checklist `tasks.md` (mỗi task có dòng "Nghiệm thu") + **Definition of Done** (task 21, design §16).
+
+**Cổng chất lượng bất biến (mọi lát):** `dotnet test Platform.slnx` phải **build 0 warning + tất cả test xanh** (R31/I10). Cần Docker cho các test Postgres/adapter (Testcontainers) ở task 7.4/8.3/14 — không có Docker thì skip có điều kiện, KHÔNG xóa test.
+
+## 6. Lệnh nhanh
+
+```powershell
+# Build + test toàn solution (chạy tại thư mục platform/)
+dotnet test Platform.slnx
+```

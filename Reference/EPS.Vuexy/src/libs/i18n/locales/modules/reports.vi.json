@@ -1,0 +1,235 @@
+{
+    "reports": {
+        "title": {
+            "reportFireworkInspectionStatistics25": "Thống kê số lượng kiểm tra sản phẩm pháo hoa phun viên 25"
+        },
+        "Validate": {
+            "Date": "Thời gian từ ngày phải nhỏ hơn thời gian đến ngày"
+        },
+        "labels": {
+            "cascade": "Dây chuyền",
+            "end_date": "Ngày kết thúc",
+            "start_date": "Ngày bắt dầu"
+        }
+    },
+    "Report": {
+        "vehicleViolationReport": {
+            "SearchForm": {
+                "Device": "Thiết bị",
+                "startDate": "Ngày bắt đầu",
+                "endDate": "Ngày kết thúc",
+                "Color": "Màu xe",
+                "Type": "Phân loại",
+                "VehicleType": "Loại phương tiện",
+                "LicensePlate": "Biển số xe",
+                "All": "Tất cả",
+                "Area": "Khu vực"
+            },
+            "button": {
+                "exportReport": "Báo cáo"
+            }
+        }
+    },
+    "study": {
+        "student": {
+            "common": {
+                "form": {
+                    "placeholder": {
+                        "avatarPath": "Đường dẫn ảnh",
+                        "jobDuties": "Công việc",
+                        "birthday": "Ngày sinh",
+                        "code": "Mã học viên",
+                        "gender": "Giới tính",
+                        "citizenId": "Số căn cước",
+                        "position": "Vị trí",
+                        "groupName": "Nhóm truy cập",
+                        "compName": "Đơn vị",
+                        "phoneNumber": "Số điện thoại",
+                        "status": "Trạng thái",
+                        "email": "Email",
+                        "depName": "Phòng ban",
+                        "fullname": "Tên học viên"
+                    },
+                    "label": {
+                        "avartarPath": "Chọn hình ảnh",
+                        "avatarPath": "Đường dẫn ảnh",
+                        "jobDuties": "Công việc",
+                        "code": "Mã học viên",
+                        "birthday": "Ngày sinh",
+                        "gender": "Giới tính",
+                        "citizenId": "Số căn cước",
+                        "position": "Vị trí",
+                        "groupName": "Nhóm truy cập",
+                        "compName": "Đơn vị",
+                        "phoneNumber": "Số điện thoại",
+                        "status": "Trạng thái",
+                        "email": "Email",
+                        "depName": "Phòng ban",
+                        "fullname": "Tên học viên"
+                    }
+                }
+            },
+            "error": {
+                "D_EMPLOYEES_200": "Xóa học viên thành công!",
+                "STDUsersS_489": "Mã học viên đã bị trùng!",
+                "C_EMPLOYEES_200": "Thêm học viên thành công!",
+                "IMPORT_SUCCESS": "Import thành công",
+                "U_EMPLOYEES_200": "Cập nhật học viên thành công!",
+                "EMPLOYEES_500": "Có lỗi xảy ra, vui lòng thử lại sau!"
+            },
+            "import": {
+                "importPlaceholder": "Vui lòng chọn tệp danh sách đối tượng",
+                "importSample": "Tải tệp mẫu",
+                "fileInputXlxs": "Vui lòng chọn file có định dạng .xlsx",
+                "importRequire": "Vui lòng chọn tệp",
+                "header": "Import đối tượng",
+                "import": "Chọn tệp:",
+                "fileInput50Mb": "Vui lòng chọn file có dung lượng dưới 5MB"
+            },
+            "list": {
+                "table": {
+                    "label": {
+                        "departmentName": "Phòng ban",
+                        "citizenId": "Căn cước công dân",
+                        "compName": "Đơn vị",
+                        "status": "Trạng thái",
+                        "code": "Mã học viên",
+                        "image": "Ảnh",
+                        "name": "Tên học viên",
+                        "gender": "Giới tính",
+                        "action": "Thao tác"
+                    }
+                },
+                "searchForm": {
+                    "placeholder": {
+                        "citizenId": "Nhập giá trị",
+                        "department": "Chọn giá trị",
+                        "compName": "Chọn giá trị",
+                        "status": "Chọn giá trị",
+                        "imageStatus": "Trạng thái ảnh",
+                        "gender": "Chọn giá trị",
+                        "nameCode": "Nhập giá trị"
+                    },
+                    "label": {
+                        "citizenId": "Căn cước công dân",
+                        "department": "Phòng ban",
+                        "compName": "Đơn vị",
+                        "advancedSearch": "Tìm kiếm nâng cao",
+                        "status": "Trạng thái",
+                        "imageStatus": "Trạng thái ảnh",
+                        "gender": "Giới tính",
+                        "nameCode": "Tên/ Mã học viên"
+                    }
+                }
+            }
+        }
+    },
+    "test": {
+        "student": {
+            "common": {
+                "form": {
+                    "placeholder": {
+                        "avatarPath": "Đường dẫn ảnh",
+                        "jobDuties": "Công việc",
+                        "birthday": "Ngày sinh",
+                        "code": "Mã học viên",
+                        "gender": "Giới tính",
+                        "citizenId": "Số căn cước",
+                        "position": "Vị trí",
+                        "groupName": "Nhóm truy cập",
+                        "compName": "Đơn vị",
+                        "phoneNumber": "Số điện thoại",
+                        "status": "Trạng thái",
+                        "email": "Email",
+                        "depName": "Phòng ban",
+                        "fullname": "Tên học viên"
+                    },
+                    "label": {
+                        "avartarPath": "Chọn hình ảnh",
+                        "avatarPath": "Đường dẫn ảnh",
+                        "jobDuties": "Công việc",
+                        "code": "Mã học viên",
+                        "birthday": "Ngày sinh",
+                        "gender": "Giới tính",
+                        "citizenId": "Số căn cước",
+                        "position": "Vị trí",
+                        "groupName": "Nhóm truy cập",
+                        "compName": "Đơn vị",
+                        "phoneNumber": "Số điện thoại",
+                        "status": "Trạng thái",
+                        "email": "Email",
+                        "depName": "Phòng ban",
+                        "fullname": "Tên học viên"
+                    }
+                }
+            },
+            "error": {
+                "D_EMPLOYEES_200": "Xóa học viên thành công!",
+                "STDUsersS_489": "Mã học viên đã bị trùng!",
+                "C_EMPLOYEES_200": "Thêm học viên thành công!",
+                "IMPORT_SUCCESS": "Import thành công",
+                "U_EMPLOYEES_200": "Cập nhật học viên thành công!",
+                "EMPLOYEES_500": "Có lỗi xảy ra, vui lòng thử lại sau!"
+            },
+            "import": {
+                "importPlaceholder": "Vui lòng chọn tệp danh sách đối tượng",
+                "importSample": "Tải tệp mẫu",
+                "fileInputXlxs": "Vui lòng chọn file có định dạng .xlsx",
+                "importRequire": "Vui lòng chọn tệp",
+                "header": "Import đối tượng",
+                "import": "Chọn tệp:",
+                "fileInput50Mb": "Vui lòng chọn file có dung lượng dưới 5MB"
+            },
+            "list": {
+                "table": {
+                    "label": {
+                        "departmentName": "Phòng ban",
+                        "citizenId": "Căn cước công dân",
+                        "compName": "Đơn vị",
+                        "status": "Trạng thái",
+                        "code": "Mã học viên",
+                        "image": "Ảnh",
+                        "name": "Tên học viên",
+                        "gender": "Giới tính",
+                        "action": "Thao tác"
+                    }
+                },
+                "searchForm": {
+                    "placeholder": {
+                        "citizenId": "Nhập giá trị",
+                        "department": "Chọn giá trị",
+                        "compName": "Chọn giá trị",
+                        "status": "Chọn giá trị",
+                        "imageStatus": "Trạng thái ảnh",
+                        "gender": "Chọn giá trị",
+                        "nameCode": "Nhập giá trị"
+                    },
+                    "label": {
+                        "citizenId": "Căn cước công dân",
+                        "department": "Phòng ban",
+                        "compName": "Đơn vị",
+                        "advancedSearch": "Tìm kiếm nâng cao",
+                        "status": "Trạng thái",
+                        "imageStatus": "Trạng thái ảnh",
+                        "gender": "Giới tính",
+                        "nameCode": "Tên/ Mã học viên"
+                    }
+                }
+            }
+        }
+    },
+    "Conveyor": {
+        "Common": {
+            "WarningType": {
+                "Overflow": "Tràn băng chuyền",
+                "Size": "Cảnh báo kích thước nguyên liệu",
+                "Deviated": "Lệch băng tải",
+                "Torn": "Rách băng chuyền",
+                "TooTall": "Quá giới hạn chiều cao"
+            }
+        },
+        "Excel": {
+            "Header": "Dữ liệu giám sát băng tải"
+        }
+    }
+}
