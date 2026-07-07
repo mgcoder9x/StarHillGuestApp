@@ -5,7 +5,7 @@
 ---
 
 ### DV-001 — `*.Contracts` được phép tham chiếu `Bedrock.Application` (cho base `IntegrationEvent`)
-- Status: Confirmed (in design)
+- Status: **SUPERSEDED by AD-017 (2026-07-07)** — `IntegrationEvent` đã tách sang assembly trung tính `Bedrock.Messaging.Contracts`; `*.Contracts` KHÔNG còn ref `Bedrock.Application`. Bản ghi này giữ làm lịch sử (không xoá dấu vết).
 - Date: 2026-07-07
 - Decider: AI(review)
 - Provenance/Evidence: `review.md` D1; `design.md` §3.3 dependency matrix (footnote `[Tinh chỉnh so với Blueprint]`).
@@ -99,3 +99,17 @@
 - Consequences: task 1/2 là "tạo mới" thay vì "hoàn tất/kiểm chứng"; "kiểm tra" (build/test) chỉ chạy được sau khi triển khai.
 - Reversibility: N/A (đây là đính chính sự thật).
 - Traceability: design §10, N-001.
+
+---
+
+### DV-008 — Contract test bỏ tham chiếu trực tiếp "FE ErrorCode"; đồng bộ FE ra ngoài phạm vi base
+- Status: Confirmed (in requirements)
+- Date: 2026-07-07
+- Decider: AI(review)
+- Provenance/Evidence: `review.md` R5; `requirements.md` R32.4 hiện tại (verified read): "snapshot registry `Error.Code` (reflection) + snapshot schema integration-event; đồng bộ FE (khi FE tồn tại) qua artifact export từ registry này, ngoài phạm vi base".
+- Original: R32.4 gốc = contract test "error code ↔ FE `ErrorCode` (reflection)" — giả định có một frontend để đối chiếu.
+- Changed to: base chỉ đảm bảo (a) snapshot registry `Error.Code` (phát hiện code bị đổi/mất) + (b) snapshot schema integration-event (chống breaking vô ý). Việc đồng bộ với FE thực hiện qua **artifact export** từ registry, và **ngoài phạm vi base**.
+- Root cause: base là thư viện nền greenfield **KHÔNG có frontend** trong phạm vi → tiêu chí gốc "unsatisfiable as written" (không có FE nào để reflection đối chiếu). Sửa tận gốc = định nghĩa lại hợp đồng test cho tự-đủ ở tầng base, đẩy phần FE-sync sang app tiêu thụ.
+- Consequences: contract test của base độc lập, không phụ thuộc sự tồn tại của FE; app tiêu thụ tự lo đồng bộ qua artifact.
+- Reversibility: N/A (đính chính phạm vi).
+- Traceability: F20/F32, R32.4, review R5.

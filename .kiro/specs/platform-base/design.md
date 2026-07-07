@@ -113,8 +113,9 @@ platform/
   .editorconfig
   src/
     Bedrock/
-      Bedrock.Domain/          # Entity, ValueObject, DomainEvent, Result/Error, Guard, IHasConcurrencyToken
-      Bedrock.Application/     # Ports/*, Behaviors/*, UseCases, Paging, IntegrationEvent, IOutboxWriter
+      Bedrock.Domain/              # Entity, ValueObject, DomainEvent, Result/Error, Guard, IHasConcurrencyToken (zero-dep)
+      Bedrock.Messaging.Contracts/ # CHỈ IntegrationEvent (abstract record) — zero-dep; dùng chung bởi Application + mọi *.Contracts (AD-017)
+      Bedrock.Application/         # Ports/*, Behaviors/*, UseCases, Paging, messaging seam (IOutboxWriter...); IntegrationEvent ở Messaging.Contracts
       Bedrock.Infrastructure/  # EF base (DbContext/UoW/Repo), Cryptography, Tokens, Outbox/Inbox impl, defaults
       Bedrock.Api/             # ProblemDetails, Authentication(mechanism), HttpSecurity, Versioning, OpenApi, RateLimit, Observability  (KHÔNG ref Infrastructure — F14)
     Adapters/
@@ -139,18 +140,19 @@ platform/
 | Project | Được reference | TUYỆT ĐỐI KHÔNG |
 |---|---|---|
 | `Bedrock.Domain` | — | mọi thứ khác |
-| `Bedrock.Application` | Domain | EF, ASP.NET, adapter, module |
+| `Bedrock.Messaging.Contracts` | — (zero-dep) | Domain, Application, Infrastructure, EF, ASP.NET, mọi thứ khác |
+| `Bedrock.Application` | Domain, Bedrock.Messaging.Contracts | EF, ASP.NET, adapter, module |
 | `Bedrock.Infrastructure` | Application, Domain | ASP.NET Http pipeline, module, adapter cụ thể |
 | `Bedrock.Api` | Application | **Infrastructure** (F14), module, adapter |
 | `Adapters.<Tech>` | Bedrock.Application (+ Domain bắc cầu) | module, adapter khác, Api, Infrastructure |
-| `Modules.<M>.Contracts` | — (DTO thuần + `IntegrationEvent` từ Bedrock.Application)¹ | mọi thứ khác |
+| `Modules.<M>.Contracts` | `Bedrock.Messaging.Contracts` (chỉ để kế thừa `IntegrationEvent`)¹ | `Bedrock.Application`/`Infrastructure`/`Domain`, module khác, EF, ASP.NET |
 | `Modules.<M>.Domain` | Bedrock.Domain | EF, ASP.NET, module khác |
 | `Modules.<M>.Application` | M.Domain, **M.Contracts (của chính nó — để phát event)**, Bedrock.Application, **B.Contracts** (module khác chỉ Contracts) | M.Infrastructure, EF, ASP.NET |
 | `Modules.<M>.Infrastructure` | M.Application, Bedrock.Infrastructure | Api, module khác (trừ Contracts) |
 | `Modules.<M>.Api` | M.Application, Bedrock.Api | Infrastructure của bất kỳ module nào |
 | `Host` | tất cả | (composition root duy nhất) |
 
-> ¹ `IntegrationEvent` (base record) nằm ở `Bedrock.Application.Messaging` → `Modules.<M>.Contracts` được phép reference **duy nhất** `Bedrock.Application` để kế thừa base event (không kéo thêm gì khác). Đây là fix chủ đích so với blueprint (ghi "Contracts ref —"): không có quan hệ này thì `RoomCreatedIntegrationEvent : IntegrationEvent` không compile được. `[Tinh chỉnh so với Blueprint]`
+> ¹ `IntegrationEvent` (base record) nằm ở assembly trung tính **`Bedrock.Messaging.Contracts`** (zero-dependency) — KHÔNG ở `Bedrock.Application`. Nhờ vậy `Modules.<M>.Contracts` giữ đúng bản chất **DTO thuần**: chỉ phụ thuộc một kernel event trung tính, KHÔNG bao giờ trỏ ngược lên tầng Application. Đây thay cho phương án cũ (Contracts→Application) — xem journal **AD-017 (supersedes DV-001)**. `[Tinh chỉnh so với Blueprint]`
 
 **6 luật bất biến enforce bằng NetArchTest (review §14):**
 1. `Bedrock.*` KHÔNG biết nghiệp vụ (không guest/room/resort/Admin/Staff) — F2/F3/F4.
@@ -220,7 +222,8 @@ Thứ tự pipeline là composition risk kinh điển (F16 yêu cầu ForwardedH
 ### 4.1 Tổng quan components
 
 - **Bedrock.Domain** — Kernel sạch tuyệt đối: `Entity` (UUIDv7 + identity equality + domain events), `AuditableEntity`, marker `IAuditable`/`ISoftDeletable`/`IHasConcurrencyToken` (F8), `ValueObject`, `IDomainEvent`, `Result`/`Result<T>`/`Error`/`ErrorType`/`CommonErrors`, `ConcurrencyConflictException`, `Guard`. Zero dependency.
-- **Bedrock.Application** — Ports (`IClock`, `ICurrentUser`, `ITokenGenerator`, `IHtmlSanitizer`, persistence `IRepository`/`IUnitOfWork`, security `IRefreshTokenStore`/`IPasswordHasher`, messaging seam, domain-event seam), Behaviors (logging + authorization + validation + idempotency + transaction), `IUseCase`/`ICommandUseCase`, `Paging`, `IntegrationEvent`, DI service markers (`IScopedService`/`ISingletonService`/`ITransientService`/`IManualRegistration`) + `AddBedrockCore(params Assembly[])`.
+- **Bedrock.Messaging.Contracts** — assembly trung tính **zero-dependency** chứa DUY NHẤT `IntegrationEvent` (base record: `Id`/`OccurredAt`/`EventType`/`SchemaVersion`). Dùng chung bởi `Bedrock.Application` (seam messaging) và mọi `Modules.*.Contracts` (để khai integration event) → `Contracts` KHÔNG bao giờ trỏ lên tầng Application (AD-017, supersedes DV-001).
+- **Bedrock.Application** — Ports (`IClock`, `ICurrentUser`, `ITokenGenerator`, `IHtmlSanitizer`, persistence `IRepository`/`IUnitOfWork`, security `IRefreshTokenStore`/`IPasswordHasher`, messaging seam, domain-event seam), Behaviors (logging + authorization + validation + idempotency + transaction), `IUseCase`/`ICommandUseCase`, `Paging`, DI service markers (`IScopedService`/`ISingletonService`/`ITransientService`/`IManualRegistration`) + `AddBedrockCore(params Assembly[])`. (`IntegrationEvent` nằm ở `Bedrock.Messaging.Contracts`.)
 - **Bedrock.Infrastructure** — `PlatformDbContext` base (conventions + audit + soft-delete + concurrency-token conditional theo provider), `EfRepository<T>`, `EfUnitOfWork` (reentrancy-aware), **domain-event dispatch trong SaveChanges** (R33), cryptography (Argon2id `IPasswordHasher`), tokens (`IJwtTokenService` key-ring, `ITokenGenerator`, `EfRefreshTokenStore` + `RefreshTokenRecord` ẩn — F19), Outbox/Inbox impl + dispatcher worker + type registry, default port an toàn, `RequiredPortsValidator`.
 - **Bedrock.Api** — ProblemDetails builder + `ErrorType→HTTP` map, auth **mechanism** (JWT bearer đọc `JwtKeyRingOptions` — không ref Infrastructure, §5.7 — + `ICurrentUser` binding + 401/403), HttpSecurity (headers/CORS/forwarded headers), versioning (Asp.Versioning), OpenApi grouping, rate-limit, observability (correlation + OpenTelemetry wiring), health endpoint mapping (`MapBedrockHealth`), `IEndpointModule` (discovery contract). **KHÔNG** ref Infrastructure (F14).
 - **Adapters.\*** — impl port bằng công nghệ cụ thể + resilience pipeline ở biên (F33) + integration test riêng (F29).
@@ -353,7 +356,7 @@ public static class CommonErrors
 ### 4.5 Messaging: IntegrationEvent + Outbox/Inbox (Blueprint §5.2/§7)
 
 ```csharp
-namespace Bedrock.Application.Messaging;
+namespace Bedrock.Messaging.Contracts;   // assembly trung tính zero-dep (AD-017) — Bedrock.Application + mọi *.Contracts cùng ref
 
 // EventType (string ổn định) + SchemaVersion (int) — versioning F32.
 public abstract record IntegrationEvent(Guid Id, DateTimeOffset OccurredAt)

@@ -197,7 +197,7 @@ Tài liệu này mô tả **CÁI GÌ** base phải bảo đảm và **TẠI SAO*
 
 #### Acceptance Criteria
 1. THE SYSTEM SHALL phơi cho tầng Application chỉ `IOutboxWriter` (application-facing); `IOutboxDispatcher`/`IEventBusPublisher` chỉ ở worker/adapter. *(F25/I8)*
-2. THE SYSTEM SHALL định nghĩa `IntegrationEvent` với `EventType` (string ổn định) + `SchemaVersion` (int). *(F25/F32)*
+2. THE SYSTEM SHALL định nghĩa `IntegrationEvent` (base record với `EventType` string ổn định + `SchemaVersion` int) trong assembly trung tính **`Bedrock.Messaging.Contracts`** (zero-dependency), để `Modules.*.Contracts` kế thừa mà KHÔNG phải tham chiếu `Bedrock.Application`. *(F25/F32/F30)*
 3. THE SYSTEM SHALL cung cấp type registry ánh xạ `EventType` → CLR type (đăng ký từ các assembly `*.Contracts` tại Host) để consumer deserialize payload; WHEN gặp `EventType` chưa đăng ký, THE SYSTEM SHALL đưa message vào dead-letter thay vì crash consumer. *(F25/F32)*
 
 ### Requirement 18: Search projection port

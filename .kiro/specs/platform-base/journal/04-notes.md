@@ -63,10 +63,10 @@
 
 ---
 
-### N-010 — Hai điểm triết lý cần user xác nhận CÓ Ý THỨC (chưa phải lỗi)
-1. **Scrutor/DI trong `Bedrock.Application`** (TO-004) — ergonomics vs thuần Clean-Arch.
-2. **`Contracts` → `Bedrock.Application`** (TO-005 / DV-001) — biên dịch được vs Contracts thuần DTO.
-- Cả hai reversible (Medium). Nếu user muốn tinh khiết tuyệt đối, có phương án đảo đã ghi. Chưa chặn triển khai.
+### N-010 — Hai điểm triết lý — ĐÃ CHỐT (2026-07-07)
+1. **Scrutor/DI trong `Bedrock.Application`** (TO-004) → **allow** (AD-018): abstraction chuẩn .NET + plumbing, không phải tech swap được.
+2. **`Contracts` → `Bedrock.Application`** (TO-005/DV-001) → **extract** (AD-017): tách `IntegrationEvent` sang `Bedrock.Messaging.Contracts` zero-dep; `Contracts` KHÔNG còn trỏ lên Application.
+- Cả hai giờ đã quyết; không còn "điểm loãng" decoupling nào treo. Nếu đảo lại phải mở AD mới (supersede).
 
 ---
 
@@ -109,3 +109,24 @@
 - Kết quả: phát hiện & BỔ SUNG 5 quyết định còn thiếu → **AD-012** (UoW reentrancy), **AD-013** (pipeline order), **AD-014** (`IEndpointModule`), **AD-015** (serialization contract), **AD-016** (atomic claim + backoff); thêm **N-014** (rate-limit 2 tầng), **N-015** (health).
 - Xác nhận đã có từ trước: DV-001 (Contracts→Application), AD-004 (outbox per-module), DV-002 (bỏ Repository<T>()), AD-007 (domain events) — khớp 4 nhãn deviation/bổ sung mà design tự đánh dấu.
 - Verified: `getDiagnostics` toàn bộ journal = No diagnostics.
+
+---
+
+### N-017 — Lượt validate journal #2 (2026-07-07)
+- Phạm vi: soi tầng `requirements.md` (các tiêu chí do review R1–R7 đổi/thêm) — nguồn chưa mined kỹ ở lượt #1 (vốn tập trung `design.md`).
+- Đối chiếu từng tiêu chí: R7.4 (reentrancy → đã có AD-012), R8.5/R8.6 (backoff/claim → AD-016), R9.4 (handler re-publish qua `IOutboxWriter` → là **hệ quả** của AD-005, không phải quyết định mới), R16.4 (fail-loud → AD-009), R13.1 (RequiredPorts → AD-011).
+- Phát hiện & BỔ SUNG: **DV-008** (R32.4 bỏ tham chiếu FE trực tiếp — deviation tầng requirement, verify qua review R5 + đọc R32.4).
+- Kết luận: sau lượt #2, journal đã phủ toàn bộ deviation/decision verify được trong `design.md` + `requirements.md` + `review.md`. Không thêm mục nào nếu không có nguồn kiểm chứng (tránh bịa).
+- Tổng bản ghi hiện tại: AD 16, DV 8, TO 9, N 17.
+
+---
+
+### N-018 — Lượt cập nhật journal #3 (2026-07-07) — áp quyết định extract/allow
+- Kích hoạt: user chốt "1: allow, 2: extract" + tên assembly `Bedrock.Messaging.Contracts` + "áp đi".
+- Thay đổi đã áp (verified qua str_replace phiên này):
+  - `design.md`: §3.2 layout (+project `Bedrock.Messaging.Contracts`), §3.3 matrix (+row zero-dep; `Application` ref thêm nó; `Contracts` ref nó thay vì Application) + footnote¹ viết lại, §4.5 `IntegrationEvent` đổi namespace, components (+bullet mới, gỡ `IntegrationEvent` khỏi bullet Application).
+  - `requirements.md`: R17.2 ghi rõ `IntegrationEvent` ở `Bedrock.Messaging.Contracts`.
+  - journal: +AD-017 (extract), +AD-018 (allow), DV-001 → Superseded by AD-017, TO-004/TO-005 → Resolved, N-010 → đã chốt.
+- `tasks.md` (ĐÃ xong lượt này): task 2 nay tạo cả `Bedrock.Messaging.Contracts`; task 3.2 ghi rõ `IntegrationEvent` đến từ assembly mới (không định nghĩa lại); task 4 cập nhật luật dependency; node graph T2 + wave 2 rationale cập nhật.
+- Verified: `getDiagnostics` toàn bộ 3 file spec + 4 file journal = No diagnostics (chạy cuối lượt #3).
+- Tổng bản ghi: AD 18, DV 8 (DV-001 superseded), TO 9 (TO-004/005 resolved), N 18.

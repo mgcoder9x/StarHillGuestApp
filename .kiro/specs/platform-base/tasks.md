@@ -18,11 +18,12 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
   - Nghiệm thu: `dotnet build` solution rỗng thành công, 0 warning.
   - _Requirements: 31.1_
 
-- [ ] 2. Tạo `Bedrock.Domain` (layer sạch, ưu tiên đầu tiên)
-  - Tạo Results (`Result`, `Result<T>` theo hợp đồng đầy đủ design §4.4 — **`sealed class`** + factory `Success()/Failure()`, `Value` on-failure ném exception, `Match`, implicit operators; `Error`, `ErrorType`, `CommonErrors` — code ổn định + message English trung lập), Entities (`Entity` UUIDv7 + identity equality + domain events, `AuditableEntity`, `IAuditable`/`ISoftDeletable`/`IHasConcurrencyToken`), `ValueObject`, `IDomainEvent`, `Guard`, `ConcurrencyConflictException`.
+- [ ] 2. Tạo hai kernel zero-dep: `Bedrock.Domain` + `Bedrock.Messaging.Contracts` (ưu tiên đầu tiên)
+  - Tạo `Bedrock.Domain`: Results (`Result`, `Result<T>` theo hợp đồng đầy đủ design §4.4 — **`sealed class`** + factory `Success()/Failure()`, `Value` on-failure ném exception, `Match`, implicit operators; `Error`, `ErrorType`, `CommonErrors` — code ổn định + message English trung lập), Entities (`Entity` UUIDv7 + identity equality + domain events, `AuditableEntity`, `IAuditable`/`ISoftDeletable`/`IHasConcurrencyToken`), `ValueObject`, `IDomainEvent`, `Guard`, `ConcurrencyConflictException`. Zero dependency.
+  - Tạo `Bedrock.Messaging.Contracts` (zero-dependency, AD-017): DUY NHẤT base record `IntegrationEvent` (`Id`/`OccurredAt`; `EventType` abstract; `SchemaVersion` virtual=1). Assembly này sẽ được `Bedrock.Application` VÀ mọi `Modules.*.Contracts` cùng reference — Contracts KHÔNG bao giờ ref Application.
   - Bảo đảm kernel KHÔNG nhắc `xmin`/Npgsql (comment trung lập — tradeoff `uint` ghi theo design §4.3).
-  - Nghiệm thu: unit test Domain xanh (Result semantics, entity equality, guard) + build 0 warning.
-  - _Requirements: 11.1, 29.1, 29.2, 30.2, 31.1_
+  - Nghiệm thu: unit test Domain xanh (Result semantics, entity equality, guard) + build 0 warning cả hai project.
+  - _Requirements: 11.1, 17.2, 29.1, 29.2, 30.2, 31.1_
 
 - [ ] 3. Tạo `Bedrock.Application` (ports + seams + behaviors)
 - [ ] 3.1 Tạo contract ports + DI markers
@@ -31,7 +32,8 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
   - Nghiệm thu: build 0 warning.
   - _Requirements: 7.3, 12.4, 26.1, 28.2, 30.1, 30.2_
 - [ ] 3.2 Tạo messaging seam với namespace tách đôi (không dính lỗi analyzer)
-  - Namespace `Messaging`: `IntegrationEvent` (EventType + SchemaVersion), `IOutboxWriter`, `IIntegrationEventHandler<T>` (tránh/`[SuppressMessage]` có lý do rõ cho `CA1711`).
+  - `Bedrock.Application` reference `Bedrock.Messaging.Contracts` (để dùng `IntegrationEvent` — base này KHÔNG định nghĩa lại ở đây, AD-017).
+  - Namespace `Messaging`: `IOutboxWriter`, `IIntegrationEventHandler<T>` (dùng `IntegrationEvent` từ `Bedrock.Messaging.Contracts`; tránh/`[SuppressMessage]` có lý do rõ cho `CA1711`).
   - Namespace `Messaging.Dispatch`: `OutboxMessage`, `IOutboxDispatcher`, `IEventBusPublisher`, `IInboxStore`, `IIntegrationEventTypeRegistry` (design §5.2 — CP11 dựa vào ranh giới namespace này).
   - Nghiệm thu: build 0 warning.
   - _Requirements: 8.2, 17.1, 17.2, 17.3, 31.1_
@@ -46,7 +48,7 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
 
 - [ ] 4. Thiết lập bộ Architecture Tests (lưới an toàn cho toàn bộ ranh giới)
   - Tạo `tests/Bedrock.ArchitectureTests` (NetArchTest) với **negative control** cho mỗi luật.
-  - Luật ban đầu: no-business-in-core (cấm `guest|room|resort|Admin|Staff` trong `Bedrock.*`); dependency matrix hiện có (Application chỉ ref Domain; Domain không ref gì).
+  - Luật ban đầu: no-business-in-core (cấm `guest|room|resort|Admin|Staff` trong `Bedrock.*`); dependency matrix hiện có (Domain + `Bedrock.Messaging.Contracts` = zero-dep; Application chỉ ref Domain + Messaging.Contracts).
   - Nghiệm thu: test xanh + negative control chứng minh vi phạm bị bắt + build 0 warning.
   - _Requirements: 1.1, 1.2, 31.2_
   - _Correctness Properties: CP1_
@@ -265,7 +267,7 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
 ```mermaid
 graph TD
     T1["1. Khung solution platform/"]
-    T2["2. Bedrock.Domain"]
+    T2["2. Bedrock.Domain + Messaging.Contracts"]
     T3["3. Bedrock.Application"]
     T4["4. Architecture Tests (lưới)"]
     T5["5. Bedrock.Api (mechanism)"]
@@ -325,7 +327,7 @@ Các "wave" gom nhóm task có thể thực thi song song (mọi phụ thuộc �
 {
   "waves": [
     { "wave": 1, "tasks": ["1"], "rationale": "Dựng khung solution platform/ (config + Platform.slnx) — bootstrap greenfield." },
-    { "wave": 2, "tasks": ["2"], "rationale": "Tạo Domain — layer sạch, nền cho mọi thứ." },
+    { "wave": 2, "tasks": ["2"], "rationale": "Tạo hai kernel zero-dep: Bedrock.Domain + Bedrock.Messaging.Contracts (IntegrationEvent) — nền cho mọi thứ; Contracts không trỏ lên Application (AD-017)." },
     { "wave": 3, "tasks": ["3"], "rationale": "Tạo Application (ports/seams/behaviors) — mọi nhánh sau đều cần." },
     { "wave": 4, "tasks": ["4", "12"], "rationale": "Architecture-test lưới an toàn; ports mở rộng contract-first — cả hai chỉ cần Application." },
     { "wave": 5, "tasks": ["5", "6", "13"], "rationale": "Api mechanism và Infrastructure EF (có lưới arch-test); khung extension (cần ports 12)." },

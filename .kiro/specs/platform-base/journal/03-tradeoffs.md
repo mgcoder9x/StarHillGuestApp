@@ -41,19 +41,19 @@
 - Phía thuần Clean-Arch (bỏ): Application lý tưởng KHÔNG phụ thuộc thư viện thứ ba (kể cả DI plumbing); Scrutor là thư viện scan DI.
 - Vì sao chấp nhận: coi DI/Logging.Abstractions + Scrutor là **hạ tầng composition trung lập**, không phải "công nghệ có thể thay" như DB/bus. Đánh đổi có ý thức, đã ghi.
 - Điều kiện xem xét lại / phương án đảo: nếu muốn Application tinh khiết tuyệt đối → dời `AddBedrockCore` (đăng ký DI) xuống `Bedrock.Infrastructure`, đổi lại Host mất một chút ergonomics.
-- **⚠️ Cần user xác nhận có ý thức** (đã nêu ở đánh giá review): đây là điểm triết lý, không phải lỗi.
-- Reversibility: Medium. Ref: review Assumptions, design §17.
+- ✅ **RESOLVED 2026-07-07:** user chốt **allow** (giữ Scrutor/DI-abstractions trong Application) → AD-018. Căn cứ: chúng là abstraction chuẩn .NET + composition plumbing, KHÔNG phải công nghệ swap được → không vi phạm I2.
+- Reversibility: Medium. Ref: AD-018, review Assumptions, design §17.
 
 ---
 
 ### TO-005 — `Contracts` phụ thuộc `Bedrock.Application` (để có base `IntegrationEvent`)
-- Chosen: cho phép (DV-001).
+- Chosen (final): **extract** (AD-017) — ban đầu nghiêng "cho phép (DV-001)", đã đổi khi user chốt "extract".
 - Phía cho phép (chọn): biên dịch được ngày đầu, đơn giản.
 - Phía "Contracts thuần DTO" (bỏ): Contracts lẽ ra không phụ thuộc gì để mọi module nhúng cực nhẹ; giờ kéo theo Application.
 - Vì sao chấp nhận hiện tại: tránh thêm một assembly "kernel-events" ngay lúc greenfield khi chưa có nhiều module.
 - Điều kiện xem xét lại: khi số module tăng và muốn Contracts nhẹ tuyệt đối → tách base `IntegrationEvent` (+ `IntegrationEvent` chỉ-metadata) ra một assembly trung tính rất nhỏ mà cả Application lẫn Contracts cùng ref.
-- **⚠️ Cần user xác nhận có ý thức** (đã nêu ở đánh giá review).
-- Reversibility: Medium. Ref: DV-001.
+- ✅ **RESOLVED 2026-07-07:** user chốt **extract** → `IntegrationEvent` tách sang `Bedrock.Messaging.Contracts` (zero-dep); `Contracts` KHÔNG còn ref Application. Xem AD-017 (supersedes DV-001).
+- Reversibility: Medium. Ref: AD-017, DV-001.
 
 ---
 

@@ -248,3 +248,33 @@
 - Consequences: Cần index partial pending + test đa-connection (Testcontainers) chứng minh không claim trùng (task 7.4).
 - Reversibility: Medium.
 - Traceability: F25/F33/F5, R8.5/R8.6, CP15, design §7.2, task 7.3/7.4.
+
+---
+
+### AD-017 — Tách `IntegrationEvent` ra assembly trung tính `Bedrock.Messaging.Contracts` (supersedes DV-001)
+- Status: Confirmed
+- Date: 2026-07-07
+- Decider: user (chốt "extract") trên đề xuất AI(review) + AI(Kiro)
+- Provenance/Evidence: chat — AI chốt "2: extract", user "Bedrock.Messaging.Contracts; áp đi"; đã áp vào `design.md` §3.2 layout, §3.3 matrix + footnote¹, §4.5 namespace `IntegrationEvent`, components list (verified qua str_replace phiên này); `requirements.md` R17.2.
+- Context: Trước đó (DV-001) `IntegrationEvent` ở `Bedrock.Application` → buộc `Modules.*.Contracts` (bề mặt DTO công khai) phải trỏ ngược lên tầng Application. Đây là điểm DUY NHẤT phá "Contracts = DTO thuần".
+- Decision/Change: Tạo assembly **`Bedrock.Messaging.Contracts`** (zero-dependency) chứa DUY NHẤT base record `IntegrationEvent` (`Id`/`OccurredAt`/`EventType`/`SchemaVersion`). `Bedrock.Application` VÀ mọi `Modules.*.Contracts` cùng reference assembly này. Các port messaging (`IOutboxWriter`, `IIntegrationEventHandler<T>`) vẫn ở `Bedrock.Application.Messaging`; các type worker/adapter (`IEventBusPublisher`, `IOutboxDispatcher`, `IInboxStore`, `OutboxMessage`, `IIntegrationEventTypeRegistry`) vẫn ở `Bedrock.Application.Messaging.Dispatch`.
+- Rationale (verifiable): **Root cause fix (không phải vá ngọn):** gốc của độ lệch DV-001 là base event bị đặt sai tầng (Application) trong khi nó là *hợp đồng chung* của cả producer (Application) lẫn consumer contract (module Contracts). Đặt nó vào một kernel trung tính zero-dep khôi phục invariant "Contracts thuần DTO, không trỏ lên Application" và giữ đồ thị phụ thuộc acyclic + tối thiểu.
+- Alternatives: (a) đặt vào `Bedrock.Domain` (loại: trộn khái niệm messaging cross-boundary vào domain kernel thuần); (b) giữ ở Application như DV-001 (loại: phá Contracts thuần DTO — chính vấn đề cần sửa).
+- Consequences: +1 project rất nhỏ. Mọi `*.Contracts` ref `Bedrock.Messaging.Contracts`; ArchTest luật #4/module-boundary cần biết assembly này là "được phép" cho Contracts.
+- Reversibility: Medium (gộp lại vào Application là refactor có kiểm soát, nhưng không nên).
+- Traceability: F25/F30/F32, R17.2, design §3.2/§3.3/§4.5, supersedes DV-001, resolves TO-005.
+
+---
+
+### AD-018 — Cho phép `Scrutor` + `Microsoft.Extensions.DependencyInjection/Logging.Abstractions` trong `Bedrock.Application` (chốt TO-004)
+- Status: Confirmed
+- Date: 2026-07-07
+- Decider: user (chốt "allow") trên đề xuất AI
+- Provenance/Evidence: chat — AI chốt "1: allow", user "áp đi"; `design.md` §17 dependency whitelist (đã có sẵn), TO-004.
+- Context: Câu hỏi triết lý: Application (lõi) có được phụ thuộc Scrutor + DI/Logging abstractions không? (thuần Clean-Arch nói không).
+- Decision/Change: **Cho phép** — coi chúng là *composition plumbing trung lập*, giữ `AddBedrockCore()` ở `Bedrock.Application`.
+- Rationale (verifiable): **Bản chất:** `Microsoft.Extensions.DependencyInjection.Abstractions`/`Logging.Abstractions` là **hợp đồng chuẩn của .NET**, KHÔNG phải một implementation công nghệ có thể swap (khác EF/RabbitMQ/Redis). `Scrutor` chỉ chạm đăng ký DI (composition), không chạm logic domain/use-case. Do đó "allow" KHÔNG vi phạm I2 (lõi không chứa SDK công nghệ cụ thể) — thứ thật sự cần chặn. Phương án "move" bắt Host luôn kéo Infrastructure chỉ để đăng ký service Application → ma sát nhiều, lợi ích tinh khiết ~0 vì đây không phải tech để swap.
+- Alternatives: "move" đăng ký xuống Infrastructure (loại: mất ergonomics Host, tách code đăng ký khỏi thứ nó đăng ký; lợi ích thuần lý thuyết).
+- Consequences: `design.md` §17 whitelist rõ 3 dependency này cho Application; ArchTest "no concrete tech in core" phải whitelist chúng (không tính là vi phạm I2).
+- Reversibility: Medium.
+- Traceability: I2/F24, design §17, resolves TO-004.
