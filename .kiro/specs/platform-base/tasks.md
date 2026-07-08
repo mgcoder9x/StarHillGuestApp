@@ -87,23 +87,23 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
 
 ### Giai đoạn P1 — Boundary & persistence chắc chắn (F5–F11, F16–F19, F22)
 
-- [ ] 6. Dựng `Bedrock.Infrastructure` — EF base (UoW/Repo/DomainEvents)
-- [ ] 6.1 `PlatformDbContext` base + conventions
+- [x] 6. Dựng `Bedrock.Infrastructure` — EF base (UoW/Repo/DomainEvents)
+- [x] 6.1 `PlatformDbContext` base + conventions
   - snake_case (EFCore.NamingConventions), audit interceptor (set `CreatedAt/UpdatedAt/*ByUserId` từ `IClock`+`ICurrentUser`), soft-delete query filter + interceptor, concurrency-token map **conditional** theo provider (chỉ khi Npgsql — kernel không biết).
   - Nghiệm thu: build 0 warning.
   - _Requirements: 11.2, 30.3_
-- [ ] 6.2 `EfRepository<T>` + `EfUnitOfWork` (reentrancy-aware)
+- [x] 6.2 `EfRepository<T>` + `EfUnitOfWork` (reentrancy-aware)
   - Repo KHÔNG phơi `IQueryable`; `IRepository<T>` đăng ký DI scoped (cùng DbContext với UoW); UoW `SaveChangesAsync` là điểm ghi duy nhất + `ExecuteInTransactionAsync` (commit/rollback; gọi lồng → join transaction hiện hành — R7.4).
   - Map `DbUpdateConcurrencyException` → `ConcurrencyConflictException`.
   - Nghiệm thu: build 0 warning.
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 11.3_
-- [ ] 6.3 Cấu hình package EF + pin version + test provider-agnostic + DB readiness check
+- [x] 6.3 Cấu hình package EF + pin version + test provider-agnostic + DB readiness check
   - `dotnet add` EF Core + Npgsql + Sqlite (test) + EFCore.NamingConventions (pin version thật vào Directory.Packages.props, verify tương thích .NET 10).
   - Integration test SQLite: convention/UoW rollback/soft-delete/reentrancy (transaction lồng không nổ).
   - Đóng góp health check DB (tag `ready`, timeout 5s) qua `AddBedrockPersistence`.
   - Nghiệm thu: `dotnet test` xanh + 0 warning.
   - _Requirements: 32.2, 34.2_
-- [ ] 6.4 Domain-event dispatch trong SaveChanges
+- [x] 6.4 Domain-event dispatch trong SaveChanges
   - Impl `IDomainEventDispatcher` default (resolve `IEnumerable<IDomainEventHandler<T>>`); vòng collect→dispatch→collect với `MaxDispatchDepth` (design §7.5); không handler → no-op.
   - Integration test (SQLite): handler effects commit cùng transaction; handler ném → rollback toàn bộ; max-depth ném lỗi rõ.
   - Nghiệm thu: test xanh + 0 warning.
@@ -111,11 +111,11 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
   - _Correctness Properties: CP14_
 
 - [ ] 7. Outbox / Inbox — hiện thực persistence + dispatcher
-- [ ] 7.1 Schema + entity + EF config helper per-module
+- [x] 7.1 Schema + entity + EF config helper per-module
   - `modelBuilder.AddOutboxInbox()` map `outbox_message(id, event_type, schema_version, payload jsonb, occurred_at, processed_at?, error_count, next_attempt_at?, dead_lettered_at?, correlation_id)` + partial index pending; `inbox_message(message_id, consumer, processed_at)` PK `(message_id, consumer)` — vào schema của DbContext gọi helper (design §4.6: per-module).
   - Nghiệm thu: build 0 warning.
   - _Requirements: 8.3, 9.1_
-- [ ] 7.2 `IOutboxWriter` impl (ghi cùng transaction) + serialize payload
+- [x] 7.2 `IOutboxWriter` impl (ghi cùng transaction) + serialize payload
   - Enqueue ghi `OutboxMessage` qua ChangeTracker (không tự commit); System.Text.Json options cố định; gắn `correlation_id` từ `Activity.Current`.
   - Nghiệm thu: build 0 warning.
   - _Requirements: 8.1, 8.2, 8.3_

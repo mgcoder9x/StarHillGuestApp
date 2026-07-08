@@ -1,0 +1,12 @@
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Bedrock.Messaging.Contracts\bin\Debug\net10.0\Bedrock.Messaging.Contracts.deps.json
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Bedrock.Messaging.Contracts\bin\Debug\net10.0\Bedrock.Messaging.Contracts.dll
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Bedrock.Messaging.Contracts\bin\Debug\net10.0\Bedrock.Messaging.Contracts.pdb
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Bedrock.Messaging.Contracts\obj\Debug\net10.0\Bedrock.Messaging.Contracts.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Bedrock.Messaging.Contracts\obj\Debug\net10.0\Bedrock.Messaging.Contracts.AssemblyInfoInputs.cache
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Bedrock.Messaging.Contracts\obj\Debug\net10.0\Bedrock.Messaging.Contracts.AssemblyInfo.cs
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Bedrock.Messaging.Contracts\obj\Debug\net10.0\Bedrock.Messaging.Contracts.csproj.CoreCompileInputs.cache
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Bedrock.Messaging.Contracts\obj\Debug\net10.0\Bedrock.Messaging.Contracts.sourcelink.json
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Bedrock.Messaging.Contracts\obj\Debug\net10.0\Bedrock.Messaging.Contracts.dll
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Bedrock.Messaging.Contracts\obj\Debug\net10.0\refint\Bedrock.Messaging.Contracts.dll
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Bedrock.Messaging.Contracts\obj\Debug\net10.0\Bedrock.Messaging.Contracts.pdb
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Bedrock.Messaging.Contracts\obj\Debug\net10.0\ref\Bedrock.Messaging.Contracts.dll

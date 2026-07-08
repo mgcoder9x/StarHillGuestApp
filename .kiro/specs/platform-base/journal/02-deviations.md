@@ -113,3 +113,17 @@
 - Consequences: contract test của base độc lập, không phụ thuộc sự tồn tại của FE; app tiêu thụ tự lo đồng bộ qua artifact.
 - Reversibility: N/A (đính chính phạm vi).
 - Traceability: F20/F32, R32.4, review R5.
+
+---
+
+### DV-009 — `AddOutboxInbox()` nhận tham số `isNpgsql` (+ `schema`) thay vì no-arg như design ghi
+- Status: Confirmed
+- Date: 2026-07-08
+- Decider: AI (implementation-time)
+- Provenance/Evidence: design §4.6 ghi literal `modelBuilder.AddOutboxInbox()` (no-arg); impl thật `AddOutboxInbox(this ModelBuilder, bool isNpgsql, string? schema = null)` (verified file `OutboxInboxModelBuilderExtensions.cs`); test map + build/test xanh.
+- Original (design §4.6): helper không tham số.
+- Changed to: thêm `isNpgsql` (bắt buộc) + `schema` (tuỳ chọn).
+- Root cause (vì sao buộc đổi): (1) **jsonb là provider-specific** — payload phải `HasColumnType("jsonb")` trên Postgres nhưng KHÔNG trên SQLite (SQLite không có jsonb, sẽ sai affinity). Một `ModelBuilder` extension KHÔNG có đường truy cập `DbContext.Database.IsNpgsql()` → phải nhận provider-flag từ caller (caller ở `OnModelCreating` có `Database.IsNpgsql()`). (2) `schema` cần để map bảng vào schema của module (design §4.6 "vào schema của module") — no-arg không truyền được schema. Giữ helper THUẦN (không phụ thuộc runtime provider detection ngầm) → testable + tường minh.
+- Consequences: caller phải truyền `Database.IsNpgsql()` (một dòng, rõ ràng). Nếu sau này bọc thêm overload tiện lợi nhận `DatabaseFacade` thì thêm được, không phá API hiện tại.
+- Reversibility: High (đổi chữ ký nội bộ base, chưa có consumer ngoài).
+- Traceability: design §4.5/§4.6, AD (xmin conditional cùng nguyên lý provider-conditional), task 7.1.

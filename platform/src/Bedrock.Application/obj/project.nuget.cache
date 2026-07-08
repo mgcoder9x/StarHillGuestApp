@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "uD68bRcyQlo=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Application\\Bedrock.Application.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\toann\\.nuget\\packages\\fluentvalidation\\12.1.1\\fluentvalidation.12.1.1.nupkg.sha512"
+  ],
+  "logs": []
+}

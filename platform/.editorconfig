@@ -11,6 +11,11 @@ indent_size = 4
 # CA1716: type 'Error' trùng keyword VB. Base chỉ dùng C# (không VB-interop); 'Error' là tên
 # idiomatic của Result pattern (ErrorOr/FluentResults). Cố ý giữ — đổi tên chỉ làm khó đọc.
 dotnet_diagnostic.CA1716.severity = none
+# CA1000: "không đặt static member trên generic type". Result<T>.Success(value)/Failure(error) là
+# factory CHỦ ĐÍCH theo design.md §4.4 (đã chốt AD-002) — cách duy nhất tạo Result<T> hợp lệ mà vẫn
+# suy luận được kiểu T từ tham số. Đây là pattern chuẩn của Result/ErrorOr, không phải static API
+# chung nên rủi ro CA1000 (khó gọi qua kiểu dẫn xuất) không áp dụng. Suppress có chủ đích.
+dotnet_diagnostic.CA1000.severity = none
 # Naming convention: interface I*.
 dotnet_naming_rule.interfaces_should_be_prefixed_with_i.severity = warning
 dotnet_naming_rule.interfaces_should_be_prefixed_with_i.symbols = interface_symbols

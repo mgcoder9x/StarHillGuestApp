@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Infrastructure: EF base (PlatformDbContext/EfRepository/EfUnitOfWork), domain-event dispatch, clock.
+    Reference Application (ports) + Domain (bắc cầu). KHÔNG Api, KHÔNG module (matrix §3.3).
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Bedrock.Application\Bedrock.Application.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="EFCore.NamingConventions" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+</Project>

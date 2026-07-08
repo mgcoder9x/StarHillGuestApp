@@ -16,6 +16,7 @@
 | `02-deviations.md` | (2) Chỗ AI phải ĐỔI so với yêu cầu/blueprint ban đầu | `DV-###` (Deviation) |
 | `03-tradeoffs.md` | (3) Trade-off AI phải cân nhắc | `TO-###` (Trade-Off) |
 | `04-notes.md` | (4) Bất kỳ điều gì AI nên biết (giả định/cạm bẫy/trạng thái) | `N-###` (Note) |
+| `05-anti-drift.md` | Cơ chế chống drift (guard test tự động) + bản đồ CP/AD → test + vòng lặp bắt buộc | — |
 
 ## Trạng thái nguồn sự thật (đọc trước khi tin bất cứ gì)
 

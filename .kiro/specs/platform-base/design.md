@@ -623,9 +623,11 @@ public interface ICurrentUser
     bool HasPermission(string permission);
 }
 
+namespace Bedrock.Application.Ports.Html;
+public interface IHtmlSanitizer  { string Sanitize(string html); }   // sanitize nội dung (chống XSS) — tách khỏi Security (auth/crypto), khớp folder table §6.4 / AD-021
+
 namespace Bedrock.Application.Ports.Security;
 public interface ITokenGenerator { string NewToken(int byteLength = 32); }   // CSPRNG, base64url
-public interface IHtmlSanitizer  { string Sanitize(string html); }
 public interface IPasswordHasher { string Hash(string password); bool Verify(string password, string hash); }  // Argon2id
 
 // F19: Application chỉ thấy port nghiệp vụ — shape lưu trữ (RefreshTokenRecord) ẩn trong Infrastructure.
