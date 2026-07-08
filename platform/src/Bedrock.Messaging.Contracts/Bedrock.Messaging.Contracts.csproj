@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Assembly trung tính zero-dependency (AD-017, supersedes DV-001). Chứa DUY NHẤT base record
+    IntegrationEvent. Được Bedrock.Application VÀ mọi Modules.*.Contracts cùng reference
+    → Contracts KHÔNG bao giờ trỏ ngược lên tầng Application.
+  -->
+</Project>

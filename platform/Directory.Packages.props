@@ -1,0 +1,24 @@
+<Project>
+  <!-- Central Package Management. Version pin MỘT chỗ (verify qua dotnet add / build — không bịa). -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup Label="Testing + architecture net (cần từ Wave 1/Giai đoạn 0)">
+    <PackageVersion Include="FluentValidation" Version="12.1.1" />
+    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="NetArchTest.Rules" Version="1.3.2" />
+  </ItemGroup>
+
+  <!--
+    Package runtime của base (EF Core/Npgsql, Scrutor, Serilog, HtmlSanitizer, JwtBearer,
+    Argon2, OpenTelemetry...) sẽ được `dotnet add package` PIN version thật ở đúng bước khi
+    introduce (task 6/9/13/14/18...). KHÔNG khai số version bịa ở đây trước khi dùng.
+    Các version dưới đã verify tương thích .NET 10 ở bản foundation cũ, mở sẵn để tái dùng khi tới bước.
+  -->
+</Project>

@@ -1,0 +1,31 @@
+root = true
+
+[*]
+indent_style = space
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.cs]
+indent_size = 4
+# CA1716: type 'Error' trùng keyword VB. Base chỉ dùng C# (không VB-interop); 'Error' là tên
+# idiomatic của Result pattern (ErrorOr/FluentResults). Cố ý giữ — đổi tên chỉ làm khó đọc.
+dotnet_diagnostic.CA1716.severity = none
+# Naming convention: interface I*.
+dotnet_naming_rule.interfaces_should_be_prefixed_with_i.severity = warning
+dotnet_naming_rule.interfaces_should_be_prefixed_with_i.symbols = interface_symbols
+dotnet_naming_rule.interfaces_should_be_prefixed_with_i.style = prefix_i_style
+dotnet_naming_symbols.interface_symbols.applicable_kinds = interface
+dotnet_naming_style.prefix_i_style.required_prefix = I
+dotnet_naming_style.prefix_i_style.capitalization = pascal_case
+
+# Project test: cho phép tên test có underscore (Method_should_do_x).
+# CA1707 dành cho public API surface, không áp cho tên method test.
+[tests/**/*.cs]
+dotnet_diagnostic.CA1707.severity = none
+
+[*.{json,xml,props,targets,csproj,slnx}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false

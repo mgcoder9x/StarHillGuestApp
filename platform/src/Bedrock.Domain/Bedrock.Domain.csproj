@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Kernel sạch tuyệt đối (I1/I2 — Blueprint §1): KHÔNG reference project nào, KHÔNG SDK công nghệ.
+    Zero dependency. Chỉ chứa Entity/ValueObject/DomainEvent/Result/Error/Guard + markers.
+  -->
+</Project>
