@@ -1,22 +1,22 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\Bedrock.Domain.csproj": {}
+    "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\Bedrock.Domain.csproj": {}
   },
   "projects": {
-    "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\Bedrock.Domain.csproj": {
+    "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\Bedrock.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\Bedrock.Domain.csproj",
+        "projectUniqueName": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\Bedrock.Domain.csproj",
         "projectName": "Bedrock.Domain",
-        "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\Bedrock.Domain.csproj",
-        "packagesPath": "C:\\Users\\toann\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\obj\\",
+        "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\Bedrock.Domain.csproj",
+        "packagesPath": "C:\\Users\\k.nguyen.manh.toan\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "centralPackageVersionsManagementEnabled": true,
         "CentralPackageTransitivePinningEnabled": true,
         "configFilePaths": [
-          "C:\\Users\\toann\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\k.nguyen.manh.toan\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -53,14 +53,23 @@
             "EFCore.NamingConventions": "10.0.1",
             "FluentValidation": "12.1.1",
             "FluentValidation.DependencyInjectionExtensions": "12.1.1",
+            "Konscious.Security.Cryptography.Argon2": "1.3.1",
             "Microsoft.AspNetCore.Authentication.JwtBearer": "10.0.9",
+            "Microsoft.AspNetCore.Mvc.Testing": "10.0.9",
             "Microsoft.AspNetCore.TestHost": "10.0.9",
             "Microsoft.EntityFrameworkCore": "10.0.9",
             "Microsoft.EntityFrameworkCore.Sqlite": "10.0.9",
+            "Microsoft.Extensions.Configuration.Binder": "10.0.9",
+            "Microsoft.Extensions.DependencyInjection": "10.0.9",
+            "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.9",
             "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "10.0.9",
+            "Microsoft.Extensions.Hosting.Abstractions": "10.0.9",
+            "Microsoft.Extensions.Logging.Abstractions": "10.0.9",
+            "Microsoft.IdentityModel.JsonWebTokens": "8.0.1",
             "Microsoft.NET.Test.Sdk": "17.14.1",
             "NetArchTest.Rules": "1.3.2",
             "Npgsql.EntityFrameworkCore.PostgreSQL": "10.0.2",
+            "Scrutor": "7.0.0",
             "SQLitePCLRaw.lib.e_sqlite3": "3.50.3",
             "xunit": "2.9.3",
             "xunit.runner.visualstudio": "3.1.4"
@@ -81,7 +90,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Users\\k.nguyen.manh.toan\\AppData\\Local\\Microsoft\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",

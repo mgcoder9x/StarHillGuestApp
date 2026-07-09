@@ -633,7 +633,7 @@ public interface IPasswordHasher { string Hash(string password); bool Verify(str
 // F19: Application chỉ thấy port nghiệp vụ — shape lưu trữ (RefreshTokenRecord) ẩn trong Infrastructure.
 public interface IRefreshTokenStore
 {
-    Task<RefreshTokenSnapshot?> GetActiveByHashAsync(string tokenHash, CancellationToken ct);
+    Task<RefreshTokenSnapshot?> GetByHashAsync(string tokenHash, CancellationToken ct);  // theo HASH bất kể revoked/expiry — reuse-detection §7.4 CẦN record đã revoked (AD-031)
     Task<bool> TryConsumeAsync(Guid tokenId, DateTimeOffset now, string reason, Guid replacedByTokenId, CancellationToken ct); // UPDATE nguyên tử
     Task AddAsync(RefreshTokenSnapshot newToken, CancellationToken ct);       // stage — commit ở SaveChanges
     Task RevokeFamilyAsync(Guid familyId, CancellationToken ct);
@@ -809,7 +809,7 @@ sequenceDiagram
 RefreshTokenUseCase.ExecuteAsync(rawToken):
     uow.ExecuteInTransactionAsync(async ct => {          // F5 — rotation trong transaction
         hash    ← SHA256(rawToken)
-        current ← store.GetActiveByHashAsync(hash, ct)
+        current ← store.GetByHashAsync(hash, ct)
         IF current IS NULL OR current.ExpiresAt < clock.UtcNow:
             RETURN Result.Failure(AuthErrors.InvalidRefreshToken)   // code ổn định (F20)
 

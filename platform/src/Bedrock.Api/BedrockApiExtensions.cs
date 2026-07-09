@@ -25,6 +25,7 @@ public static class BedrockApiExtensions
         ArgumentNullException.ThrowIfNull(configuration);
 
         services.AddBedrockAuthCore(configuration);
+        services.AddBedrockHttpSecurity(configuration); // F16/F17: ForwardedHeaders + rate-limit + CORS (task 11).
 
         services.AddOptions<ObservabilityOptions>()
             .Bind(configuration.GetSection(ObservabilityOptions.SectionName));
@@ -40,14 +41,15 @@ public static class BedrockApiExtensions
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        // #1 ForwardedHeaders — task 11 (PHẢI đứng đầu khi thêm: để IP/scheme thật cho các middleware sau).
+        app.UseForwardedHeaders();                          // #1 — IP/scheme thật cho mọi middleware sau (F16).
         app.UseMiddleware<CorrelationIdMiddleware>();       // #2
         app.UseMiddleware<ExceptionHandlingMiddleware>();   // #3
-        // #4 HSTS / HTTPS redirect — task 11.
+        // #4 HSTS / HTTPS redirect — TRÁCH NHIỆM HOST (deployment/TLS; base có thể chạy sau proxy terminate TLS).
         app.UseMiddleware<SecurityHeadersMiddleware>();     // #5
         app.UseMiddleware<RequestLoggingMiddleware>();      // #6
         app.UseRouting();                                    // #7
-        // #8 CORS — task 11.  #9 RateLimiter — task 11 (partition theo IP thật ở #1).
+        app.UseCors(app.ApplicationServices.GetRequiredService<HttpSecurityOptions>().CorsPolicyName); // #8 (F17)
+        app.UseRateLimiter();                               // #9 — partition theo IP thật đã resolve ở #1 (F16).
         app.UseAuthentication();                             // #10
         app.UseAuthorization();
         app.UseEndpoints(endpoints =>                        // #11

@@ -127,3 +127,72 @@
 - Consequences: caller phải truyền `Database.IsNpgsql()` (một dòng, rõ ràng). Nếu sau này bọc thêm overload tiện lợi nhận `DatabaseFacade` thì thêm được, không phá API hiện tại.
 - Reversibility: High (đổi chữ ký nội bộ base, chưa có consumer ngoài).
 - Traceability: design §4.5/§4.6, AD (xmin conditional cùng nguyên lý provider-conditional), task 7.1.
+
+
+---
+
+### DV-010 — Claim outbox tách nhánh theo provider (SQL cho Npgsql, client-side cho provider khác)
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI (implementation-time)
+- Provenance/Evidence: design §7.2 mô tả claim thuần SQL (`WHERE ... next_attempt_at <= now ORDER BY occurred_at`); impl thật `EfOutboxDispatcher<TContext>.ClaimBatchAsync` tách nhánh `context.Database.IsNpgsql()`; test SQLite trước khi tách nhánh FAIL với `InvalidOperationException: The LINQ expression ... could not be translated`.
+- Original (design §7.2): một truy vấn LINQ→SQL duy nhất lọc `next_attempt_at`/`dead_lettered_at`/`processed_at` + `ORDER BY occurred_at`.
+- Changed to: điều kiện `processed_at IS NULL AND dead_lettered_at IS NULL` LUÔN ở SQL (khớp partial index `ix_outbox_pending`). Với **Npgsql** (production): lọc `next_attempt_at` + `ORDER BY occurred_at` cũng ở SQL. Với **provider khác** (SQLite test): tải tập pending rồi lọc due-time + sort `occurred_at` **client-side**.
+- Root cause (vì sao buộc đổi): EF Core **SQLite KHÔNG dịch được so sánh/sắp xếp `DateTimeOffset`** (lưu dạng TEXT có offset, không sortable theo instant) → `NextAttemptAt <= now` và `OrderBy(OccurredAt)` ném không-dịch-được. Base phải chạy cả trên SQLite (test provider-agnostic không-Docker, N-012) lẫn Postgres. Nhánh theo `IsNpgsql()` (đã có sẵn, không cần thêm package Sqlite vào Infrastructure) giữ production hiệu quả (dùng partial index) + test chạy được.
+- Consequences: đường client-side chỉ dùng cho test/provider phi-Postgres; tập pending nhỏ (dispatcher poll thường xuyên) nên chi phí không đáng kể. Production (Npgsql) không đổi hành vi so với design. Claim exclusive `FOR UPDATE SKIP LOCKED` (đa-instance, CP15) vẫn thuộc task 7.4 — cùng nguyên lý provider-conditional (Npgsql-specific SQL).
+- Reversibility: High (nội bộ base, chưa có consumer ngoài; có thể gộp lại nếu bỏ SQLite test provider).
+- Traceability: design §7.2, N-012/N-028, task 7.3/7.4, cùng họ provider-conditional với DV-009 (jsonb) + AD (xmin conditional).
+
+
+---
+
+### DV-011 — Đổi tên method port: `GetActiveByHashAsync` → `GetByHashAsync` (so với design §5.7 literal)
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI(Kiro)
+- Provenance/Evidence: `design.md` §5.7 + §7.4 GỐC ghi literal `GetActiveByHashAsync` (verified grep trước khi sửa); đã đổi cả hai + port `IRefreshTokenStore.cs`. Chi tiết lý do đầy đủ ở AD-031.
+- Original (design §5.7/§7.4 literal): `Task<RefreshTokenSnapshot?> GetActiveByHashAsync(string tokenHash, ...)` với doc "active-only".
+- Changed to: `GetByHashAsync` — trả record theo hash bất kể revoked/expiry.
+- Root cause: tên/doc §5.7 ("active-only") MÂU THUẪN với hành vi reuse-detection §7.4 (cần record đã revoked). Đổi tên (không chỉ sửa doc) để interface không tự gây misuse (I8). Xem AD-031 cho phân tích 3-nguồn.
+- Consequences: đồng bộ design §5.7/§7.4 + port; use case task 16 dùng tên mới.
+- Reversibility: High (greenfield, chưa có consumer).
+- Traceability: AD-031, design §5.7/§7.4, F19/F10, task 8.
+
+
+---
+
+### DV-012 — `StartupValidationOptions` là singleton registry (không `IOptions<>`) so với bản phác §9.4
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI(Kiro)
+- Provenance/Evidence: design §9.4 bản phác `RequiredPortsValidator(... IOptions<StartupValidationOptions> options)`; impl thật inject `StartupValidationOptions` (singleton instance) trực tiếp; `StartupValidationOptions.cs` + `BedrockRegistrationExtensions.BedrockStartupValidation()` (find-or-add singleton). Test `RequiredPortsValidatorTests` xanh.
+- Original (design §9.4): validator nhận `IOptions<StartupValidationOptions>`; các AddXxxCore đóng góp qua `Configure<StartupValidationOptions>`.
+- Changed to: `StartupValidationOptions` đăng ký như MỘT singleton instance; AddXxxCore lấy nó qua `services.BedrockStartupValidation()` rồi `.RequirePort(...)`; validator inject thẳng instance.
+- Root cause (vì sao đổi): dùng `IOptions<>` buộc kéo `Microsoft.Extensions.Options` vào **lõi Application**. Để giữ Application tối thiểu dependency (chỉ `DependencyInjection.Abstractions` — đúng lớp AD-018 đã whitelist), tôi dùng singleton-registry accumulate lúc compose (mọi AddXxxCore chạy trước Build nên accumulate an toàn). Ngữ nghĩa tương đương bản phác, chỉ khác cơ chế chứa.
+- Consequences: không cần Options package ở Application; validator đơn giản hơn (không `.Value`). Nếu sau muốn hot-reload options thì cân nhắc IOptionsMonitor (chưa cần — danh sách port cố định lúc boot).
+- Reversibility: Medium (đổi sang IOptions là refactor cục bộ Application + validator).
+- Traceability: design §9.4, AD-018 (giữ dependency tối thiểu), R13.1, task 10.2.
+
+### DV-013 — "AddIdentityModule một dòng" → tách composition thành nửa-Infra + nửa-Api ráp ở Host
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI(Kiro)
+- Provenance/Evidence: design §4.2 ("Đăng ký module một dòng ở Host: AddRoomsModule(cfg) → nội bộ gọi AddDbContext + AddRoomsPersistence + validators + đăng ký IEndpointModule"); mâu thuẫn với matrix §3.3 + invariant I7/luật-5 ("chỉ Host ref Api+Infra"). Impl: `Identity.Infrastructure/DependencyInjection/IdentityInfrastructureExtensions.AddIdentityInfrastructure` (DbContext + persistence + use case + validator) + `Identity.Api/DependencyInjection/IdentityApiExtensions.AddIdentityApi` (đăng ký `IEndpointModule`). Build 0 warning; test xanh.
+- Original (design §4.2): MỘT method `AddIdentityModule(cfg)` gọi cả AddDbContext (Infrastructure) LẪN đăng ký IEndpointModule (Api).
+- Changed to: HAI method — `AddIdentityInfrastructure(cfg)` (ở Identity.Infrastructure) + `AddIdentityApi()` (ở Identity.Api); Host (task 16.2) gọi cả hai (vẫn ~1–2 dòng ở composition root).
+- Root cause (vì sao đổi): `IEndpointModule` PHẢI ở Identity.Api (cần `Bedrock.Api`), DbContext PHẢI ở Identity.Infrastructure (cần `Bedrock.Infrastructure`); matrix §3.3 CẤM Api↔Infra tham chiếu nhau (kể cả cùng module) và task 16.3 sẽ viết arch-test "chỉ Host ref Api+Infra". Một method bắc cầu buộc một project vừa thấy Api vừa thấy Infra → PHÁ invariant I7 (bị arch-test bắt). Invariant kiến trúc (I7) mạnh hơn tiện ích "một dòng" → giữ invariant, tách đôi. Đây là fix TẬN GỐC (tôn trọng ranh giới) thay vì lách luật.
+- Consequences: Host gọi 2 method cho mỗi module (Infra-half + Api-half) — vẫn là composition-root một chỗ, gỡ module = xóa 2 dòng + 1 thư mục. Nếu muốn đúng "một dòng", có thể định nghĩa một helper Ở HOST (nơi hợp lệ thấy cả hai) gói 2 lời gọi — nhưng KHÔNG đặt helper đó trong Api/Infra module (sẽ phá I7).
+- Reversibility: High (đổi cách gói composition không phá hợp đồng runtime).
+- Traceability: design §4.2, matrix §3.3, I7, task 16.1/16.2/16.3.
+
+### DV-014 — Rotation trả CẢ access token + refresh token mới (§7.4 pseudocode chỉ trả access token)
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI(Kiro)
+- Provenance/Evidence: design §7.4 dòng cuối `RETURN Result.Success(Issue(newRecord))` (chỉ access token); impl `RefreshTokenResult(AccessToken, RefreshToken, RefreshTokenExpiresAt)` + use case trả `newRawToken`. Test `RefreshAccessTokenUseCaseTests.Valid_token_rotates_and_returns_new_tokens` (assert cả hai token). Build 0 warning.
+- Original (design §7.4): trả về chỉ `Issue(newRecord)` = access token JWT.
+- Changed to: trả `RefreshTokenResult` gồm access token + refresh token RAW mới + hạn refresh token.
+- Root cause (vì sao đổi): rotation bản chất tạo token MỚI (`CreateRotated` → "hash mới"). Hash mới ⇒ tồn tại raw token mới (không thể có hash mà không có raw sinh ra nó). Client BẮT BUỘC nhận raw mới để dùng cho lần refresh kế — nếu chỉ trả access token thì client mất refresh token, rotation vô nghĩa (lần sau không refresh được). Pseudocode §7.4 lược bớt chi tiết trả-về; bổ sung raw token là hoàn thiện đúng bản chất cơ chế, KHÔNG phải thêm tính năng tùy tiện.
+- Consequences: endpoint refresh trả access + refresh token; client thay thế refresh token cũ. Không đổi logic bảo mật §7.4 (mọi nhánh fail giữ nguyên `invalid_refresh_token`).
+- Reversibility: High (shape kết quả nội bộ module Identity, chưa có client thật).
+- Traceability: design §7.4, F5/F10, task 16.1.

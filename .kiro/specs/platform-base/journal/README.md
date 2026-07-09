@@ -57,6 +57,7 @@
 3. Điền đủ mọi trường schema; thiếu bằng chứng → `⚠️ UNVERIFIED`.
 4. Nếu quyết định mới lật quyết định cũ → set bản cũ `Superseded by <ID>` và giải thích.
 5. Nếu thay đổi chạm code/spec → cập nhật `design.md`/`requirements.md`/`tasks.md` cho khớp, rồi chạy `getDiagnostics` xác nhận 0 lỗi định dạng.
-6. Ghi ngày theo ngày hệ thống.
+6. **Cổng tự động (L4/AD-030):** sau khi thêm/sửa bản ghi, chạy `dotnet test Platform.slnx` — `JournalConsistencyTests` (trong `Bedrock.ArchitectureTests`) enforce: ID mỗi loại **duy nhất + liên tục 1..N**; **mọi `AD-###` phải có mặt trong bảng guard `05-anti-drift.md`** (KEYSTONE tự động); ref `AD/DV/TO/N-###` không dangling; AD & DV đủ `Status:`+`Provenance/Evidence:`; `CP##` trong 1..15. Đỏ = journal đã lệch → sửa trước khi tiếp. Đây là lá chắn chống drift MẠNH NHẤT (không dựa trí nhớ).
+7. Ghi ngày theo ngày hệ thống.
 
 > **Ngày khởi tạo journal:** 2026-07-07. Toàn bộ bản ghi khởi tạo dưới đây được rút từ `design.md`, `review.md`, và các thao tác đã verify trong phiên làm việc tạo ra chúng.

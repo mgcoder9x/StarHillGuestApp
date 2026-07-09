@@ -443,3 +443,197 @@
 - Consequences (RÀNG BUỘC task 7.3/consumer): `IEventBusPublisher` publish message mang `Id` này; consumer PHẢI dùng `message.Id` làm `messageId` khi gọi `IInboxStore`. Enqueue cùng một `IntegrationEvent.Id` hai lần → PK conflict ở outbox (đúng: một event = một row).
 - Reversibility: Medium (đổi = ảnh hưởng khoá idempotency).
 - Traceability: F25/F30, design §4.5/§7.3, R8/R9, task 7.2 (+ ràng buộc 7.3).
+
+
+---
+
+### AD-030 — Cổng journal-consistency tự động (`JournalConsistencyTests`) — biến kỷ luật tài liệu thành build gate
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI(Kiro) trên yêu cầu user ("cần 1 cách nào cực mạnh để tránh drift")
+- Provenance/Evidence: file `tests/Bedrock.ArchitectureTests/JournalConsistencyTests.cs` (tạo phiên này); phát hiện thật khi audit: **AD-003 thiếu trong bảng guard `05-anti-drift.md`** (KEYSTONE RULE bị vi phạm âm thầm vì không có cổng máy) — chính test này bắt được, verified qua `dotnet test` phiên này (đỏ trước khi bổ sung AD-003, xanh sau).
+- Context: Anti-drift L1–L3 (guard test qua `dotnet test`) mạnh cho CODE, nhưng lớp L4/L5 (đồng bộ journal, ID không dangling, KEYSTONE RULE "mỗi AD phải có guard") là **quy trình THỦ CÔNG** → dựa trí nhớ, đúng thứ anti-drift muốn loại. Journal có thể tự lệch mà không gì báo (đã xảy ra: AD-003).
+- Decision/Change: Thêm test `JournalConsistencyTests` (trong `Bedrock.ArchitectureTests` — test dev-time, KHÔNG ship theo product) parse markdown journal và enforce 5 bất biến: INV-1 (ID mỗi loại duy nhất + liên tục 1..N), INV-2 (mọi AD trong 01 phải có trong bảng guard 05 — KEYSTONE tự động), INV-3 (mọi ref AD/DV/TO/N trỏ tới bản ghi thật), INV-4 (mỗi AD & DV có `Status:` + `Provenance/Evidence:`), INV-5 (mọi CP## trong 1..15). Không tìm thấy journal → `Assert.Fail` (KHÔNG skip — xem Rationale).
+- Ghi chú thực thi: ban đầu định dùng `Assert.Skip` nhưng API đó KHÔNG có trong xUnit v2 (2.9.3) — chỉ có ở xUnit v3. Đổi sang `Assert.Fail`, và đây LẠI là lựa chọn ĐÚNG BẢN CHẤT hơn: cổng anti-drift không được tự tắt âm thầm khi không tìm thấy journal (skip = cổng vô hiệu ngầm = drift ẩn). Test project là dev-time nên luôn chạy trong repo có `.kiro`.
+- Rationale (verifiable): **Bản chất (sửa gốc, không vá ngọn):** gốc của drift tài liệu là "thiếu cổng tự động" — không phải "thiếu nhắc nhở". Thêm nhắc nhở/checklist là vá ngọn (vẫn dựa người). Thêm test chạy mỗi build biến L4 thành enforcement cùng hạng với code (triết lý "con người quên, build thì không" — nay áp cho tài liệu). Test tự gác chính nó (AD-030 phải nằm trong bảng guard 05 theo INV-2) → self-reinforcing.
+- Alternatives: (a) script PowerShell chạy tay (loại: không tự động = vẫn dựa người, yếu); (b) Kiro hook nhắc chạy loop (loại: nhắc ≠ chặn; bổ trợ được nhưng không thay cổng); (c) không làm gì, giữ thủ công (loại: đã chứng minh lệch thật — AD-003).
+- Consequences: `Bedrock.ArchitectureTests` nay phụ thuộc layout repo (journal ở `.kiro` ngoài `platform/`) — chấp nhận vì test không ship; discovery đi lên cây thư mục tìm `.kiro/specs/platform-base/journal`, không thấy thì skip. Mọi lần thêm AD/DV/TO/N phải giữ liên tục ID + (với AD) khai guard trong 05, nếu không build đỏ.
+- Reversibility: High (xoá 1 file test).
+- Traceability: KEYSTONE RULE (05-anti-drift.md), N-007 (quality gate), R31 (0 warning + test xanh), N-030/N-031.
+
+
+---
+
+### AD-031 — Đổi `IRefreshTokenStore.GetActiveByHashAsync` → `GetByHashAsync` (trả theo hash BẤT KỂ revoked/expiry) — hoà giải §5.7 vs §7.4
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI(Kiro) — phát hiện mâu thuẫn nội bộ design khi bắt đầu task 8
+- Provenance/Evidence: đọc `design.md` §5.7 (port doc "trả token còn hiệu lực, null nếu không active") vs §7.4 (rotation: `IF current.RevokedAt IS NOT NULL → RevokeFamily`, tức lookup PHẢI trả record đã revoked); `IRefreshTokenStore.cs` — `RefreshTokenSnapshot` có field `RevokedAt` (vô nghĩa nếu chỉ trả active); `foundation/.../EfRefreshTokenStore.cs` dùng `FindByHashAsync` (trả theo hash, không lọc active) — bản đã chạy; `persistence-layer-design.md` §4. Đã sửa design §5.7+§7.4 + port + verified `dotnet test` (RefreshTokenStoreTests xanh).
+- Context: Port §5.7 đặt tên `GetActiveByHashAsync` + doc "active-only", nhưng thuật toán reuse-detection §7.4 kiểm `current.RevokedAt`/`current.ExpiresAt` SAU lookup → lookup buộc phải trả cả token đã revoked/hết hạn. Nếu lọc active-only thì token đánh cắp (đã revoked) khi bị dùng lại sẽ trả `null` → KHÔNG kích hoạt RevokeFamily → **mất tính năng bảo mật reuse-detection**. Đây là mâu thuẫn nội bộ design (tên/doc §5.7 ↔ hành vi §7.4).
+- Decision/Change: Đổi tên `GetActiveByHashAsync` → `GetByHashAsync`; ngữ nghĩa = trả record theo hash BẤT KỂ revoked/expiry; snapshot mang `RevokedAt`/`ExpiresAt` để use case (task 16) tự quyết. Đồng bộ `design.md` §5.7 + §7.4 + port XML-doc.
+- Rationale (verifiable): **Bản chất (không vá ngọn):** gốc của lỗi là TÊN method mô tả sai hành vi bắt buộc → nếu chỉ sửa doc mà giữ tên "Active" thì để lại bẫy misuse (vi phạm I8 "interface tự chặn sai" — dev tưởng nó lọc active). Đổi tên = sửa gốc. Ba nguồn độc lập xác nhận ngữ nghĩa by-hash (snapshot.RevokedAt, §7.4, foundation FindByHashAsync) → không phải suy đoán.
+- Alternatives: (a) giữ tên + chỉ sửa doc (loại: vá ngọn, tên vẫn gây hiểu nhầm — I8); (b) tách 2 method `GetActive` + `GetAnyByHash` (loại: dư thừa, use case luôn cần bản "any" để reuse-detect; `GetActive` không ai dùng).
+- Consequences: use case rotation (task 16 Identity) gọi `GetByHashAsync`. Guard test `RefreshTokenStoreTests.GetByHash_returns_revoked_token_for_reuse_detection` khoá ngữ nghĩa này (revoked vẫn trả về).
+- Reversibility: High (greenfield, chưa có consumer — chỉ interface declaration).
+- Traceability: F5/F10/F19, design §5.7/§7.4, DV-011, task 8.1/8.2, I8.
+
+
+---
+
+### AD-032 — Ký JWT bằng `JsonWebTokenHandler` (Microsoft.IdentityModel.JsonWebTokens), KHÔNG dùng legacy `JwtSecurityTokenHandler`
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI(Kiro) — spec §5.7 không chỉ định thư viện/handler ký JWT
+- Provenance/Evidence: `JwtTokenService.cs` dùng `JsonWebTokenHandler.CreateToken(SecurityTokenDescriptor)`; pin `Microsoft.IdentityModel.JsonWebTokens` **8.0.1** (= version JwtBearer 10.0.9 kéo transitive — verified trong `Bedrock.Api/obj/project.assets.json`); test `JwtTokenServiceTests` xanh (kid header = ActiveKid, claim `sub`/`role` giữ nguyên tên, rotation verify).
+- Context: Cần chọn handler ký JWT ở Infrastructure. Hai lựa chọn: (a) `System.IdentityModel.Tokens.Jwt` / `JwtSecurityTokenHandler` (foundation cũ dùng, 8.19.1); (b) `Microsoft.IdentityModel.JsonWebTokens` / `JsonWebTokenHandler` (bản mới Microsoft khuyến nghị).
+- Decision/Change: Dùng `JsonWebTokenHandler`.
+- Rationale (verifiable): **Bản chất:** `JwtSecurityTokenHandler` có **`DefaultOutboundClaimTypeMap` TĨNH (process-global, mutable)** — có thể remap tên claim khi KÝ (di sản WS-*). Điều này đe doạ trực tiếp AD-023 (yêu cầu tên claim JWT-native `sub`/`role`/`permission`/`tenant_id`/`sid` giữ NGUYÊN). `JsonWebTokenHandler` KHÔNG có map tĩnh đó → ghi claim as-is, không phụ thuộc global state, lại nhanh hơn và là hướng Microsoft khuyến nghị. Chọn (b) là loại bỏ nguồn lỗi tận gốc thay vì phải nhớ `DefaultOutboundClaimTypeMap.Clear()` (footgun dễ quên — vá ngọn).
+- Alternatives: `JwtSecurityTokenHandler` (loại: static mutable map là footgun global; dù hoạt động nếu claim đã short-name, vẫn phụ thuộc trạng thái tĩnh dễ bị nơi khác đổi).
+- Consequences: Infrastructure ref `Microsoft.IdentityModel.JsonWebTokens 8.0.1`; verify side (Api JwtBearer) đã tương thích (cùng chuẩn JWT). Ghim đúng 8.0.1 tránh xung đột version với JwtBearer.
+- Reversibility: Medium (đổi handler nội bộ JwtTokenService).
+- Traceability: AD-023 (tên claim), F22, design §5.7, R27, task 9.2.
+
+
+---
+
+### AD-033 — Marker-scan DI tự hiện thực bằng reflection, KHÔNG dùng Scrutor (dù AD-018 cho phép)
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI(Kiro) — spec §6.2/§Components gợi ý Scrutor; đây là lựa chọn triển khai
+- Provenance/Evidence: `BedrockRegistrationExtensions.AddBedrockConventions` dùng `assembly.GetTypes()` + `ServiceDescriptor` thuần; Application csproj chỉ thêm `Microsoft.Extensions.DependencyInjection.Abstractions` (KHÔNG Scrutor); test `RegistrationConventionTests` (6) xanh.
+- Context: Task 10.1 cần auto-scan class theo marker (IScopedService/…) đăng ký theo lifetime. AD-018 đã "cho phép" Scrutor như plumbing. Nhưng logic scan (lọc marker + interface nghiệp vụ + loại System.* + self-fallback + loại IManualRegistration) đủ đơn giản để tự viết + test.
+- Decision/Change: Tự hiện thực marker-scan bằng reflection thuần; KHÔNG thêm Scrutor vào lõi Application.
+- Rationale (verifiable): **Bản chất (hướng lâu dài, sản phẩm thương mại):** (1) giảm dependency bên-thứ-ba trong LÕI Application — mỗi dep ngoài là rủi ro bảo trì/version/CVE dài hạn; (2) tránh coupling version Scrutor với .NET 10 (Scrutor phải theo kịp DI abstractions); (3) logic ~50 dòng, tự sở hữu + test kỹ (negative-control-ish: manual-exclusion, self-fallback, lifetime đúng, duplicate-guard). AD-018 "CHO PHÉP" chứ không "BẮT BUỘC" → không dùng KHÔNG vi phạm; Scrutor vẫn được phép nếu sau này cần decorator/scan phức tạp.
+- Alternatives: Scrutor (loại hiện tại: thêm dep ngoài cho việc tự làm được; giữ lại như tuỳ chọn tương lai nếu cần `Decorate`/scan nâng cao).
+- Consequences: Application chỉ phụ thuộc `Microsoft.Extensions.DependencyInjection.Abstractions` (abstraction chuẩn .NET, đúng lớp AD-018 whitelist) + FluentValidation. Nếu sau cần Scrutor thật (vd decorator pipeline task 15) thì mở lại — không mâu thuẫn.
+- Reversibility: High (đổi sang Scrutor là thay 1 method, không đụng call-site).
+- Traceability: F6/F18, AD-018 (không mâu thuẫn), design §6.2/§6.3, task 10.1.
+
+
+---
+
+### AD-034 — Rate-limit 429 là mối quan tâm TẦNG EDGE (ghi problem+json trực tiếp), KHÔNG thêm vào `ErrorType`
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI(Kiro) — spec không nói 429 map thế nào; platform `ErrorType` (§4.4) cố ý 6 loại không có RateLimited
+- Provenance/Evidence: `Bedrock.Domain/Results/ErrorType` = {Validation,NotFound,Conflict,Unauthorized,Forbidden,Failure} (verified task 2); `BedrockHttpSecurityExtensions.ConfigureRateLimiter.OnRejected` ghi `{"...","status":429,"code":"rate_limited"}` trực tiếp; test rate-limit 429 xanh.
+- Context: RateLimiter middleware từ chối request vượt ngưỡng → cần trả 429. `ErrorTypeToHttp` (task 5.1) chỉ map 6 ErrorType (không có 429). Câu hỏi: thêm `RateLimited` vào ErrorType, hay ghi 429 riêng?
+- Decision/Change: KHÔNG thêm `RateLimited` vào `ErrorType`. RateLimiter middleware ghi 429 problem+json trực tiếp (title/status/code + Retry-After header).
+- Rationale (verifiable): **Bản chất kiến trúc:** rate-limit xảy ra ở TẦNG EDGE/transport (middleware chặn TRƯỚC khi vào use case) — KHÔNG phải một domain-result error mà use case trả về. `ErrorType`/`Result` là hợp đồng LỖI NGHIỆP VỤ của use case (§4.4). Nhét RateLimited vào đó = trộn mối quan tâm transport vào domain kernel (làm bẩn type dùng nhiều nhất, mở rộng enum core cho một thứ không phải domain). Ghi 429 tại middleware là đặt trách nhiệm đúng tầng. Vì vậy KHÔNG mở rộng ErrorType là "sửa đúng gốc" (giữ ranh giới domain/edge), không phải né việc.
+- Alternatives: (a) thêm `ErrorType.RateLimited` + map 429 (loại: rò mối quan tâm edge vào domain kernel; use case không bao giờ trả RateLimited); (b) trả 500 (loại: sai HTTP semantic).
+- Consequences: 429 body do middleware tự ghi (không qua `ProblemDetailsBuilder`/Error). Nếu sau cần thống nhất tuyệt đối format problem+json, tách một `EdgeProblem` writer dùng chung (chưa cần).
+- Reversibility: High (đổi cách ghi 429 nội bộ middleware).
+- Traceability: F16, design §3.5 slot #9/§4.4, R14, task 11.1.
+
+---
+
+### AD-035 — HSTS/HTTPS-redirect (pipeline slot #4) là trách nhiệm HOST, KHÔNG ép trong library lõi
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI(Kiro) — design §3.5 liệt kê slot #4 nhưng không nói ai sở hữu
+- Provenance/Evidence: `BedrockApiExtensions.UseBedrockApi` — slot #4 ghi comment "TRÁCH NHIỆM HOST" (không gọi `UseHsts`/`UseHttpsRedirection`); design §3.5 bảng có slot #4.
+- Context: §3.5 có slot #4 "HSTS / HTTPS redirect". Nhưng base library có thể chạy SAU reverse proxy terminate TLS (traffic nội bộ là HTTP), và HSTS trong Development gây kẹt cache trình duyệt.
+- Decision/Change: Base KHÔNG gọi `UseHsts`/`UseHttpsRedirection`; để Host quyết theo deployment/TLS. Base chỉ cấp cơ chế ForwardedHeaders/CORS/RateLimiter (#1/#8/#9).
+- Rationale (verifiable): **Bản chất:** HSTS/HTTPS-redirect phụ thuộc topology triển khai (proxy terminate TLS? edge TLS?) và môi trường (dev vs prod) — thông tin Host mới có, library lõi KHÔNG biết. Ép trong lõi sẽ sai/gây hại (redirect vô hạn sau proxy, HSTS kẹt dev). Đặt đúng tầng = Host. `UseForwardedHeaders` (#1) resolve scheme thật để Host quyết định redirect nếu cần.
+- Alternatives: (a) `UseHsts` vô điều kiện trong base (loại: hại sau proxy + dev); (b) thêm options bật/tắt HSTS trong base (loại: base vẫn không biết topology; tăng bề mặt cấu hình cho thứ thuộc Host).
+- Consequences (RÀNG BUỘC Host — task 16.2): Host áp `UseHsts()`/`UseHttpsRedirection()` (không-dev) ở đúng vị trí trước `UseBedrockApi` hoặc Host tự chèn. Ghi để không ai tưởng base lo HTTPS.
+- Reversibility: High.
+- Traceability: F16, design §3.5 slot #4, task 11 (+ ràng buộc task 16.2).
+
+
+---
+
+### AD-036 — Chốt field shape cho record External Auth (`ExternalAuthRequest`/`Challenge`/`Callback`) — design chỉ đặt tên
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI(Kiro) — design §5.6 ĐẶT TÊN các record nhưng KHÔNG cho field cụ thể
+- Provenance/Evidence: design §5.6 — `CreateChallengeAsync(ExternalAuthRequest)→ExternalAuthChallenge`, `CompleteAsync(ExternalAuthCallback)→ExternalUserProfile`, comment "state + PKCE + nonce + returnUrl(whitelist)" / "verify state/pkce, replay-protect"; `ExternalUserProfile` cho field đầy đủ. File `ExternalAuthPorts.cs`; build 0 warning.
+- Context: Task 12.3 cần định nghĩa 3 record External Auth. Design mô tả MỤC ĐÍCH (PKCE/nonce/state/returnUrl) nhưng không liệt kê field → phải chốt shape mà không bịa.
+- Decision/Change: Định nghĩa TỐI THIỂU bám luồng OAuth/OIDC design mô tả:
+  - `ExternalAuthRequest(string ReturnUrl)` — app khai nơi quay về (adapter whitelist).
+  - `ExternalAuthChallenge(Uri RedirectUri, string State)` — URL authorize để redirect + state đối chứng.
+  - `ExternalAuthCallback(string State, string Code)` — code + state trả về.
+  - `ExternalUserProfile(...)` — theo ĐÚNG design (Provider/ProviderUserId/Email?/EmailVerified?/DisplayName).
+- Rationale (verifiable): **Bản chất:** PKCE `code_verifier` + nonce là bí mật đối chứng SERVER-SIDE, adapter GIỮ nội bộ (keyed theo State) — KHÔNG thuộc bề mặt port (lộ ra chỉ tăng rủi ro + coupling). Port chỉ cần token tương quan (State) + code + redirect URL. `Uri` (không string) cho RedirectUri → type-safe, né CA1056. Đây là shape tối thiểu-đủ đúng chuẩn OAuth, không phải suy đoán tuỳ tiện (bám mô tả design + chuẩn ngành).
+- Alternatives: (a) nhét PKCE/nonce vào DTO port (loại: lộ bí mật server-side ra hợp đồng, coupling adapter-cụ-thể); (b) để record rỗng "tự hiểu" (loại: vi phạm contract-first — không compile được consumer).
+- Consequences: adapter (task ngoài phạm vi base — Adapters.ExternalAuth.Google/Zalo) tự quản PKCE/nonce/replay keyed theo State; nếu provider cần thêm field (vd id_token) → mở rộng record (thêm optional, backward-compat).
+- Reversibility: High (greenfield, chưa có adapter/consumer).
+- Traceability: F27, design §5.6, R20, task 12.3.
+
+### AD-037 — Dùng Scrutor `Decorate` (open-generic) để wiring decorator pipeline (§8) — REVISIT AD-033
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI(Kiro)
+- Provenance/Evidence: `platform/src/Bedrock.Application/DependencyInjection/BedrockCoreExtensions.cs` (`AddBedrockCore` → `TryDecorate(typeof(IUseCase<,>), ...)` x4 + `typeof(ICommandUseCase<>), ...` x5); package `Scrutor` 7.0.0 (Directory.Packages.props) + PackageReference trong `Bedrock.Application.csproj`; guard `PipelineOrderTests` (DI thật) xanh; build 0 warning.
+- Context: Task 15 cần bọc use case bằng 4–5 decorator generic theo thứ tự §8. AD-033 đã CHỐT không dùng Scrutor cho marker-scan, nhưng ghi rõ tiên liệu "thêm Scrutor NẾU decorator pipeline cần". Decorate open-generic đúng-thứ-tự-nesting viết tay bằng reflection rất dễ sai (phải thay ImplementationFactory, giữ lifetime, resolve inner) — là bài toán Scrutor giải chuẩn.
+- Decision/Change: Thêm Scrutor CHỈ cho decorator pipeline. Marker-scan DI (`BedrockRegistrationExtensions`) GIỮ NGUYÊN reflection tự viết (AD-033 không bị lật — chỉ thu hẹp phạm vi "không Scrutor" xuống "không Scrutor cho marker-scan"). Dùng `TryDecorate` (không ném khi chưa có use case → host/test tối thiểu vẫn boot). Thứ tự gọi: lời đầu = lớp TRONG, lời cuối = lớp NGOÀI → đăng ký từ Transaction (trong) ra Logging (ngoài).
+- Rationale (verifiable): **Bản chất:** decoration open-generic đúng-thứ-tự là năng lực Scrutor cung cấp ổn định, còn marker-scan chỉ là vòng lặp reflection đơn giản không cần lib. Tách đôi phạm vi giữ AD-018 (whitelist plumbing) + AD-033 (tự sở hữu scan) nhất quán mà vẫn không tự dựng lại decoration engine dễ lỗi. `PipelineOrderTests` chứng minh nesting đúng (unauthorized+invalid → forbidden, không phải validation_error).
+- Alternatives: (a) tự viết Decorate open-generic (loại: dễ sai, phải bảo trì; không có giá trị so lib chuẩn); (b) MediatR pipeline behaviors (loại: kéo cả mediator + đổi mô hình use case hiện có, over-engineering cho base).
+- Consequences: Application phụ thuộc thêm Scrutor (đã whitelist AD-018). Host PHẢI gọi `AddBedrockCore` SAU khi đăng ký use case (đã ghi XML-doc). Thêm behavior mới = thêm một `TryDecorate` đúng vị trí thứ tự.
+- Reversibility: Medium (gỡ Scrutor phải tự viết lại decoration — nhưng API `AddBedrockCore` không đổi với caller).
+- Traceability: F13, design §8, R26.3, task 15; revisit AD-033/AD-018.
+
+### AD-038 — Khai permission bằng `[RequirePermission]` trên KIỂU input, ngữ nghĩa AND (least-privilege)
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI(Kiro) — design §8 nói "khai báo trên command qua attribute/metadata" nhưng KHÔNG cho tên/shape/ngữ nghĩa nhiều permission.
+- Provenance/Evidence: `platform/src/Bedrock.Application/Authorization/RequirePermissionAttribute.cs` (`[AttributeUsage(Class|Struct, AllowMultiple=true, Inherited=true)]` + `PermissionMetadata.For(Type)` cache theo kiểu) + `AuthorizationUseCaseDecorator`/command variant (cache `static readonly string[]` per closed-generic); guard `AuthorizationDecoratorTests` (missing→forbidden, granted→run, no-attr→pass, AND-semantics, command variant, metadata reader) xanh.
+- Context: Authorization behavior cần biết use case yêu cầu quyền gì. Design chỉ định "attribute/metadata" trên command. Phải chốt: (1) attribute vs interface; (2) đặt ở đâu; (3) nhiều permission = AND hay OR.
+- Decision/Change: (1) ATTRIBUTE (permission là hằng của LOẠI thao tác, không đổi theo instance → metadata tĩnh, cache được — khác `IIdempotentCommand` là giá trị runtime nên phải interface, AD-039); (2) gắn trên `typeof(TInput)`, đọc qua `PermissionMetadata.For` (cache `ConcurrentDictionary` + `static readonly` per closed-generic → reflection chạy một lần); (3) AllowMultiple + **AND** (phải có ĐỦ mọi permission khai) = least-privilege, an toàn mặc định. Không khai → pass-through.
+- Rationale (verifiable): **Bản chất:** quyền cần để chạy một use case là bất biến của kiểu → thuộc metadata kiểu, không phải state. AND là mặc định fail-safe: thiếu bất kỳ quyền nào → chặn; muốn OR thì app tự gộp thành một permission tổng hợp (đơn giản, không mơ hồ). Cache per-kiểu tránh reflection nóng mỗi request.
+- Alternatives: (a) interface `IRequirePermission { string[] Permissions }` (loại: buộc mọi input tự implement, permission là hằng-kiểu nên attribute hợp hơn); (b) OR-semantics mặc định (loại: nới quyền ngầm — nguy hiểm cho base thương mại); (c) policy-string như ASP.NET (loại: kéo AuthorizationPolicy vào Application, coupling framework).
+- Consequences: Authorization theo TRẠNG THÁI resource (cần load dữ liệu) vẫn nằm TRONG use case (design §8 xác nhận). App/module định nghĩa tập permission (F3 — lõi không hardcode). Muốn OR → tạo permission tổng hợp.
+- Reversibility: High (attribute là bề mặt cộng thêm; đổi ngữ nghĩa chỉ sửa vòng lặp trong decorator + guard test).
+- Traceability: F23, design §8, R26.3, task 15.
+
+### AD-039 — Idempotency v1: gate bằng `IIdempotentCommand`, `TryBegin` (KHÔNG replay response), TTL 24h
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI(Kiro) — design §8 chốt "command mang IdempotencyKey → TryBeginAsync false → idempotency_conflict, KHÔNG replay ở v1" nhưng KHÔNG cho cơ chế mang key + con số TTL.
+- Provenance/Evidence: `platform/src/Bedrock.Application/UseCases/IIdempotentCommand.cs` (`string IdempotencyKey`) + `IdempotencyUseCaseDecorator`/command variant (gate `input is IIdempotentCommand` → `IIdempotencyStore.TryBeginAsync(key, IdempotencyDefaults.Ttl)`) + `IdempotencyDefaults.Ttl = 24h` / `Conflict = Error.Conflict("idempotency_conflict", ...)`; guard `IdempotencyDecoratorTests` (first-run/duplicate-conflict/non-idempotent-skip-store/command-variant/ttl=24h) xanh.
+- Context: Behavior cần lấy key từ input + hạn TTL. Design để mở "command mang IdempotencyKey".
+- Decision/Change: (1) key qua INTERFACE `IIdempotentCommand` (giá trị RUNTIME do client cấp per-instance → không thể attribute); (2) behavior GATED — input không implement → pass-through, KHÔNG chạm store (khỏi tốn round-trip cho thao tác không idempotent); (3) TTL hằng 24h (`IdempotencyDefaults.Ttl`); (4) trùng key → `Error.Conflict("idempotency_conflict")`, KHÔNG replay response (đúng design §8 v1).
+- Rationale (verifiable): **Bản chất:** IdempotencyKey là dữ liệu runtime (mỗi request khác) → phải là thành viên instance (interface), trái ngược permission (hằng-kiểu → attribute, AD-038). 24h đủ dài phủ mọi retry hợp lý của client/gateway/mạng, đủ ngắn để store tự dọn key. Không replay response tránh phải serialize/deserialize response vào store (phức tạp + rủi ro version response) — replay là phần mở rộng của adapter store nếu cần.
+- Alternatives: (a) attribute cho key (loại: key là runtime, attribute là compile-time); (b) TTL cấu hình qua Options (hoãn — chưa có nhu cầu; hằng đủ cho v1, dễ nâng thành Options sau); (c) replay response ở v1 (loại: design đã loại — phức tạp/serialize response).
+- Consequences: Command muốn idempotent → implement `IIdempotentCommand`. Client nhận `idempotency_conflict` khi trùng (không nhận lại response cũ) — hợp đồng v1. Nâng cấp TTL→Options hoặc replay = mở rộng backward-compat.
+- Reversibility: High (interface + hằng; nâng TTL thành Options không phá caller).
+- Traceability: F28, design §8, task 15; đối chiếu AD-038 (attribute vs interface).
+
+### AD-040 — Transaction behavior CHỈ áp cho `ICommandUseCase<>` (ghi thuần); value-returning tự quản
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI(Kiro) — design §8 nói "mở ExecuteInTransactionAsync cho command ghi + outbox" nhưng không định rõ họ use case nào (value-returning gồm cả query đọc lẫn command-trả-giá-trị).
+- Provenance/Evidence: `platform/src/Bedrock.Application/Behaviors/TransactionCommandUseCaseDecorator.cs` (chỉ `ICommandUseCase<TInput>`); `BedrockCoreExtensions.DecoratePipeline` — họ `IUseCase<,>` KHÔNG có `TryDecorate` Transaction, họ `ICommandUseCase<>` CÓ; guard `TransactionDecoratorTests` (body-runs-inside-transaction, failing-propagates) + `PipelineOrderTests` (command mở transaction; query family không) xanh.
+- Context: Value-returning `IUseCase<TIn,TOut>` gồm CẢ query (chỉ đọc) lẫn command trả giá trị (vd tạo → trả id). Bọc transaction cho query chỉ-đọc = mở transaction thừa (lãng phí + giữ connection). Không thể phân biệt tĩnh query vs write trong họ value-returning.
+- Decision/Change: Transaction behavior CHỈ bọc `ICommandUseCase<TInput>` (họ ghi-thuần, chắc chắn write). Use case value-returning tự quản transaction TƯỜNG MINH khi cần ghi — reentrancy R7.4 (AD-012) đảm bảo lời gọi `ExecuteInTransactionAsync` lồng THAM GIA transaction hiện hành, không xung đột nếu sau này có thêm lớp bọc.
+- Rationale (verifiable): **Bản chất:** transaction chỉ cần cho thao tác GHI; `ICommandUseCase` là tín hiệu tĩnh rõ ràng nhất cho "ghi thuần". Bọc mọi value-returning = mở transaction cho query đọc (sai bản chất, tốn tài nguyên). Reentrancy (đã có + test) làm việc "value-returning tự quản" an toàn tuyệt đối kể cả khi lồng. Đây là lựa chọn bám design ("command ghi") + né tác dụng phụ, không phải bỏ sót.
+- Alternatives: (a) bọc cả value-returning (loại: transaction thừa cho query đọc); (b) thêm marker `ITransactionalUseCase` cho value-returning-write (hoãn: chưa có nhu cầu; reentrancy đã đủ an toàn để use case tự gọi — thêm sau backward-compat nếu cần); (c) đoán bằng tên/heuristic (loại: bịa/không đáng tin).
+- Consequences: Command ghi (void) → transaction tự động (+ outbox atomic). Value-returning-write → gọi `ExecuteInTransactionAsync` trong thân (reentrancy an toàn). Tài liệu hoá rõ trong XML-doc decorator + AD này.
+- Reversibility: High (thêm bọc cho value-returning về sau chỉ là thêm `TryDecorate` + marker, không phá hợp đồng).
+- Traceability: I3/F5/F25, design §8/§5.1, R8.1, task 15; dựa AD-012 (reentrancy).
+
+### AD-041 — Refresh token lifetime mặc định 14 ngày (design không chốt con số)
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI(Kiro) — design §7.4/§4.7 mô tả `expires_at` nhưng KHÔNG cho giá trị TTL.
+- Provenance/Evidence: `platform/src/Modules/Identity/Identity.Application/RefreshToken/RefreshAccessTokenUseCase.cs` (`internal static readonly TimeSpan RefreshTokenLifetime = TimeSpan.FromDays(14)`); guard `RefreshAccessTokenUseCaseTests.Refresh_token_lifetime_is_14_days` + `Valid_token_rotates_and_returns_new_tokens` (assert expiresAt = now + 14d). Build 0 warning.
+- Context: Rotation tạo token mới cần `ExpiresAt = now + TTL`. Design để mở.
+- Decision/Change: TTL refresh token = 14 ngày, khai `internal static readonly` (test thấy qua InternalsVisibleTo, KHÔNG phơi API công khai).
+- Rationale (verifiable): 14 ngày cân bằng UX (không bắt đăng nhập lại quá thường) vs cửa sổ rủi ro nếu token rò (reuse-detection §7.4 thu hồi family khi phát hiện). Là hằng module (không phải hằng lõi Bedrock — F3), promotable thành Options per-app sau (backward-compat) khi có nhu cầu chính sách khác nhau.
+- Alternatives: (a) Options ngay (hoãn: over-engineering cho skeleton, chưa có app cần khác biệt); (b) TTL rất dài (loại: cửa sổ rủi ro lớn); (c) rất ngắn (loại: UX kém, refresh dồn dập).
+- Consequences: mọi refresh token mới hết hạn sau 14 ngày. Nâng thành Options = thêm IdentityOptions binding, không phá caller.
+- Reversibility: High (hằng nội bộ; đổi số/nâng Options cục bộ).
+- Traceability: design §7.4/§4.7, F10, task 16.1.
+
+### AD-042 — Health-check DB đặt tên PER-CONTEXT (`database:{TContext}`) để multi-module không trùng tên
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI(Kiro) — fix tận gốc landmine N-040 (design không nói tên health-check).
+- Provenance/Evidence: `platform/src/Bedrock.Infrastructure/DependencyInjection/BedrockPersistenceExtensions.cs` (`healthCheckName = $"{DatabaseHealthCheckPrefix}:{typeof(TContext).Name}"`); guard `Bedrock.Infrastructure.Tests/MultiModulePersistenceTests` (2 context → 2 tên `ready` duy nhất + resolve HealthCheckService không ném). Build 0 warning; 182 test xanh.
+- Context: `AddBedrockPersistence<TContext>` trước hardcode tên `"database"`. Hai module (2 DbContext) cùng gọi → `DefaultHealthCheckService` ném "duplicate registration" lúc resolve → crash boot. Xuất hiện đúng khi task 16 ráp ≥2 module (hoặc tương lai thêm Rooms).
+- Decision/Change: tên health-check = `database:{typeof(TContext).Name}` (vd `database:IdentityDbContext`), giữ tag `ready`; vòng set timeout khớp tên per-context.
+- Rationale (verifiable): **Bản chất:** health-check name PHẢI duy nhất toàn ứng dụng (ràng buộc của HealthCheckService). Persistence là per-module (mỗi module một DbContext) → tên phải gắn định danh context để duy nhất theo cấu trúc, không phụ thuộc thứ tự đăng ký. `typeof(TContext).Name` ổn định + đọc được (readiness report phân biệt được module nào chưa sẵn sàng). Đây là fix GỐC (đúng bản chất "một DB check mỗi module"), không phải vá (không phải append số ngẫu nhiên).
+- Alternatives: (a) tên do caller truyền (loại: thêm tham số bắt buộc, dễ quên/đặt trùng); (b) một health-check gộp mọi context (loại: mất khả năng phân biệt module nào down); (c) giữ "database" + chỉ một module được có DB (loại: phá mô hình multi-module — bản chất platform).
+- Consequences: readiness `/health/ready` liệt kê nhiều check `database:*` (một mỗi module) — rõ ràng hơn. Không phá test cũ (không test nào assert tên "database"; Api.Tests readiness không có DB check).
+- Reversibility: High (đổi quy ước tên cục bộ trong một extension).
+- Traceability: N-040, task 6.3/16.1/16.2, R34, F31/I6.

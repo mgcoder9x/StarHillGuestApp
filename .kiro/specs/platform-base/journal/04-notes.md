@@ -246,3 +246,190 @@
 - CP6 nâng PENDING → **PARTIAL** (same-transaction atomic đã chứng minh trên SQLite — DB quan hệ thật; publish-path + Postgres → 7.4).
 - CÒN LẠI task 7: **7.3** (`IOutboxDispatcher` claim/backoff/dead-letter + `EfInboxStore` idempotent + `IIntegrationEventTypeRegistry` + unit test backoff/threshold), **7.4** (Testcontainers — CP6/CP8/CP15), **7.5** (retention/cleanup job). Lưu ý claim nguyên tử (skip-locked) là Postgres-specific → logic backoff/threshold unit-test được không-Docker, race thật cần 7.4.
 - Tổng bản ghi journal: AD 29, DV 9, TO 9, N 28.
+
+---
+
+### N-029 — Task 7.3 (outbox dispatcher + inbox store + type registry) VERIFY THẬT (2026-07-09)
+- Verified: ✅ `dotnet test Platform.slnx` → ArchitectureTests 16 + UnitTests 37 + Infrastructure.Tests **27** + Api.Tests 29 = **109 passed, 0 failed**, build 0 warning.
+- Đã tạo trong `src/Bedrock.Infrastructure/Persistence/Messaging/`:
+  - `OutboxDispatcherOptions` (BatchSize=100, MaxAttempts=10, BaseDelay=5s, MaxDelay=30m; named-options theo context → per-module tinh chỉnh riêng).
+  - `OutboxBackoff` (static, non-generic — tránh CA1000): `ComputeBackoff = BaseDelay×2^(errorCount-1)` cắp `MaxDelay`; unit-test giá trị chính xác.
+  - `EfOutboxDispatcher<TContext>` (impl `IOutboxDispatcher`): claim batch pending tới hạn trong transaction → publish `IEventBusPublisher` → mark `processed_at`; fail → `error_count`++ + `next_attempt_at`=now+backoff+jitter (jitter TẤT ĐỊNH theo Id, KHÔNG RNG → test được + né CA5394), vượt `MaxAttempts` → `dead_lettered_at`. Bắt rộng (`CA1031` suppress có lý do) để cách ly poison, không rethrow.
+  - `EfInboxStore` (impl `IInboxStore`): idempotency phía consumer, stage `InboxMessage` (không tự commit) → mark + business cùng transaction; guard trùng cấp DB là PK `(message_id, consumer)`.
+  - `IntegrationEventTypeRegistry` (impl `IIntegrationEventTypeRegistry`): quét assembly `*.Contracts`, đọc `EventType` qua `RuntimeHelpers.GetUninitializedObject` (không chạy ctor — EventType là mã ổn định/literal); trùng EventType → ném fail-fast; EventType lạ → `Resolve` trả null (dead-letter, không crash — R17.3).
+  - `DependencyInjection/OutboxDispatcherExtensions`: `AddOutboxDispatcher<TContext>(configure?)` (+ inbox store) và `AddIntegrationEventRegistry(params Assembly[])` (singleton).
+- `InternalsVisibleTo Bedrock.Infrastructure.Tests` thêm vào csproj Infrastructure → test thuần `OutboxBackoff` (helper internal) mà không phơi ra API công khai.
+- Test SQLite (8 mới): publish→marks processed; fail→error+next_attempt; dead-letter sau MaxAttempts (advance clock để claim lại); dead-letter/chưa-tới-hạn KHÔNG bị claim; ComputeBackoff exponential+capped; inbox first-true-then-false + khác-consumer=lần-đầu; registry resolve known/null.
+- 1 lỗi build thật fix tận gốc: **CA1859** (field registry nên dùng `Dictionary` cụ thể thay `IReadOnlyDictionary` — perf). 1 finding provider thật → **DV-010** (SQLite không dịch được so sánh/sắp xếp `DateTimeOffset` → claim tách nhánh: Npgsql lọc+sort ở SQL, provider khác client-side).
+- Ranh giới task giữ đúng (không over-claim): claim exclusive đa-instance (Postgres `FOR UPDATE SKIP LOCKED`) + race 2-dispatcher (CP15) + CP6 full/CP8 vẫn thuộc **task 7.4 (Testcontainers)** — logic backoff/threshold/dead-letter/registry/inbox đã unit-test không-Docker.
+- CÒN LẠI task 7: **7.4** (Testcontainers — CP6 full/CP8/CP15), **7.5** (retention/cleanup job). Kế tiếp thực chất theo build order: 7.4/7.5, hoặc nhánh song song wave 6 (task 8 refresh-token store, 9 crypto/JWT, 10 DI+startup validation, 11 HTTP hardening) đều đã đủ tiền đề (task 6 xong).
+- Tổng bản ghi journal: AD 29, DV 10, TO 9, N 29.
+
+---
+
+### N-030 — ⚠️ Repo-trong-repo: `StarHillGuestApp/StarHillGuestApp/` là GIT REPO riêng (KHÔNG được xoá) — cần user reconcile cấu trúc
+- Verified: ✅ phiên 2026-07-09 — `file_search` trả 2 đường dẫn cho `01-decisions.md`/`tasks.md`: (a) GỐC `…/StarHillGuestApp/.kiro/specs/platform-base/…` và (b) LỒNG `…/StarHillGuestApp/StarHillGuestApp/.kiro/specs/platform-base/…`. `grep_search` với glob `**/platform-base/journal/*.md` khớp bản LỒNG, và bản lồng **chỉ có DV-001..008** (THIẾU DV-009/DV-010 + N-029 tôi vừa thêm) → bản lồng là ẢNH CHỤP CŨ/stale.
+- Ý nghĩa: code `platform/` sống + journal tôi đang bảo trì đều ở cây GỐC (`…/StarHillGuestApp/…`, KHÔNG phải bản lồng). Mọi edit phiên này (7.3, anti-drift) đều vào GỐC — đã xác nhận qua đường dẫn tuyệt đối.
+- Rủi ro: nếu ai đó mở nhầm bản lồng để sửa → công sức mất/nhầm nguồn sự thật. Đây là drift ở tầng filesystem (không phải nội dung).
+- ĐÍNH CHÍNH (2026-07-09, sau điều tra `list_directory` depth 2): bản lồng KHÔNG phải "bản sao rác của journal" — nó là **MỘT GIT REPO đầy đủ** (`StarHillGuestApp/StarHillGuestApp/.git/`) chứa **dự án `resort-qr/`** (frontend/src/tests), `foundation/`, `Reference/`, `docs/`, `end.md`, và bản `.kiro/specs/platform-base` CŨ (journal tới DV-008). Nó **KHÔNG có `platform/`**. → TUYỆT ĐỐI KHÔNG xoá (sẽ phá repo + dự án thật + lịch sử git).
+- Hành động ĐÚNG: đây là vấn đề **cấu trúc repo (repo-trong-repo / hai checkout)** — chỉ USER biết cây nào canonical. AI KHÔNG được tự quyết/gỡ. Khuyến nghị: user xác định repo chuẩn; nếu cây gốc `…/StarHillGuestApp/` (có `platform/`) là workspace thật thì cân nhắc di chuyển/hợp nhất bản lồng RA NGOÀI khối lồng bằng thao tác git có kiểm soát (không phải xoá thô). `JournalConsistencyTests` chỉ gác bản GỐC (discovery đi lên cây từ `platform/tests/` → gặp `.kiro` gốc trước) → an toàn dù bản lồng còn đó.
+- Provenance/Evidence: `list_directory` `…/StarHillGuestApp/StarHillGuestApp/` depth 2 phiên 2026-07-09 — thấy `.git/`, `resort-qr/`, `foundation/`, `Reference/`, `.kiro/`, `end.md`, KHÔNG có `platform/`; đối chiếu số bản ghi DV (lồng=8 vs gốc=10).
+
+---
+
+### N-031 — Phiên củng cố anti-drift + audit journal (2026-07-09)
+- Kích hoạt: user yêu cầu "cần 1 cách cực mạnh để tránh drift" + xác nhận thư mục 4-loại-ghi-chép (đã tồn tại từ trước: `01`–`04` + `05-anti-drift` + README).
+- Đánh giá bản chất: thư mục journal + 4 loại (AD/DV/TO/N) ĐÃ đầy đủ; điểm yếu gốc là **L4/L5 thủ công** (journal có thể tự lệch mà không cổng nào bắt). Bằng chứng lệch thật: AD-003 thiếu khỏi bảng guard 05.
+- Đã làm (verified):
+  - Thêm **AD-030** + `JournalConsistencyTests` (INV-1..5) → L4 nay TỰ ĐỘNG (build gate). Chi tiết: 05-anti-drift.md mục "Cổng journal-consistency".
+  - Viết lại bảng guard AD trong 05 thành **token tường minh AD-001..AD-030** (bỏ dạng nén `AD-004/005/...` khó quét) + bổ sung AD-003; cập nhật trạng thái sau task 7.3 (AD-006/015 ENFORCED, AD-016 PARTIAL, CP8 PARTIAL).
+  - Ghi N-030 (bản sao lồng stale).
+- Bất biến enforced thêm: INV-1 (ID liên tục), INV-2 (KEYSTONE tự động: mọi AD có guard), INV-3 (ref không dangling), INV-4 (AD/DV có bằng chứng), INV-5 (CP 1..15).
+- Trạng thái ID sau phiên (verified qua grep heading): AD-001..030 (30), DV-001..010 (10), TO-001..009 (9), N-001..031 (31). Liên tục, không trùng.
+- Verified cuối: `dotnet test Platform.slnx` (gồm JournalConsistencyTests) + `getDiagnostics` journal — xem kết quả cùng phiên.
+- Tổng bản ghi journal: AD 30, DV 10, TO 9, N 31.
+
+---
+
+### N-032 — Task 8.1 + 8.2 (refresh-token store nguyên tử) VERIFY THẬT (2026-07-09)
+- Verified: ✅ `dotnet test Platform.slnx` → ArchitectureTests 21 + UnitTests 37 + Infrastructure.Tests **33** + Api.Tests 29 = **120 passed, 0 failed**, build 0 warning.
+- Đã tạo trong `src/Bedrock.Infrastructure/Persistence/Security/`:
+  - `RefreshTokenRecord` (**internal sealed** — ẩn tối đa, F19/AD-010; không audit/xmin).
+  - `RefreshTokenModelBuilderExtensions.AddRefreshTokens(schema?)` (public) — map `refresh_token` vào schema module (per-module, giống AddOutboxInbox); **UNIQUE `ux_refresh_hash`** (F10) + `ix_refresh_user`/`ix_refresh_family`; KHÔNG lộ RefreshTokenRecord ra ngoài.
+  - `EfRefreshTokenStore` (impl `IRefreshTokenStore`): `TryConsumeAsync`/`RevokeFamilyAsync` = `ExecuteUpdateAsync` một câu `UPDATE ... WHERE ... AND revoked_at IS NULL` (nguyên tử, row-lock — fix gốc race, không lock ứng dụng); `GetByHashAsync` trả theo hash bất kể revoked (AD-031); `AddAsync` chỉ stage (CreatedAt đóng dấu bằng IClock).
+  - `AddBedrockPersistence` nay `TryAddScoped<IRefreshTokenStore, EfRefreshTokenStore>` (cơ chế ở lõi — AD-010).
+- QUYẾT ĐỊNH THIẾT KẾ khi triển khai: **AD-031** (đổi `GetActiveByHashAsync`→`GetByHashAsync`, hoà giải mâu thuẫn §5.7↔§7.4 — reuse-detection cần record đã revoked) + **DV-011** (deviation tên method so với design literal). Đã đồng bộ design §5.7/§7.4 + port.
+- Test SQLite (6 mới): GetByHash trả token + null-khi-vắng; GetByHash trả token ĐÃ REVOKED (nền reuse-detection); consume once-true-then-false; RevokeFamily thu hồi đúng family (family khác giữ nguyên); consume+add rollback cùng transaction (§7.4); UNIQUE hash bị chặn (F10). Race 2-request đồng thời (CP7) + Postgres → task 8.3 (Testcontainers, N-012).
+- CP7 nâng PENDING → **PARTIAL**; AD-010 nâng PENDING → **PARTIAL** (store xong; use case rotation task 16).
+- CÒN LẠI task 8: **8.3** (Testcontainers — race rotation đa-connection, CP7 full). Kế tiếp build-order: task 9 (crypto/JWT key-ring — unit-test được, không Docker) là ứng viên tốt để giữ nhịp.
+- Tổng bản ghi journal: AD 31, DV 11, TO 9, N 32.
+
+---
+
+### N-033 — Task 9.1 + 9.2 (crypto Argon2id + CSPRNG token + JWT key-ring signer) VERIFY THẬT (2026-07-09)
+- Verified: ✅ `dotnet test Platform.slnx` → ArchitectureTests 21 + UnitTests 37 + Infrastructure.Tests **52** + Api.Tests 29 = **139 passed, 0 failed**, build 0 warning.
+- Trạng thái trước khi làm (kiểm tra kỹ theo yêu cầu user): đĩa ĐÃ có sẵn port `IJwtTokenService` + `JwtKeyRingOptions` trong `Bedrock.Application/Ports/Security/` (do phiên trước, giống lúc phát hiện task 6/7) — đĩa đi trước narrative. Đã đọc contract thật trước khi code (không suy đoán). Baseline 120 test xanh xác nhận lại.
+- Package thật (pin, verify qua project.assets.json + build): `Microsoft.IdentityModel.JsonWebTokens` **8.0.1** (= transitive của JwtBearer 10.0.9 → không xung đột version), `Microsoft.Extensions.Configuration.Binder` **10.0.0** (Infra cần `.Bind`; Api có sẵn qua framework ref). `Konscious.Security.Cryptography.Argon2` 1.3.1 đã reference sẵn.
+- Đã tạo (theo cấu trúc folder design §6.4 — tách `Cryptography/` + `Tokens/` khỏi "Security" cũ):
+  - `Cryptography/PasswordHashingOptions` + `Cryptography/Argon2idPasswordHasher` (IPasswordHasher, PHC string tự-mô-tả, verify FixedTimeEquals hằng-thời-gian, hash hỏng → false không ném).
+  - `Tokens/CryptoTokenGenerator` (ITokenGenerator, CSPRNG base64url, sàn 16 byte).
+  - `Tokens/JwtTokenService` (IJwtTokenService, `JsonWebTokenHandler` ký HS256 + kid header, thời gian từ IClock — AD-032).
+  - `Tokens/JwtKeyRingValidation` (internal, validate-on-start F35: Keys non-empty, ActiveKid ∈ Keys, secret base64 ≥256-bit, Issuer/Audience, lifetime>0).
+  - `DependencyInjection/BedrockSecurityExtensions.AddBedrockSecurity(config)` — đăng ký impl THẬT cho 3 port bảo mật BẮT BUỘC (KHÔNG default no-op — fail-secure §5.5) + bind/validate key-ring.
+- QUYẾT ĐỊNH khi triển khai: **AD-032** (JsonWebTokenHandler thay legacy JwtSecurityTokenHandler — tránh static `DefaultOutboundClaimTypeMap` remap tên claim, bảo vệ AD-023). Sửa nhỏ Api: `AddSingleton(keyRing)` → `TryAddSingleton` (idempotent khi Host gọi cả AddBedrockAuthCore + AddBedrockSecurity cùng bind section "Jwt" — AD-008; không đổi hành vi khi Api chạy một mình, 29 test Api vẫn xanh).
+- AD-008 (JwtKeyRingOptions ký/verify) nâng PARTIAL → **ENFORCED** (cả hai phía có guard).
+- Test (19 mới): hasher (roundtrip/wrong-pw/malformed/PHC-format/salt-ngẫu-nhiên), token (urlsafe-no-padding/duy-nhất/min-bytes), JWT (verify+kid+claims, rotation verify khóa cũ, khóa retire không verify, ctor-throw-active-kid-thiếu, exp theo lifetime), validation (6 case).
+- Lưu ý Host (task 16): `JwtKeyRingOptions` hiện bind ở CẢ Api (verify) và Infra (sign) — cùng section "Jwt", cùng dùng TryAddSingleton nên idempotent; nếu muốn một-nguồn tuyệt đối, cân nhắc gom bind vào một `AddBedrockCore`/options pattern lúc dựng Host.
+- CÒN LẠI theo build order: task 10 (DI convention + startup validation — RequiredPortsValidator gộp cả validate key-ring này), task 11 (HTTP hardening). Đều unit-test được, không Docker. Task 8.3/7.4 chờ Docker.
+- Tổng bản ghi journal: AD 32, DV 11, TO 9, N 33.
+
+---
+
+### N-034 — Task 10.1 + 10.2 (DI convention + startup validation) VERIFY THẬT (2026-07-09)
+- Verified: ✅ `dotnet test Platform.slnx` → ArchitectureTests 21 + UnitTests 37 + Infrastructure.Tests **60** + Api.Tests 29 = **147 passed, 0 failed**, build 0 warning.
+- Package thật (pin): `Microsoft.Extensions.DependencyInjection.Abstractions` **10.0.9** (Application) + `Microsoft.Extensions.Hosting.Abstractions` **10.0.9** (Infrastructure). Ban đầu pin 10.0.0 → NU1109 (EF Core 10.0.9 kéo transitive ≥10.0.9); nâng lên 10.0.9 khớp EF (sửa GỐC version floor, không hạ EF).
+- Đã tạo:
+  - `Application/DependencyInjection/StartupValidationOptions` (singleton registry — DV-012) + `BedrockRegistrationExtensions` (`AddBedrockConventions` marker-scan reflection AD-033, `AddRequiredPort`/`AllowMultipleImplementations`, `ValidateSingleImplementationPorts` duplicate-guard F18).
+  - `Infrastructure/Startup/RequiredPortsValidator` (IHostedService, scope-aware + aggregate — sửa 2 lỗi bản phác §9.4) + `Infrastructure/DependencyInjection/BedrockStartupValidationExtensions.AddBedrockStartupValidation`.
+  - Nối task 9↔10: `AddBedrockSecurity` khai `IPasswordHasher`/`ITokenGenerator`/`IJwtTokenService` là RequiredPort → validator chặn boot nếu thiếu.
+- QUYẾT ĐỊNH: **AD-033** (marker-scan reflection, không Scrutor — giảm dep lõi), **DV-012** (StartupValidationOptions singleton, không IOptions — giữ Application tối thiểu dep).
+- Diễn giải "TryAdd" của design §6.2 (ghi rõ để không nhầm): TryAdd là convention cho PORT-DEFAULT ở các `AddXxxCore` (đã dùng `TryAddSingleton/TryAddScoped` ở AddBedrockPersistence/Security). Marker-SCAN thì Add (append) — để multi-impl (handlers) đăng ký đủ — và `ValidateSingleImplementationPorts` (F18) mới là chốt chặn trùng single-impl. Hai cơ chế bổ trợ, không mâu thuẫn.
+- CÒN LẠI (Host — task 16.2): bật `ValidateOnBuild`/`ValidateScopes=true` TƯỜNG MINH lúc `BuildServiceProvider`/`UseDefaultServiceProvider` (không ép được từ library) + gọi `AddBedrockStartupValidation()` + `ValidateSingleImplementationPorts()` trước Build. Test validator đã dùng `ValidateScopes=true` chứng minh scope-aware.
+- CP9 nâng PENDING → **ENFORCED**; AD-011 → **ENFORCED**.
+- Kế tiếp build-order: task 11 (HTTP hardening — ForwardedHeaders + rate-limit theo IP thật + cookie/CORS). Unit/integration-test được (TestHost), không Docker.
+- Tổng bản ghi journal: AD 33, DV 12, TO 9, N 34.
+
+---
+
+### N-035 — Task 11.1 + 11.2 (HTTP hardening: ForwardedHeaders + rate-limit + cookie/CORS) VERIFY THẬT (2026-07-09)
+- Verified: ✅ `dotnet test Platform.slnx` → ArchitectureTests 21 + UnitTests 37 + Infrastructure.Tests 60 + Api.Tests **33** = **151 passed, 0 failed**, build 0 warning.
+- Đã tạo `Bedrock.Api/HttpSecurity/`:
+  - `HttpSecurityOptions` (KnownProxies/KnownNetworks/ForwardLimit/RateLimit*/CookieSameSiteMode/CorsAllowedOrigins/CorsPolicyName; collection get-only tránh CA1819).
+  - `CookieSameSiteMode` enum + `CookieSecurityDefaults` (SameSite=Lax vs None + Secure/HttpOnly + RequiresCsrf).
+  - `RateLimitPartitioning` (internal — partition theo RemoteIpAddress thật).
+  - `BedrockHttpSecurityExtensions.AddBedrockHttpSecurity`: Configure ForwardedHeaders (chỉ tin proxy/network khai), AddRateLimiter (fixed-window partition IP, 429 problem+json + Retry-After — AD-034), AddCors (same-site đóng / cross-site mở origin khai + credentials).
+  - `BedrockApiExtensions`: `AddBedrockApi` gọi `AddBedrockHttpSecurity`; `UseBedrockApi` điền slot #1 `UseForwardedHeaders`, #8 `UseCors`, #9 `UseRateLimiter` (đúng §3.5).
+- QUYẾT ĐỊNH: **AD-034** (429 = edge concern, không nhét vào ErrorType domain), **AD-035** (HSTS/HTTPS-redirect slot #4 = trách nhiệm Host, base không ép).
+- 2 lỗi API .NET 10 gặp & fix đúng API hiện hành (không né): `ForwardedHeadersOptions.KnownNetworks` obsolete (ASPDEPR005) → dùng **`KnownIPNetworks`**; `IPNetwork` ambiguous (HttpOverrides vs System.Net) → dùng **`System.Net.IPNetwork`** (bản không-obsolete). Thiếu `using Microsoft.AspNetCore.Builder` (ForwardedHeadersOptions) → thêm.
+- Test: ForwardedHeaders bind đúng options (unit); cookie flags theo mode (theory 2 mode); rate-limit partition theo X-Forwarded-For qua proxy tin cậy → 429 sau PermitLimit, IP khác = bucket độc lập (integration TestHost — giả lập peer=proxy để ForwardedHeaders chấp nhận XFF trong TestServer).
+- F16/F17 nay có cơ chế + test. Pipeline §3.5 còn slot #4 (HSTS/HTTPS) là Host (AD-035).
+- CÒN LẠI build-order: hết P1 (task 6–11 xong, trừ 7.4/8.3 chờ Docker). Kế tiếp **P1.5** — task 12 (định nghĩa port mở rộng contract-first: Search/Email/Cache/Storage/ExternalAuth) + task 13 (khung Extension Architecture AddXxxCore/AddYyy + default an toàn). Unit-test được, không Docker.
+- Tổng bản ghi journal: AD 35, DV 12, TO 9, N 35.
+
+---
+
+### N-036 — KHÔNG dùng hook auto-spawn cho anti-drift; validate INLINE mỗi lượt (2026-07-09)
+- Bối cảnh: từng tạo hook `runCommand` (`journal-consistency-guard`) chạy `JournalConsistencyTests` khi lưu file journal. User phản hồi: hook `runCommand` mở terminal tab mỗi lần lưu → phiền. Đã **tắt rồi XOÁ hẳn** hook (`.kiro/hooks/journal-consistency-guard.kiro.hook`).
+- Chốt cách làm (cho AI đời sau — ĐỪNG tạo lại hook runCommand cho việc này): cơ chế `runCommand` LUÔN mở terminal (bản chất). Anti-drift KHÔNG dựa hook mà dựa 2 lớp đã đủ mạnh: (1) **build gate** — `JournalConsistencyTests` chạy trong `dotnet test` mỗi lần build; (2) **AI tự chạy INLINE** filter `JournalConsistencyTests` trong chính lượt chat mỗi khi sửa journal (không mở tab, kết quả hiện trong hội thoại).
+- Nếu muốn "nhắc" tự động khi USER sửa journal thủ công: dùng hook loại `askAgent` (chạy inline trong hội thoại, không tab) — KHÔNG dùng `runCommand`. Nhưng hiện người sửa journal là AI nên (2) đã phủ.
+- Provenance/Evidence: `delete_file` hook phiên 2026-07-09; AD-030 (cổng JournalConsistencyTests) không đổi — hook chỉ là trigger tuỳ chọn, gỡ đi không giảm sức mạnh cổng.
+- Tổng bản ghi journal: AD 35, DV 12, TO 9, N 36.
+
+---
+
+### N-037 — Task 12.1/12.2/12.3 (port mở rộng contract-first) VERIFY THẬT (2026-07-09)
+- Verified: ✅ `dotnet test Platform.slnx` → **151 passed, 0 failed**, build 0 warning. Task 12 là contract-first (chỉ interface + DTO) → KHÔNG thêm test hành vi; guard là build 0-warning + `DependencyRuleTests` (Application zero-tech vẫn xanh với port mới).
+- Đã tạo trong `Bedrock.Application/Ports/`:
+  - `Search/SearchPorts.cs` — `ISearchIndex<TDoc>`/`ISearchQuery<TDoc>` + `SearchRequest`/`SearchResult<TDoc>` (F26, read-model/CQRS-lite).
+  - `Email/EmailPorts.cs` — `EmailMessage` + `IEmailSender` (F28).
+  - `Caching/CachingPorts.cs` — `CacheEntryOptions`/`IAppCache`/`ILockHandle`/`IDistributedLock`/`IIdempotencyStore`/`IRateLimitStore` (F28, port HẸP chống leaky).
+  - `Storage/StoragePorts.cs` — `FileBlob` + `IFileStorage` (F28).
+  - `ExternalAuth/ExternalAuthPorts.cs` — `ExternalAuthRequest`/`Challenge`/`Callback`/`ExternalUserProfile` + `IExternalAuthProvider` + `IExternalAuthProviderRegistry` (F27).
+- QUYẾT ĐỊNH: **AD-036** (field shape 3 record External Auth — design chỉ đặt tên; chốt tối thiểu bám OAuth, PKCE/nonce adapter-internal).
+- Analyzer: `ILockHandle : IAsyncDisposable` rỗng → `#pragma CA1040` có lý do (marker dispose chủ đích, giống ServiceMarkers). `Uri` cho RedirectUri (né CA1056). ct `= default` nhất quán port hiện có.
+- Chưa làm (đúng phạm vi contract-first): impl default (`NullAppCache` degrade / `Throwing*` fail-loud) + khung `AddXxxCore/AddYyy` → **task 13**. Port bảo mật bắt buộc (IHtmlSanitizer chưa impl — Sanitization adapter) sẽ vào RequiredPorts khi có impl.
+- Vào **P1.5**: task 12 ✅. Kế tiếp **task 13** (Extension Architecture: cặp `AddXxxCore()`/`AddYyyXxx(cfg)` + default phân loại §5.5 + registry multi-impl) — unit-test được (gọi port fail-loud khi chưa adapter → exception rõ; IAppCache miss-through).
+- Tổng bản ghi journal: AD 36, DV 12, TO 9, N 37.
+
+---
+
+### N-038 — Task 13 (khung Extension Architecture: AddXxxCore + default an toàn + registry) VERIFY THẬT (2026-07-09)
+- Verified: ✅ `dotnet test Platform.slnx` → ArchitectureTests 21 + UnitTests 37 + Infrastructure.Tests **65** + Api.Tests 33 = **156 passed, 0 failed**, build 0 warning.
+- Đã tạo trong `Bedrock.Infrastructure`:
+  - `Extensions/Defaults/NullAppCache` (degrade miss-through) + `ThrowingPortDefaults` (fail-loud: Email/FileStorage/DistributedLock/IdempotencyStore/RateLimitStore/EventBusPublisher/SearchIndex&lt;&gt;/SearchQuery&lt;&gt; + helper `NoAdapterError`).
+  - `Extensions/ExternalAuthProviderRegistry` (resolve theo Name case-insensitive; trùng Name → ném boot; unknown → fail-loud).
+  - `DependencyInjection/BedrockExtensionArchitectureExtensions`: `AddMessagingCore`/`AddSearchCore`/`AddEmailCore`/`AddCacheCore`/`AddStorageCore`/`AddExternalAuthCore` — TryAdd default; `AddExternalAuthCore` whitelist `IExternalAuthProvider` vào `AllowMultipleImplementations` (nối task 10).
+- Hiện thực TRUNG THÀNH AD-009 + §5.5 + §6.1/§6.2 (KHÔNG phát sinh AD mới):
+  - **Default ở Infrastructure** — theo §Components ("default port an toàn" ở Infrastructure).
+  - **Override bằng `Replace`** (không Add) — theo §6.2 "Replace tường minh"; giữ đúng 1 registration → duplicate-guard (task 10) không báo nhầm. Test `Adapter_overrides_default_via_replace` chứng minh.
+  - **Phân loại degrade vs fail-loud** đúng bảng §5.5: chỉ `IAppCache` degrade; còn lại fail-loud.
+- Test (5): cache degrade miss-through; 8 port fail-loud throw `InvalidOperationException` khi chưa adapter; override qua Replace (đúng 1 registration); registry resolve by-name + fail-loud unknown; core idempotent (TryAdd gọi 2 lần vẫn 1 registration).
+- AD-009 nâng PENDING → **ENFORCED**.
+- Vào **P1.5 gần xong**: task 12 ✅ · 13 ✅. Kế tiếp **task 14** (Adapter mẫu `Adapters.Messaging.RabbitMq` chứng minh "cắm không sửa lõi" + resilience biên + arch test Adapters chỉ ref Application + git-diff không đụng lõi) — **CẦN Docker/Testcontainers cho integration RabbitMQ** (N-012). Nếu thiếu Docker: làm phần arch-test + adapter code + Replace wiring (unit-test được), hoãn integration publish.
+- Tổng bản ghi journal: AD 36, DV 12, TO 9, N 38.
+
+### N-039 — Logging behavior (§8): source-gen + đo monotonic + KHÔNG try/catch; tracing hoãn task 18
+- `LoggingUseCaseDecorator`/command variant dùng `PipelineLog` — static partial + `[LoggerMessage]` source-generator (delegate cache, zero-alloc khi level tắt) → tránh `CA1848` mà build 0-warning (`TreatWarningsAsErrors`).
+- Đo thời lượng bằng `Stopwatch.GetTimestamp()` + `Stopwatch.GetElapsedTime(start)` (đồng hồ MONOTONIC) — CỐ Ý không dùng `IClock` (wall-clock, có thể nhảy do NTP/DST → sai elapsed).
+- KHÔNG try/catch trong behavior: chỉ log KẾT QUẢ `Result` (Ok/Fail + `Error.Code`); exception kỹ thuật TRUYỀN LÊN middleware ProblemDetails ở `Bedrock.Api` xử lý tập trung → tránh nuốt lỗi + `CA1031` (catch general).
+- Tracing spans (OpenTelemetry) + correlation đầy đủ HOÃN tới task 18 (§9.3) — task 15 chỉ làm structured log outcome. Đây là ranh giới cố ý: behavior §8 khoá thứ tự + log; telemetry 3-trụ là cross-cutting riêng ở task 18.
+- Provenance: `platform/src/Bedrock.Application/Behaviors/PipelineLog.cs` + `LoggingUseCaseDecorator.cs` + `LoggingCommandUseCaseDecorator.cs`; build 0 warning; `PipelineOrderTests` chứng minh Logging là lớp ngoài cùng (pass-through, không đổi Result).
+
+### N-040 — Module Identity skeleton (task 16.1): phạm vi + điểm cần biết + landmine multi-module
+- **Phạm vi 16.1:** 5 project (Contracts/Domain/Application/Infrastructure/Api) + use case rotation §7.4 + unit test với fakes. Login/logout/external-login, user store, permission policy → NGOÀI phạm vi 16.1 (rotation là lát mỏng chứng minh khuôn module + dùng lại IRefreshTokenStore/IJwtTokenService/crypto đã build).
+- **Contract-first event:** `UserTokenRefreshedIntegrationEvent` khai ở Identity.Contracts nhưng CHƯA emit (giống ports task 12–13 khai trước consumer). Emission qua `IOutboxWriter` trong transaction rotation sẽ nối khi có consumer/telemetry thật hoặc ở DoD task 21 — giữ §7.4 đúng nguyên văn (không thêm bước ngoài pseudocode).
+- **Claim tối thiểu:** access token rotation chỉ mang `sub` = UserId (AD-023 liệt role/permission/tenant/sid). role/permission cần user-profile store (chưa có ở skeleton) → bổ sung khi module có user store thật.
+- **SHA-256 inline:** hash refresh token tính trong use case (`Convert.ToHexStringLower(SHA256.HashData(...))`) đúng §7.4 ("hash ← SHA256"). Token 256-bit CSPRNG entropy cao → KHÔNG cần Argon2 (Argon2 cho password). Primitive chuẩn, không phải "công nghệ swap được" → không cần port.
+- **AuthErrors đặt ở Identity.Domain:** mã lỗi nghiệp vụ khai ở module (design §4.4 — lõi không giữ). Một mã chung `identity.invalid_refresh_token` cho MỌI nhánh fail (không tồn tại/hết hạn/revoked/thua race) — chống oracle dò token.
+- **⚠️ LANDMINE multi-module (fix ở 16.2):** `AddBedrockPersistence<TContext>` hardcode health-check name `"database"` (`DatabaseHealthCheckName`). Hai module cùng gọi → ASP.NET ném "duplicate health check registration". 16.1 (một module Identity) CHƯA trigger. **Fix tận gốc ở 16.2** (nơi Host ráp ≥2 module — kiểm chứng được): đổi name thành per-context (vd `$"database:{typeof(TContext).Name}"`), giữ tag `ready`; thêm guard test 2-context không trùng name. KHÔNG fix vá tạm ở module.
+- Provenance: các file dưới `platform/src/Modules/Identity/**` + `tests/Modules/Identity.UnitTests/**`; build 0 warning; 179 test xanh.
+
+### N-041 — Map Result → IResult ở endpoint dùng ProblemDetailsBuilder (nguồn lỗi DUY NHẤT); cân nhắc trích helper
+- `IdentityEndpointModule.RefreshAsync` map `Result` → HTTP inline: success → `Results.Ok`, failure → `Results.Problem(ProblemDetailsBuilder.Build(error, CorrelationContext.Resolve(http)))` — dùng LẠI builder single-source (không tự dựng shape lỗi → không drift với exception/auth path).
+- Hiện chỉ 1 endpoint nên inline chấp nhận được. Khi có nhiều endpoint/module, cân nhắc trích một helper `ToHttpResult(this Result/Result<T>, HttpContext)` ở `Bedrock.Api` (mechanism dùng chung) — hoãn tới khi thực sự có ≥2 nơi lặp (tránh trừu tượng sớm). Ghi lại để không quên.
+- Provenance: `platform/src/Modules/Identity/Identity.Api/IdentityEndpointModule.cs`; dùng `ProblemDetailsBuilder`/`CorrelationContext` public của Bedrock.Api.
+
+### N-042 — Pipeline behaviors phụ thuộc port-default → Host PHẢI gọi AddXxxCore; ValidateOnBuild KHÔNG bắt lỗi sau Scrutor factory
+- **Triệu chứng phát hiện (task 16.2):** POST /identity/token/refresh trả 500 `Unable to resolve service 'IIdempotencyStore' while activating IdempotencyUseCaseDecorator`.
+- **Bản chất:** `AddBedrockCore` decorate MỌI `IUseCase<,>` bằng Idempotency behavior, decorator này inject `IIdempotencyStore` lúc CONSTRUCT (gating `IIdempotentCommand` chỉ ở runtime). Nên use case nào cũng cần `IIdempotencyStore` tồn tại trong DI. Default của nó (`ThrowingIdempotencyStore`) đăng ký bởi `AddCacheCore()` (task 13) — Host quên gọi → không resolve được use case đã decorate.
+- **Fix tận gốc:** Host (composition root) gọi ĐẦY ĐỦ posture default an toàn: `AddMessagingCore/AddCacheCore/AddEmailCore/AddSearchCore/AddStorageCore/AddExternalAuthCore` (design §5.5/§6.1/§13 "AddXxxCore luôn gọi"). Mỗi port có default degrade/fail-loud; adapter thật override bằng Replace. Không phải vá endpoint — sửa đúng nơi (thiếu default port).
+- **⚠️ Giới hạn ValidateOnBuild (quan trọng):** `ValidateOnBuild=true` KHÔNG bắt lỗi thiếu dependency này lúc boot vì Scrutor `Decorate` thay registration bằng FACTORY (ImplementationFactory), mà ValidateOnBuild chỉ construct registration có ImplementationType — factory bị BỎ QUA. Vì vậy fail-fast (I9) KHÔNG phủ được dependency ẩn sau decorator. GIẢM THIỂU: (1) Host gọi đủ AddXxxCore; (2) smoke test POST endpoint (HostSmokeTests) resolve use case THẬT lúc runtime → bắt lỗi này. Cân nhắc (tương lai): startup check chủ động resolve từng `IUseCase` đã đăng ký để kéo lỗi về boot-time — hoãn (chưa cần; smoke test đã phủ).
+- Provenance: `platform/src/Host/StarHill.Api/Program.cs` (6 AddXxxCore) + `tests/Host/StarHill.Api.Tests/HostSmokeTests.cs` (POST→400 chứng minh pipeline resolve runtime).
+
+### N-043 — Host StarHill.Api: chi tiết composition + dev-secret placeholder + package bump
+- **Composition root DUY NHẤT (I7/luật-5):** `StarHill.Api` là project duy nhất ref đồng thời Bedrock.Api + Bedrock.Infrastructure + Identity.Api + Identity.Infrastructure. Thứ tự Program.cs: (1) AddBedrockApi/Security/StartupValidation + 6 AddXxxCore; (2) modules nửa-Infra `AddIdentityInfrastructure(UseNpgsql)` + nửa-Api `AddIdentityApi` (DV-013); (3) `AddBedrockCore` decorate pipeline (SAU khi use case đăng ký — AD-037); (4) `ValidateSingleImplementationPorts` trước Build; fail-fast DI (`ValidateOnBuild/ValidateScopes=true`, I9).
+- **Provider DB:** Host CHỌN Npgsql (design §1.2 — Postgres là provider đích); connection string từ `ConnectionStrings:Identity`, thiếu → fail-fast (F35).
+- **HSTS/HTTPS-redirect (slot #4):** KHÔNG bật ở sample Host — chạy sau reverse-proxy terminate TLS (AD-035/§3.5); deployment thật tự bật.
+- **⚠️ Dev-secret placeholder (F35 → task 19):** `appsettings.json` chứa Jwt dev key (giải mã ra ASCII rõ ràng ⇒ hiển nhiên không phải khóa thật) + connection string dummy, để Host boot dev + smoke test chạy KHÔNG cần hạ tầng. Task 19 sẽ chuyển secret sang user-secrets/env/Key Vault + kiểm không secret thật trong repo. Đây là nợ có chủ đích, đã khoanh vùng.
+- **Package:** thêm `Microsoft.AspNetCore.Mvc.Testing` 10.0.9 (WebApplicationFactory smoke); nâng `Microsoft.Extensions.Configuration.Binder` 10.0.0→10.0.9 (Mvc.Testing→Hosting kéo ≥10.0.9, transitive-pinning gây NU1109 nếu để 10.0.0). Verify build 0 warning + toàn test xanh sau nâng.
+- Provenance: `platform/src/Host/StarHill.Api/**`, `Directory.Packages.props`.

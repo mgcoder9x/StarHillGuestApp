@@ -1,9 +1,11 @@
 using Bedrock.Application.Events;
 using Bedrock.Application.Messaging;
 using Bedrock.Application.Ports.Persistence;
+using Bedrock.Application.Ports.Security;
 using Bedrock.Application.Ports.Time;
 using Bedrock.Infrastructure.Persistence;
 using Bedrock.Infrastructure.Persistence.Messaging;
+using Bedrock.Infrastructure.Persistence.Security;
 using Bedrock.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -19,7 +21,8 @@ namespace Bedrock.Infrastructure.DependencyInjection;
 /// </summary>
 public static class BedrockPersistenceExtensions
 {
-    private const string DatabaseHealthCheckName = "database";
+    // Prefix tên DB health-check; tên THẬT gắn thêm tên TContext để DUY NHẤT per-module (AD-042).
+    private const string DatabaseHealthCheckPrefix = "database";
 
     public static IServiceCollection AddBedrockPersistence<TContext>(
         this IServiceCollection services,
@@ -38,6 +41,10 @@ public static class BedrockPersistenceExtensions
         // modelBuilder.AddOutboxInbox() trong DbContext của nó (per-module opt-in — design §4.6).
         services.TryAddScoped<IOutboxWriter, EfOutboxWriter>();
 
+        // Refresh-token store: cơ chế rotation nguyên tử ở lõi (AD-010), dùng chung PlatformDbContext/scope.
+        // Chỉ hoạt động nếu module đã map bảng qua modelBuilder.AddRefreshTokens(schema) — per-module opt-in.
+        services.TryAddScoped<IRefreshTokenStore, EfRefreshTokenStore>();
+
         services.AddDbContext<TContext>((_, options) =>
         {
             configureDbContext(options);
@@ -50,14 +57,18 @@ public static class BedrockPersistenceExtensions
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
 
         // Readiness: DB check gắn tag "ready" (design §9.6 / R34); timeout 5s (task 6.3).
+        // Tên PER-CONTEXT (AD-042): nhiều module cùng gọi AddBedrockPersistence với TContext khác nhau → tên
+        // health-check khác nhau → KHÔNG trùng (health-check name PHẢI duy nhất, nếu không DefaultHealthCheckService
+        // ném lúc resolve). Trước đây hardcode "database" → 2 module = crash boot (landmine multi-module, N-040).
+        var healthCheckName = $"{DatabaseHealthCheckPrefix}:{typeof(TContext).Name}";
         services.AddHealthChecks()
-            .AddDbContextCheck<TContext>(name: DatabaseHealthCheckName, tags: ["ready"]);
+            .AddDbContextCheck<TContext>(name: healthCheckName, tags: ["ready"]);
 
         services.Configure<HealthCheckServiceOptions>(options =>
         {
             foreach (var registration in options.Registrations)
             {
-                if (string.Equals(registration.Name, DatabaseHealthCheckName, StringComparison.Ordinal))
+                if (string.Equals(registration.Name, healthCheckName, StringComparison.Ordinal))
                 {
                     registration.Timeout = TimeSpan.FromSeconds(5);
                 }

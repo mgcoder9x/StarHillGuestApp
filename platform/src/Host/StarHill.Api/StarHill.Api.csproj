@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!--
+    Host / StarHill.Api = COMPOSITION ROOT DUY NHẤT (invariant I7/luật-5): nơi DUY NHẤT được reference đồng thời
+    Bedrock.Api + Bedrock.Infrastructure + Modules (Api-half + Infra-half). Không project nào khác ráp cả hai phía.
+    Host CHỌN provider DB (Npgsql) + bật adapter/module nào. Không có Program.cs/endpoint nghiệp vụ trong Bedrock.*.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\Bedrock.Api\Bedrock.Api.csproj" />
+    <ProjectReference Include="..\..\Bedrock.Infrastructure\Bedrock.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Identity\Identity.Infrastructure\Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Identity\Identity.Api\Identity.Api.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Host chọn provider PostgreSQL (design §1.2 — Postgres là provider đích). -->
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Smoke test boot host qua WebApplicationFactory<Program>. -->
+    <InternalsVisibleTo Include="StarHill.Api.Tests" />
+  </ItemGroup>
+</Project>

@@ -18,8 +18,13 @@ public sealed record RefreshTokenSnapshot(
 /// </summary>
 public interface IRefreshTokenStore
 {
-    /// <summary>Lấy token còn hiệu lực theo hash (SHA-256). Null nếu không có/không active.</summary>
-    Task<RefreshTokenSnapshot?> GetActiveByHashAsync(string tokenHash, CancellationToken ct = default);
+    /// <summary>
+    /// Lấy token theo hash (SHA-256), trả về BẤT KỂ đã revoked hay hết hạn — snapshot mang <c>RevokedAt</c>/
+    /// <c>ExpiresAt</c> để use case tự quyết (AD-031). Null CHỈ khi không tồn tại hash. Lý do KHÔNG lọc
+    /// "active-only": reuse-detection (§7.4) phải THẤY được token đã revoked bị dùng lại để thu hồi cả family;
+    /// nếu lọc active-only thì token đánh cắp (đã revoked) trả null → mất tính năng bảo mật.
+    /// </summary>
+    Task<RefreshTokenSnapshot?> GetByHashAsync(string tokenHash, CancellationToken ct = default);
 
     /// <summary>
     /// Consume nguyên tử: <c>UPDATE ... SET revoked_at=@now, reason=@reason, replaced_by=@replacedByTokenId

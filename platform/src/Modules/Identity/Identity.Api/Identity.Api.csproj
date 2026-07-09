@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Identity.Api (nửa-Api của composition — matrix §3.3): reference Identity.Application + Bedrock.Api.
+    KHÔNG ref Infrastructure của BẤT KỲ module nào (giữ Api⊥Infra I7 — arch test 16.3). FrameworkReference
+    ASP.NET để dùng minimal API/endpoint mà không kéo package runtime.
+  -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Identity.Application\Identity.Application.csproj" />
+    <ProjectReference Include="..\..\..\Bedrock.Api\Bedrock.Api.csproj" />
+  </ItemGroup>
+</Project>

@@ -13,40 +13,40 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
 
 ### Giai đoạn 0 — Dựng nền solution + lõi Domain/Application (greenfield)
 
-- [ ] 1. Dựng khung solution `platform/`
+- [x] 1. Dựng khung solution `platform/`
   - Tạo `platform/` với `global.json` (SDK 10.0.301), `Directory.Build.props` (`net10.0`, `Nullable=enable`, `TreatWarningsAsErrors=true`, analyzers `latest-Recommended`, `EnforceCodeStyleInBuild=true`), `Directory.Packages.props` (CPM: FluentValidation 12.1.1 + xunit/NetArchTest), `.editorconfig`, `Platform.slnx`.
   - Nghiệm thu: `dotnet build` solution rỗng thành công, 0 warning.
   - _Requirements: 31.1_
 
-- [ ] 2. Tạo hai kernel zero-dep: `Bedrock.Domain` + `Bedrock.Messaging.Contracts` (ưu tiên đầu tiên)
+- [x] 2. Tạo hai kernel zero-dep: `Bedrock.Domain` + `Bedrock.Messaging.Contracts` (ưu tiên đầu tiên)
   - Tạo `Bedrock.Domain`: Results (`Result`, `Result<T>` theo hợp đồng đầy đủ design §4.4 — **`sealed class`** + factory `Success()/Failure()`, `Value` on-failure ném exception, `Match`, implicit operators; `Error`, `ErrorType`, `CommonErrors` — code ổn định + message English trung lập), Entities (`Entity` UUIDv7 + identity equality + domain events, `AuditableEntity`, `IAuditable`/`ISoftDeletable`/`IHasConcurrencyToken`), `ValueObject`, `IDomainEvent`, `Guard`, `ConcurrencyConflictException`. Zero dependency.
   - Tạo `Bedrock.Messaging.Contracts` (zero-dependency, AD-017): DUY NHẤT base record `IntegrationEvent` (`Id`/`OccurredAt`; `EventType` abstract; `SchemaVersion` virtual=1). Assembly này sẽ được `Bedrock.Application` VÀ mọi `Modules.*.Contracts` cùng reference — Contracts KHÔNG bao giờ ref Application.
   - Bảo đảm kernel KHÔNG nhắc `xmin`/Npgsql (comment trung lập — tradeoff `uint` ghi theo design §4.3).
   - Nghiệm thu: unit test Domain xanh (Result semantics, entity equality, guard) + build 0 warning cả hai project.
   - _Requirements: 11.1, 17.2, 29.1, 29.2, 30.2, 31.1_
 
-- [ ] 3. Tạo `Bedrock.Application` (ports + seams + behaviors)
-- [ ] 3.1 Tạo contract ports + DI markers
+- [x] 3. Tạo `Bedrock.Application` (ports + seams + behaviors)
+- [x] 3.1 Tạo contract ports + DI markers
   - Tạo `Ports/` gồm `Time/IClock`, `Users/ICurrentUser` (Permissions/TenantId/SessionId), `Html/IHtmlSanitizer`, `Security/ITokenGenerator|IPasswordHasher|IRefreshTokenStore` (+ `RefreshTokenSnapshot`), `Persistence/IRepository` (KHÔNG `Query()`), `Persistence/IUnitOfWork` (KHÔNG `Repository<T>()` — design §5.1; ghi chú reentrancy R7.4 trong XML-doc).
   - Tạo DI markers `IScopedService`/`ISingletonService`/`ITransientService`/`IManualRegistration`.
   - Nghiệm thu: build 0 warning.
   - _Requirements: 7.3, 12.4, 26.1, 28.2, 30.1, 30.2_
-- [ ] 3.2 Tạo messaging seam với namespace tách đôi (không dính lỗi analyzer)
+- [x] 3.2 Tạo messaging seam với namespace tách đôi (không dính lỗi analyzer)
   - `Bedrock.Application` reference `Bedrock.Messaging.Contracts` (để dùng `IntegrationEvent` — base này KHÔNG định nghĩa lại ở đây, AD-017).
   - Namespace `Messaging`: `IOutboxWriter`, `IIntegrationEventHandler<T>` (dùng `IntegrationEvent` từ `Bedrock.Messaging.Contracts`; tránh/`[SuppressMessage]` có lý do rõ cho `CA1711`).
   - Namespace `Messaging.Dispatch`: `OutboxMessage`, `IOutboxDispatcher`, `IEventBusPublisher`, `IInboxStore`, `IIntegrationEventTypeRegistry` (design §5.2 — CP11 dựa vào ranh giới namespace này).
   - Nghiệm thu: build 0 warning.
   - _Requirements: 8.2, 17.1, 17.2, 17.3, 31.1_
-- [ ] 3.3 Tạo domain-event seam + UseCases + Paging + Validation behaviors
+- [x] 3.3 Tạo domain-event seam + UseCases + Paging + Validation behaviors
   - `Events/IDomainEventHandler<T>` + `Events/IDomainEventDispatcher` (contract — impl ở task 6.4); `IUseCase`/`ICommandUseCase`; `PagedRequest`/`PagedResult`; `ValidationUseCaseDecorator`/`ValidationCommandUseCaseDecorator`.
   - Nghiệm thu: build 0 warning.
   - _Requirements: 33.1_
-- [ ] 3.4 Unit test cho Application layer
+- [x] 3.4 Unit test cho Application layer
   - Test validation decorator (pass-through, short-circuit, command variant), Paging chuẩn hóa, `ICurrentUser` semantics.
   - Nghiệm thu: `dotnet test` xanh + 0 warning.
   - _Requirements: 31.1, 32.1_
 
-- [ ] 4. Thiết lập bộ Architecture Tests (lưới an toàn cho toàn bộ ranh giới)
+- [x] 4. Thiết lập bộ Architecture Tests (lưới an toàn cho toàn bộ ranh giới)
   - Tạo `tests/Bedrock.ArchitectureTests` (NetArchTest) với **negative control** cho mỗi luật.
   - Luật ban đầu: no-business-in-core (cấm `guest|room|resort|Admin|Staff` trong `Bedrock.*`); dependency matrix hiện có (Domain + `Bedrock.Messaging.Contracts` = zero-dep; Application chỉ ref Domain + Messaging.Contracts).
   - Nghiệm thu: test xanh + negative control chứng minh vi phạm bị bắt + build 0 warning.
@@ -57,27 +57,27 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
 
 ### Giai đoạn P0 — Gỡ rò nghiệp vụ & tách vai (F1–F4, F14, F15)
 
-- [ ] 5. Dựng `Bedrock.Api` (cơ chế HTTP thuần, KHÔNG ref Infrastructure)
-- [ ] 5.1 Khởi tạo project + ProblemDetails + ErrorType→HTTP map
+- [x] 5. Dựng `Bedrock.Api` (cơ chế HTTP thuần, KHÔNG ref Infrastructure)
+- [x] 5.1 Khởi tạo project + ProblemDetails + ErrorType→HTTP map
   - Tạo `Bedrock.Api` reference CHỈ `Bedrock.Application` (KHÔNG Infrastructure).
   - `ProblemDetailsBuilder`: `title` = message neutral, body mang `code` + `traceId`.
   - Nghiệm thu: build 0 warning + unit test map ErrorType→status xanh.
   - _Requirements: 4.1, 4.3, 29.3_
-- [ ] 5.2 Path masker dùng chung qua options
+- [x] 5.2 Path masker dùng chung qua options
   - `ObservabilityOptions.MaskedPathPrefixes` (app cấu hình); `PathMasker` nhận prefix từ options.
   - Dùng masker ở request-logging VÀ exception handler (không log raw token path).
   - Nghiệm thu: test masker (có/không prefix khớp, exception path) xanh + 0 warning.
   - _Requirements: 1.3, 3.1, 3.2, 3.3_
   - _Correctness Properties: CP13_
-- [ ] 5.3 Auth mechanism (không policy nghiệp vụ) + verify key-ring theo `kid`
+- [x] 5.3 Auth mechanism (không policy nghiệp vụ) + verify key-ring theo `kid`
   - `AddBedrockAuthCore()`: JWT bearer đọc `JwtKeyRingOptions` (`IssuerSigningKeyResolver` theo `kid`, verify active + previous keys) + `ICurrentUser` binding + 401/403 ProblemDetails. KHÔNG khai role `Admin/Staff`.
   - Nghiệm thu: build 0 warning + test 401/403 ProblemDetails.
   - _Requirements: 1.4, 26.2, 27.2_
-- [ ] 5.4 Middleware order chuẩn + health endpoints
+- [x] 5.4 Middleware order chuẩn + health endpoints
   - `MapBedrockApi()` áp thứ tự pipeline design §3.5 (ForwardedHeaders → Correlation → ExceptionHandler → ... → Endpoints); `MapBedrockHealth()` với `/health/live` + `/health/ready`; contract `IEndpointModule`.
   - Nghiệm thu: integration test (WebApplicationFactory) liveness 200 + build 0 warning.
   - _Requirements: 34.1, 34.2_
-- [ ] 5.5 Architecture test: Api ⊥ Infrastructure
+- [x] 5.5 Architecture test: Api ⊥ Infrastructure
   - Thêm luật NetArchTest `Bedrock.Api` KHÔNG ref `*.Infrastructure` (+ negative control).
   - Nghiệm thu: test xanh + 0 warning.
   - _Requirements: 4.2_
@@ -119,7 +119,7 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
   - Enqueue ghi `OutboxMessage` qua ChangeTracker (không tự commit); System.Text.Json options cố định; gắn `correlation_id` từ `Activity.Current`.
   - Nghiệm thu: build 0 warning.
   - _Requirements: 8.1, 8.2, 8.3_
-- [ ] 7.3 `IOutboxDispatcher` worker (claim/backoff/dead-letter) + `IInboxStore` + type registry
+- [x] 7.3 `IOutboxDispatcher` worker (claim/backoff/dead-letter) + `IInboxStore` + type registry
   - Dispatcher `AddOutboxDispatcher<TDbContext>()`: claim nguyên tử batch pending (design §7.2) → `IEventBusPublisher.PublishAsync` → mark processed; fail → `error_count`+`next_attempt_at` backoff; vượt ngưỡng → `dead_lettered_at`.
   - Inbox `TryMarkProcessedAsync` idempotent (PK conflict → false). `IIntegrationEventTypeRegistry` build từ assemblies Contracts; EventType lạ → dead-letter.
   - Nghiệm thu: build 0 warning + unit test backoff/threshold.
@@ -135,12 +135,12 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
   - _Requirements: 8.5_
 
 - [ ] 8. Refresh-token store nguyên tử (F5/F10/F19 — cơ chế, không nghiệp vụ)
-- [ ] 8.1 Ẩn `RefreshTokenRecord` trong Infrastructure + port nghiệp vụ + mapping helper
+- [x] 8.1 Ẩn `RefreshTokenRecord` trong Infrastructure + port nghiệp vụ + mapping helper
   - Entity persistence ở Infrastructure; Application chỉ thấy `IRefreshTokenStore` (task 3.1). Helper `modelBuilder.AddRefreshTokens(schema)` để module tiêu thụ sở hữu bảng trong schema của mình.
   - Schema `refresh_token` với `UNIQUE ux_refresh_hash`, index `user_id`/`family_id`.
   - Nghiệm thu: build 0 warning.
   - _Requirements: 10.5, 28.1, 28.2_
-- [ ] 8.2 Rotation trong transaction + consume nguyên tử + reuse-detection
+- [x] 8.2 Rotation trong transaction + consume nguyên tử + reuse-detection
   - `TryConsumeAsync` = một `UPDATE ... WHERE id=@id AND revoked_at IS NULL`; consume+insert trong cùng `ExecuteInTransactionAsync`; reuse → revoke family.
   - Nghiệm thu: integration test SQLite consume-if-not-revoked xanh + 0 warning.
   - _Requirements: 10.1, 10.2, 10.3, 10.4_
@@ -150,33 +150,33 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
   - _Requirements: 32.2_
   - _Correctness Properties: CP7_
 
-- [ ] 9. Cryptography / Tokens (Argon2id, JWT key-ring, CSPRNG)
-- [ ] 9.1 `IPasswordHasher` Argon2id + `ITokenGenerator` CSPRNG base64url
+- [x] 9. Cryptography / Tokens (Argon2id, JWT key-ring, CSPRNG)
+- [x] 9.1 `IPasswordHasher` Argon2id + `ITokenGenerator` CSPRNG base64url
   - KHÔNG đăng ký default no-op cho hai port này (fail-secure — design §5.5).
   - Nghiệm thu: unit test hash/verify + độ dài token xanh + 0 warning.
   - _Requirements: 30.3_
-- [ ] 9.2 `IJwtTokenService` key-ring (F22) — phía ký
+- [x] 9.2 `IJwtTokenService` key-ring (F22) — phía ký
   - Ký bằng active key, gắn `kid` header; `JwtKeyRingOptions` (ActiveKid/Keys/Issuer/Audience) validate-on-start; verify side đã ở task 5.3 (cùng options, không cross-reference project).
   - Nghiệm thu: unit test issue→verify (kể cả key rotation: token ký bằng previous key vẫn verify được) + 0 warning.
   - _Requirements: 27.1, 27.2, 27.3, 25.2_
 
-- [ ] 10. DI convention + startup validation (F6/F7/F18/F35)
-- [ ] 10.1 Registration engine: TryAdd + duplicate-guard + IManualRegistration + appAssemblies overload
+- [x] 10. DI convention + startup validation (F6/F7/F18/F35)
+- [x] 10.1 Registration engine: TryAdd + duplicate-guard + IManualRegistration + appAssemblies overload
   - Auto-scan theo marker; single-impl port duplicate-guard fail-fast (khai báo whitelist multi-impl); loại `IManualRegistration` khỏi scan; mọi API scan nhận `params Assembly[]`.
   - Nghiệm thu: unit test duplicate-guard (2 impl → fail; multi-impl whitelist → pass) xanh + 0 warning.
   - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5_
-- [ ] 10.2 `RequiredPortsValidator` (fail-fast mọi môi trường) + ValidateOnBuild/Scopes explicit
+- [x] 10.2 `RequiredPortsValidator` (fail-fast mọi môi trường) + ValidateOnBuild/Scopes explicit
   - `IHostedService` scope-aware (design §9.4 — tạo scope cho port scoped, báo GỘP mọi port thiếu); `StartupValidationOptions.RequiredPorts` do từng `AddXxxCore` đóng góp; bật `ValidateOnBuild`/`ValidateScopes=true` tường minh; validate-on-start options.
   - Nghiệm thu: integration test host thiếu port → boot fail với message liệt kê đủ + 0 warning.
   - _Requirements: 13.1, 13.2, 13.3, 25.2_
   - _Correctness Properties: CP9_
 
-- [ ] 11. HTTP hardening (F16/F17)
-- [ ] 11.1 ForwardedHeaders + rate-limit theo IP thật
+- [x] 11. HTTP hardening (F16/F17)
+- [x] 11.1 ForwardedHeaders + rate-limit theo IP thật
   - `ForwardedHeadersOptions` (KnownProxies/KnownNetworks); `UseForwardedHeaders` sớm (slot #1 §3.5); rate-limit partition theo client IP đã resolve.
   - Nghiệm thu: integration test header X-Forwarded-For → partition đúng + 0 warning.
   - _Requirements: 14.1, 14.2_
-- [ ] 11.2 Cookie/CORS mode options
+- [x] 11.2 Cookie/CORS mode options
   - `CookieSameSiteMode`; same-site → Strict/Lax; cross-site → SameSite=None + CSRF + siết CORS.
   - Nghiệm thu: test hai mode cấu hình đúng cookie flags + 0 warning.
   - _Requirements: 15.1, 15.2, 15.3_
@@ -185,21 +185,21 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
 
 ### Giai đoạn P1.5 — Đặt "ổ cắm" mở rộng (F24–F28)
 
-- [ ] 12. Định nghĩa & khóa các port mở rộng (contract-first, chưa cần adapter)
-- [ ] 12.1 Search ports
+- [x] 12. Định nghĩa & khóa các port mở rộng (contract-first, chưa cần adapter)
+- [x] 12.1 Search ports
   - `ISearchIndex<TDoc>`/`ISearchQuery<TDoc>` + `SearchRequest`/`SearchResult` (DTO đầy đủ theo design §5.4).
   - Nghiệm thu: build 0 warning.
   - _Requirements: 18.1, 18.2_
-- [ ] 12.2 Email / Cache-split / Storage ports
+- [x] 12.2 Email / Cache-split / Storage ports
   - `IEmailSender` + `EmailMessage`; `IAppCache`/`IDistributedLock` (+`ILockHandle`)/`IIdempotencyStore`/`IRateLimitStore` + `CacheEntryOptions`; `IFileStorage` + `FileBlob`.
   - Nghiệm thu: build 0 warning.
   - _Requirements: 19.1, 19.2, 19.3_
-- [ ] 12.3 External auth ports + registry
+- [x] 12.3 External auth ports + registry
   - `IExternalAuthProvider` (+ challenge/callback/profile records, email nullable) + `IExternalAuthProviderRegistry`.
   - Nghiệm thu: build 0 warning.
   - _Requirements: 20.1, 20.2, 20.3_
 
-- [ ] 13. Khung Extension Architecture (AddXxxCore/AddYyy) + default an toàn + registry
+- [x] 13. Khung Extension Architecture (AddXxxCore/AddYyy) + default an toàn + registry
   - Cặp API `AddXxxCore()`/`AddYyyXxx(cfg)` cho từng nhóm (Messaging/Search/Email/Cache/ExternalAuth/Storage); mỗi `AddXxxCore` đăng ký default theo phân loại design §5.5 (`NullAppCache` degrade vs `Throwing*` fail-loud) + đóng góp `StartupValidationOptions.RequiredPorts`; registry cho multi-impl.
   - Nghiệm thu: unit test — gọi port fail-loud khi chưa có adapter → exception rõ ràng; `IAppCache` default miss-through; build 0 warning.
   - _Requirements: 16.1, 16.2, 16.4, 13.1_
@@ -215,17 +215,17 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
 
 ### Giai đoạn P2 — Platform hệ lớn (Modules/Host + cross-cutting)
 
-- [ ] 15. Application pipeline behaviors đầy đủ (F13)
+- [x] 15. Application pipeline behaviors đầy đủ (F13)
   - Thêm Logging/Tracing → Authorization (permission, khai báo trên command) → Idempotency (`idempotency_conflict` khi trùng key) → Transaction (mở `ExecuteInTransactionAsync` + outbox; dựa reentrancy R7.4); đăng ký generic ở `AddBedrockCore` theo thứ tự design §8.
   - Nghiệm thu: unit test từng behavior + test thứ tự pipeline + 0 warning.
   - _Requirements: 8.1, 26.3_
 
 - [ ] 16. Khuôn Module + Host + discovery (F1/F13/F30/F31)
-- [ ] 16.1 Tạo module mẫu `Identity` theo khuôn 5-project + schema riêng
+- [x] 16.1 Tạo module mẫu `Identity` theo khuôn 5-project + schema riêng
   - `Identity.Contracts/Domain/Application/Infrastructure/Api`; schema `identity` (gọi `AddOutboxInbox()` + `AddRefreshTokens("identity")`); use case refresh rotation dùng `IRefreshTokenStore`; `AddIdentityModule(cfg)` một dòng; đăng ký health check riêng của module.
   - Nghiệm thu: build 0 warning + unit test use case với fake store.
   - _Requirements: 21.1, 21.3, 26.2, 34.3_
-- [ ] 16.2 Host `StarHill.Api` — composition root duy nhất
+- [x] 16.2 Host `StarHill.Api` — composition root duy nhất
   - `Program.cs` compose `AddBedrockCore/Api/Persistence` + adapters + modules; map qua `IEndpointModule`; không `Program.cs`/endpoint mẫu trong `Bedrock.*`.
   - Nghiệm thu: host boot xanh (WebApplicationFactory smoke) + 0 warning.
   - _Requirements: 2.1, 2.2, 2.3_

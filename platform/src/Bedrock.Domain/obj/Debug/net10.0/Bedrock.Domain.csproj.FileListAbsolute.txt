@@ -10,3 +10,15 @@ C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Bedrock.Domain\obj
 C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Bedrock.Domain\obj\Debug\net10.0\refint\Bedrock.Domain.dll
 C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Bedrock.Domain\obj\Debug\net10.0\Bedrock.Domain.pdb
 C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Bedrock.Domain\obj\Debug\net10.0\ref\Bedrock.Domain.dll
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\src\Bedrock.Domain\bin\Debug\net10.0\Bedrock.Domain.deps.json
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\src\Bedrock.Domain\bin\Debug\net10.0\Bedrock.Domain.dll
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\src\Bedrock.Domain\bin\Debug\net10.0\Bedrock.Domain.pdb
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\src\Bedrock.Domain\obj\Debug\net10.0\Bedrock.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\src\Bedrock.Domain\obj\Debug\net10.0\Bedrock.Domain.AssemblyInfoInputs.cache
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\src\Bedrock.Domain\obj\Debug\net10.0\Bedrock.Domain.AssemblyInfo.cs
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\src\Bedrock.Domain\obj\Debug\net10.0\Bedrock.Domain.csproj.CoreCompileInputs.cache
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\src\Bedrock.Domain\obj\Debug\net10.0\Bedrock.Domain.sourcelink.json
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\src\Bedrock.Domain\obj\Debug\net10.0\Bedrock.Domain.dll
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\src\Bedrock.Domain\obj\Debug\net10.0\refint\Bedrock.Domain.dll
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\src\Bedrock.Domain\obj\Debug\net10.0\Bedrock.Domain.pdb
+C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\src\Bedrock.Domain\obj\Debug\net10.0\ref\Bedrock.Domain.dll

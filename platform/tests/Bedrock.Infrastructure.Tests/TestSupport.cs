@@ -6,6 +6,7 @@ using Bedrock.Domain.Events;
 using Bedrock.Infrastructure.DependencyInjection;
 using Bedrock.Infrastructure.Persistence;
 using Bedrock.Infrastructure.Persistence.Messaging;
+using Bedrock.Infrastructure.Persistence.Security;
 using Bedrock.Messaging.Contracts;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -66,6 +67,7 @@ public sealed class TestDbContext(
         base.OnModelCreating(modelBuilder);
         // Per-module opt-in (design §4.6): map outbox/inbox vào chính DbContext này. SQLite → không jsonb.
         modelBuilder.AddOutboxInbox(isNpgsql: Database.IsNpgsql());
+        modelBuilder.AddRefreshTokens(); // task 8: map refresh_token vào cùng context để test store.
     }
 }
 

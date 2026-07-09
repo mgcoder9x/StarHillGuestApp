@@ -6,10 +6,22 @@
     <Project Path="src/Bedrock.Api/Bedrock.Api.csproj" />
     <Project Path="src/Bedrock.Infrastructure/Bedrock.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/Identity.Contracts/Identity.Contracts.csproj" />
+    <Project Path="src/Modules/Identity/Identity.Domain/Identity.Domain.csproj" />
+    <Project Path="src/Modules/Identity/Identity.Application/Identity.Application.csproj" />
+    <Project Path="src/Modules/Identity/Identity.Infrastructure/Identity.Infrastructure.csproj" />
+    <Project Path="src/Modules/Identity/Identity.Api/Identity.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Host/">
+    <Project Path="src/Host/StarHill.Api/StarHill.Api.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Bedrock.UnitTests/Bedrock.UnitTests.csproj" />
     <Project Path="tests/Bedrock.ArchitectureTests/Bedrock.ArchitectureTests.csproj" />
     <Project Path="tests/Bedrock.Api.Tests/Bedrock.Api.Tests.csproj" />
     <Project Path="tests/Bedrock.Infrastructure.Tests/Bedrock.Infrastructure.Tests.csproj" />
+    <Project Path="tests/Modules/Identity.UnitTests/Identity.UnitTests.csproj" />
+    <Project Path="tests/Host/StarHill.Api.Tests/StarHill.Api.Tests.csproj" />
   </Folder>
 </Solution>

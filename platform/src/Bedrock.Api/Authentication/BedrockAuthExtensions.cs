@@ -1,4 +1,5 @@
 using Bedrock.Api.ErrorHandling;
+using Bedrock.Application.Ports.Security;
 using Bedrock.Application.Ports.Users;
 using Bedrock.Domain.Results;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -23,7 +24,7 @@ public static class BedrockAuthExtensions
 
         var keyRing = new JwtKeyRingOptions();
         configuration.GetSection(JwtKeyRingOptions.SectionName).Bind(keyRing);
-        services.AddSingleton(keyRing);
+        services.TryAddSingleton(keyRing); // idempotent: Infra (AddBedrockSecurity) có thể bind cùng section "Jwt" (AD-008).
 
         services.AddHttpContextAccessor();
         services.TryAddScoped<ICurrentUser, HttpContextCurrentUser>();

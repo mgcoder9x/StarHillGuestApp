@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Identity.Infrastructure (persistence + composition nửa-Infra — matrix §3.3): reference Identity.Application
+    + Bedrock.Infrastructure. KHÔNG ref Bedrock.Api hay Identity.Api (giữ Api⊥Infra — I7; DV-013). Nửa-Api
+    (IEndpointModule) ở Identity.Api; Host ráp hai nửa.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Identity.Application\Identity.Application.csproj" />
+    <ProjectReference Include="..\..\..\Bedrock.Infrastructure\Bedrock.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+  </ItemGroup>
+</Project>
