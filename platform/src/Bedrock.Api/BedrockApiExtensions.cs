@@ -4,6 +4,7 @@ using Bedrock.Api.ErrorHandling;
 using Bedrock.Api.Health;
 using Bedrock.Api.HttpSecurity;
 using Bedrock.Api.Observability;
+using Bedrock.Api.Versioning;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,7 +32,10 @@ public static class BedrockApiExtensions
             .Bind(configuration.GetSection(ObservabilityOptions.SectionName));
         services.AddSingleton(sp => new PathMasker(sp.GetRequiredService<IOptions<ObservabilityOptions>>().Value));
 
+        services.AddBedrockObservability(configuration); // F34/R24: OpenTelemetry 3 trụ + W3C traceparent.
+
         services.AddRouting();
+        services.AddBedrockApiVersioning(); // F32/R22.1: URL-segment /v{version}, default v1, report versions.
         services.AddHealthChecks();
         return services;
     }

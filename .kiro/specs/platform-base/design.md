@@ -1122,14 +1122,16 @@ Với N dispatcher instance poll đồng thời, mỗi message pending được 
 
 ## 16. Definition of Done — "base cực chất" (Blueprint §17)
 
-- [ ] `Bedrock.*` pass test **no-business-in-core** (CP1) + Api không ref Infrastructure (CP2).
-- [ ] Thêm 1 module mới = 5 project theo khuôn + `AddXModule(cfg)` một dòng ở Host; module boundary test xanh (CP4).
-- [ ] Thêm 1 công nghệ mới (RabbitMQ) = `Adapters.Messaging.RabbitMq` + `AddRabbitMqMessaging(cfg)` + integration test; **0 file lõi Application/Domain bị sửa** (CP3).
-- [ ] Command ghi dữ liệu luôn kèm outbox trong 1 transaction (CP6); consumer idempotent qua inbox (CP8); dispatcher claim exclusive + dead-letter (CP15); domain event atomic (CP14).
-- [ ] Boot fail-fast ở mọi môi trường khi thiếu config/port bắt buộc (CP9).
-- [ ] 3 trụ telemetry hoạt động; `traceId` = `X-Correlation-Id` = trace hiện hành (CP10).
-- [ ] Health liveness/readiness hoạt động; dependency down → readiness 503, liveness 200 (R34).
-- [ ] Không secret trong repo; validate-on-start phủ mọi options bắt buộc (F35).
+> **Trạng thái kiểm chứng (task 21, 2026-07-09):** đối chiếu từng mục với test/cơ chế THẬT (200 test xanh, 0 warning). Mục cần **Docker/Testcontainers** (`[ ]`) KHÔNG chạy được ở môi trường hiện tại (không có Docker — N-012) → residual tường minh, không đánh dấu done khống. Ma trận chi tiết: journal N-049.
+
+- [x] `Bedrock.*` pass test **no-business-in-core** (CP1: tên/namespace + literal — `NoBusinessInCoreTests` + `NoBusinessInCoreLiteralTests`) + Api không ref Infrastructure (CP2: `ApiBoundaryTests`).
+- [x] Thêm 1 module mới = 5 project theo khuôn + compose ở Host (2 nửa Infra/Api — DV-013 giữ I7); module boundary test xanh (CP4: `ModuleBoundaryTests` + Host smoke). *(module mẫu `Identity`)*
+- [ ] Thêm 1 công nghệ mới (RabbitMQ) = `Adapters.Messaging.RabbitMq` + `AddRabbitMqMessaging(cfg)` + integration test; **0 file lõi Application/Domain bị sửa** (CP3). *(chờ Docker — task 14)*
+- [ ] Command ghi dữ liệu luôn kèm outbox trong 1 transaction (CP6); consumer idempotent qua inbox (CP8); dispatcher claim exclusive + dead-letter (CP15); domain event atomic (CP14). *(CP14 ✅ `DomainEventDispatchTests`; CP6/CP8 same-transaction + idempotency đơn-luồng ✅ SQLite; **claim exclusive đa-instance + race Postgres CP6/CP8/CP15 chờ Docker — task 7.4**)*
+- [x] Boot fail-fast ở mọi môi trường khi thiếu config/port bắt buộc (CP9: `RequiredPortsValidatorTests` + Host fail-fast JWT `ValidateOnStart` AD-045).
+- [x] 3 trụ telemetry hoạt động; `traceId` = `X-Correlation-Id` = trace hiện hành (CP10: `BedrockPipelineTests` OTel + traceparent, AD-044).
+- [x] Health liveness/readiness hoạt động; dependency down → readiness 503, liveness 200 (R34: `BedrockPipelineTests` live/ready 200 + readiness-503).
+- [x] Không secret trong repo; validate-on-start phủ mọi options bắt buộc (F35: task 19 — appsettings sạch + `UserSecretsId` + Host fail-fast test).
 
 ---
 

@@ -22,9 +22,11 @@ public static class BedrockAuthExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
+        // Bind LOCAL (chỉ để cấu hình JwtBearer: Issuer/Audience + resolver key). KHÔNG đăng ký làm singleton
+        // JwtKeyRingOptions: singleton concrete đến từ AddBedrockSecurity qua IOptions (validate-on-start, thấy
+        // config nạp muộn — F35/task 19). ResolveKeys chạy LAZY lúc verify token (không đụng lúc boot).
         var keyRing = new JwtKeyRingOptions();
         configuration.GetSection(JwtKeyRingOptions.SectionName).Bind(keyRing);
-        services.TryAddSingleton(keyRing); // idempotent: Infra (AddBedrockSecurity) có thể bind cùng section "Jwt" (AD-008).
 
         services.AddHttpContextAccessor();
         services.TryAddScoped<ICurrentUser, HttpContextCurrentUser>();

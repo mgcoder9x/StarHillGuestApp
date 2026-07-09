@@ -433,3 +433,101 @@
 - **⚠️ Dev-secret placeholder (F35 → task 19):** `appsettings.json` chứa Jwt dev key (giải mã ra ASCII rõ ràng ⇒ hiển nhiên không phải khóa thật) + connection string dummy, để Host boot dev + smoke test chạy KHÔNG cần hạ tầng. Task 19 sẽ chuyển secret sang user-secrets/env/Key Vault + kiểm không secret thật trong repo. Đây là nợ có chủ đích, đã khoanh vùng.
 - **Package:** thêm `Microsoft.AspNetCore.Mvc.Testing` 10.0.9 (WebApplicationFactory smoke); nâng `Microsoft.Extensions.Configuration.Binder` 10.0.0→10.0.9 (Mvc.Testing→Hosting kéo ≥10.0.9, transitive-pinning gây NU1109 nếu để 10.0.0). Verify build 0 warning + toàn test xanh sau nâng.
 - Provenance: `platform/src/Host/StarHill.Api/**`, `Directory.Packages.props`.
+
+---
+
+### N-044 — Task 16.3 (arch tests module boundary + single composition root + CP11) VERIFY THẬT (2026-07-09)
+- Verified: ✅ `dotnet test Platform.slnx` → ArchitectureTests **31** (+10) + UnitTests 54 + Identity.UnitTests 6 + Api.Tests 33 + StarHill.Api.Tests 2 + Infrastructure.Tests 66 = **192 passed, 0 failed**, build 0 warning.
+- Đã tạo `ModuleBoundaryTests.cs` + mở rộng `CoreAssemblies.cs` (thêm `ModuleAssemblies` trỏ 5 assembly Identity qua marker public) + `Bedrock.ArchitectureTests.csproj` thêm 5 ProjectReference Identity + `FrameworkReference Microsoft.AspNetCore.App` (cần để CLR nạp type Identity.Api/Bedrock.Api khi NetArchTest truy cập `typeof(...).Assembly`).
+- **CP4** (Property 4/I5/F30): Identity.Contracts thuần DTO (chỉ ref `Bedrock.Messaging.Contracts`); Domain/Application ⊥ Infrastructure/Api. Negative control: type giả giữ `IdentityDbContext` (internal module) bị luật bắt → chứng minh cơ chế "chỉ Contracts" kiểm được.
+- **CP5** (Property 5): enforce từ PHÍA MODULE — `Identity.Api` ⊥ mọi Infrastructure; `Identity.Infrastructure` ⊥ mọi Api. Kết hợp CP2 (`Bedrock.Api` ⊥ `Bedrock.Infrastructure`) ⇒ KHÔNG library/module nào bắc cầu Api+Infra → chỉ Host (exe) làm được ⇒ "composition root duy nhất".
+  - **Lý do KHÔNG nạp assembly Host để test trực tiếp (quyết định phương pháp, nhìn bản chất):** `StarHill.Api` là Web SDK exe, `Program` top-level = internal (không có public type để `typeof`), và nạp web-exe vào AppDomain của arch-test dễ kích hoạt initializer/asset không mong muốn — mong manh. Bản chất CP5 = "KHÔNG nơi nào NGOÀI Host được bắc cầu"; điều này enforce ĐẦY ĐỦ bằng cách chứng minh mọi library/module KHÔNG bắc cầu (đã làm) + Host là exe DUY NHẤT (theo cấu trúc, 1 project Web). Vai trò tích cực của Host (thật sự ráp cả hai) đã được `HostSmokeTests` (16.2) kiểm runtime (boot 200 + endpoint hoạt động). Đây là enforce đúng gốc, không vá ngọn.
+- **CP11**: use case Identity (`RefreshAccessTokenUseCase : IUseCase<,>`) ⊥ `Bedrock.Application.Messaging.Dispatch` (cùng luật đã có cho Bedrock ở `UseCaseSeamTests`; negative control chung ở đó chứng minh engine bắt được rò rỉ Dispatch).
+- Mỗi luật positive đi kèm negative control kiểu "phụ thuộc CÓ THẬT phải bị bắt" (Identity.Contracts→Messaging.Contracts; Identity.Api→Bedrock.Api; Identity.Infrastructure→Bedrock.Infrastructure) → luật không false-pass.
+- Task 16 (16.1/16.2/16.3) HOÀN TẤT. CP4/CP5 nâng PENDING → **ENFORCED**; CP11 mở rộng phủ module. Kế tiếp theo tasks.md: task 17 (versioning) — hoặc task 14 (RabbitMq adapter, cần Docker) khi có môi trường.
+- Provenance: `platform/tests/Bedrock.ArchitectureTests/{ModuleBoundaryTests.cs,CoreAssemblies.cs,Bedrock.ArchitectureTests.csproj}`; `dotnet test` 192 xanh (phiên này).
+
+---
+
+### N-045 — Task 17 (Versioning API + integration event, F32) VERIFY THẬT (2026-07-09)
+- Verified: ✅ `dotnet test Platform.slnx` → ArchitectureTests 31 + Identity.UnitTests 6 + **Bedrock.ContractTests 1 (mới)** + UnitTests 54 + Api.Tests 33 + StarHill.Api.Tests 2 + **Infrastructure.Tests 68 (+2)** = **195 passed, 0 failed**, build 0 warning.
+- **Part A — integration-event versioning (R22.2/R22.3 + snapshot R32.4 phần event):**
+  - `Bedrock.Infrastructure.Tests/OutboxSerializationTests` — khoá HÀNH VI tolerant-reader của CHÍNH `OutboxSerialization.Options` (internal): payload "v2" thêm field lạ → consumer "v1" vẫn deserialize (bỏ qua) + guard `UnmappedMemberHandling != Disallow`. Nếu ai đổi options phá tolerant → FAIL BUILD.
+  - Project MỚI `tests/Bedrock.ContractTests` (+ Platform.slnx) — `IntegrationEventSchemaSnapshotTests`: reflect mọi `IntegrationEvent` concrete trong `*.Contracts` → descriptor `{EventType} v{SchemaVersion} {{ Prop:Type }}` so với snapshot đã duyệt. Đổi breaking (đổi/xoá field) → FAIL, buộc quyết định có ý thức (bump version / EventType v2). Đọc EventType/SchemaVersion qua `RuntimeHelpers.GetUninitializedObject` (trả literal, không đụng ctor). Task 20 sẽ mở rộng project này cho snapshot `Error.Code`.
+- **Part B — HTTP API versioning (R22.1):** package thật `Asp.Versioning.Http` **10.0.0**; `Bedrock.Api/Versioning/BedrockApiVersioning` (`AddBedrockApiVersioning` URL-segment + default v1 + report; helper `MapVersionedGroup`) — **AD-043**. Identity endpoint → `/v1/identity/token/refresh` (`.MapToApiVersion(V1)`); `HostSmokeTests` đổi path + assert header `api-supported-versions: 1.0`.
+- **OpenAPI document-per-version HOÃN sang Host — DV-015** (base chưa có hạ tầng OpenAPI; endpoint đã mang metadata ApiVersion để Host nhóm khi bật; acceptance task 17 = snapshot + /v1 + 0 warning VẪN đạt).
+- Kế tiếp theo `tasks.md`: task 18 (Telemetry & correlation unity — OpenTelemetry 3 trụ + W3C traceparent, CP10) hoặc task 14 (RabbitMq adapter — cần Docker). Task 19 (secrets), task 20 (contract tests hoàn tất + no-business-in-core cuối), task 21 (DoD).
+- Tổng bản ghi journal: AD 43, DV 15, TO 9, N 45.
+
+---
+
+### N-046 — Task 18 (Telemetry & correlation unity, F34/F21) VERIFY THẬT (2026-07-09)
+- Verified: ✅ `dotnet test Platform.slnx` → ArchitectureTests 31 + UnitTests 54 + ContractTests 1 + Identity.UnitTests 6 + **Api.Tests 35 (+2)** + StarHill.Api.Tests 2 + Infrastructure.Tests 68 = **197 passed, 0 failed**, build 0 warning.
+- Package thật (Bedrock.Api): `OpenTelemetry.Extensions.Hosting` / `OpenTelemetry.Instrumentation.AspNetCore` / `OpenTelemetry.Exporter.OpenTelemetryProtocol` = **1.16.0**.
+- Đã tạo `Bedrock.Api/Observability/BedrockTelemetry` (ActivitySource+Meter "Bedrock") + `BedrockObservabilityExtensions.AddBedrockObservability` (OTel 3 trụ: traces [AspNetCore + source Bedrock/Npgsql], metrics [AspNetCore + meter Bedrock/RateLimiting/EF/Npgsql], logs [ILogger→OTel]); wire trong `AddBedrockApi`. Exporter OTLP CHỈ bật khi `Observability:Otlp:Endpoint` có giá trị (dev/test không export — span/metric vẫn tạo, kiểm qua listener).
+- **Correlation fix tận gốc (AD-044):** `CorrelationContext.CurrentTraceId = Activity.Current.TraceId` (W3C 32-hex); middleware bỏ override client; propagation qua `traceparent`. Test CP10 đổi sang gửi `traceparent` → header == body.traceId == trace hiện hành.
+- **DV-016:** logs pillar qua `Microsoft.Extensions.Logging` + OTel exporter, KHÔNG Serilog (base đã chuẩn hoá ILogger; tránh 2 hệ logging).
+- Điểm cần biết:
+  - **Hai biểu diễn cùng một trace:** HTTP `X-Correlation-Id`/`ProblemDetails.traceId` = **bare traceId** (32-hex, human/log-facing); outbox `correlation_id` = **full `Activity.Id`** (traceparent `00-trace-span-flags`, để consumer nối trace qua bus). Cùng trace, khác format có chủ đích.
+  - **`BedrockTelemetry` hiện ở `Bedrock.Api`** → Infrastructure (dispatcher outbox-lag) CHƯA emit được metric dưới nguồn chung. Khi cần instrument outbox-lag/consumer/external-auth (R24.3 phần custom), NÊN chuyển `BedrockTelemetry` xuống `Bedrock.Application` (ActivitySource/Meter là BCL `System.Diagnostics.DiagnosticSource`, có trong shared framework — không phải tech-SDK, hợp lệ ở Application như Logging.Abstractions). Chưa làm nay vì chưa có consumer (tránh premature).
+  - Metric test dùng `MeterListener` + poll 3s (metric `http.server.request.duration` ghi lúc request hoàn tất — sau khi `GetAsync` trả về; race timing, không phải lỗi wiring).
+- R24.3 catalog: request rate/latency/error ✅ (AspNetCore instrumentation); rate-limit/EF/Npgsql meters đã AddMeter (thu khi phát); outbox lag + dead-letter count + consumer time + external-auth success/fail = custom metric của component (một số component chưa dựng — task 14 adapter; instrument khi finalize).
+- Kế tiếp theo `tasks.md`: task 19 (secrets & config governance), task 20 (contract tests + no-business-in-core cuối, CP12), task 21 (DoD). Task 14 (RabbitMq, CP3) cần Docker.
+- Tổng bản ghi journal: AD 44, DV 16, TO 9, N 46.
+
+---
+
+### N-047 — Task 19 (Secrets & config governance, F35/R25) VERIFY THẬT (2026-07-09)
+- Verified: ✅ `dotnet test Platform.slnx` → ArchitectureTests 31 + ContractTests 1 + Identity.UnitTests 6 + UnitTests 54 + Api.Tests 35 + **StarHill.Api.Tests 3 (+1)** + Infrastructure.Tests 68 = **198 passed, 0 failed**, build 0 warning.
+- **GAP thật đã đóng:** cơ chế fail-fast/validate-on-start/required-ports đã có từ task 10.2; task 19 đóng chỗ **appsettings vẫn chứa secret** (JWT `Secret` base64 + `Password=postgres`).
+- Đã làm:
+  - `appsettings.json` (Host): CHỈ non-secret + placeholder — `Jwt.Keys[0].Secret=""`, connection string BỎ `Password`. `_note` hướng dẫn nạp secret qua User-Secrets (dev) / env/Key Vault (prod).
+  - `StarHill.Api.csproj`: thêm `<UserSecretsId>` → dev `dotnet user-secrets set 'Jwt:Keys:0:Secret' <base64-32B>` (WebApplication.CreateBuilder tự load ở Development).
+  - `HostSmokeTests`: `SecretInjectingHostFactory` nạp secret qua test-config (giống dev nạp User-Secrets, KHÔNG lấy từ repo) → 2 test boot xanh; thêm `Host_fails_fast_when_required_jwt_secret_is_missing` (không cấp secret → boot fail "HS256") = ACCEPTANCE task 19 + guard "appsettings KHÔNG chứa JWT secret" (nếu có secret thật trong repo, boot đã KHÔNG fail).
+- **Fix tận gốc AD-045:** JWT validation chuyển từ eager-lúc-đăng-ký → options `.ValidateOnStart()` (đúng design §9.4 "validate-on-start") + `IValidateOptions` (`JwtKeyRingOptionsValidator`) + concrete singleton lazy `sp => IOptions.Value` + bỏ `TryAddSingleton(keyRing)` eager ở `AddBedrockAuthCore`. Lý do: chỉ validate SAU khi mọi nguồn config hợp nhất (post-Build) mới đồng thời thỏa fail-fast + nạp secret muộn (mô hình secret-ngoài-repo). `JwtKeyRingValidation.Validate` (unit test cũ) GIỮ NGUYÊN — validator chỉ bọc.
+- Điều cần biết: eager-read `builder.Configuration` TRƯỚC `Build()` KHÔNG thấy config `WebApplicationFactory.ConfigureAppConfiguration`/User-Secrets nạp lúc Build → mọi validation cần "thấy config muộn" phải dùng `.ValidateOnStart()` (post-Build), KHÔNG validate lúc đăng ký. Áp dụng cho options bắt buộc khác sau này.
+- R25 phủ: R25.1 (không secret trong repo — appsettings sạch + UserSecretsId + guard test) ✅; R25.2 (validate-on-start options bắt buộc → chặn boot) ✅ (JWT qua ValidateOnStart; connection string qua Program throw; ports qua RequiredPortsValidator).
+- Kế tiếp theo `tasks.md`: task 20 (contract tests hoàn tất — snapshot `Error.Code` registry + no-business-in-core cuối, CP1/CP12), task 21 (DoD). Task 14 (RabbitMq, CP3) cần Docker.
+- Tổng bản ghi journal: AD 45, DV 16, TO 9, N 47.
+
+---
+
+### N-048 — Task 20 (Contract tests + hoàn tất no-business-in-core, CP1/CP12) VERIFY THẬT (2026-07-09)
+- Verified: ✅ `dotnet test Platform.slnx` → **ArchitectureTests 31** + **ContractTests 2 (+1)** + Identity.UnitTests 6 + UnitTests 54 + Api.Tests 35 + StarHill.Api.Tests 3 + Infrastructure.Tests 68 = **199 passed, 0 failed**, build 0 warning.
+- **Part A — CP1 literal (AD-046):** `NoBusinessInCoreLiteralTests` (Mono.Cecil 0.11.6) quét `ldstr` + `const string` trên 5 assembly `Bedrock.*` → 0 vi phạm (lõi sạch), + negative control (scan assembly test bẩn → bắt seed). `NoBusinessInCoreTests` (name-scan) mở rộng ra đủ 5 assembly (gộp 3 fact → 1 loop `CoreAssemblies.AllBedrock`). CP1 nay phủ CẢ tên/namespace LẪN literal → **AD-022 resolved**.
+- **Part B — CP12 (Error code contract):** `Bedrock.ContractTests/ErrorCodeSnapshotTests` reflect MỌI code ổn định (static `Error` field + static method trả `Error` với mọi tham số optional) trong Bedrock.Domain + Identity.Domain → so snapshot đã duyệt (9 code: concurrency_conflict/conflict/forbidden/identity.invalid_refresh_token/not_found/rate_limited/unauthorized/unexpected/validation_error). Code template `{entity}.not_found` (cần tham số) KHÔNG vào registry. Đổi/xoá code → FAIL BUILD.
+- **Part C — CP coverage:** guard map 05-anti-drift cập nhật CP1 (full)/CP12 (enforced)/AD-022 (resolved)/+AD-046. Trạng thái CP1–CP15: **ENFORCED**: CP1,2,4,5,9,10,11,12,13,14. **PARTIAL** (đơn-luồng/SQLite xong; race/Postgres chờ Testcontainers): CP6,CP8,CP15 (task 7.4). **PENDING** (cần Docker/tính năng): CP3 (adapter, task 14), CP7 (rotation race, task 8.3). Mọi CP đều có test/đường-đi xác định — không CP nào "mồ côi".
+- Điều cần biết: `ContractTests` giờ ref thêm `Bedrock.Domain` + `Identity.Domain` (để reflect Error registry). `ArchitectureTests` ref thêm `Bedrock.Api` + `Mono.Cecil` (quét literal 5 assembly). Literal match là substring case-insensitive — hiện 0 false-positive; nếu tương lai có literal hạ tầng chứa token (vd "showroom") thì chuyển word-boundary.
+- Kế tiếp theo `tasks.md`: **task 21 (Definition of Done)** — task cuối, xác nhận toàn bộ DoD §16 + chạy full suite. Các task cần Docker (14 RabbitMq/CP3, 7.4 Testcontainers/CP6/CP8/CP15, 8.3/CP7) là điều kiện Docker — DoD sẽ ghi rõ skip-có-điều-kiện.
+- Tổng bản ghi journal: AD 46, DV 16, TO 9, N 48.
+
+---
+
+### N-049 — Task 21 (Definition of Done) — MA TRẬN KIỂM CHỨNG (2026-07-09)
+- Verified: ✅ `dotnet test Platform.slnx` → **200 passed, 0 failed, build 0 warning**. Phân rã: ArchitectureTests 31 · ContractTests 2 · Identity.UnitTests 6 · UnitTests 54 · Api.Tests **36 (+1 readiness-503)** · StarHill.Api.Tests 3 · Infrastructure.Tests 68.
+- Môi trường: **KHÔNG có Docker** (`docker` not recognized — verified). ⇒ mọi test Testcontainers/Postgres/RabbitMQ KHÔNG chạy được ở đây (N-012). Đây là RESIDUAL tường minh — KHÔNG đánh dấu done khống (nguyên tắc không-bịa).
+- Ma trận DoD §16 (8 mục):
+  1. no-business-in-core (CP1 tên+literal) + Api⊥Infra (CP2) → ✅ `NoBusinessInCoreTests` + `NoBusinessInCoreLiteralTests` (Mono.Cecil) + `ApiBoundaryTests`.
+  2. module 5-project + compose Host + boundary (CP4) → ✅ Identity module + `ModuleBoundaryTests` + `HostSmokeTests` (compose 2 nửa Infra/Api — DV-013 giữ I7; "1 dòng" → 2 nửa có lý do, ghi DV-013).
+  3. adapter RabbitMQ + 0-file-lõi-sửa (CP3) → ⏳ **PENDING (Docker)** — task 14.
+  4. outbox 1-tx (CP6) + inbox idempotent (CP8) + claim exclusive+dead-letter (CP15) + domain-event atomic (CP14) → 🟡 **PARTIAL**: CP14 ✅ (`DomainEventDispatchTests`); CP6 same-transaction ✅ + CP8 idempotency đơn-luồng ✅ + CP15 backoff/threshold/dead-letter ✅ (SQLite, task 6/7.3); **claim skip-locked đa-instance + race Postgres CP6/CP8/CP15 chờ Docker — task 7.4**.
+  5. boot fail-fast thiếu config/port (CP9) → ✅ `RequiredPortsValidatorTests` + `HostSmokeTests.Host_fails_fast_when_required_jwt_secret_is_missing` (AD-045 ValidateOnStart).
+  6. telemetry 3 trụ + `traceId`==`X-Correlation-Id`==trace (CP10) → ✅ `BedrockPipelineTests` (OTel providers + traceparent unity + metric http.server.request.duration) — AD-044.
+  7. health live/ready + dependency-down→503/live-200 (R34) → ✅ `BedrockPipelineTests` (live/ready 200 + **readiness-503 khi check "ready" Unhealthy** — thêm ở task 21 để verify TRỰC TIẾP thay vì tin framework).
+  8. không secret trong repo + validate-on-start options bắt buộc (F35) → ✅ task 19 (appsettings sạch + `UserSecretsId` + Host fail-fast test).
+- **Kết luận task 21:** DoD phần **không-Docker HOÀN TẤT + verify thật** (6/8 mục ✅; mục 4 phần đơn-luồng ✅). **Chưa thể sign-off toàn bộ** vì mục 3 + phần race/đa-instance của mục 4 cần Docker (task 14/7.4) + CP7 rotation-race (task 8.3) — môi trường hiện không có Docker. Task 21 GIỮ `[ ]` (không đánh dấu done khi acceptance "Testcontainers ... tất cả xanh" chưa chạy được) — trung thực. Khi có Docker: chạy task 7.4/8.3/14 → CP3/CP6-full/CP7/CP8-full/CP15 → sign-off DoD trọn vẹn.
+- Trạng thái CP1–CP15: ENFORCED CP1,2,4,5,9,10,11,12,13,14 (10/15); PARTIAL CP6,8,15 (đơn-luồng ✅/race Docker); PENDING CP3,7 (Docker). Không CP nào mồ côi.
+- Tổng bản ghi journal: AD 46, DV 16, TO 9, N 49.
+
+---
+
+### N-050 — Task 7.5 (Outbox retention/cleanup) VERIFY THẬT (2026-07-09)
+- Verified: ✅ `dotnet test Platform.slnx` → **203 passed, 0 failed, build 0 warning**. Phân rã: ArchitectureTests 31 · ContractTests 2 · Identity.UnitTests 6 · UnitTests 54 · Api.Tests 36 · StarHill.Api.Tests 3 · **Infrastructure.Tests 71 (+3 retention)**.
+- **Phát hiện quan trọng:** task 7.5 làm được KHÔNG cần Docker (khác 7.4/8.3/14). Logic retention là thao tác DELETE theo điều kiện trên bảng quan hệ → SQLite in-memory (`PersistenceHarness`) đủ để chứng minh "chọn đúng tập row hết hạn" (đúng yêu cầu nghiệm thu R8.5). Testcontainers chỉ cần cho hành vi Postgres-specific (skip-locked/xmin), không phải cho retention.
+- **Kiến trúc (AD-047):** base cấp LOGIC `EfOutboxRetention<TContext>.PurgeAsync()` + `AddOutboxRetention<TContext>()` (scoped, named-options per-context); Host lên lịch chạy — **nhất quán với dispatcher (base KHÔNG có hosted-service)**. Đây là điểm dễ drift nếu vô ý cho base tự chạy `BackgroundService` → sẽ có 2 mô hình lịch trái ngược trong platform. Giữ 1 mô hình.
+- **An toàn (bản chất R8.5):** vị từ xoá processed LUÔN kèm `dead_lettered_at == null` → không đụng dead-letter theo nhánh processed; pending (`processed_at == null`) không bao giờ khớp → không mất event chưa gửi. Dead-letter chỉ bị dọn khi app CHỦ ĐỘNG set `DeadLetterRetention` (mặc định `null` = giữ vô thời hạn — mất dead-letter = mất bằng chứng poison).
+- **Provider-conditional (mirror `EfOutboxDispatcher`):** Npgsql → `ExecuteDeleteAsync` (set-based, không nạp entity); provider khác (SQLite test) → `ToListAsync` + lọc client-side + `RemoveRange` + `SaveChanges` (SQLite không dịch được so sánh `DateTimeOffset` — cùng lý do DV-010). Vị từ `SelectExpired` client-side khớp đúng vị từ SQL để hành vi 2 provider trùng khớp. RESIDUAL: nhánh `ExecuteDeleteAsync` Npgsql chưa test được ở đây (chờ Docker/task 7.4) — cùng giới hạn DV-010.
+- **Files:** `platform/src/Bedrock.Infrastructure/Persistence/Messaging/OutboxRetentionOptions.cs` + `EfOutboxRetention.cs`; DI `AddOutboxRetention<TContext>` trong `OutboxDispatcherExtensions.cs`; test `platform/tests/Bedrock.Infrastructure.Tests/OutboxRetentionTests.cs` (3 fact).
+- **Trạng thái tasks.md:** `7.5` → `[x]`. Parent `7.` GIỮ `[ ]` vì `7.4` (Testcontainers CP6/CP8/CP15) vẫn `[ ]` (cần Docker). Không đánh dấu parent done khống.
+- Kế tiếp: các task còn lại đều Docker-gated (7.4/8.3/14) → không chạy được trong môi trường này; task 21 sign-off trọn vẹn chờ Docker (N-049).
+- Tổng bản ghi journal: AD 47, DV 16, TO 9, N 50.

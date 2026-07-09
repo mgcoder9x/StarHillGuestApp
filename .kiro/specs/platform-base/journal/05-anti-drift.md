@@ -31,18 +31,18 @@
 
 | CP | Nội dung | Guard test | Trạng thái |
 |---|---|---|---|
-| CP1 | no-business-in-core (tên/namespace) | `NoBusinessInCoreTests` | ✅ ENFORCED (tên); literal → task 20 (PENDING, AD-022) |
+| CP1 | no-business-in-core (tên/namespace + literal) | `NoBusinessInCoreTests` (tên/namespace, 5 assembly) + `NoBusinessInCoreLiteralTests` (Mono.Cecil quét ldstr + const, 5 assembly) | ✅ ENFORCED đầy đủ (task 4 + task 20; AD-022 resolved bởi AD-046) |
 | CP2 | Api ⊥ Infrastructure | `Bedrock.Api.Tests/ApiBoundaryTests` (+ chiều ngược Infrastructure⊥Api: `DependencyRuleTests`) | ✅ ENFORCED (task 5.5/6) |
 | CP3 | Adapter isolation | (task 14 — Adapters chưa tồn tại) | ⏳ PENDING |
-| CP4 | Module boundary | (task 16.3 — Modules chưa tồn tại) | ⏳ PENDING |
-| CP5 | Single composition root | (task 16.3 — Host chưa tồn tại) | ⏳ PENDING |
+| CP4 | Module boundary | `ModuleBoundaryTests` (Contracts thuần DTO; Domain/App ⊥ Infra/Api; + negative control engine bắt dep vào internal module) | ✅ ENFORCED (task 16.3; A→B đầy đủ khi có module thứ 2) |
+| CP5 | Single composition root | `ModuleBoundaryTests` (module `.Api` ⊥ mọi Infra; module `.Infra` ⊥ mọi Api → không library nào bắc cầu Api+Infra; chỉ Host exe được) + CP2 | ✅ ENFORCED (task 16.3; xem N-044 lý do enforce từ phía module thay vì nạp web-exe) |
 | CP6 | Outbox atomicity | `Bedrock.Infrastructure.Tests/OutboxWriterTests` (enqueue+state commit/rollback CÙNG transaction trên SQLite — DB quan hệ thật) | 🟡 PARTIAL (same-transaction atomic ✅; publish-path + Postgres thật → task 7.4 Testcontainers) |
 | CP7 | Rotation atomicity | `RefreshTokenStoreTests` (consume-if-not-revoked + consume+add rollback cùng transaction, SQLite) | 🟡 PARTIAL (atomic đơn-luồng ✅; race 2-request đồng thời + Postgres → task 8.3) |
 | CP8 | Inbox idempotency | `Bedrock.Infrastructure.Tests/OutboxDispatcherTests` (TryMarkProcessed first-true / dup-false / khác-consumer trên SQLite) | 🟡 PARTIAL (unit idempotency ✅; race đồng thời + Postgres → task 7.4) |
 | CP9 | Fail-fast missing port | `RequiredPortsValidatorTests` (thiếu port → ném GỘP; scope-aware) | ✅ ENFORCED (task 10.2) |
-| CP10 | Correlation unity | `Bedrock.Api.Tests/BedrockPipelineTests` (header == body.traceId, client-provided id) | ✅ ENFORCED (task 5.4) |
-| CP11 | use case ⊥ Messaging.Dispatch | `UseCaseSeamTests` | ✅ ENFORCED |
-| CP12 | Error code contract stable | (task 20 — reflection snapshot) | ⏳ PENDING |
+| CP10 | Correlation unity | `Bedrock.Api.Tests/BedrockPipelineTests` (gửi `traceparent` → header == body.traceId == trace hiện hành; OTel providers registered; metric http.server.request.duration phát) | ✅ ENFORCED (task 5.4 → siết task 18/AD-044) |
+| CP11 | use case ⊥ Messaging.Dispatch | `UseCaseSeamTests` (Bedrock) + `ModuleBoundaryTests` (Identity use case) | ✅ ENFORCED |
+| CP12 | Error code contract stable | `Bedrock.ContractTests/ErrorCodeSnapshotTests` (snapshot registry Error.Code — reflect Domain lõi + module) | ✅ ENFORCED (task 20) |
 | CP13 | Log masking mọi nơi | `PathMaskerTests` + `BedrockPipelineTests` (masked log, no raw token) | ✅ ENFORCED (task 5.4; + posture AD-024 cho framework logging) |
 | CP14 | Domain event atomic dispatch | `Bedrock.Infrastructure.Tests/DomainEventDispatchTests` (handler-effect commit cùng transaction; handler ném → rollback; max-depth ném; no-handler no-op) | ✅ ENFORCED (task 6.4) |
 | CP15 | Outbox exclusive claim | (task 7.4 — Testcontainers) | ⏳ PENDING |
@@ -74,7 +74,8 @@
 | AD-019 | suppress `CA1000` cho `Result<T>` factory | build 0-warning gate (TreatWarningsAsErrors) | 🟡 IMPLICIT (build gate) |
 | AD-020 | tách tên `NotFound`/`NotFoundGeneric` | build gate (CS0111 sẽ tái xuất nếu regress) | 🟡 IMPLICIT (build gate) |
 | AD-021 | `IHtmlSanitizer` ở `Ports.Html` | `DecisionGuardTests.AD021_*` | ✅ ENFORCED |
-| AD-022 | chia đôi enforcement CP1 (tên/namespace vs literal) | `NoBusinessInCoreTests` (phần tên/namespace); literal → task 20 | 🟡 PARTIAL (theo thiết kế — literal task 20) |
+| AD-022 | chia đôi enforcement CP1 (tên/namespace vs literal) | `NoBusinessInCoreTests` (tên/namespace) | ✅ RESOLVED (literal phần bù hoàn tất bởi AD-046/task 20) |
+| AD-046 | CP1 literal scan qua Mono.Cecil (ldstr + const, 5 assembly Bedrock.*) | `NoBusinessInCoreLiteralTests` (+ negative control dirty-assembly) | ✅ ENFORCED (task 20) |
 | AD-023 | claim JWT-native (`sub`/`role`/`permission`/`tenant_id`/`sid`) | `HttpContextCurrentUserTests` (behavioral) | ✅ ENFORCED |
 | AD-024 | request-logging masked thay framework + Host hạ `Microsoft.AspNetCore`=Warning | `BedrockPipelineTests` (e2e no-leak WITH posture) | ✅ ENFORCED (e2e) + 🧠 MANUAL (posture Host — task 16.2) |
 | AD-025 | dispatcher generic invoker (không MethodInfo.Invoke) | `DomainEventDispatchTests.Handler_throwing_*` (exception giữ nguyên kiểu) | ✅ ENFORCED (task 6.4) |
@@ -95,6 +96,10 @@
 | AD-040 | Transaction behavior CHỈ `ICommandUseCase<>` (ghi thuần); value-returning tự quản (reentrancy AD-012) | `TransactionDecoratorTests` (body-inside-transaction, failing-propagates) + `PipelineOrderTests` (command mở transaction; query family không; unauthorized→0 transaction) | ✅ ENFORCED (task 15) |
 | AD-041 | Refresh token lifetime mặc định 14 ngày (module Identity, promotable Options) | `RefreshAccessTokenUseCaseTests` (lifetime=14d + expiresAt=now+14d) | ✅ ENFORCED (task 16.1) |
 | AD-042 | health-check DB đặt tên per-context `database:{TContext}` (multi-module không trùng) | `MultiModulePersistenceTests` (2 context → 2 tên `ready` duy nhất + HealthCheckService resolve không ném) | ✅ ENFORCED (task 16.2) |
+| AD-043 | API versioning URL-segment `/v{version}` + `MapVersionedGroup` (default v1, report versions) | `HostSmokeTests` (`/v1/identity/token/refresh` → 400 + header `api-supported-versions: 1.0`) | ✅ ENFORCED (task 17) |
+| AD-044 | correlation id = W3C traceId trace hiện hành (bỏ override client; propagation qua traceparent) | `BedrockPipelineTests.Unhandled_exception_*` (traceparent → header==body.traceId==traceId) | ✅ ENFORCED (task 18) |
+| AD-045 | JWT validate-on-start (options `.ValidateOnStart()`, không eager); secret ngoài repo | `HostSmokeTests` (boot với secret inject; `Host_fails_fast_when_required_jwt_secret_is_missing` → boot fail "HS256") | ✅ ENFORCED (task 19) |
+| AD-047 | Outbox retention: base cấp logic `PurgeAsync` (Host lên lịch); TTL mặc định processed 7d / dead-letter giữ vô thời hạn; vị từ xoá không đụng pending/dead-letter | `OutboxRetentionTests` (xoá đúng processed-cũ, giữ pending/processed-mới/dead-letter; dead-letter cũ chỉ xoá khi bật TTL; 0-khi-không-hết-hạn) | ✅ ENFORCED (task 7.5, nhánh client-side SQLite; nhánh Npgsql ExecuteDelete → task 7.4) |
 
 ## Cổng journal-consistency (INV-1..INV-5) — L4 tự động (AD-030)
 
@@ -112,9 +117,9 @@
 
 ## Khoảng hở chưa auto-enforce (nói thật, không giấu)
 
-- **CP1 string-literal**: chưa quét hằng chuỗi trong thân method (AD-022) → task 20 (source/IL scan). Rủi ro: một hằng path/role lọt vào lõi mà guard hiện tại không bắt. GIẢM THIỂU: code review + task 20.
+- ~~**CP1 string-literal**~~: ĐÃ ĐÓNG (task 20/AD-046) — `NoBusinessInCoreLiteralTests` quét ldstr + const bằng Mono.Cecil trên cả 5 assembly `Bedrock.*` (có negative control). CP1 nay phủ cả tên/namespace lẫn literal.
 - **CP15 exclusive-claim + CP6 full + CP8 race**: dispatcher backoff/threshold/dead-letter/lọc-tới-hạn + inbox idempotency đơn-luồng ĐÃ enforced (task 7.3, SQLite); nhưng **claim skip-locked đa-instance + race Postgres thật** chờ task 7.4 (Testcontainers).
-- **CP3/4/5/7/9/12**: chờ project/tính năng tương ứng ra đời (Adapters/Modules/Host/refresh-store/startup-validator/error-snapshot). Mỗi task đó có dòng "Nghiệm thu" + `_Correctness Properties_` buộc thêm guard khi làm.
+- **CP3 + CP7**: CP3 (adapter isolation) chờ `Adapters.*` (task 14, cần Docker/Testcontainers RabbitMQ); CP7 (rotation race đa-connection) chờ Testcontainers Postgres (task 8.3). CP4/CP5/CP9/CP12 nay ĐÃ enforced. Mỗi task còn lại có dòng "Nghiệm thu" + `_Correctness Properties_` buộc thêm guard khi làm.
 - **INV-4b (getDiagnostics format)**: kiểm heading/EARS/waves của Kiro KHÔNG chạy được trong `dotnet test` (là diagnostic của Kiro IDE) → vẫn thủ công sau mỗi sửa spec (L4b).
 - **Bản sao lồng `StarHillGuestApp/StarHillGuestApp/`** (N-030): một cây `.kiro` cũ song song, stale → rủi ro sửa nhầm bản. `JournalConsistencyTests` chỉ gác bản GỐC (nơi có `platform/`). Cần người xác nhận/gỡ (không tự xoá).
 - **AD tài liệu thuần** (vd quyết định lộ trình): không code-enforceable → INV-2 vẫn buộc có mặt trong bảng guard với trạng thái `IMPLICIT`/`MANUAL` (không được biến mất khỏi radar).

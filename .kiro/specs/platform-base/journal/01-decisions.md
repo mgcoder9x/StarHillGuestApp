@@ -637,3 +637,78 @@
 - Consequences: readiness `/health/ready` liệt kê nhiều check `database:*` (một mỗi module) — rõ ràng hơn. Không phá test cũ (không test nào assert tên "database"; Api.Tests readiness không có DB check).
 - Reversibility: High (đổi quy ước tên cục bộ trong một extension).
 - Traceability: N-040, task 6.3/16.1/16.2, R34, F31/I6.
+
+---
+
+### AD-043 — API versioning qua URL-segment `/v{version}` (không header) + helper `MapVersionedGroup`
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI (implementation-time), design §9.1 cho chọn "URL hoặc header" nhưng không chốt
+- Provenance/Evidence: design §9.1 "HTTP API: `Asp.Versioning` (URL `/v1` hoặc header)"; impl `Bedrock.Api/Versioning/BedrockApiVersioning.cs` (`UrlSegmentApiVersionReader`, `V1=new(1,0)`, `MapVersionedGroup`); package `Asp.Versioning.Http` 10.0.0 (verified `dotnet add`); `HostSmokeTests` POST `/v1/identity/token/refresh` → 400 + header `api-supported-versions: 1.0` xanh (verified `dotnet test`, 195 pass).
+- Context: design cho phép URL-segment HOẶC header versioning. Phải chốt MỘT scheme để nhất quán toàn platform (module không mỗi nơi một kiểu).
+- Decision/Change: URL-segment `/v{version:apiVersion}` (reader = `UrlSegmentApiVersionReader`), `DefaultApiVersion=v1`, `AssumeDefaultVersionWhenUnspecified=true`, `ReportApiVersions=true`. Base cấp helper `MapVersionedGroup(prefix, versions)` để module khai version tại một chỗ; endpoint dùng `.MapToApiVersion(V1)`.
+- Rationale (verifiable): **Bản chất:** URL-segment hiện version NGAY trong đường dẫn → dễ đọc log/debug, cache-key tự nhiên theo path cho proxy/CDN, không bị proxy strip như header. Header/query versioning ẩn, khó test qua URL thuần, dễ bị hạ tầng trung gian bỏ. URL-segment là chuẩn phổ biến cho REST public API thương mại. Helper tập trung convention `/v{n}` → chống drift mỗi module tự chế route.
+- Alternatives: (a) header/query versioning (loại: ẩn, cache khó, dễ bị proxy strip); (b) media-type/content negotiation (loại: phức tạp cho client, ít dùng ở REST thương mại).
+- Consequences: mọi endpoint versioned nằm dưới `/v{n}`; module BẮT BUỘC qua `MapVersionedGroup` (nhất quán); route thiếu version → 404 rõ ràng. `HostSmokeTests` đổi path sang `/v1/...`.
+- Reversibility: Medium (đổi reader = đổi shape URL của mọi endpoint — breaking cho client).
+- Traceability: F32, design §9.1, R22.1, task 17.
+
+---
+
+### AD-044 — Correlation id = W3C traceId của trace hiện hành (bỏ override tuỳ tiện từ client)
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI (implementation-time) — siết CP10 để đạt R24.2 "== trace hiện hành"
+- Provenance/Evidence: R24.2 "`X-Correlation-Id` == `traceId` == trace hiện hành"; design §9.3. Impl mới `CorrelationContext.CurrentTraceId = Activity.Current?.TraceId.ToString() ?? TraceIdentifier`; `CorrelationIdMiddleware` bỏ đọc/override header client. Test `BedrockPipelineTests.Unhandled_exception_*` gửi `traceparent: 00-0af7651916cd43dd8448eb211c80319c-...` → header `X-Correlation-Id` == body `traceId` == `0af7651916cd43dd8448eb211c80319c` (verified `dotnet test`, 197 pass, 0 warning).
+- Context: bản trước (task 5.4) cho phép client gửi `X-Correlation-Id` tuỳ ý và echo lại → thoả "header == traceId" NHƯNG KHÔNG thoả "== trace hiện hành" (giá trị client không phải W3C trace id). Sau khi wire OpenTelemetry (task 18), mỗi request LUÔN có `Activity` với TraceId thật → siết được đúng R24.2.
+- Decision/Change: id chính tắc = `Activity.Current.TraceId` (32-hex W3C). `X-Correlation-Id` (header) + `ProblemDetails.traceId` = giá trị này (đọc 1 nguồn qua `CorrelationContext`). BỎ nhận override từ header client; propagation xuyên service dùng chuẩn **W3C `traceparent`** (OTel/ASP.NET trích tự động → Activity nối trace theo caller).
+- Rationale (verifiable): **Bản chất F21:** correlation chỉ có giá trị khi nó CHÍNH LÀ trace id — để log, trace (Jaeger/Tempo), và error-body cùng khoá một id. Cho client ghi đè bằng chuỗi tuỳ ý phá liên kết với trace thật (không tra được trong hệ trace). Chuẩn ngành: propagation bằng `traceparent`, KHÔNG bằng header tuỳ biến. Đây là fix TẬN GỐC (đổi nguồn id), không phải vá (giữ override rồi thêm điều kiện).
+- Alternatives: (a) giữ override client + fallback trace (loại: vẫn phá "== trace hiện hành" khi client gửi id lạ — chính lỗ hổng F21); (b) sinh GUID riêng cho correlation (loại: tách rời trace → không tra chéo được log↔trace).
+- Consequences: client muốn nối correlation phải gửi `traceparent` (chuẩn), không phải `X-Correlation-Id`. `X-Correlation-Id` giờ THUẦN OUTPUT (server phơi trace id). Outbox `correlation_id` mang `Activity.Id` (full traceparent) để consumer nối trace — cùng trace, khác biểu diễn (bare traceId cho HTTP, full traceparent cho bus) — xem N-046.
+- Reversibility: Medium (đổi lại là nới lỏng, nhưng sẽ tái mở F21).
+- Traceability: F21/F34, R24.2, CP10, design §9.3, task 18 (siết task 5.4).
+
+---
+
+### AD-045 — JWT key-ring validate lúc HOST START (options `.ValidateOnStart()`), KHÔNG eager lúc đăng ký; singleton lazy từ IOptions
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI (implementation-time) — đúng chữ design §9.4 "validate-on-start"; phát hiện qua test task 19
+- Provenance/Evidence: design §9.4 "Validate-on-start cho MỌI options bắt buộc"; trước đây `AddBedrockSecurity` gọi `JwtKeyRingValidation.Validate(keyRing)` NGAY lúc đăng ký (đọc `builder.Configuration` TRƯỚC `Build()`). Test `HostSmokeTests` (task 19) với secret nạp qua `WebApplicationFactory.ConfigureAppConfiguration` (áp lúc Build) FAIL vì eager-read không thấy config muộn. Sau khi đổi sang `AddOptions<JwtKeyRingOptions>().Configure(bind).ValidateOnStart()` + `IValidateOptions` (`JwtKeyRingOptionsValidator`) + singleton `sp => IOptions.Value` + bỏ `TryAddSingleton(keyRing)` eager ở `AddBedrockAuthCore` → 198 test xanh (2 boot-with-injected-secret + 1 fail-fast-missing-secret), 0 warning (verified).
+- Context: secret KHÔNG được ở repo (F35) → dev nạp qua User-Secrets, test nạp qua test-config, prod qua env/Key Vault — TẤT CẢ đều nạp SAU thời điểm eager-read pre-Build. Eager validation lúc đăng ký khiến (a) không thể nạp secret muộn (test/User-Secrets ở một số đường), (b) `JwtTokenService` ctor (build `SymmetricSecurityKey`) nhận `JwtKeyRingOptions` concrete bound eager (rỗng) → ném lúc `RequiredPortsValidator` resolve.
+- Decision/Change: (1) `JwtKeyRingValidation` bọc trong `IValidateOptions<JwtKeyRingOptions>` (`JwtKeyRingOptionsValidator`) + `AddOptions<>().Configure(bind lazy).ValidateOnStart()` → validate lúc host START (sau Build). (2) Singleton concrete `JwtKeyRingOptions` = `sp => sp.GetRequiredService<IOptions<JwtKeyRingOptions>>().Value` (lazy, post-Build). (3) Bỏ `TryAddSingleton(keyRing)` eager ở `AddBedrockAuthCore` (JwtBearer vẫn bind local keyRing cho Issuer/Audience/ResolveKeys — resolver chạy lazy lúc verify token).
+- Rationale (verifiable): **Bản chất:** "validate-on-start" (design §9.4) NGHĨA LÀ validate lúc host start, không phải lúc đăng ký service. Eager-read pre-Build phá khả năng nạp secret muộn (đúng mô hình secret-ngoài-repo F35) — mà secret-ngoài-repo lại là YÊU CẦU của chính task 19. Hai yêu cầu (fail-fast + secret nạp muộn) chỉ đồng thời thỏa khi validation chạy SAU khi mọi nguồn config đã hợp nhất (post-Build) = `.ValidateOnStart()`. Đây là fix TẬN GỐC (đổi thời điểm validate), không phải vá (giữ eager rồi lách).
+- Alternatives: (a) giữ eager + nhét dev-secret placeholder trong appsettings (loại: secret/khóa-hợp-lệ trong repo, vi phạm F35 + scanner flag); (b) nạp secret qua env var lúc test (loại: env process-global → ô nhiễm giữa test, khó cô lập fail-fast test); (c) `.Validate(predicate,string)` (loại: mất thông điệp chi tiết — dùng `IValidateOptions` giữ message "HS256 ≥32 byte").
+- Consequences: JWT sai/thiếu → boot FAIL lúc start với `OptionsValidationException` (message chi tiết). `JwtTokenService` nhận key-ring post-Build (nạp muộn OK). `AddBedrockAuthCore` không còn đăng ký concrete `JwtKeyRingOptions` (đến từ `AddBedrockSecurity`). Tương đương AD-011/DV-012 tinh thần (fail-fast mọi môi trường) nhưng qua options-pattern chuẩn cho JWT.
+- Reversibility: Medium (đổi lại eager là quay về lỗ hổng nạp-muộn).
+- Traceability: F35/F7/F22, R25.2/R13, design §9.4, AD-008 (shared config), task 19 (siết task 9.2).
+
+---
+
+### AD-046 — CP1 literal-scan qua Mono.Cecil (quét `ldstr` + `const string` trong IL) — hoàn tất no-business-in-core, resolves AD-022
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI (implementation-time) — hoàn tất phần literal của CP1 mà AD-022 đã hoãn sang task 20
+- Provenance/Evidence: design CP1 "∀ type t trong Bedrock.*, tên/namespace/**chuỗi** của t KHÔNG chứa guest|room|resort|admin|staff"; AD-022 ghi rõ reflection chỉ bắt tên, hoãn literal sang task 20. Impl `tests/Bedrock.ArchitectureTests/NoBusinessInCoreLiteralTests.cs` (Mono.Cecil 0.11.6) quét `OpCodes.Ldstr` + `FieldDefinition.HasConstant` trên 5 assembly `Bedrock.*` (Domain/Messaging.Contracts/Application/Infrastructure/Api). Chạy thật: 0 vi phạm (lõi sạch literal) + negative control (assembly test bẩn → bắt được seed) xanh; 199 test, 0 warning (verified).
+- Context: reflection/NetArchTest CHỈ thấy metadata (tên type/member) — KHÔNG thấy chuỗi literal trong thân method (vd hằng path/role nghiệp vụ lọt vào lõi). Cần quét IL để phủ nốt CP1. `System.Reflection.Metadata` (BCL) không expose enumerate #US heap gọn; decode IL thủ công cần bảng opcode đầy đủ (dễ sai). Mono.Cecil decode IL đúng chuẩn + đã là transitive-dep của NetArchTest.Rules.
+- Decision/Change: Thêm `Mono.Cecil` (PackageReference tường minh, pin 0.11.6) vào `Bedrock.ArchitectureTests`; quét `ldstr` (literal thân method) + `const string` (hằng field) trên toàn 5 assembly `Bedrock.*`, đọc DLL từ **bytes** (`MemoryStream`) để không khoá file. Token cấm case-insensitive `guest|room|resort|admin|staff`. Có negative control (scan chính assembly test — vốn chứa mảng token → phải ra khác rỗng). Đồng thời mở rộng `NoBusinessInCoreTests` (name-scan) ra đủ 5 assembly (trước chỉ 3).
+- Rationale (verifiable): **Bản chất:** CP1 gồm cả literal (design nói rõ "chuỗi của t"); bỏ literal là để hở đúng thứ F2/F15 lo (hằng path/role nghiệp vụ lọt lõi). Mono.Cecil là công cụ decode-IL đúng đắn, chi phí thấp (đã có transitive), tránh tự viết IL-decoder dễ sai. Đọc bytes tránh lock DLL đang nạp (chạy song song an toàn).
+- Alternatives: (a) `System.Reflection.Metadata` tự decode IL (loại: cần bảng opcode đầy đủ để skip operand — dễ sai/false-positive); (b) quét raw #US heap (loại: API BCL không expose gọn); (c) source-scan .cs (loại: không thấy code generated + fragile theo layout file).
+- Consequences: mỗi build chạy Cecil scan 5 DLL (nhanh, <150ms). Match là SUBSTRING case-insensitive → nếu sau này có literal hạ tầng vô tình chứa token (vd cột DB "showroom") sẽ báo — khi đó cân nhắc word-boundary; hiện 0 false-positive.
+- Reversibility: High (test-only, gỡ package + file là xong).
+- Traceability: CP1/I1/F2/F3/F4, R1.1, design §Correctness Properties, resolves AD-022, task 20.
+
+---
+
+### AD-047 — Outbox retention: base cấp LOGIC `PurgeAsync` (Host lên lịch), TTL mặc định processed 7 ngày / dead-letter giữ vô thời hạn
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI (implementation-time) — design/R8.5 nói "dọn outbox" nhưng KHÔNG chốt kiến trúc (job vs hosted-service) lẫn con số TTL
+- Provenance/Evidence: R8.5 (retention/cleanup outbox); impl `platform/src/Bedrock.Infrastructure/Persistence/Messaging/OutboxRetentionOptions.cs` (`ProcessedRetention = TimeSpan.FromDays(7)`, `DeadLetterRetention = null`) + `EfOutboxRetention.cs` (`PurgeAsync`, provider-conditional) + DI `AddOutboxRetention<TContext>`; guard `platform/tests/Bedrock.Infrastructure.Tests/OutboxRetentionTests.cs` (3 test: xoá đúng processed-cũ giữ pending/processed-mới/dead-letter; dead-letter cũ chỉ xoá khi bật TTL; 0-khi-không-có-gì-hết-hạn). Build 0 warning; 203 test xanh (verified `dotnet test Platform.slnx`).
+- Context: bảng `outbox_message` phình vô hạn nếu không dọn (mỗi event là một row, giữ mãi cả sau publish). Dead-letter là CỘT trên chính bảng (AD-003, không bảng DLQ riêng) → job dọn phải phân biệt row đã-publish (dọn được) vs pending (KHÔNG được mất) vs dead-letter (cần soi/replay thủ công). Design để mở CẢ (a) đặt job ở đâu và (b) TTL bao nhiêu.
+- Decision/Change: (1) **Base cấp LOGIC** `EfOutboxRetention<TContext>.PurgeAsync()` + `AddOutboxRetention<TContext>` (scoped, named-options per-context); **Host lên lịch** chạy định kỳ — base KHÔNG có hosted-service. (2) TTL mặc định: `ProcessedRetention = 7 ngày`; `DeadLetterRetention = null` (giữ vô thời hạn, chỉ dọn khi app set giá trị). (3) Vị từ xoá processed LUÔN kèm `dead_lettered_at == null` → không đụng dead-letter; pending (`processed_at == null`) không bao giờ khớp. (4) Provider-conditional (mirror `EfOutboxDispatcher`): Npgsql = `ExecuteDeleteAsync` set-based; provider khác (SQLite) = nạp client-side + `RemoveRange` + `SaveChanges` (SQLite không dịch được so sánh `DateTimeOffset`, cùng lý do DV-010).
+- Rationale (verifiable): **Bản chất — nhất quán trách nhiệm:** dispatcher (task 7.3) đã theo mô hình "base cấp logic một-lượt, Host quyết lịch/threading" (base KHÔNG có hosted-service). Retention là cùng loại tác vụ nền → PHẢI theo cùng mô hình, nếu không platform có hai kiểu lịch trái ngược (drift kiến trúc). Base không áp scheduler vì lịch dọn là quyết định vận hành (tần suất, giờ thấp tải) thuộc app, không thuộc lõi domain-agnostic (F3). **TTL mặc định:** 7 ngày cho processed đủ cửa sổ đối soát/điều tra sự cố publish gần đây mà không giữ rác lâu; dead-letter giữ-vô-thời-hạn theo mặc định vì mất dead-letter = mất bằng chứng poison message (chỉ app biết khi nào đã export/xử lý xong để cho phép dọn) — mirror tinh thần AD-041 (con số mặc định hợp lý, promotable qua Options per-app). **An toàn:** điều kiện xoá bất biến "chỉ dọn cái đã hoàn tất publish / hoặc dead-letter đã quá TTL do app chủ động bật" → không mất message chưa gửi.
+- Alternatives: (a) base tự chạy `BackgroundService` dọn (loại: mâu thuẫn mô hình dispatcher — base không ôm scheduler; ép chu kỳ vào lõi); (b) xoá cả dead-letter theo cùng TTL processed (loại: mất bằng chứng poison trước khi kịp điều tra — nguy hiểm vận hành); (c) TTL cứng không cấu hình (loại: app khác nhau cần chính sách lưu trữ khác — compliance/audit); (d) TRUNCATE/xoá theo tuổi bất kể trạng thái (loại: mất pending = mất event chưa publish, phá at-least-once).
+- Consequences: Host phải wire scheduler (vd `BackgroundService`/Quartz) gọi `PurgeAsync` — chưa có Host job trong skeleton (giống dispatcher chưa có hosted-service). App muốn dọn dead-letter phải chủ động set `DeadLetterRetention`. Trên SQLite test đi nhánh client-side (không test được nhánh `ExecuteDeleteAsync` Npgsql — thuộc task 7.4 Testcontainers, cùng giới hạn DV-010).
+- Reversibility: High (thêm class + extension + options; đổi số TTL hoặc nâng scheduler cục bộ, không phá caller).
+- Traceability: R8.5, AD-003 (dead-letter là cột), AD-041 (tiền lệ default-number promotable), DV-010 (SQLite không dịch DateTimeOffset), design §7.2, task 7.5.

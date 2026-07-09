@@ -244,3 +244,13 @@ C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\tests\B
 C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\tests\Bedrock.Api.Tests\obj\Debug\net10.0\ref\Bedrock.Api.Tests.dll
 C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\tests\Bedrock.Api.Tests\bin\Debug\net10.0\Microsoft.Extensions.DependencyModel.dll
 C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\tests\Bedrock.Api.Tests\bin\Debug\net10.0\Scrutor.dll
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\tests\Bedrock.Api.Tests\bin\Debug\net10.0\Microsoft.Extensions.DependencyModel.dll
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\tests\Bedrock.Api.Tests\bin\Debug\net10.0\Scrutor.dll
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\tests\Bedrock.Api.Tests\bin\Debug\net10.0\Asp.Versioning.Abstractions.dll
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\tests\Bedrock.Api.Tests\bin\Debug\net10.0\Asp.Versioning.Http.dll
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\tests\Bedrock.Api.Tests\bin\Debug\net10.0\OpenTelemetry.dll
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\tests\Bedrock.Api.Tests\bin\Debug\net10.0\OpenTelemetry.Api.dll
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\tests\Bedrock.Api.Tests\bin\Debug\net10.0\OpenTelemetry.Api.ProviderBuilderExtensions.dll
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\tests\Bedrock.Api.Tests\bin\Debug\net10.0\OpenTelemetry.Exporter.OpenTelemetryProtocol.dll
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\tests\Bedrock.Api.Tests\bin\Debug\net10.0\OpenTelemetry.Extensions.Hosting.dll
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\tests\Bedrock.Api.Tests\bin\Debug\net10.0\OpenTelemetry.Instrumentation.AspNetCore.dll

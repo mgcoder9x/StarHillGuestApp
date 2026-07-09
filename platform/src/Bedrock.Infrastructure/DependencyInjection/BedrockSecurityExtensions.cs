@@ -7,6 +7,7 @@ using Bedrock.Infrastructure.Tokens;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace Bedrock.Infrastructure.DependencyInjection;
 
@@ -35,12 +36,16 @@ public static class BedrockSecurityExtensions
 
         services.TryAddSingleton<ITokenGenerator, CryptoTokenGenerator>();
 
-        // JWT key-ring: bind + validate-on-start (fail-fast F35). TryAddSingleton để idempotent nếu Api đã bind
-        // cùng section "Jwt" (AD-008 — chia sẻ qua config, không qua reference).
-        var keyRing = new JwtKeyRingOptions();
-        configuration.GetSection(JwtKeyRingOptions.SectionName).Bind(keyRing);
-        JwtKeyRingValidation.Validate(keyRing);
-        services.TryAddSingleton(keyRing);
+        // JWT key-ring: VALIDATE-ON-START (design §9.4/F35) — validate lúc host START (sau Build), KHÔNG lúc
+        // đăng ký, để config nạp muộn (User-Secrets/env/test) được thấy mà vẫn fail-fast chặn boot khi sai.
+        // Bind LAZY qua Configure (đọc config sống ở thời điểm build options) — tránh đọc eager pre-Build.
+        services.AddOptions<JwtKeyRingOptions>()
+            .Configure(options => configuration.GetSection(JwtKeyRingOptions.SectionName).Bind(options))
+            .ValidateOnStart();
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IValidateOptions<JwtKeyRingOptions>, JwtKeyRingOptionsValidator>());
+        // Consumer (JwtTokenService) inject JwtKeyRingOptions trực tiếp → lấy từ options đã bind/validate.
+        services.TryAddSingleton(sp => sp.GetRequiredService<IOptions<JwtKeyRingOptions>>().Value);
         services.TryAddSingleton<IJwtTokenService, JwtTokenService>();
 
         // Khai 3 port bảo mật là BẮT BUỘC → RequiredPortsValidator chặn boot nếu thiếu (fail-secure §5.5 + F7).

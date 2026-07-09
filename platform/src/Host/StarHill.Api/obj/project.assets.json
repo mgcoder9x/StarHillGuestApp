@@ -2,6 +2,38 @@
   "version": 4,
   "targets": {
     "net10.0": {
+      "Asp.Versioning.Abstractions/10.0.0": {
+        "type": "package",
+        "compile": {
+          "lib/net10.0/Asp.Versioning.Abstractions.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/Asp.Versioning.Abstractions.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Asp.Versioning.Http/10.0.0": {
+        "type": "package",
+        "dependencies": {
+          "Asp.Versioning.Abstractions": "10.0.0"
+        },
+        "compile": {
+          "lib/net10.0/Asp.Versioning.Http.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/Asp.Versioning.Http.dll": {
+            "related": ".xml"
+          }
+        },
+        "frameworkReferences": [
+          "Microsoft.AspNetCore.App"
+        ]
+      },
       "EFCore.NamingConventions/10.0.1": {
         "type": "package",
         "dependencies": {
@@ -285,6 +317,102 @@
           }
         }
       },
+      "OpenTelemetry/1.16.0": {
+        "type": "package",
+        "dependencies": {
+          "OpenTelemetry.Api.ProviderBuilderExtensions": "1.16.0"
+        },
+        "compile": {
+          "lib/net10.0/OpenTelemetry.dll": {
+            "related": ".dll.sigstore.json;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/OpenTelemetry.dll": {
+            "related": ".dll.sigstore.json;.xml"
+          }
+        }
+      },
+      "OpenTelemetry.Api/1.16.0": {
+        "type": "package",
+        "compile": {
+          "lib/net10.0/OpenTelemetry.Api.dll": {
+            "related": ".dll.sigstore.json;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/OpenTelemetry.Api.dll": {
+            "related": ".dll.sigstore.json;.xml"
+          }
+        }
+      },
+      "OpenTelemetry.Api.ProviderBuilderExtensions/1.16.0": {
+        "type": "package",
+        "dependencies": {
+          "OpenTelemetry.Api": "1.16.0"
+        },
+        "compile": {
+          "lib/net10.0/OpenTelemetry.Api.ProviderBuilderExtensions.dll": {
+            "related": ".dll.sigstore.json;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/OpenTelemetry.Api.ProviderBuilderExtensions.dll": {
+            "related": ".dll.sigstore.json;.xml"
+          }
+        }
+      },
+      "OpenTelemetry.Exporter.OpenTelemetryProtocol/1.16.0": {
+        "type": "package",
+        "dependencies": {
+          "OpenTelemetry": "1.16.0"
+        },
+        "compile": {
+          "lib/net10.0/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll": {
+            "related": ".dll.sigstore.json;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll": {
+            "related": ".dll.sigstore.json;.xml"
+          }
+        }
+      },
+      "OpenTelemetry.Extensions.Hosting/1.16.0": {
+        "type": "package",
+        "dependencies": {
+          "OpenTelemetry": "1.16.0"
+        },
+        "compile": {
+          "lib/net10.0/OpenTelemetry.Extensions.Hosting.dll": {
+            "related": ".dll.sigstore.json;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/OpenTelemetry.Extensions.Hosting.dll": {
+            "related": ".dll.sigstore.json;.xml"
+          }
+        }
+      },
+      "OpenTelemetry.Instrumentation.AspNetCore/1.16.0": {
+        "type": "package",
+        "dependencies": {
+          "OpenTelemetry.Api.ProviderBuilderExtensions": "[1.16.0, 2.0.0)"
+        },
+        "compile": {
+          "lib/net10.0/OpenTelemetry.Instrumentation.AspNetCore.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/OpenTelemetry.Instrumentation.AspNetCore.dll": {
+            "related": ".xml"
+          }
+        },
+        "frameworkReferences": [
+          "Microsoft.AspNetCore.App"
+        ]
+      },
       "Scrutor/7.0.0": {
         "type": "package",
         "dependencies": {
@@ -322,8 +450,12 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v10.0",
         "dependencies": {
+          "Asp.Versioning.Http": "10.0.0",
           "Bedrock.Application": "1.0.0",
-          "Microsoft.AspNetCore.Authentication.JwtBearer": "10.0.9"
+          "Microsoft.AspNetCore.Authentication.JwtBearer": "10.0.9",
+          "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.16.0",
+          "OpenTelemetry.Extensions.Hosting": "1.16.0",
+          "OpenTelemetry.Instrumentation.AspNetCore": "1.16.0"
         },
         "compile": {
           "bin/placeholder/Bedrock.Api.dll": {}
@@ -468,6 +600,42 @@
     }
   },
   "libraries": {
+    "Asp.Versioning.Abstractions/10.0.0": {
+      "sha512": "cMRE5nvNMfBgfkb0XFWst/7UtyXCjoAXnV0L4Scx4P9fcf0idgrj1Z0c+3ylsy01K4cOib7dKhCBfpg5z3r0Kg==",
+      "type": "package",
+      "path": "asp.versioning.abstractions/10.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE.txt",
+        "README.md",
+        "asp.versioning.abstractions.10.0.0.nupkg.sha512",
+        "asp.versioning.abstractions.nuspec",
+        "icon.png",
+        "lib/net10.0/Asp.Versioning.Abstractions.dll",
+        "lib/net10.0/Asp.Versioning.Abstractions.xml",
+        "lib/netstandard1.0/Asp.Versioning.Abstractions.dll",
+        "lib/netstandard1.0/Asp.Versioning.Abstractions.xml",
+        "lib/netstandard2.0/Asp.Versioning.Abstractions.dll",
+        "lib/netstandard2.0/Asp.Versioning.Abstractions.xml"
+      ]
+    },
+    "Asp.Versioning.Http/10.0.0": {
+      "sha512": "xmNm9FM2d20NKy7i1osEQysf7pJ4iJjWnM6e8CoeIhUREqG8nugsfC82pGpmzlatjAJL5T52ieSpyW+GFdSsSQ==",
+      "type": "package",
+      "path": "asp.versioning.http/10.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE.txt",
+        "README.md",
+        "asp.versioning.http.10.0.0.nupkg.sha512",
+        "asp.versioning.http.nuspec",
+        "icon.png",
+        "lib/net10.0/Asp.Versioning.Http.dll",
+        "lib/net10.0/Asp.Versioning.Http.xml"
+      ]
+    },
     "EFCore.NamingConventions/10.0.1": {
       "sha512": "Xs5k8XfNKPkkQSkGmZkmDI1je0prLTdxse+s8PgTFZxyBrlrTLzTBUTVJtQKSsbvu4y+luAv8DdtO5SALJE++A==",
       "type": "package",
@@ -826,6 +994,182 @@
         "postgresql.png"
       ]
     },
+    "OpenTelemetry/1.16.0": {
+      "sha512": "nE/Px3MUvQC8c0UG0DOP5OJE7vMtiMaPYi/6TkSS/o/O0s/oPq+8WaPYTVEPzb7lwu/QyLgknc+sFm2FjPXe2A==",
+      "type": "package",
+      "path": "opentelemetry/1.16.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE.TXT",
+        "README.md",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/net10.0/OpenTelemetry.dll",
+        "lib/net10.0/OpenTelemetry.dll.sigstore.json",
+        "lib/net10.0/OpenTelemetry.xml",
+        "lib/net462/OpenTelemetry.dll",
+        "lib/net462/OpenTelemetry.dll.sigstore.json",
+        "lib/net462/OpenTelemetry.xml",
+        "lib/net8.0/OpenTelemetry.dll",
+        "lib/net8.0/OpenTelemetry.dll.sigstore.json",
+        "lib/net8.0/OpenTelemetry.xml",
+        "lib/net9.0/OpenTelemetry.dll",
+        "lib/net9.0/OpenTelemetry.dll.sigstore.json",
+        "lib/net9.0/OpenTelemetry.xml",
+        "lib/netstandard2.0/OpenTelemetry.dll",
+        "lib/netstandard2.0/OpenTelemetry.dll.sigstore.json",
+        "lib/netstandard2.0/OpenTelemetry.xml",
+        "lib/netstandard2.1/OpenTelemetry.dll",
+        "lib/netstandard2.1/OpenTelemetry.dll.sigstore.json",
+        "lib/netstandard2.1/OpenTelemetry.xml",
+        "opentelemetry-icon-color.png",
+        "opentelemetry.1.16.0.nupkg.sha512",
+        "opentelemetry.nuspec"
+      ]
+    },
+    "OpenTelemetry.Api/1.16.0": {
+      "sha512": "WZP8Eb6vZTeNqeV+fjBitc7iefBoTHIhaWorqg/h/YiQBlcQJu0bICuTqKV0XRyjiE0eWs80yLlnUtHAFSkFWA==",
+      "type": "package",
+      "path": "opentelemetry.api/1.16.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE.TXT",
+        "README.md",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/net10.0/OpenTelemetry.Api.dll",
+        "lib/net10.0/OpenTelemetry.Api.dll.sigstore.json",
+        "lib/net10.0/OpenTelemetry.Api.xml",
+        "lib/net462/OpenTelemetry.Api.dll",
+        "lib/net462/OpenTelemetry.Api.dll.sigstore.json",
+        "lib/net462/OpenTelemetry.Api.xml",
+        "lib/net8.0/OpenTelemetry.Api.dll",
+        "lib/net8.0/OpenTelemetry.Api.dll.sigstore.json",
+        "lib/net8.0/OpenTelemetry.Api.xml",
+        "lib/net9.0/OpenTelemetry.Api.dll",
+        "lib/net9.0/OpenTelemetry.Api.dll.sigstore.json",
+        "lib/net9.0/OpenTelemetry.Api.xml",
+        "lib/netstandard2.0/OpenTelemetry.Api.dll",
+        "lib/netstandard2.0/OpenTelemetry.Api.dll.sigstore.json",
+        "lib/netstandard2.0/OpenTelemetry.Api.xml",
+        "opentelemetry-icon-color.png",
+        "opentelemetry.api.1.16.0.nupkg.sha512",
+        "opentelemetry.api.nuspec"
+      ]
+    },
+    "OpenTelemetry.Api.ProviderBuilderExtensions/1.16.0": {
+      "sha512": "hZwaHAkXvUNn9+cS+vEvYBgIrIQOQRz2cIRUODZ5gxHsDsLeNCueLgZFkybopjE0jUhLut6lm5eL3LTqbW0hMg==",
+      "type": "package",
+      "path": "opentelemetry.api.providerbuilderextensions/1.16.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE.TXT",
+        "README.md",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/net10.0/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+        "lib/net10.0/OpenTelemetry.Api.ProviderBuilderExtensions.dll.sigstore.json",
+        "lib/net10.0/OpenTelemetry.Api.ProviderBuilderExtensions.xml",
+        "lib/net462/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+        "lib/net462/OpenTelemetry.Api.ProviderBuilderExtensions.dll.sigstore.json",
+        "lib/net462/OpenTelemetry.Api.ProviderBuilderExtensions.xml",
+        "lib/net8.0/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+        "lib/net8.0/OpenTelemetry.Api.ProviderBuilderExtensions.dll.sigstore.json",
+        "lib/net8.0/OpenTelemetry.Api.ProviderBuilderExtensions.xml",
+        "lib/net9.0/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+        "lib/net9.0/OpenTelemetry.Api.ProviderBuilderExtensions.dll.sigstore.json",
+        "lib/net9.0/OpenTelemetry.Api.ProviderBuilderExtensions.xml",
+        "lib/netstandard2.0/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+        "lib/netstandard2.0/OpenTelemetry.Api.ProviderBuilderExtensions.dll.sigstore.json",
+        "lib/netstandard2.0/OpenTelemetry.Api.ProviderBuilderExtensions.xml",
+        "opentelemetry-icon-color.png",
+        "opentelemetry.api.providerbuilderextensions.1.16.0.nupkg.sha512",
+        "opentelemetry.api.providerbuilderextensions.nuspec"
+      ]
+    },
+    "OpenTelemetry.Exporter.OpenTelemetryProtocol/1.16.0": {
+      "sha512": "gzYLY8sVDY5FYtVlCYSzBYX53xslRlvBLxwFYOdNIhc76SgKdFYUoDQXOeQI3WPBCrZp51QNcP6fZHh1+HtpIQ==",
+      "type": "package",
+      "path": "opentelemetry.exporter.opentelemetryprotocol/1.16.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE.TXT",
+        "README.md",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/net10.0/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+        "lib/net10.0/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll.sigstore.json",
+        "lib/net10.0/OpenTelemetry.Exporter.OpenTelemetryProtocol.xml",
+        "lib/net462/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+        "lib/net462/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll.sigstore.json",
+        "lib/net462/OpenTelemetry.Exporter.OpenTelemetryProtocol.xml",
+        "lib/net8.0/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+        "lib/net8.0/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll.sigstore.json",
+        "lib/net8.0/OpenTelemetry.Exporter.OpenTelemetryProtocol.xml",
+        "lib/net9.0/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+        "lib/net9.0/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll.sigstore.json",
+        "lib/net9.0/OpenTelemetry.Exporter.OpenTelemetryProtocol.xml",
+        "lib/netstandard2.0/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+        "lib/netstandard2.0/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll.sigstore.json",
+        "lib/netstandard2.0/OpenTelemetry.Exporter.OpenTelemetryProtocol.xml",
+        "lib/netstandard2.1/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+        "lib/netstandard2.1/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll.sigstore.json",
+        "lib/netstandard2.1/OpenTelemetry.Exporter.OpenTelemetryProtocol.xml",
+        "opentelemetry-icon-color.png",
+        "opentelemetry.exporter.opentelemetryprotocol.1.16.0.nupkg.sha512",
+        "opentelemetry.exporter.opentelemetryprotocol.nuspec"
+      ]
+    },
+    "OpenTelemetry.Extensions.Hosting/1.16.0": {
+      "sha512": "/YfrO5MRaA156vhNanYGPX2JjOwKUrA0+Jf7ltT2eD3VkfHqXcEJY5Oxt/nWH8lqBOTc1nJpn2soBtD5Cml8Dg==",
+      "type": "package",
+      "path": "opentelemetry.extensions.hosting/1.16.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE.TXT",
+        "README.md",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/net10.0/OpenTelemetry.Extensions.Hosting.dll",
+        "lib/net10.0/OpenTelemetry.Extensions.Hosting.dll.sigstore.json",
+        "lib/net10.0/OpenTelemetry.Extensions.Hosting.xml",
+        "lib/net462/OpenTelemetry.Extensions.Hosting.dll",
+        "lib/net462/OpenTelemetry.Extensions.Hosting.dll.sigstore.json",
+        "lib/net462/OpenTelemetry.Extensions.Hosting.xml",
+        "lib/net8.0/OpenTelemetry.Extensions.Hosting.dll",
+        "lib/net8.0/OpenTelemetry.Extensions.Hosting.dll.sigstore.json",
+        "lib/net8.0/OpenTelemetry.Extensions.Hosting.xml",
+        "lib/net9.0/OpenTelemetry.Extensions.Hosting.dll",
+        "lib/net9.0/OpenTelemetry.Extensions.Hosting.dll.sigstore.json",
+        "lib/net9.0/OpenTelemetry.Extensions.Hosting.xml",
+        "lib/netstandard2.0/OpenTelemetry.Extensions.Hosting.dll",
+        "lib/netstandard2.0/OpenTelemetry.Extensions.Hosting.dll.sigstore.json",
+        "lib/netstandard2.0/OpenTelemetry.Extensions.Hosting.xml",
+        "opentelemetry-icon-color.png",
+        "opentelemetry.extensions.hosting.1.16.0.nupkg.sha512",
+        "opentelemetry.extensions.hosting.nuspec"
+      ]
+    },
+    "OpenTelemetry.Instrumentation.AspNetCore/1.16.0": {
+      "sha512": "vSC5EsmBVNcqXMh9BGkkq8zkoUjrg8ghBDb9zbKR8Bqjd05utjVgVft+fqsqQVsvlV5olGj1pBliHBngcIGSIg==",
+      "type": "package",
+      "path": "opentelemetry.instrumentation.aspnetcore/1.16.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE.TXT",
+        "README.md",
+        "lib/net10.0/OpenTelemetry.Instrumentation.AspNetCore.dll",
+        "lib/net10.0/OpenTelemetry.Instrumentation.AspNetCore.xml",
+        "lib/net8.0/OpenTelemetry.Instrumentation.AspNetCore.dll",
+        "lib/net8.0/OpenTelemetry.Instrumentation.AspNetCore.xml",
+        "lib/netstandard2.0/OpenTelemetry.Instrumentation.AspNetCore.dll",
+        "lib/netstandard2.0/OpenTelemetry.Instrumentation.AspNetCore.xml",
+        "opentelemetry-icon-color.png",
+        "opentelemetry.instrumentation.aspnetcore.1.16.0.nupkg.sha512",
+        "opentelemetry.instrumentation.aspnetcore.nuspec"
+      ]
+    },
     "Scrutor/7.0.0": {
       "sha512": "wHWaroody48jnlLoq/REwUltIFLxplXyHTP+sttrc8P7+jkiVqf38afDidJNv4qgD/6zz2NKOYg06xLZ1bG7wQ==",
       "type": "package",
@@ -934,21 +1278,21 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\k.nguyen.manh.toan\\.nuget\\packages\\": {}
+    "C:\\Users\\toann\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Host\\StarHill.Api\\StarHill.Api.csproj",
+      "projectUniqueName": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Host\\StarHill.Api\\StarHill.Api.csproj",
       "projectName": "StarHill.Api",
-      "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Host\\StarHill.Api\\StarHill.Api.csproj",
-      "packagesPath": "C:\\Users\\k.nguyen.manh.toan\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Host\\StarHill.Api\\obj\\",
+      "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Host\\StarHill.Api\\StarHill.Api.csproj",
+      "packagesPath": "C:\\Users\\toann\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Host\\StarHill.Api\\obj\\",
       "projectStyle": "PackageReference",
       "centralPackageVersionsManagementEnabled": true,
       "CentralPackageTransitivePinningEnabled": true,
       "configFilePaths": [
-        "C:\\Users\\k.nguyen.manh.toan\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\toann\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net10.0"
@@ -961,17 +1305,17 @@
           "framework": "net10.0",
           "targetAlias": "net10.0",
           "projectReferences": {
-            "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Api\\Bedrock.Api.csproj": {
-              "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Api\\Bedrock.Api.csproj"
+            "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Api\\Bedrock.Api.csproj": {
+              "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Api\\Bedrock.Api.csproj"
             },
-            "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Infrastructure\\Bedrock.Infrastructure.csproj": {
-              "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Infrastructure\\Bedrock.Infrastructure.csproj"
+            "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Infrastructure\\Bedrock.Infrastructure.csproj": {
+              "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Infrastructure\\Bedrock.Infrastructure.csproj"
             },
-            "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Modules\\Identity\\Identity.Api\\Identity.Api.csproj": {
-              "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Modules\\Identity\\Identity.Api\\Identity.Api.csproj"
+            "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Modules\\Identity\\Identity.Api\\Identity.Api.csproj": {
+              "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Modules\\Identity\\Identity.Api\\Identity.Api.csproj"
             },
-            "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Modules\\Identity\\Identity.Infrastructure\\Identity.Infrastructure.csproj": {
-              "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Modules\\Identity\\Identity.Infrastructure\\Identity.Infrastructure.csproj"
+            "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Modules\\Identity\\Identity.Infrastructure\\Identity.Infrastructure.csproj": {
+              "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Modules\\Identity\\Identity.Infrastructure\\Identity.Infrastructure.csproj"
             }
           }
         }
@@ -1001,6 +1345,7 @@
           }
         },
         "centralPackageVersions": {
+          "Asp.Versioning.Http": "10.0.0",
           "coverlet.collector": "6.0.4",
           "EFCore.NamingConventions": "10.0.1",
           "FluentValidation": "12.1.1",
@@ -1019,8 +1364,12 @@
           "Microsoft.Extensions.Logging.Abstractions": "10.0.9",
           "Microsoft.IdentityModel.JsonWebTokens": "8.0.1",
           "Microsoft.NET.Test.Sdk": "17.14.1",
+          "Mono.Cecil": "0.11.6",
           "NetArchTest.Rules": "1.3.2",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "10.0.2",
+          "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.16.0",
+          "OpenTelemetry.Extensions.Hosting": "1.16.0",
+          "OpenTelemetry.Instrumentation.AspNetCore": "1.16.0",
           "Scrutor": "7.0.0",
           "SQLitePCLRaw.lib.e_sqlite3": "3.50.3",
           "xunit": "2.9.3",
@@ -1045,7 +1394,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Users\\k.nguyen.manh.toan\\AppData\\Local\\Microsoft\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
@@ -1465,6 +1814,10 @@
   },
   "centralTransitiveDependencyGroups": {
     "net10.0": {
+      "Asp.Versioning.Http": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[10.0.0, )"
+      },
       "EFCore.NamingConventions": {
         "include": "Runtime, Compile, Native, BuildTransitive",
         "version": "[10.0.1, )"
@@ -1491,6 +1844,18 @@
       "Microsoft.IdentityModel.JsonWebTokens": {
         "include": "Runtime, Compile, Native, BuildTransitive",
         "version": "[8.0.1, )"
+      },
+      "OpenTelemetry.Exporter.OpenTelemetryProtocol": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[1.16.0, )"
+      },
+      "OpenTelemetry.Extensions.Hosting": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[1.16.0, )"
+      },
+      "OpenTelemetry.Instrumentation.AspNetCore": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[1.16.0, )"
       },
       "Scrutor": {
         "include": "Runtime, Compile, Native, BuildTransitive",

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Adapter mẫu (F29, matrix §3.3): reference CHỈ Bedrock.Application (port IEventBusPublisher + OutboxMessage,
+    + Domain/Messaging.Contracts bắc cầu). KHÔNG ref module/adapter khác/Bedrock.Api/Bedrock.Infrastructure —
+    enforced bởi CP3 (Bedrock.ArchitectureTests/AdapterIsolationTests). SDK công nghệ (RabbitMQ.Client) +
+    resilience (Microsoft.Extensions.Resilience/Polly v8) CHỈ sống ở đây (I2/§17), không rò vào lõi.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\Bedrock.Application\Bedrock.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="RabbitMQ.Client" />
+    <PackageReference Include="Microsoft.Extensions.Resilience" />
+  </ItemGroup>
+</Project>

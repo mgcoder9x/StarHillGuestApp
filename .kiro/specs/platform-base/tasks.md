@@ -129,7 +129,7 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
   - Nghiệm thu: test xanh (cần Docker; skip-có-điều-kiện nếu thiếu) + 0 warning.
   - _Requirements: 32.2_
   - _Correctness Properties: CP6, CP8, CP15_
-- [ ] 7.5 Retention/cleanup job cho outbox (dead-letter = cột, quyết định đã chốt)
+- [x] 7.5 Retention/cleanup job cho outbox (dead-letter = cột, quyết định đã chốt)
   - Background job dọn định kỳ row `processed_at IS NOT NULL` quá TTL cấu hình được, và giữ/di-trú row `dead_lettered_at` theo chính sách (mặc định giữ để soi, có thể export). Vì dead-letter là cột trên `outbox_message` (không bảng DLQ riêng), job này giữ bảng gọn thay cho việc move sang bảng khác.
   - Nghiệm thu: unit test chọn đúng tập row hết hạn (không xóa nhầm pending/dead-letter) + 0 warning.
   - _Requirements: 8.5_
@@ -220,7 +220,7 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
   - Nghiệm thu: unit test từng behavior + test thứ tự pipeline + 0 warning.
   - _Requirements: 8.1, 26.3_
 
-- [ ] 16. Khuôn Module + Host + discovery (F1/F13/F30/F31)
+- [x] 16. Khuôn Module + Host + discovery (F1/F13/F30/F31)
 - [x] 16.1 Tạo module mẫu `Identity` theo khuôn 5-project + schema riêng
   - `Identity.Contracts/Domain/Application/Infrastructure/Api`; schema `identity` (gọi `AddOutboxInbox()` + `AddRefreshTokens("identity")`); use case refresh rotation dùng `IRefreshTokenStore`; `AddIdentityModule(cfg)` một dòng; đăng ký health check riêng của module.
   - Nghiệm thu: build 0 warning + unit test use case với fake store.
@@ -229,29 +229,29 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
   - `Program.cs` compose `AddBedrockCore/Api/Persistence` + adapters + modules; map qua `IEndpointModule`; không `Program.cs`/endpoint mẫu trong `Bedrock.*`.
   - Nghiệm thu: host boot xanh (WebApplicationFactory smoke) + 0 warning.
   - _Requirements: 2.1, 2.2, 2.3_
-- [ ] 16.3 Architecture tests: module boundary + single composition root + use-case-không-Dispatch
+- [x] 16.3 Architecture tests: module boundary + single composition root + use-case-không-Dispatch
   - `Modules.A` không ref internal của `Modules.B` (chỉ Contracts); chỉ Host ref Api+Infra+Adapters; type implement `IUseCase*` không phụ thuộc namespace `*.Messaging.Dispatch` (+ negative control mỗi luật).
   - Nghiệm thu: arch tests xanh + 0 warning.
   - _Requirements: 6.1, 6.2, 6.3, 21.2_
   - _Correctness Properties: CP4, CP5, CP11_
 
-- [ ] 17. Versioning (F32)
+- [x] 17. Versioning (F32)
   - API versioning (Asp.Versioning) + OpenAPI group theo version; integration-event `SchemaVersion` evolution + tolerant reader; snapshot test schema event.
   - Nghiệm thu: test snapshot + endpoint /v1 hoạt động + 0 warning.
   - _Requirements: 22.1, 22.2, 22.3, 32.4_
 
-- [ ] 18. Telemetry & correlation unity (F34/F21)
+- [x] 18. Telemetry & correlation unity (F34/F21)
   - OpenTelemetry traces/metrics/logs + W3C traceparent (HTTP + bus/outbox `correlation_id`); thống nhất `X-Correlation-Id` = `traceId` = trace hiện hành (resolve 1 lần vào `HttpContext.Items`); metrics tối thiểu R24.3 (kể cả outbox lag + dead-letter count).
   - Nghiệm thu: integration test header == ProblemDetails.traceId + metrics xuất hiện + 0 warning.
   - _Requirements: 24.1, 24.2, 24.3_
   - _Correctness Properties: CP10_
 
-- [ ] 19. Secrets & config governance (F35)
+- [x] 19. Secrets & config governance (F35)
   - User-Secrets (dev) / env/Key Vault (prod); `appsettings.json` chỉ non-secret + placeholder; validate-on-start phủ mọi options bắt buộc; kiểm không có secret trong repo.
   - Nghiệm thu: host boot fail khi thiếu options bắt buộc (test) + 0 warning.
   - _Requirements: 25.1, 25.2_
 
-- [ ] 20. Contract tests + hoàn tất no-business-in-core cuối cùng
+- [x] 20. Contract tests + hoàn tất no-business-in-core cuối cùng
   - Snapshot registry `Error.Code` (reflection — phát hiện đổi/mất code); rà soát toàn `Bedrock.*` pass no-business-in-core; xác nhận toàn bộ CP1–CP15 có test tương ứng.
   - Nghiệm thu: contract tests xanh + bảng CP→test đầy đủ + 0 warning.
   - _Requirements: 1.1, 29.1, 32.4_

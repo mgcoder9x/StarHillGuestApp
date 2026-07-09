@@ -34,6 +34,25 @@ public static class OutboxDispatcherExtensions
     }
 
     /// <summary>
+    /// Đăng ký job retention outbox cho DbContext <typeparamref name="TContext"/> (per-module, task 7.5).
+    /// Base chỉ cung cấp LOGIC (<see cref="EfOutboxRetention{TContext}"/>); Host lên lịch chạy định kỳ — nhất
+    /// quán với dispatcher (base KHÔNG có hosted-service). Named-options theo context: mỗi module đặt TTL riêng.
+    /// </summary>
+    public static IServiceCollection AddOutboxRetention<TContext>(
+        this IServiceCollection services,
+        Action<OutboxRetentionOptions>? configure = null)
+        where TContext : PlatformDbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddOptions<OutboxRetentionOptions>(OutboxRetentionOptions.KeyFor<TContext>())
+            .Configure(options => configure?.Invoke(options));
+
+        services.AddScoped<EfOutboxRetention<TContext>>();
+        return services;
+    }
+
+    /// <summary>
     /// Build registry <c>EventType → CLR type</c> từ các assembly <c>*.Contracts</c> (Host gọi lúc boot).
     /// Singleton (map bất biến). EventType lạ → dead-letter phía consumer, không crash (R17.3).
     /// </summary>

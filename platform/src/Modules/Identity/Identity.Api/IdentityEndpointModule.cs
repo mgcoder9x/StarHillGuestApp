@@ -1,6 +1,8 @@
+using Asp.Versioning.Builder;
 using Bedrock.Api.Endpoints;
 using Bedrock.Api.ErrorHandling;
 using Bedrock.Api.Observability;
+using Bedrock.Api.Versioning;
 using Bedrock.Application.UseCases;
 using Identity.Application.RefreshToken;
 using Microsoft.AspNetCore.Builder;
@@ -26,10 +28,12 @@ public sealed class IdentityEndpointModule : IEndpointModule
     {
         ArgumentNullException.ThrowIfNull(endpoints);
 
-        var group = endpoints.MapGroup("/identity");
+        // Versioned qua cơ chế base (F32): route thật = /v1/identity/token/refresh.
+        var group = endpoints.MapVersionedGroup("/identity", BedrockApiVersioning.V1);
 
         group.MapPost("/token/refresh", RefreshAsync)
             .AllowAnonymous()
+            .MapToApiVersion(BedrockApiVersioning.V1)
             .WithName("IdentityRefreshToken");
     }
 

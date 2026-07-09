@@ -5,10 +5,9 @@ namespace Bedrock.ArchitectureTests;
 
 /// <summary>
 /// CP1 (I1/F2/F3/F4): lõi <c>Bedrock.*</c> KHÔNG chứa khái niệm nghiệp vụ.
-/// PHẠM VI KIỂM CỦA TEST NÀY: tên type + namespace (metadata qua reflection). Đây là phần CP1 mà công cụ
-/// tĩnh bắt được. Việc quét CHUỖI LITERAL trong thân method (vd hằng "/api/guest/...") KHÔNG do reflection/
-/// NetArchTest bắt được — sẽ phủ bằng cơ chế khác (source/IL scan) ở task 20 (xem N-021). KHÔNG tuyên bố
-/// test này phủ literal — nói đúng giới hạn.
+/// PHẠM VI TEST NÀY: tên type + namespace (metadata qua reflection) trên TOÀN BỘ 5 assembly <c>Bedrock.*</c>.
+/// Phần quét CHUỖI LITERAL trong IL (ldstr + const) do <see cref="NoBusinessInCoreLiteralTests"/> phủ (task 20).
+/// Hai test bổ trợ nhau → CP1 phủ cả tên lẫn literal.
 /// </summary>
 public sealed class NoBusinessInCoreTests
 {
@@ -34,27 +33,17 @@ public sealed class NoBusinessInCoreTests
     }
 
     [Fact]
-    public void Domain_type_names_should_be_business_agnostic()
+    public void Bedrock_core_type_names_should_be_business_agnostic()
     {
-        var violations = FindForbiddenTypeNames(SafeGetTypes(CoreAssemblies.Domain));
+        var violations = new List<string>();
+        foreach (var assembly in CoreAssemblies.AllBedrock)
+        {
+            violations.AddRange(FindForbiddenTypeNames(SafeGetTypes(assembly)));
+        }
 
-        Assert.True(violations.Count == 0, $"Rò nghiệp vụ trong Bedrock.Domain: {string.Join(", ", violations)}");
-    }
-
-    [Fact]
-    public void MessagingContracts_type_names_should_be_business_agnostic()
-    {
-        var violations = FindForbiddenTypeNames(SafeGetTypes(CoreAssemblies.MessagingContracts));
-
-        Assert.True(violations.Count == 0, $"Rò nghiệp vụ trong Bedrock.Messaging.Contracts: {string.Join(", ", violations)}");
-    }
-
-    [Fact]
-    public void Application_type_names_should_be_business_agnostic()
-    {
-        var violations = FindForbiddenTypeNames(SafeGetTypes(CoreAssemblies.Application));
-
-        Assert.True(violations.Count == 0, $"Rò nghiệp vụ trong Bedrock.Application: {string.Join(", ", violations)}");
+        Assert.True(
+            violations.Count == 0,
+            $"Rò khái niệm nghiệp vụ trong tên type Bedrock.*: {string.Join(", ", violations)}");
     }
 
     // === NEGATIVE CONTROL: chứng minh scanner THẬT SỰ bắt được vi phạm (không phải luôn trả rỗng) ===

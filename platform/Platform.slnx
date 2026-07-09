@@ -21,6 +21,7 @@
     <Project Path="tests/Bedrock.ArchitectureTests/Bedrock.ArchitectureTests.csproj" />
     <Project Path="tests/Bedrock.Api.Tests/Bedrock.Api.Tests.csproj" />
     <Project Path="tests/Bedrock.Infrastructure.Tests/Bedrock.Infrastructure.Tests.csproj" />
+    <Project Path="tests/Bedrock.ContractTests/Bedrock.ContractTests.csproj" />
     <Project Path="tests/Modules/Identity.UnitTests/Identity.UnitTests.csproj" />
     <Project Path="tests/Host/StarHill.Api.Tests/StarHill.Api.Tests.csproj" />
   </Folder>

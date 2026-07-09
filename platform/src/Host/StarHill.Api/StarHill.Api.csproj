@@ -4,6 +4,11 @@
     Bedrock.Api + Bedrock.Infrastructure + Modules (Api-half + Infra-half). Không project nào khác ráp cả hai phía.
     Host CHỌN provider DB (Npgsql) + bật adapter/module nào. Không có Program.cs/endpoint nghiệp vụ trong Bedrock.*.
   -->
+  <PropertyGroup>
+    <!-- Secret governance (F35/task 19): dev nạp secret (Jwt.Keys[].Secret, mật khẩu DB) qua User-Secrets —
+         WebApplication.CreateBuilder tự load ở môi trường Development. KHÔNG commit secret vào repo. -->
+    <UserSecretsId>starhill-api-dev-8f3c1e6a</UserSecretsId>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Bedrock.Api\Bedrock.Api.csproj" />
     <ProjectReference Include="..\..\Bedrock.Infrastructure\Bedrock.Infrastructure.csproj" />

@@ -196,3 +196,31 @@
 - Consequences: endpoint refresh trả access + refresh token; client thay thế refresh token cũ. Không đổi logic bảo mật §7.4 (mọi nhánh fail giữ nguyên `invalid_refresh_token`).
 - Reversibility: High (shape kết quả nội bộ module Identity, chưa có client thật).
 - Traceability: design §7.4, F5/F10, task 16.1.
+
+---
+
+### DV-015 — OpenAPI document-per-version HOÃN sang Host (base chưa dựng hạ tầng OpenAPI)
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI (implementation-time)
+- Provenance/Evidence: R22.1 "API versioning (Asp.Versioning) + OpenAPI group theo version + deprecation policy"; `tasks.md` task 17 acceptance = "test snapshot + endpoint /v1 hoạt động + 0 warning" (KHÔNG liệt kê OpenAPI trong nghiệm thu); grep `Bedrock.Api` — KHÔNG có `AddOpenApi`/Swashbuckle nào tồn tại.
+- Original (R22.1): versioning kèm "OpenAPI group theo version".
+- Changed to: base cấp CƠ CHẾ versioning (URL-segment + version set + report headers) và endpoint mang metadata `ApiVersion`; việc SINH OpenAPI document (Swagger UI, doc-per-version) để Host bật khi thêm hạ tầng OpenAPI.
+- Root cause (vì sao hoãn, nhìn bản chất): base HIỆN chưa có bất kỳ hạ tầng OpenAPI nào. Nhồi một OpenAPI stack chỉ để "nhóm theo version" là bolt-on lệch phạm vi task versioning + tăng bề mặt phụ thuộc mà chưa có nhu cầu trình bày. Bản chất "group theo version" = endpoint phải MANG version metadata để nhóm được — điều này ĐÃ có (version set + `MapToApiVersion`). Document generation là tầng TRÌNH BÀY, đúng chỗ là Host/tài liệu, làm khi thực sự cần (đúng I10: chỉ thêm khi cần).
+- Consequences: khi Host bật OpenAPI, nhóm theo version dựa `ApiVersion` metadata/group-name sẵn có (không phải làm lại base). Acceptance task 17 (snapshot + /v1 + 0 warning) VẪN đạt đầy đủ.
+- Reversibility: High (thêm OpenAPI ở Host không phá base; hoặc bổ sung `AddBedrockOpenApi` sau).
+- Traceability: R22.1, design §9.1/§3.2, task 17, I10.
+
+---
+
+### DV-016 — Logs pillar qua `Microsoft.Extensions.Logging` → OTel exporter (KHÔNG Serilog như design §9.3 ghi)
+- Status: Confirmed
+- Date: 2026-07-09
+- Decider: AI (implementation-time)
+- Provenance/Evidence: design §9.3 "logs (Serilog → OTLP)"; impl thật `AddBedrockObservability` dùng `ILoggingBuilder.AddOpenTelemetry(...)` (OpenTelemetry logging provider trên `Microsoft.Extensions.Logging`) — KHÔNG thêm Serilog. Build 0 warning; OTel providers registered test xanh.
+- Original (design §9.3): logs qua Serilog → OTLP.
+- Changed to: logs qua `Microsoft.Extensions.Logging` (đã dùng khắp base — `[LoggerMessage]` source-gen ở `ApiLog`/`PipelineLog`) + OpenTelemetry logging exporter → OTLP.
+- Root cause (vì sao đổi, nhìn bản chất): base ĐÃ chuẩn hoá trên `ILogger`/`Microsoft.Extensions.Logging` (source-gen, không alloc). OTel có sẵn cầu `ILogger → OTLP` (OpenTelemetry.Logs) → đạt ĐÚNG kết quả "logs → OTLP" mà KHÔNG cần kéo thêm Serilog (một logging framework thứ hai). Thêm Serilog = hai hệ logging song song, bề mặt phụ thuộc lớn hơn, lợi ích ~0 (OTLP là đích chung). "Serilog" trong design là GỢI Ý công nghệ, không phải ràng buộc; bản chất yêu cầu là "logs đi OTLP có cấu trúc" — đã đạt.
+- Consequences: một hệ logging (`ILogger`) xuyên suốt; Host muốn dùng Serilog vẫn cắm được (Serilog.Extensions.Logging) mà không phá base. Structured logging + scope giữ nguyên qua `ILogger`.
+- Reversibility: High (thêm Serilog ở Host là tuỳ chọn, không phá base).
+- Traceability: F34, design §9.3, R24.1, task 18.
