@@ -21,7 +21,7 @@ khong co bien do.
 | --- | --- | --- | --- |
 | P0 | API key da bi lo trong anh/thread | Key xuat hien tren man hinh va duoc tim thay nguyen van trong 2 session JSONL cuc bo | Thu hoi key cu va tao key moi truoc moi thao tac khac |
 | P1 | Desktop app bao thieu `HUNGNGUYEN_API_KEY` | Process scope co key, User va Machine scope khong co; log app co 2 loi dung chuoi nay | Luu key moi o User scope, thoat het app, dang xuat/dang nhap Windows hoac restart may, sau do mo app lai |
-| P2 | App khong hien `Custom` va model bi doi | Log tung ghi `gpt-5.6-sol`, sau do app ghi de thanh `gpt-5.5` khi chon model trong picker | Dat slug custom trong user `config.toml`; khong chon model curated trong picker neu muon giu slug custom |
+| P2 | App chua hien model custom va model bi doi | Khi app khong co key, picker chi co catalog fallback; log sau do ghi de thanh `gpt-5.5` khi chon model curated | Sau khi dat key va restart, catalog provider phai hien cac model 5.6; chon `GPT-5.6-Sol` hoac dat slug trong user config |
 | P3 | Tasks/Usage cua app bi `401` | Log co `254` loi `/wham/tasks/list` va `25` loi `/wham/usage` | Dang nhap ChatGPT/OpenAI rieng neu can tinh nang cloud; custom provider key khong thay the ChatGPT login |
 | P4 | PowerShell khong chay lenh `codex` | `codex.ps1` bi Execution Policy chan | Dung `codex.cmd` hoac binary bundled; khong can ha Execution Policy chi de test |
 | P5 | Approval co the bi `403` voi model noi bo | Luong auto-review trong phien chan doan goi `codex-auto-review` qua proxy va nhan `403` | Dung approval do user xac nhan, hoac proxy phai ho tro model reviewer; khong tu them config key khong duoc tai lieu hoa |
@@ -91,6 +91,11 @@ Da kiem tra truc tiep ma khong in key hoac response text:
 - Catalog co `gpt-5.6-sol`: co.
 - `POST /v1/responses` voi `gpt-5.5`: HTTP `200`.
 - `POST /v1/responses` voi `gpt-5.6-sol`: HTTP `200`.
+- `POST /v1/responses` voi `stream=true`: HTTP `200`, content type
+  `text/event-stream`, co du event tu `response.created` den
+  `response.completed` trong khoang `1.66` giay.
+- `codex debug models` khi doc dung `CODEX_HOME` va co key tra cac model
+  `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna` voi `visibility=list`.
 
 Vi vay khong can doi `base_url`, khong can doi sang Chat Completions, va khong
 can doi model de sua loi `Missing environment variable`.
@@ -110,12 +115,15 @@ Su kien quan trong trong log ngay `2026-07-10`:
   `newModel=gpt-5.5` sau thao tac trong picker.
 - Lines `2118` va `2508`: thread metadata that bai voi
   `Missing environment variable: HUNGNGUYEN_API_KEY`.
+- App goi app-server method `model/list` de lay du lieu cho model picker.
 - `/wham/tasks/list`: `254` lan HTTP `401`.
 - `/wham/usage`: `25` lan HTTP `401`.
 
-Ket luan ve menu `Custom` dua tren screenshot va log cua build nay, khong phai
-cam ket API/UI lau dai: app runtime da chap nhan slug `gpt-5.6-sol`, nhung picker
-chi hien model curated va co the ghi de slug custom.
+Ket luan ve menu dua tren screenshot, `model/list`, catalog runtime va log cua
+build nay, khong phai cam ket API/UI lau dai: app runtime chap nhan slug
+`gpt-5.6-sol`. Khi tien trinh khong co key, picker roi ve catalog curated; khi
+runtime co key, catalog provider danh dau cac model 5.6 la `list`, nen chung co
+the xuat hien trong dropdown sau khi restart app dung cach.
 
 ## 3. Tai sao extension chay nhung app loi
 
@@ -277,9 +285,16 @@ Sau khi dang xuat/dang nhap lai hoac restart may:
 
 1. Mo ChatGPT Codex app.
 2. Mo project.
-3. Tao `New task`; khong dung lai thread da fail de loai cache theo thread.
-4. Gui mot prompt ngan, vi du `Reply exactly OK`.
-5. Kiem tra khong con banner thieu environment variable.
+3. Mo model dropdown va kiem tra co `GPT-5.6-Sol`, `GPT-5.6-Terra` va
+   `GPT-5.6-Luna`.
+4. Chon `GPT-5.6-Sol` neu day la model mong muon.
+5. Tao `New task`; khong dung lai thread da fail de loai cache theo thread.
+6. Gui mot prompt ngan, vi du `Reply exactly OK`.
+7. Kiem tra khong con banner thieu environment variable.
+
+Neu dropdown van chi co model curated, dung `codex.cmd debug models` trong mot
+terminal moi. Neu lenh nay khong hien cac model 5.6 thi terminal/app van chua
+nhan dung key hoac `CODEX_HOME`.
 
 ### Buoc 5: Xac minh log moi
 
@@ -419,15 +434,18 @@ model = "gpt-5.6-sol"
 Build da kiem tra co cac dac diem:
 
 - Runtime tung nhan `gpt-5.6-sol` tu config.
-- Picker khong hien item `Custom` nhu extension.
+- Picker lay danh sach qua app-server `model/list`.
+- Khi app thieu key, picker chi hien catalog curated nhu screenshot.
+- Khi runtime co key, `codex debug models` thay `GPT-5.6-Sol`,
+  `GPT-5.6-Terra`, `GPT-5.6-Luna` voi `visibility=list`.
 - Chon GPT-5.5 trong picker goi `config/batchWrite` va ghi de global default.
 
-Quy tac van hanh neu can custom slug:
+Quy tac van hanh:
 
-1. Dong app.
-2. Sua user `config.toml`.
-3. Mo app lai va tao task moi.
-4. Khong chon model curated trong picker cua app.
+1. Dat key o User scope va restart day du.
+2. Mo dropdown; uu tien chon `GPT-5.6-Sol` neu no xuat hien.
+3. Neu dropdown chua refresh, dong app, sua user `config.toml`, roi mo app lai.
+4. Khong chon GPT-5.5/GPT-5.4 neu muon giu slug `gpt-5.6-sol`.
 5. Neu nghi bi ghi de, kiem tra hai dong `model` va `model_provider` ngay.
 
 ```powershell
@@ -436,6 +454,10 @@ Select-String "$env:USERPROFILE\.codex\config.toml" -Pattern @(
   '^model_provider\s*='
 )
 ```
+
+Khong can `model_catalog_json` cho provider nay: catalog runtime da co cac model
+5.6. Catalog override thu cong chi nen dung khi provider khong tra metadata model,
+vi moi entry con chua base instructions va cac capability flags cua Codex.
 
 ## 7. Profiles dung cho CLI
 
@@ -649,6 +671,8 @@ Sau rollback, thoat het app va mo lai trong environment moi.
 - [ ] `wire_api = "responses"`.
 - [ ] `model` la slug mong muon, khong phai chuoi `custom`.
 - [ ] Task moi khong con banner missing environment.
+- [ ] Dropdown hien `GPT-5.6-Sol` hoac `codex debug models` xac nhan model co
+      `visibility=list`.
 - [ ] `/v1/models` va `/v1/responses` tra `200` khi can chan doan.
 - [ ] Neu can Tasks/Usage, ChatGPT account da dang nhap rieng.
 - [ ] Khong chon model curated trong app picker sau khi dat custom slug.
@@ -679,4 +703,7 @@ Codex manual helper khong xac minh duoc response vi thieu header
 boi luong approval `403`. Vi vay tai lieu nay dung cac trang Markdown chinh thuc
 truc tiep o tren, cong voi log va test runtime cuc bo. Hanh vi menu `Custom` la
 ket luan co gioi han theo build `26.707.3748.0`, khong phai giao keo UI cho cac
-ban app sau.
+ban app sau. App-server V2 test da nap dung provider/model, nhung request tu child
+Codex trong sandbox bi chan network; phep chay ngoai sandbox bi approval reviewer
+tu choi `403`. Vi vay provider, streaming va model catalog da duoc xac minh,
+nhung GUI desktop sau khi dat key moi van can mot smoke test cuoi.
