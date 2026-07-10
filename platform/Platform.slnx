@@ -13,6 +13,9 @@
     <Project Path="src/Modules/Identity/Identity.Infrastructure/Identity.Infrastructure.csproj" />
     <Project Path="src/Modules/Identity/Identity.Api/Identity.Api.csproj" />
   </Folder>
+  <Folder Name="/src/Adapters/">
+    <Project Path="src/Adapters/Messaging.RabbitMq/Adapters.Messaging.RabbitMq.csproj" />
+  </Folder>
   <Folder Name="/src/Host/">
     <Project Path="src/Host/StarHill.Api/StarHill.Api.csproj" />
   </Folder>
@@ -23,6 +26,9 @@
     <Project Path="tests/Bedrock.Infrastructure.Tests/Bedrock.Infrastructure.Tests.csproj" />
     <Project Path="tests/Bedrock.ContractTests/Bedrock.ContractTests.csproj" />
     <Project Path="tests/Modules/Identity.UnitTests/Identity.UnitTests.csproj" />
+    <Project Path="tests/Modules/Identity.IntegrationTests/Identity.IntegrationTests.csproj" />
     <Project Path="tests/Host/StarHill.Api.Tests/StarHill.Api.Tests.csproj" />
+    <Project Path="tests/Adapters/Adapters.Messaging.RabbitMq.Tests/Adapters.Messaging.RabbitMq.Tests.csproj" />
+    <Project Path="tests/Messaging.IntegrationTests/Messaging.IntegrationTests.csproj" />
   </Folder>
 </Solution>

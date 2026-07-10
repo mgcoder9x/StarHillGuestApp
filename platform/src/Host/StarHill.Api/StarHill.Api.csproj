@@ -14,6 +14,9 @@
     <ProjectReference Include="..\..\Bedrock.Infrastructure\Bedrock.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Identity\Identity.Infrastructure\Identity.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Identity\Identity.Api\Identity.Api.csproj" />
+    <!-- Adapter công nghệ: Host (composition root) là nơi DUY NHẤT được cắm adapter (F29/CP5). Bật/tắt qua config
+         Bedrock:Messaging:Enabled — bỏ adapter = quay về default fail-loud, KHÔNG sửa lõi. -->
+    <ProjectReference Include="..\..\Adapters\Messaging.RabbitMq\Adapters.Messaging.RabbitMq.csproj" />
   </ItemGroup>
 
   <ItemGroup>

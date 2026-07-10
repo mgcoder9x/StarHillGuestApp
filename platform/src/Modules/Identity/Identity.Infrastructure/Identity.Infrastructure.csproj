@@ -12,5 +12,8 @@
   <ItemGroup>
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <!-- Design-time: IDesignTimeDbContextFactory cho `dotnet ef migrations` (per-module §4.6). PrivateAssets=all:
+         chỉ dùng lúc thiết kế/migration, KHÔNG chảy sang runtime/consumer. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
   </ItemGroup>
 </Project>

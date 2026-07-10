@@ -12,5 +12,14 @@
   <ItemGroup>
     <PackageReference Include="RabbitMQ.Client" />
     <PackageReference Include="Microsoft.Extensions.Resilience" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+    <!-- Subscriber = BackgroundService (IHostedService) + tạo scope/message + log. Hosting.Abstractions là
+         abstraction chuẩn .NET (không phải ASP.NET/EF/Infra) → KHÔNG vi phạm CP3 (AdapterIsolationTests). -->
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Cho test truy cập mapper/pipeline-factory internal (verify không cần broker). -->
+    <InternalsVisibleTo Include="Adapters.Messaging.RabbitMq.Tests" />
   </ItemGroup>
 </Project>

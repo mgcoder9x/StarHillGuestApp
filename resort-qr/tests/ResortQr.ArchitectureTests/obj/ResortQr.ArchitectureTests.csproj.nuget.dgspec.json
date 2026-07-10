@@ -1,22 +1,22 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\tests\\ResortQr.ArchitectureTests\\ResortQr.ArchitectureTests.csproj": {}
+    "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\tests\\ResortQr.ArchitectureTests\\ResortQr.ArchitectureTests.csproj": {}
   },
   "projects": {
-    "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Api\\ResortQr.Api.csproj": {
+    "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Api\\ResortQr.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Api\\ResortQr.Api.csproj",
+        "projectUniqueName": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Api\\ResortQr.Api.csproj",
         "projectName": "ResortQr.Api",
-        "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Api\\ResortQr.Api.csproj",
-        "packagesPath": "C:\\Users\\toann\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Api\\obj\\",
+        "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Api\\ResortQr.Api.csproj",
+        "packagesPath": "C:\\Users\\k.nguyen.manh.toan\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Api\\obj\\",
         "projectStyle": "PackageReference",
         "centralPackageVersionsManagementEnabled": true,
         "CentralPackageTransitivePinningEnabled": true,
         "configFilePaths": [
-          "C:\\Users\\toann\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\k.nguyen.manh.toan\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -29,11 +29,11 @@
             "framework": "net10.0",
             "targetAlias": "net10.0",
             "projectReferences": {
-              "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\ResortQr.Application.csproj": {
-                "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\ResortQr.Application.csproj"
+              "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\ResortQr.Application.csproj": {
+                "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\ResortQr.Application.csproj"
               },
-              "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Infrastructure\\ResortQr.Infrastructure.csproj": {
-                "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Infrastructure\\ResortQr.Infrastructure.csproj"
+              "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Infrastructure\\ResortQr.Infrastructure.csproj": {
+                "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Infrastructure\\ResortQr.Infrastructure.csproj"
               }
             }
           }
@@ -114,7 +114,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Users\\k.nguyen.manh.toan\\AppData\\Local\\Microsoft\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
@@ -532,19 +532,19 @@
         }
       }
     },
-    "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\ResortQr.Application.csproj": {
+    "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\ResortQr.Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\ResortQr.Application.csproj",
+        "projectUniqueName": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\ResortQr.Application.csproj",
         "projectName": "ResortQr.Application",
-        "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\ResortQr.Application.csproj",
-        "packagesPath": "C:\\Users\\toann\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\obj\\",
+        "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\ResortQr.Application.csproj",
+        "packagesPath": "C:\\Users\\k.nguyen.manh.toan\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\obj\\",
         "projectStyle": "PackageReference",
         "centralPackageVersionsManagementEnabled": true,
         "CentralPackageTransitivePinningEnabled": true,
         "configFilePaths": [
-          "C:\\Users\\toann\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\k.nguyen.manh.toan\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -557,11 +557,11 @@
             "framework": "net10.0",
             "targetAlias": "net10.0",
             "projectReferences": {
-              "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\ResortQr.Domain.csproj": {
-                "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\ResortQr.Domain.csproj"
+              "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\ResortQr.Domain.csproj": {
+                "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\ResortQr.Domain.csproj"
               },
-              "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj": {
-                "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj"
+              "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj": {
+                "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj"
               }
             }
           }
@@ -634,7 +634,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Users\\k.nguyen.manh.toan\\AppData\\Local\\Microsoft\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",
@@ -912,19 +912,19 @@
         }
       }
     },
-    "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\ResortQr.Domain.csproj": {
+    "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\ResortQr.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\ResortQr.Domain.csproj",
+        "projectUniqueName": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\ResortQr.Domain.csproj",
         "projectName": "ResortQr.Domain",
-        "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\ResortQr.Domain.csproj",
-        "packagesPath": "C:\\Users\\toann\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\obj\\",
+        "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\ResortQr.Domain.csproj",
+        "packagesPath": "C:\\Users\\k.nguyen.manh.toan\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "centralPackageVersionsManagementEnabled": true,
         "CentralPackageTransitivePinningEnabled": true,
         "configFilePaths": [
-          "C:\\Users\\toann\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\k.nguyen.manh.toan\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -937,8 +937,8 @@
             "framework": "net10.0",
             "targetAlias": "net10.0",
             "projectReferences": {
-              "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj": {
-                "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj"
+              "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj": {
+                "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj"
               }
             }
           }
@@ -1004,7 +1004,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Users\\k.nguyen.manh.toan\\AppData\\Local\\Microsoft\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",
@@ -1282,19 +1282,19 @@
         }
       }
     },
-    "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Infrastructure\\ResortQr.Infrastructure.csproj": {
+    "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Infrastructure\\ResortQr.Infrastructure.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Infrastructure\\ResortQr.Infrastructure.csproj",
+        "projectUniqueName": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Infrastructure\\ResortQr.Infrastructure.csproj",
         "projectName": "ResortQr.Infrastructure",
-        "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Infrastructure\\ResortQr.Infrastructure.csproj",
-        "packagesPath": "C:\\Users\\toann\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Infrastructure\\obj\\",
+        "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Infrastructure\\ResortQr.Infrastructure.csproj",
+        "packagesPath": "C:\\Users\\k.nguyen.manh.toan\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Infrastructure\\obj\\",
         "projectStyle": "PackageReference",
         "centralPackageVersionsManagementEnabled": true,
         "CentralPackageTransitivePinningEnabled": true,
         "configFilePaths": [
-          "C:\\Users\\toann\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\k.nguyen.manh.toan\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -1307,14 +1307,14 @@
             "framework": "net10.0",
             "targetAlias": "net10.0",
             "projectReferences": {
-              "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\ResortQr.Application.csproj": {
-                "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\ResortQr.Application.csproj"
+              "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\ResortQr.Application.csproj": {
+                "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\ResortQr.Application.csproj"
               },
-              "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\ResortQr.Domain.csproj": {
-                "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\ResortQr.Domain.csproj"
+              "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\ResortQr.Domain.csproj": {
+                "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\ResortQr.Domain.csproj"
               },
-              "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj": {
-                "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj"
+              "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj": {
+                "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj"
               }
             }
           }
@@ -1439,7 +1439,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Users\\k.nguyen.manh.toan\\AppData\\Local\\Microsoft\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",
@@ -1717,19 +1717,19 @@
         }
       }
     },
-    "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj": {
+    "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj",
+        "projectUniqueName": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj",
         "projectName": "ResortQr.SharedKernel",
-        "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj",
-        "packagesPath": "C:\\Users\\toann\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\obj\\",
+        "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj",
+        "packagesPath": "C:\\Users\\k.nguyen.manh.toan\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\obj\\",
         "projectStyle": "PackageReference",
         "centralPackageVersionsManagementEnabled": true,
         "CentralPackageTransitivePinningEnabled": true,
         "configFilePaths": [
-          "C:\\Users\\toann\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\k.nguyen.manh.toan\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -1805,7 +1805,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Users\\k.nguyen.manh.toan\\AppData\\Local\\Microsoft\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",
@@ -2083,19 +2083,19 @@
         }
       }
     },
-    "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\tests\\ResortQr.ArchitectureTests\\ResortQr.ArchitectureTests.csproj": {
+    "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\tests\\ResortQr.ArchitectureTests\\ResortQr.ArchitectureTests.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\tests\\ResortQr.ArchitectureTests\\ResortQr.ArchitectureTests.csproj",
+        "projectUniqueName": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\tests\\ResortQr.ArchitectureTests\\ResortQr.ArchitectureTests.csproj",
         "projectName": "ResortQr.ArchitectureTests",
-        "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\tests\\ResortQr.ArchitectureTests\\ResortQr.ArchitectureTests.csproj",
-        "packagesPath": "C:\\Users\\toann\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\tests\\ResortQr.ArchitectureTests\\obj\\",
+        "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\tests\\ResortQr.ArchitectureTests\\ResortQr.ArchitectureTests.csproj",
+        "packagesPath": "C:\\Users\\k.nguyen.manh.toan\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\tests\\ResortQr.ArchitectureTests\\obj\\",
         "projectStyle": "PackageReference",
         "centralPackageVersionsManagementEnabled": true,
         "CentralPackageTransitivePinningEnabled": true,
         "configFilePaths": [
-          "C:\\Users\\toann\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\k.nguyen.manh.toan\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -2108,20 +2108,20 @@
             "framework": "net10.0",
             "targetAlias": "net10.0",
             "projectReferences": {
-              "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Api\\ResortQr.Api.csproj": {
-                "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Api\\ResortQr.Api.csproj"
+              "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Api\\ResortQr.Api.csproj": {
+                "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Api\\ResortQr.Api.csproj"
               },
-              "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\ResortQr.Application.csproj": {
-                "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\ResortQr.Application.csproj"
+              "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\ResortQr.Application.csproj": {
+                "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Application\\ResortQr.Application.csproj"
               },
-              "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\ResortQr.Domain.csproj": {
-                "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\ResortQr.Domain.csproj"
+              "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\ResortQr.Domain.csproj": {
+                "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Domain\\ResortQr.Domain.csproj"
               },
-              "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Infrastructure\\ResortQr.Infrastructure.csproj": {
-                "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Infrastructure\\ResortQr.Infrastructure.csproj"
+              "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Infrastructure\\ResortQr.Infrastructure.csproj": {
+                "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.Infrastructure\\ResortQr.Infrastructure.csproj"
               },
-              "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj": {
-                "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj"
+              "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj": {
+                "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\resort-qr\\src\\ResortQr.SharedKernel\\ResortQr.SharedKernel.csproj"
               }
             }
           }
@@ -2214,7 +2214,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Users\\k.nguyen.manh.toan\\AppData\\Local\\Microsoft\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",

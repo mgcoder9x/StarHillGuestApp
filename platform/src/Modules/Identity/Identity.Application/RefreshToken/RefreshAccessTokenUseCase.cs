@@ -1,11 +1,13 @@
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Bedrock.Application.Messaging;
 using Bedrock.Application.Ports.Persistence;
 using Bedrock.Application.Ports.Security;
 using Bedrock.Application.Ports.Time;
 using Bedrock.Application.UseCases;
 using Bedrock.Domain.Results;
+using Identity.Contracts.Events;
 using Identity.Domain;
 
 namespace Identity.Application.RefreshToken;
@@ -31,24 +33,28 @@ public sealed class RefreshAccessTokenUseCase : IUseCase<RefreshTokenCommand, Re
     private readonly IClock _clock;
     private readonly ITokenGenerator _tokenGenerator;
     private readonly IJwtTokenService _jwt;
+    private readonly IOutboxWriter _outboxWriter;
 
     public RefreshAccessTokenUseCase(
         IRefreshTokenStore store,
         IUnitOfWork unitOfWork,
         IClock clock,
         ITokenGenerator tokenGenerator,
-        IJwtTokenService jwt)
+        IJwtTokenService jwt,
+        IOutboxWriter outboxWriter)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(tokenGenerator);
         ArgumentNullException.ThrowIfNull(jwt);
+        ArgumentNullException.ThrowIfNull(outboxWriter);
         _store = store;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _tokenGenerator = tokenGenerator;
         _jwt = jwt;
+        _outboxWriter = outboxWriter;
     }
 
     public Task<Result<RefreshTokenResult>> ExecuteAsync(RefreshTokenCommand input, CancellationToken ct = default)
@@ -94,7 +100,16 @@ public sealed class RefreshAccessTokenUseCase : IUseCase<RefreshTokenCommand, Re
                 newTokenId, current.UserId, current.FamilyId, Sha256Hex(newRawToken), expiresAt, RevokedAt: null);
             await _store.AddAsync(newSnapshot, token).ConfigureAwait(false);
 
-            // Enlist insert (staged) vào cùng transaction với consume (ghi ngay) → all-or-nothing (fix F5).
+            // EMIT integration event vào Outbox TRONG CÙNG transaction rotation (N-040 → nay có consumer path
+            // worker→RabbitMQ, AD-056). Chỉ enqueue trên đường THÀNH CÔNG (sau consume+insert) → nếu SaveChanges
+            // dưới đây fail/rollback thì event KHÔNG được publish (outbox + state all-or-nothing, CP6/F5). Dùng
+            // IOutboxWriter (namespace Messaging, KHÔNG Dispatch → CP11 nguyên vẹn: use case không publish thẳng bus).
+            // Event.Id = OutboxMessage.Id (AD-029, idempotency đầu-cuối); KHÔNG rò refresh token thô (chỉ UserId).
+            await _outboxWriter.EnqueueAsync(
+                new UserTokenRefreshedIntegrationEvent(Guid.CreateVersion7(), now, current.UserId), token)
+                .ConfigureAwait(false);
+
+            // Enlist consume (ghi ngay) + insert token mới + outbox event vào CÙNG transaction → all-or-nothing (fix F5).
             await _unitOfWork.SaveChangesAsync(token).ConfigureAwait(false);
 
             var accessToken = _jwt.Issue(BuildIdentity(current.UserId));

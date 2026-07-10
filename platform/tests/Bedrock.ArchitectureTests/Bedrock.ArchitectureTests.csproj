@@ -36,4 +36,9 @@
     <ProjectReference Include="..\..\src\Modules\Identity\Identity.Infrastructure\Identity.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Modules\Identity\Identity.Api\Identity.Api.csproj" />
   </ItemGroup>
+
+  <!-- Adapter mẫu (task 14) — để arch test kiểm CP3 (Adapters.* chỉ ref Bedrock.Application). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Adapters\Messaging.RabbitMq\Adapters.Messaging.RabbitMq.csproj" />
+  </ItemGroup>
 </Project>

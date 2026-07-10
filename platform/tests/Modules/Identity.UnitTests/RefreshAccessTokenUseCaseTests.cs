@@ -1,8 +1,11 @@
 using System.Security.Claims;
+using Bedrock.Application.Messaging;
 using Bedrock.Application.Ports.Persistence;
 using Bedrock.Application.Ports.Security;
 using Bedrock.Application.Ports.Time;
+using Bedrock.Messaging.Contracts;
 using Identity.Application.RefreshToken;
+using Identity.Contracts.Events;
 using Xunit;
 
 namespace Identity.UnitTests;
@@ -18,8 +21,9 @@ public sealed class RefreshAccessTokenUseCaseTests
     private static readonly Guid FamilyId = Guid.Parse("22222222-2222-2222-2222-222222222222");
     private static readonly Guid TokenId = Guid.Parse("33333333-3333-3333-3333-333333333333");
 
-    private static RefreshAccessTokenUseCase Build(FakeRefreshTokenStore store, PassThroughUnitOfWork uow) =>
-        new(store, uow, new FixedClock(Now), new FakeTokenGenerator(), new FakeJwt());
+    private static RefreshAccessTokenUseCase Build(
+        FakeRefreshTokenStore store, PassThroughUnitOfWork uow, FakeOutboxWriter? outbox = null) =>
+        new(store, uow, new FixedClock(Now), new FakeTokenGenerator(), new FakeJwt(), outbox ?? new FakeOutboxWriter());
 
     private static RefreshTokenSnapshot Snapshot(DateTimeOffset expiresAt, DateTimeOffset? revokedAt = null) =>
         new(TokenId, UserId, FamilyId, "old-hash", expiresAt, revokedAt);
@@ -29,8 +33,9 @@ public sealed class RefreshAccessTokenUseCaseTests
     {
         var store = new FakeRefreshTokenStore { ByHash = Snapshot(Now.AddDays(1)), ConsumeResult = true };
         var uow = new PassThroughUnitOfWork();
+        var outbox = new FakeOutboxWriter { UnitOfWork = uow }; // để bắt thứ tự enqueue-trước-SaveChanges.
 
-        var result = await Build(store, uow).ExecuteAsync(new RefreshTokenCommand("raw"));
+        var result = await Build(store, uow, outbox).ExecuteAsync(new RefreshTokenCommand("raw"));
 
         Assert.True(result.IsSuccess);
         Assert.Equal("access-token:" + UserId, result.Value.AccessToken);
@@ -42,6 +47,39 @@ public sealed class RefreshAccessTokenUseCaseTests
         Assert.Equal(UserId, store.Added.UserId);
         Assert.Null(store.Added.RevokedAt);
         Assert.Equal(1, uow.SaveChangesCalls);
+
+        // AD-057: rotation thành công EMIT UserTokenRefreshedIntegrationEvent vào outbox (đúng UserId + EventType)
+        // và ENQUEUE TRƯỚC SaveChanges (cùng transaction → CP6 all-or-nothing). KHÔNG rò refresh token thô.
+        var evt = Assert.IsType<UserTokenRefreshedIntegrationEvent>(Assert.Single(outbox.Enqueued));
+        Assert.Equal(UserId, evt.UserId);
+        Assert.Equal("identity.user_token_refreshed", evt.EventType);
+        Assert.NotEqual(Guid.Empty, evt.Id);
+        Assert.Equal(Now, evt.OccurredAt);
+        Assert.Equal(0, outbox.SaveChangesCallsAtEnqueue); // enqueue xảy ra TRƯỚC SaveChanges.
+    }
+
+    [Fact]
+    public async Task Failed_rotations_do_not_emit_event()
+    {
+        // Không token / hết hạn / reuse-revoked / thua race → KHÔNG được phát event (chỉ phát trên đường thành công).
+        var cases = new[]
+        {
+            new FakeRefreshTokenStore { ByHash = null },                                             // unknown
+            new FakeRefreshTokenStore { ByHash = Snapshot(Now.AddSeconds(-1)) },                     // expired
+            new FakeRefreshTokenStore { ByHash = Snapshot(Now.AddDays(1), revokedAt: Now.AddMinutes(-5)) }, // reuse
+            new FakeRefreshTokenStore { ByHash = Snapshot(Now.AddDays(1)), ConsumeResult = false },  // lost race
+        };
+
+        foreach (var store in cases)
+        {
+            var uow = new PassThroughUnitOfWork();
+            var outbox = new FakeOutboxWriter();
+
+            var result = await Build(store, uow, outbox).ExecuteAsync(new RefreshTokenCommand("raw"));
+
+            Assert.True(result.IsFailure);
+            Assert.Empty(outbox.Enqueued);
+        }
     }
 
     [Fact]
@@ -133,6 +171,23 @@ public sealed class RefreshAccessTokenUseCaseTests
         public Task RevokeFamilyAsync(Guid familyId, CancellationToken ct = default)
         {
             RevokeFamilyCalled = true;
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeOutboxWriter : IOutboxWriter
+    {
+        public List<IntegrationEvent> Enqueued { get; } = [];
+
+        /// <summary>Liên kết tuỳ chọn để bắt thứ tự: số lần SaveChanges TẠI thời điểm enqueue (kỳ vọng 0).</summary>
+        public PassThroughUnitOfWork? UnitOfWork { get; init; }
+
+        public int SaveChangesCallsAtEnqueue { get; private set; }
+
+        public Task EnqueueAsync(IntegrationEvent integrationEvent, CancellationToken ct = default)
+        {
+            SaveChangesCallsAtEnqueue = UnitOfWork?.SaveChangesCalls ?? 0;
+            Enqueued.Add(integrationEvent);
             return Task.CompletedTask;
         }
     }

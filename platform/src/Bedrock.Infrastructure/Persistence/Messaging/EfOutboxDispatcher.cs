@@ -62,25 +62,50 @@ public sealed class EfOutboxDispatcher<TContext>(
     /// </summary>
     private async Task<List<OutboxMessage>> ClaimBatchAsync(DateTimeOffset now, int batchSize, CancellationToken ct)
     {
-        var pending = context.Set<OutboxMessage>()
-            .Where(m => m.ProcessedAt == null && m.DeadLetteredAt == null);
-
         if (context.Database.IsNpgsql())
         {
-            return await pending
-                .Where(m => m.NextAttemptAt == null || m.NextAttemptAt <= now)
-                .OrderBy(m => m.OccurredAt)
-                .Take(batchSize)
+            // CP15 (design §4.5, R8.6): claim NGUYÊN TỬ đa-instance bằng FOR UPDATE SKIP LOCKED — dispatcher A
+            // khoá row nó lấy; dispatcher B BỎ QUA row đang khoá (không chờ, không claim trùng) → KHÔNG double-publish.
+            // EF LINQ không dịch được SKIP LOCKED → raw SQL. Tên bảng/schema lấy TỪ MODEL (không hardcode, an toàn
+            // injection; now/batchSize là tham số). Row trả về vẫn được ChangeTracker theo dõi → set ProcessedAt persist.
+            var sql = BuildNpgsqlClaimSql();
+            return await context.Set<OutboxMessage>()
+                .FromSqlRaw(sql, now, batchSize)
                 .ToListAsync(ct)
                 .ConfigureAwait(false);
         }
 
-        var candidates = await pending.ToListAsync(ct).ConfigureAwait(false);
+        var candidates = await context.Set<OutboxMessage>()
+            .Where(m => m.ProcessedAt == null && m.DeadLetteredAt == null)
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
         return [.. candidates
             .Where(m => m.NextAttemptAt is null || m.NextAttemptAt <= now)
             .OrderBy(m => m.OccurredAt)
             .Take(batchSize)];
     }
+
+    /// <summary>
+    /// Build câu SELECT ... FOR UPDATE SKIP LOCKED cho Npgsql. Tên bảng/schema lấy từ model (khớp per-module
+    /// schema + snake_case), quote an toàn; điều kiện pending khớp partial index <c>ix_outbox_pending</c>.
+    /// </summary>
+    private string BuildNpgsqlClaimSql()
+    {
+        var entityType = context.Model.FindEntityType(typeof(OutboxMessage))
+            ?? throw new InvalidOperationException("OutboxMessage chưa được map (thiếu modelBuilder.AddOutboxInbox()?).");
+        var table = entityType.GetTableName()
+            ?? throw new InvalidOperationException("OutboxMessage không có tên bảng.");
+        var schema = entityType.GetSchema();
+        var qualified = schema is null ? Quote(table) : $"{Quote(schema)}.{Quote(table)}";
+
+        return "SELECT * FROM " + qualified
+            + " WHERE processed_at IS NULL AND dead_lettered_at IS NULL"
+            + " AND (next_attempt_at IS NULL OR next_attempt_at <= {0})"
+            + " ORDER BY occurred_at LIMIT {1} FOR UPDATE SKIP LOCKED";
+    }
+
+    private static string Quote(string identifier) =>
+        "\"" + identifier.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
 
     private async Task TryPublishAsync(OutboxMessage message, OutboxDispatcherOptions options, CancellationToken ct)
     {

@@ -1,0 +1,113 @@
+using Bedrock.Application.Messaging.Dispatch;
+using Polly;
+using RabbitMQ.Client;
+
+namespace Adapters.Messaging.RabbitMq;
+
+/// <summary>
+/// Impl <see cref="IEventBusPublisher"/> bằng RabbitMQ (F29 — "cắm không sửa lõi"). Chỉ <c>IOutboxDispatcher</c>
+/// (worker) gọi (CP11). Publish qua topic exchange (routing key = EventType) với publisher-confirms (await tới khi
+/// broker xác nhận → reliable, khớp at-least-once của Outbox) + persistent message. Resilience (§9.2) bọc quanh
+/// publish. Connection/channel dùng chung (lazy, tái tạo khi đóng); truy cập channel serialize qua semaphore
+/// (IChannel không thread-safe cho publish đồng thời; dispatcher vốn publish tuần tự).
+/// </summary>
+public sealed class RabbitMqEventBusPublisher : IEventBusPublisher, IAsyncDisposable
+{
+    private readonly RabbitMqOptions _options;
+    private readonly ConnectionFactory _connectionFactory;
+    private readonly ResiliencePipeline _resiliencePipeline;
+    private readonly SemaphoreSlim _channelGate = new(1, 1);
+    private readonly CreateChannelOptions _channelOptions =
+        new(publisherConfirmationsEnabled: true, publisherConfirmationTrackingEnabled: true);
+
+    private IConnection? _connection;
+    private IChannel? _channel;
+    private bool _disposed;
+
+    public RabbitMqEventBusPublisher(RabbitMqOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        _options = options;
+        _connectionFactory = new ConnectionFactory
+        {
+            HostName = options.HostName,
+            Port = options.Port,
+            UserName = options.UserName,
+            Password = options.Password,
+            VirtualHost = options.VirtualHost,
+        };
+        _resiliencePipeline = RabbitMqResiliencePipelineFactory.Create(options.Resilience);
+    }
+
+    public async Task PublishAsync(OutboxMessage message, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        await _resiliencePipeline.ExecuteAsync(
+            async token =>
+            {
+                var channel = await GetOrCreateChannelAsync(token).ConfigureAwait(false);
+                await channel.BasicPublishAsync(
+                    exchange: _options.ExchangeName,
+                    routingKey: RabbitMqMessageMapper.RoutingKeyOf(message),
+                    mandatory: false,
+                    basicProperties: RabbitMqMessageMapper.PropertiesOf(message),
+                    body: RabbitMqMessageMapper.BodyOf(message),
+                    cancellationToken: token).ConfigureAwait(false);
+            },
+            ct).ConfigureAwait(false);
+    }
+
+    private async Task<IChannel> GetOrCreateChannelAsync(CancellationToken ct)
+    {
+        if (_channel is { IsOpen: true })
+        {
+            return _channel;
+        }
+
+        await _channelGate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            if (_channel is { IsOpen: true })
+            {
+                return _channel;
+            }
+
+            _connection ??= await _connectionFactory.CreateConnectionAsync(ct).ConfigureAwait(false);
+            _channel = await _connection.CreateChannelAsync(_channelOptions, ct).ConfigureAwait(false);
+            await _channel.ExchangeDeclareAsync(
+                exchange: _options.ExchangeName,
+                type: ExchangeType.Topic,
+                durable: true,
+                autoDelete: false,
+                cancellationToken: ct).ConfigureAwait(false);
+            return _channel;
+        }
+        finally
+        {
+            _channelGate.Release();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        if (_channel is not null)
+        {
+            await _channel.DisposeAsync().ConfigureAwait(false);
+        }
+
+        if (_connection is not null)
+        {
+            await _connection.DisposeAsync().ConfigureAwait(false);
+        }
+
+        _channelGate.Dispose();
+    }
+}

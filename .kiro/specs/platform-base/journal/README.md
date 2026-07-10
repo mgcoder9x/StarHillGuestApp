@@ -61,3 +61,35 @@
 7. Ghi ngày theo ngày hệ thống.
 
 > **Ngày khởi tạo journal:** 2026-07-07. Toàn bộ bản ghi khởi tạo dưới đây được rút từ `design.md`, `review.md`, và các thao tác đã verify trong phiên làm việc tạo ra chúng.
+
+---
+
+## Snapshot hoàn tất (cập nhật 2026-07-10 — đã verify trong phiên)
+
+> Ghi lại trạng thái ĐÃ KIỂM CHỨNG để người/AI đời sau đối chiếu nhanh. Mọi con số dưới đây lấy từ thao tác thật (`dotnet build`/`dotnet test` clean rebuild + Docker), KHÔNG phải trí nhớ.
+
+- **Tiến độ:** **21/21 task `[x]`** trong `tasks.md` (build order P0 → P1 → P1.5 → P2 hoàn tất, gồm cả các task Docker: 7.4, 8.3, 14, 21).
+- **Chất lượng build:** clean rebuild `Platform.slnx` → **0 warning** (`TreatWarningsAsErrors=true`).
+- **Test:** **227 test xanh · 0 fail · 0 skip** — Testcontainers **RabbitMQ + PostgreSQL chạy THẬT** với Docker (Server 29.5.2). Phân bố: Bedrock.UnitTests 54 · Identity.UnitTests 6 · Identity.IntegrationTests 1 · Bedrock.ContractTests 2 · Bedrock.ArchitectureTests 33 · Bedrock.Api.Tests 36 · StarHill.Api.Tests 3 · Bedrock.Infrastructure.Tests 78 · Adapters.Messaging.RabbitMq.Tests 14.
+- **Correctness Properties:** **CP1–CP15 đều ✅ ENFORCED** (bảng guard `05-anti-drift.md`). Không còn CP hay AD ở trạng thái `PARTIAL`/`PENDING`.
+- **ID mới nhất:** `AD-049` · `DV-016` · `TO-009` · `N-055` (liên tục 1..N, được `JournalConsistencyTests` INV-1 gác).
+- **Anti-drift:** `Bedrock.ArchitectureTests/JournalConsistencyTests` (INV-1..5) xanh trong mỗi `dotnet test`; `getDiagnostics` trên 4 file spec + journal: 0 lỗi.
+
+### Cách re-verify (một lệnh)
+```
+cd platform ; dotnet test Platform.slnx
+```
+- **Có Docker** → chạy đủ 226 test (gồm integration RabbitMQ/Postgres).
+- **Không có Docker** → các integration `[SkippableFact]` tự **skip** (không fail suite); phần còn lại vẫn phải xanh + 0 warning. Đây là cơ chế N-012 (KHÔNG xoá test Docker, chỉ skip có điều kiện).
+
+### Bằng chứng "base cực chất" (DoD §16 — mỗi mục có guard)
+- Thêm module = 5 project + Host ráp → CP4/CP5 (`ModuleBoundaryTests`) + module `Identity` thật.
+- Thêm công nghệ = 1 adapter, 0 file lõi sửa → CP3 (`AdapterIsolationTests`) + adapter `RabbitMq`.
+- Ghi state + outbox nguyên tử → CP6 · domain-event atomic → CP14 · dispatcher claim độc quyền đa-instance (SKIP LOCKED) → CP15 · rotation chống race → CP7 · fail-fast mọi môi trường → CP9 · correlation thống nhất → CP10 · no-business-in-core → CP1 · error-code contract → CP12.
+
+### Nhánh vận hành hoá (post-base, 2026-07-10 — AD-050/051/052, N-056)
+- **EF migrations per-module** (thay `EnsureCreated`): `dotnet-ef` pin ở `.config/dotnet-tools.json`; `IdentityDbContextFactory` design-time; migration `InitialCreate` (schema `identity`); verify `IdentityMigrationTests` (MigrateAsync trên Postgres thật). Deploy áp migration **out-of-band** (`dotnet ef database update`/bundle).
+- **Dockerfile Host** (`src/Host/StarHill.Api/Dockerfile`): multi-stage, non-root, secret qua env; verified `docker build` + `docker run` (fail-fast thiếu secret; `/health/live`=200 khi có secret).
+- **CI** (`.github/workflows/ci.yml`): tool-restore + build 0-warning + full test (Testcontainers) + docker build — nâng anti-drift lên tầng PR.
+
+> **Mở rộng ngoài phạm vi base (chưa làm, có chủ đích):** adapter công nghệ khác (Elasticsearch/Redis/S3/Email/ExternalAuth) + module nghiệp vụ thật + đẩy image lên registry/deploy manifest — là phần TIÊU THỤ/triển khai base. Base + đường vận hành đã sẵn sàng, chứng minh đủ "cắm không sửa lõi".

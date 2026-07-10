@@ -712,3 +712,194 @@
 - Consequences: Host phải wire scheduler (vd `BackgroundService`/Quartz) gọi `PurgeAsync` — chưa có Host job trong skeleton (giống dispatcher chưa có hosted-service). App muốn dọn dead-letter phải chủ động set `DeadLetterRetention`. Trên SQLite test đi nhánh client-side (không test được nhánh `ExecuteDeleteAsync` Npgsql — thuộc task 7.4 Testcontainers, cùng giới hạn DV-010).
 - Reversibility: High (thêm class + extension + options; đổi số TTL hoặc nâng scheduler cục bộ, không phá caller).
 - Traceability: R8.5, AD-003 (dead-letter là cột), AD-041 (tiền lệ default-number promotable), DV-010 (SQLite không dịch DateTimeOffset), design §7.2, task 7.5.
+
+### AD-048 — Thiết kế adapter RabbitMQ (topic exchange + publisher-confirms + persistent + resilience) — design chỉ đặt tên
+- Status: Confirmed
+- Date: 2026-07-10
+- Decider: AI(Kiro) — design §3.2/§9.2 ĐẶT TÊN `Adapters.Messaging.RabbitMq` + "resilience biên adapter" nhưng KHÔNG chốt exchange/routing/confirms/lifecycle/số resilience.
+- Provenance/Evidence: `platform/src/Adapters/Messaging.RabbitMq/*` (`RabbitMqEventBusPublisher`, `RabbitMqMessageMapper`, `RabbitMqResiliencePipelineFactory`, `RabbitMqOptions`, `RabbitMqMessagingExtensions`); packages pin RabbitMQ.Client 7.2.1 + Microsoft.Extensions.Resilience 10.7.0 (Directory.Packages.props); API 7.x xác minh qua tài liệu chính thức rabbitmq.com (async `CreateConnectionAsync`/`CreateChannelAsync(CreateChannelOptions)`/`BasicPublishAsync(exchange,routingKey,mandatory,basicProperties,body,ct)` + publisher-confirms qua `CreateChannelOptions`). Guard: `AdapterIsolationTests` (CP3) + `RabbitMqMessageMapperTests`/`RabbitMqResiliencePipelineTests`/`RabbitMqOptionsTests`/`AddRabbitMqMessagingTests` (13 test) — build 0 warning, toàn suite xanh.
+- Decision/Change (các điểm chốt, có lý do):
+  - **Topic exchange, routing key = `EventType`** — cho consumer bind theo pattern (`identity.*`, `*.created`); linh hoạt hơn direct/fanout mà vẫn định tuyến chính xác theo loại event.
+  - **Publisher-confirms (await broker ack) + message `Persistent`** — publish CHỈ coi là thành công khi broker đã nhận+ghi bền; khớp đảm bảo at-least-once của Outbox (dispatcher chỉ set `processed_at` khi PublishAsync trả về không lỗi — nếu confirm fail → exception → retry/không mark processed). Không confirm = có thể mark processed khi message chưa tới broker (mất event).
+  - **Resilience biên (§9.2): `timeout → retry(exponential+jitter) → circuit-breaker`** thứ tự add ngoài→trong; retry an toàn vì publish idempotent ở mức hệ thống (Inbox dedup). Default knob (timeout 10s, retry 3, base 200ms, circuit 50%/10/30s/15s) — hợp lý cho bus, cấu hình per-adapter qua `RabbitMq:Resilience`.
+  - **Override bằng `services.Replace`** (không Add) → đúng MỘT registration `IEventBusPublisher` (duplicate-guard F18 không báo); bỏ dòng `AddRabbitMqMessaging` = quay về `ThrowingEventBusPublisher` default (fail-loud), KHÔNG sửa lõi (F29).
+  - **Connection/channel dùng chung, lazy tái tạo; truy cập channel serialize qua `SemaphoreSlim`** — `IChannel` KHÔNG thread-safe cho publish đồng thời; dispatcher vốn publish tuần tự nên lock nhẹ, đúng đắn.
+  - **Validate-on-start** (`RabbitMqOptions.Validate` lúc `AddRabbitMqMessaging`) — cấu hình sai chặn boot (F35), gồm ràng buộc Polly (MinimumThroughput≥2, SamplingDuration≥0.5s) bắt sớm thay vì nổ lúc build pipeline.
+- Rationale (verifiable): mọi lựa chọn bám bản chất "reliable publish khớp Outbox at-least-once" + "SDK/resilience chỉ ở adapter (I2/§17)" + chuẩn RabbitMQ. Mapper/resilience/options tách THUẦN → test được KHÔNG cần broker (13 test); phần I/O publish → Testcontainers (Docker, task 14 còn lại cùng nhóm 7.4/8.3).
+- Alternatives: (a) direct exchange (loại: kém linh hoạt cho consumer topic-pattern); (b) không confirms (loại: phá at-least-once — có thể mark processed khi chưa tới broker); (c) channel-per-publish (loại: tốn kém; connection/channel reuse + lock hiệu quả hơn cho dispatcher tuần tự); (d) Add thay Replace (loại: 2 registration → duplicate-guard báo + hành vi last-wins mơ hồ).
+- Consequences: Host bật bằng `AddMessagingCore().AddRabbitMqMessaging(cfg)`; consumer inbox dedup. Publish path chỉ kiểm chứng đầy-đủ khi có Docker (Testcontainers) — hiện verify qua compile-đúng-API + unit thuần + CP3.
+- Reversibility: High (adapter là plug-in; gỡ = xóa project + 1 dòng Host, lõi không đổi — chính là F29).
+- Traceability: F29/F33, design §3.2/§5.2/§9.2/§17, R5/R16.3/R23, CP3, task 14.
+
+### AD-049 — Claim Outbox trên Npgsql bằng raw SQL `FOR UPDATE SKIP LOCKED` (hiện thực CP15, hoàn tất AD-016)
+- Status: Confirmed
+- Date: 2026-07-10
+- Decider: AI(Kiro) — design §4.5 YÊU CẦU "row-lock skip-locked trên PostgreSQL để nhiều dispatcher không lấy trùng batch (R8.6/CP15)" nhưng code trước đó (task 7.3) mới SELECT thường (chưa khoá) — comment ghi "để task 7.4".
+- Provenance/Evidence: `platform/src/Bedrock.Infrastructure/Persistence/Messaging/EfOutboxDispatcher.cs` (`BuildNpgsqlClaimSql` + `FromSqlRaw(sql, now, batchSize)` với `SELECT * FROM {schema-qualified} WHERE processed_at IS NULL AND dead_lettered_at IS NULL AND (next_attempt_at IS NULL OR next_attempt_at <= {0}) ORDER BY occurred_at LIMIT {1} FOR UPDATE SKIP LOCKED`); guard `platform/tests/Bedrock.Infrastructure.Tests/PostgresOutboxInboxTests.Concurrent_dispatchers_never_double_claim` (2 dispatcher đồng thời, BatchSize=3, 20 message → mỗi message publish ĐÚNG 1 lần: `Ids.Count == Distinct().Count() == 20`). Build 0 warning; SQLite dispatcher tests (8) không hồi quy.
+- Context: EF LINQ KHÔNG dịch được `FOR UPDATE SKIP LOCKED`. Không khoá → 2 dispatcher instance cùng SELECT tập pending (READ COMMITTED thấy row chưa-commit của nhau) → publish TRÙNG (dù Inbox khử ở consumer, vẫn phí + vi phạm CP15 "exclusive claim").
+- Decision/Change: nhánh Npgsql của `ClaimBatchAsync` dùng `FromSqlRaw` với `FOR UPDATE SKIP LOCKED`. Tên bảng/schema lấy TỪ MODEL (`context.Model.FindEntityType(...).GetTableName()/GetSchema()`, quote an toàn) → khớp per-module schema, KHÔNG hardcode, KHÔNG injection. `now`/`batchSize` là tham số. Row trả về vẫn được ChangeTracker theo dõi → set `ProcessedAt` persist ở SaveChanges. Nhánh non-Npgsql (SQLite test) GIỮ NGUYÊN LINQ client-side (provider-agnostic).
+- Rationale (verifiable): SKIP LOCKED là cơ chế CHUẨN Postgres cho queue-claim đa-worker: A khoá row nó lấy, B bỏ qua row đang khoá (không chờ, không trùng) → exclusive claim + không chặn nhau. Lấy tên bảng từ model để đúng schema module (design §4.6) mà không lộ tên cứng. Đây là fix TẬN GỐC đúng thiết kế §4.5 (không phải vá: giải đúng bản chất "claim nguyên tử đa-instance").
+- Alternatives: (a) advisory lock (loại: thô hơn, phải quản key); (b) SERIALIZABLE isolation + retry (loại: đắt + nhiều abort dưới tải); (c) một dispatcher duy nhất/leader-election (loại: giảm thông lượng + thêm hạ tầng); (d) dựa hoàn toàn Inbox dedup (loại: vẫn double-publish phí băng thông + vi phạm CP15 như thiết kế yêu cầu).
+- Consequences: production đa-instance dispatcher an toàn (không double-publish). SQLite test không dùng nhánh này (đúng, SQLite đơn-connection). Chỉ Npgsql có SKIP LOCKED (provider đích §1.2).
+- Reversibility: Medium (đổi lại SELECT thường là hồi quy CP15 — không nên).
+- Traceability: design §4.5, R8.6, CP15, task 7.4; hoàn tất phần deferred của AD-016.
+
+### AD-050 — Vận hành hoá: EF migrations PER-MODULE (design-time factory) thay `EnsureCreated`; migrate OUT-OF-BAND
+- Status: Confirmed
+- Date: 2026-07-10
+- Decider: AI(Kiro) — user chọn hướng "vận hành hoá base cho production". Design §4.6 YÊU CẦU "migration per-module, history table riêng theo schema, deploy/migrate độc lập" nhưng chưa có migration nào (Host runtime KHÔNG tạo schema — gap production thật).
+- Provenance/Evidence: `platform/.config/dotnet-tools.json` (pin `dotnet-ef` 10.0.9); `platform/src/Modules/Identity/Identity.Infrastructure/Persistence/IdentityDbContextFactory.cs` (`IDesignTimeDbContextFactory`, khớp CHÍNH XÁC options runtime UseNpgsql+UseSnakeCaseNamingConvention); `.../Persistence/Migrations/*InitialCreate*` (EnsureSchema "identity", payload jsonb, ux_refresh_hash, ix_outbox_pending); guard `platform/tests/Modules/Identity.IntegrationTests/IdentityMigrationTests` (Testcontainers/Postgres: `MigrateAsync` → __EFMigrationsHistory chứa InitialCreate + query outbox + round-trip refresh store). Build 0 warning; 227 test xanh.
+- Context: `EnsureCreated` chỉ dev (design §Non-goals) — không hỗ trợ evolve schema, không dùng production. Sản phẩm thương mại cần migration versioned + áp có kiểm soát.
+- Decision/Change: (1) `dotnet-ef` local tool pin trong `.config/dotnet-tools.json` (tái lập CI). (2) Design-time factory để `dotnet ef` dựng context không cần Host, KHỚP options runtime (nếu lệch → migration lệch model). (3) Migration nằm trong Identity.Infrastructure (EF tự tìm ở assembly DbContext); history table vào schema `identity` (nhờ `HasDefaultSchema`). (4) **Migrate OUT-OF-BAND** (`dotnet ef database update`/bundle ở bước deploy), app KHÔNG tự migrate lúc start — an toàn đa-instance (tránh 2 instance migrate đồng thời).
+- Rationale (verifiable): migration versioned là chuẩn production để evolve schema an toàn + audit. Design-time factory tách tooling khỏi Host (không cần bật app để sinh migration). Migrate out-of-band tránh race đa-instance + cho phép rollback có kiểm soát (khác auto-migrate-on-start dễ hỏng khi nhiều replica). `IdentityMigrationTests` chứng minh migration KHỚP model runtime (chạy MigrateAsync thật, round-trip) → không drift.
+- Alternatives: (a) auto-migrate lúc start (loại: race đa-instance + rollback khó + rủi ro downtime); (b) giữ EnsureCreated (loại: không evolve được, dev-only); (c) SQL script thủ công (loại: mất đồng bộ với model, dễ drift).
+- Consequences: deploy có bước "apply migrations" (CLI/bundle). Thêm module = thêm migration của module đó (độc lập). Đổi model → thêm migration mới (versioned).
+- Reversibility: High (migration là artifact cộng thêm; có thể `migrations remove` khi chưa apply).
+- Traceability: design §4.6, F31/I6, R (vận hành), post-base operational.
+
+### AD-051 — Dockerfile Host multi-stage, non-root, secret qua env, KHÔNG bake secret / KHÔNG auto-migrate
+- Status: Confirmed
+- Date: 2026-07-10
+- Decider: AI(Kiro) — hướng vận hành hoá (đóng gói deploy). Spec base không nói cách container hoá.
+- Provenance/Evidence: `platform/src/Host/StarHill.Api/Dockerfile` (SDK 10.0 build → aspnet 10.0 runtime, `USER $APP_UID`, cổng 8080) + `platform/.dockerignore`; verified in-session 2026-07-10: `docker build` thành công; `docker run` KHÔNG secret → fail-fast (StartupValidator, đúng F35); `docker run` CÓ secret qua env (`Jwt__Keys__0__Secret`, `ConnectionStrings__Identity`) → `/health/live` = 200.
+- Context: base cần đóng gói chạy được để thành sản phẩm deploy.
+- Decision/Change: multi-stage (build SDK → runtime aspnet gọn); chạy **non-root** (`$APP_UID` sẵn trong image .NET — hardening); secret nạp qua ENV lúc chạy (KHÔNG bake vào image, khớp F35); migration áp out-of-band (ENTRYPOINT chỉ chạy app, không migrate).
+- Rationale (verifiable): multi-stage → image runtime nhỏ, không chứa SDK/source. Non-root → giảm blast-radius nếu bị chiếm. Secret qua env → không rò secret vào layer image (bất biến F35). Đã chứng minh CẢ fail-fast (thiếu secret) LẪN happy-path (có secret → 200) bằng docker run thật.
+- Alternatives: (a) single-stage (loại: image phình + chứa source/SDK); (b) chạy root (loại: rủi ro bảo mật); (c) bake secret/appsettings production vào image (loại: rò secret — vi phạm F35); (d) auto-migrate trong ENTRYPOINT (loại: race đa-instance — xem AD-050).
+- Consequences: deploy cấp secret qua orchestrator (env/secret store) + chạy migration ở bước riêng. Image chỉ là runtime thuần.
+- Reversibility: High (Dockerfile là artifact cộng thêm).
+- Traceability: F35, AD-045 (secret ngoài repo), AD-050 (migrate out-of-band), post-base operational.
+
+### AD-052 — CI pipeline (GitHub Actions): tool-restore + build 0-warning + full test (Testcontainers) + docker build
+- Status: Confirmed
+- Date: 2026-07-10
+- Decider: AI(Kiro) — hướng vận hành hoá (tự động hoá kiểm chứng). Spec base không nói CI.
+- Provenance/Evidence: `.github/workflows/ci.yml` (job `build-test`: setup-dotnet theo `global.json` → `dotnet tool restore` → `dotnet build -c Release` (cổng 0-warning) → `dotnet test` full suite; job `docker-image`: `docker build` Dockerfile Host). YAML inspection-verified; chạy trên `ubuntu-latest` (Docker sẵn → Testcontainers RabbitMQ/Postgres chạy được).
+- Context: kiểm chứng thủ công không bền cho sản phẩm thương mại; cần cổng tự động mỗi push/PR.
+- Decision/Change: workflow 2 job — (1) build+test toàn bộ (gồm `JournalConsistencyTests` INV-1..5 → journal lệch = fail CI, biến anti-drift thành cổng CI); (2) docker build Host. Pin SDK theo `global.json` + tool theo `.config/dotnet-tools.json` (tái lập chính xác).
+- Rationale (verifiable): CI biến "build 0 warning + 227 test xanh + anti-drift INV" thành cổng KHÔNG-người-quên trên mỗi thay đổi — đúng tinh thần "con người quên, build thì không", nay áp ở tầng repo/PR. ubuntu-latest có Docker nên integration Testcontainers chạy thật (không skip). KHÔNG chạy được cục bộ (là hạ tầng CI) → verify bằng inspection + tính hợp lệ YAML + tương đương lệnh đã chạy tay trong phiên.
+- Alternatives: (a) không CI (loại: dựa kiểm tay — không bền thương mại); (b) chỉ build không test (loại: mất lưới an toàn); (c) skip integration trên CI (loại: bỏ phần CP6/7/8/15/adapter — runner có Docker nên không cần skip).
+- Consequences: mỗi push/PR chạy full gate. Cần secret cho phần cần (không có ở job test vì integration dùng Testcontainers tự cấp, không cần secret app).
+- Reversibility: High (file workflow cộng thêm).
+- Traceability: R31 (0 warning + test xanh mỗi thay đổi), AD-030 (journal-consistency gate) nâng lên tầng CI, post-base operational.
+
+### AD-053 — Opt-in `Bedrock:ApplyMigrationsOnStartup` (mặc định TẮT) cho dev/compose; prod giữ out-of-band
+- Status: Confirmed
+- Date: 2026-07-10
+- Decider: AI(Kiro) — cần chạy cả stack qua compose (single-instance) mà không phá stance out-of-band của AD-050.
+- Provenance/Evidence: `platform/src/Host/StarHill.Api/Program.cs` (sau Build: `if bool.TryParse(config["Bedrock:ApplyMigrationsOnStartup"]) → scope → IdentityDbContext.Database.MigrateAsync()`); guard mặc-định-TẮT: `HostSmokeTests` (không set cờ → boot không migrate, vẫn xanh); happy-path bật: docker-compose verified in-session (host migrate → /health/ready=200).
+- Context: compose/dev single-instance cần schema tự sẵn sàng để chạy nhanh; nhưng AD-050 cấm auto-migrate đa-instance (race).
+- Decision/Change: thêm cờ config **mặc định FALSE**. TRUE → Host áp `MigrateAsync` lúc start (1 lần, trong scope). Compose đặt cờ = true (single-instance dev/staging). Production KHÔNG bật → giữ migrate out-of-band (AD-050) nguyên vẹn.
+- Rationale (verifiable): mặc-định-tắt bảo toàn bất biến AD-050 (prod đa-instance không tự migrate); opt-in chỉ là tiện ích dev/compose single-instance (không có race vì 1 instance). Dùng `bool.TryParse` trên indexer config → không kéo thêm package Binder. Đã chứng minh CẢ nhánh tắt (HostSmokeTests xanh) LẪN nhánh bật (compose /health/ready=200).
+- Alternatives: (a) luôn auto-migrate (loại: phá AD-050 đa-instance); (b) migrator service riêng dùng EF bundle (đúng nhất cho prod nhưng nặng — hoãn; compose dev không cần); (c) không hỗ trợ (loại: compose phải migrate thủ công, kém tiện dev).
+- Consequences: dev/compose bật cờ = tiện; prod để tắt + migrate out-of-band. Tài liệu hoá rõ trong compose + Program.cs comment.
+- Reversibility: High (cờ cộng thêm; bỏ = quay lại chỉ out-of-band).
+- Traceability: AD-050 (out-of-band prod), F35, post-base operational.
+
+### AD-054 — docker-compose full-stack (PostgreSQL + Host) chứng minh sản phẩm chạy end-to-end
+- Status: Confirmed
+- Date: 2026-07-10
+- Decider: AI(Kiro) — capstone vận hành hoá: chạy cả hệ để kiểm chứng tích hợp thật.
+- Provenance/Evidence: `platform/docker-compose.yml` (service `postgres` healthcheck pg_isready + `host` build từ Dockerfile, depends_on service_healthy, env connection/secret/ApplyMigrationsOnStartup); verified in-session 2026-07-10: `docker compose up -d --build` → postgres healthy → host migrate → **/health/ready=200** (log `SELECT 1` readiness DB thật) + /health/live=200 → `docker compose down -v` sạch.
+- Context: các mảnh (migration, image) đã verify riêng; cần bằng chứng CHÚNG chạy CÙNG NHAU (Host nối Postgres thật + readiness DB-backed).
+- Decision/Change: compose 2 service — postgres (healthcheck gating) + host (build Dockerfile, migrate opt-in, secret+connection qua env). `depends_on: condition: service_healthy` → host chỉ start khi DB sẵn sàng. Port 18080→8080.
+- Rationale (verifiable): /health/ready dùng `AddDbContextCheck` → 200 CHỈ khi Host kết nối được Postgres; container còn sống + serve 200 ⇒ migrate thành công (MigrateAsync fail → app crash → không serve). Vậy một lần `compose up` + /health/ready=200 chứng minh: build image + nối DB + migrate + boot fail-fast pass + serve — toàn chuỗi.
+- Alternatives: (a) chỉ chạy Host image trần (đã làm AD-051 — nhưng không có DB thật); (b) thêm RabbitMQ + dispatcher vào compose (hoãn: Host chưa wire adapter/dispatcher — là feature riêng, không over-build ở bước này).
+- Consequences: dev/staging có lệnh một dòng dựng cả hệ. Mở rộng: thêm RabbitMQ + registry push + k8s manifest khi cần.
+- Reversibility: High (compose file cộng thêm).
+- Traceability: AD-050/051/053, F35, post-base operational.
+
+### AD-055 — EF migration bundle self-contained = artifact migrate OUT-OF-BAND cho production (đóng loop AD-050)
+- Status: Confirmed
+- Date: 2026-07-10
+- Decider: AI(Kiro) — AD-050/AD-053 nêu "prod migrate out-of-band" nhưng chưa tạo artifact; opt-in-startup (AD-053) chỉ cho dev/single-instance. Cần cơ chế đúng cho prod đa-instance.
+- Provenance/Evidence: `dotnet ef migrations bundle --self-contained -r <rid>` sinh executable độc lập; verified in-session 2026-07-10: sinh bundle win-x64 (103.9 MB) → chạy `efbundle --connection <Postgres container>` → log "Applying migration '20260710040446_InitialCreate'. Done." → `\dt identity.*` cho 3 bảng (inbox/outbox/refresh_token). CI job `migration-bundle` trong `.github/workflows/ci.yml` sinh bundle linux-x64 + upload artifact; `.gitignore` loại `efbundle*` (không commit ~100MB).
+- Context: production đa-instance KHÔNG được auto-migrate (race — AD-050); target runtime KHÔNG có SDK/ef-tool. Cần artifact áp migration ở bước deploy, tách khỏi app.
+- Decision/Change: pipeline deploy dùng **EF migration bundle** (self-contained, per-module) — bước deploy chạy `./efbundle-identity --connection "$CONN"` TRƯỚC khi rollout Host mới. App KHÔNG tự migrate ở prod (opt-in-startup AD-053 chỉ dev/compose).
+- Rationale (verifiable): bundle self-contained không cần .NET SDK/ef-tool trên target (chỉ 1 executable + connection) → hợp deploy container/CD. Áp ở bước riêng (không trong app) → kiểm soát thứ tự (migrate xong mới rollout), không race đa-instance, rollback được. Đã chứng minh bundle ÁP migration thật lên Postgres (không chỉ sinh file).
+- Alternatives: (a) `dotnet ef database update` ở deploy (cần SDK+tool+source trên runner deploy — nặng hơn bundle); (b) auto-migrate app (loại: race đa-instance — AD-050); (c) SQL script thủ công (loại: dễ lệch model). Bundle là chuẩn EF cho CD.
+- Consequences: CI sinh bundle như artifact; CD chạy bundle trước rollout. Mỗi module một bundle (per-module §4.6). Bundle không commit (gitignore).
+- Reversibility: High (bundle là artifact sinh lại được; đổi sang `database update` chỉ là đổi lệnh CD).
+- Traceability: design §4.6, AD-050/AD-053, F35, post-base operational.
+### AD-056 — Worker LÊN LỊCH dispatcher outbox = OPT-IN ở base (`AddOutboxDispatcherWorker<TContext>`); Host bật qua config (mặc định TẮT) — REFINES AD-047 (không mâu thuẫn)
+- Status: Confirmed
+- Date: 2026-07-10
+- Decider: AI(Kiro) — post-base operational; đóng khoảng hở runtime N-059 ("chưa gì tự chạy dispatcher"). Đã validate design + AD-047 trước khi code (design-first).
+- Provenance/Evidence: `platform/src/Bedrock.Infrastructure/Persistence/Messaging/OutboxDispatcherHostedService.cs` (BackgroundService generic) + `OutboxDispatcherWorkerOptions.cs` (PollInterval mặc định 5s, named-options per-context) + `OutboxDispatcherExtensions.AddOutboxDispatcherWorker<TContext>` (opt-in, `AddHostedService`); Host `Program.cs` khối gate `if bool.TryParse(config["Bedrock:Messaging:Enabled"])` → `AddRabbitMqMessaging + AddOutboxDispatcher<IdentityDbContext> + AddOutboxDispatcherWorker<IdentityDbContext> + AddIntegrationEventRegistry`. Verified in-session 2026-07-10: `Messaging.IntegrationTests/OutboxDispatcherWorkerEndToEndTests` (Postgres+RabbitMQ THẬT) — seed outbox → worker qua đường THẬT (`AddOutboxDispatcherWorker`→`AddHostedService`→`BackgroundService.StartAsync`) TỰ ĐỘNG claim+publish+mark, KHÔNG gọi `DispatchPendingAsync` thủ công; full suite 229 xanh, 0 warning, 0 skip; `StarHill.Api.Tests` (3) vẫn xanh với messaging TẮT (không hồi quy).
+- Context: `EfOutboxDispatcher` (một lượt phát) đã có + verify CP15; publisher→broker đã verify (N-051); chuỗi đầy đủ đã verify (N-059). NHƯNG runtime KHÔNG có gì gọi `DispatchPendingAsync` theo chu kỳ → event nằm trong outbox mãi. AD-047 chốt "Host lên lịch chạy", loại phương án "base **tự chạy** BackgroundService" vì sợ HAI mô hình lịch.
+- Decision/Change: base cấp SẴN vỏ poll-loop `OutboxDispatcherHostedService<TContext>` + helper **opt-in** `AddOutboxDispatcherWorker<TContext>()`. `AddBedrockPersistence`/`AddOutboxDispatcher` **KHÔNG** tự đăng ký worker — Host phải gọi tường minh. Sample Host gate sau `Bedrock:Messaging:Enabled` (mặc định TẮT, mirror opt-in migrate AD-053).
+- Rationale (verifiable — vì sao đây là REFINE chứ không phá AD-047):
+  - **Bản chất AD-047 = cấm "base *tự chạy*" (auto-run tạo mô hình lịch thứ 2).** Worker opt-in KHÔNG tự chạy: chỉ chạy khi Host gọi `AddOutboxDispatcherWorker` → lịch VẪN do Host quyết = MỘT mô hình duy nhất. Bất biến AD-047 nguyên vẹn.
+  - **Tiền lệ:** base ĐÃ ship hosted-service opt-in `RequiredPortsValidator` (`AddBedrockStartupValidation`→`AddHostedService`). "Base có hosted-service khi Host bật" là pattern đã thiết lập; AD-047 chỉ chặn *scheduler tự chạy ngầm*.
+  - **Vì sao đặt ở base (opt-in) thay vì viết tay trong Host:** (1) vòng poll là boilerplate dễ sai TINH VI — scope-per-iteration (dispatcher Scoped, N-008: resolve scoped-từ-root ném với ValidateScopes=true), không hạ host khi lỗi hạ tầng tạm, shutdown êm theo stoppingToken → viết đúng MỘT lần + guard test an toàn hơn N bản sao phân kỳ; (2) testable ngay ở `Messaging.IntegrationTests` (Postgres+RabbitMQ) không cần nạp web-exe; (3) đối xứng `AddOutboxRetention` (base cấp logic, Host lên lịch) — cùng triết lý.
+  - **Mặc định TẮT ở sample Host** → không ép messaging model lên sample, smoke test boot không cần RabbitMQ (giữ xanh); bật = một cờ config.
+- Alternatives:
+  - (a) Viết worker tay trong Host (StarHill.Api): tôn trọng AD-047 tuyệt đối nhưng KHÔNG tái dùng (mỗi Host chép ~40 dòng dễ lệch), khó test (web-exe). Loại: theo N-041 "tránh trừu tượng sớm" đúng cho code NGHIỆP VỤ, nhưng đây là plumbing hạ tầng dễ sai → tập trung ở base tốt hơn.
+  - (b) Base **tự chạy** worker trong `AddOutboxDispatcher`: loại — đây CHÍNH là thứ AD-047 cấm (auto-run, 2 mô hình lịch).
+  - (c) Không làm, để runtime không tự phát: loại — nền tảng event-driven mà event không rời outbox là thiếu sót vận hành thật.
+- Consequences: Host tùy chọn bật event-driven bằng cờ. Khi bật, cần RabbitMQ (adapter) + connection config; khi tắt giữ `ThrowingEventBusPublisher` (không phát). Để chuỗi "refresh token → event trên bus" chạy trong sample cần thêm: EMIT `UserTokenRefreshedIntegrationEvent` từ use case rotation (N-040 còn mở — bước kế tiếp, có chủ đích tách riêng).
+- Reversibility: High (worker + helper cộng thêm; gỡ `AddOutboxDispatcherWorker` = quay về không tự phát, không đụng lõi).
+- Traceability: design §7.2 (worker phát Outbox), AD-047 (refines — Host lên lịch), AD-016/AD-049 (dispatcher/claim), AD-053 (mẫu opt-in default-off), F29 (adapter Host cắm), N-008/N-059/N-040, post-base operational.
+### AD-057 — EMIT `UserTokenRefreshedIntegrationEvent` từ use case rotation qua `IOutboxWriter` (đóng N-040)
+- Status: Confirmed
+- Date: 2026-07-10
+- Decider: AI(Kiro) — post-base; nối phần design §7.4 để ngỏ (event khai contract-first nhưng chưa emit). Đã có consumer path (worker→RabbitMQ, AD-056) nên emission KHÔNG còn đầu cơ.
+- Provenance/Evidence: `platform/src/Modules/Identity/Identity.Application/RefreshToken/RefreshAccessTokenUseCase.cs` (sau `AddAsync(newSnapshot)`, TRƯỚC `SaveChangesAsync`: `_outboxWriter.EnqueueAsync(new UserTokenRefreshedIntegrationEvent(Guid.CreateVersion7(), now, current.UserId), token)`); csproj Identity.Application ĐÃ ref Identity.Contracts "để phát event" (thiết kế đón sẵn). Verified in-session 2026-07-10: `Identity.UnitTests/RefreshAccessTokenUseCaseTests` (emit-on-success + `Failed_rotations_do_not_emit_event` 4 nhánh fail không emit + enqueue TRƯỚC SaveChanges) + `Identity.IntegrationTests/RefreshRotationEmitsEventTests` (Postgres THẬT: rotation → row `outbox_message` EventType `identity.user_token_refreshed`, payload chứa UserId, KHÔNG chứa refresh token thô, ProcessedAt null — đọc lại ở SCOPE MỚI = persist thật cùng transaction); full suite 231 xanh, 0 warning, 0 skip; smoke Host 3 xanh (không hồi quy).
+- Context: N-040 để ngỏ emission ("sẽ được nối khi có consumer thật hoặc DoD task 21"). Trước AD-056 chưa có gì consume/phát → emit ra sẽ nằm chết trong outbox (không kiểm chứng được đầu-cuối) → cố ý hoãn. Nay worker phát tự động → chuỗi "refresh token → event trên bus" chạy được thật.
+- Decision/Change: rotation thành công enqueue event vào outbox trong CÙNG transaction (sau consume+insert, trước SaveChanges). Chỉ emit trên đường THÀNH CÔNG. Dùng `IOutboxWriter` (namespace `Messaging`, KHÔNG `Dispatch`).
+- Rationale (verifiable):
+  - **Đúng chỗ trong transaction (bản chất):** enqueue TRƯỚC `SaveChangesAsync` + bên trong `ExecuteInTransactionAsync` → event + consume + insert token vào MỘT commit (CP6/F5 all-or-nothing). Rollback rotation ⇒ KHÔNG publish event ma. Chỉ emit khi thành công ⇒ không phát event cho rotation thất bại (reuse/expired/lost-race).
+  - **CP11 nguyên vẹn:** `IOutboxWriter` ở `Bedrock.Application.Messaging` (không `.Dispatch`) → use case KHÔNG publish thẳng bus; ArchTest `ModuleBoundaryTests`/`UseCaseSeamTests` vẫn xanh (verified 33 arch test).
+  - **Không rò bí mật:** payload chỉ mang `UserId` (không refresh token thô) — integration test assert `DoesNotContain(rawToken)`.
+  - **Vì sao thêm integration test THẬT (không chỉ unit):** unit dùng fake writer; CP6 dùng DbContext test khác (không phải IdentityDbContext); smoke dừng ở validation 400 → KHÔNG nơi nào chứng minh IdentityDbContext map outbox đúng + writer cùng-context ghi được row. Integration test trên Postgres đóng đúng seam đó (bắt lỗi mapping/wiring mà fake không thấy) — "valid nhiều lần" ở đúng tầng.
+- Alternatives: (a) emit qua domain event → `IDomainEventHandler` → `IOutboxWriter` (đúng khi rotation raise domain event; nhưng skeleton chưa có aggregate raise event → thêm tầng thừa, hoãn); (b) emit SAU commit (loại: mất nguyên tử — event có thể phát dù state rollback); (c) tiếp tục hoãn (loại: consumer path đã có, để ngỏ là nợ chức năng thật).
+- Consequences: mỗi rotation thành công sinh một outbox row; khi Host bật messaging (AD-056) worker phát lên bus. Claim access token vẫn chỉ `sub` (role/permission cần user store — N-040 vẫn đúng phần đó). Chuỗi refresh→bus giờ chạy được trong compose nếu thêm RabbitMQ (bước hạ tầng tách riêng).
+- Reversibility: High (bỏ một dòng enqueue = quay về không emit; event record giữ nguyên contract-first).
+- Traceability: design §7.4 (rotation), AD-056 (worker consumer path), AD-016/AD-029 (outbox/idempotency), CP6/CP7/CP11, F25/F32, closes N-040, post-base operational.
+### AD-058 — docker-compose capstone event-driven: RabbitMQ + messaging opt-in trên ARTIFACT THẬT (image build)
+- Status: Confirmed
+- Date: 2026-07-10
+- Decider: AI(Kiro) — capstone: chứng minh chuỗi event-driven chạy trên IMAGE BUILD THẬT + broker thật + mạng compose (khác Testcontainers dùng ServiceCollection/localhost), đóng phần "compose demo" N-061 để ngỏ.
+- Provenance/Evidence: `platform/docker-compose.yml` (+ service `rabbitmq:3.13` healthcheck `rabbitmq-diagnostics ping`; host env `Bedrock__Messaging__Enabled=true` + `RabbitMq__HostName=rabbitmq` + user `bedrock`; `depends_on rabbitmq: service_healthy`). Verified in-session 2026-07-10 (`docker compose up -d --build`): postgres+rabbitmq HEALTHY → host `/health/live`=200 + `/health/ready`=200 → log `Applying migration 'InitialCreate'` + `Outbox dispatcher worker started for IdentityDbContext (poll every 00:00:05)` + poll `... FOR UPDATE SKIP LOCKED`. Seed 1 row outbox (`identity.user_token_refreshed`) qua psql → sau 10s: `processed_at IS NOT NULL` (t), `error_count=0`, `dead_lettered_at` null → worker của IMAGE THẬT đã claim+publish tới RabbitMQ compose (publisher-confirms ack) + mark processed. `docker compose down -v` sạch.
+- Context: N-056/057/059/061 để ngỏ "thêm RabbitMQ vào compose để demo end-to-end trên artifact thật". Đủ mảnh sau AD-056 (worker) + AD-057 (producer) + AD-048 (adapter). Testcontainers đã phủ code path; còn thiếu bằng chứng "IMAGE BUILD + config env + mạng compose + credential" hoạt động.
+- Decision/Change: compose bật messaging opt-in + thêm RabbitMQ; verify chuỗi Outbox→worker→RabbitMQ trên image thật.
+- Rationale (verifiable — vì sao KHÔNG dùng 'guest', bản chất):
+  - **RabbitMQ user `guest` CHỈ connect qua LOOPBACK** (mặc định `loopback_users=guest`); container `host` → service `rabbitmq` là non-loopback → guest BỊ TỪ CHỐI. Đây là lỗi deployment THẬT mà compose-với-image phơi ra còn Testcontainers (map localhost) che mất. Fix gốc = dùng user riêng (`RABBITMQ_DEFAULT_USER=bedrock`), khớp `RabbitMq__UserName/Password` — không vá bằng bật loopback cho guest.
+  - **Verify bằng `processed_at` (không cần bind queue):** publisher-confirms ack kể cả message unroutable (mandatory=false) → `processed_at` set = broker ĐÃ nhận vào exchange. Nếu broker unreachable/auth-refused → publish ném → `error_count`≥1, `processed_at` null. Nên `processed=t & error_count=0` là bằng chứng dứt khoát kết nối+publish thành công. Không cần management API/queue → ít mảnh, tất định.
+  - **Bổ trợ (không trùng) với Testcontainers:** integration test phủ CODE PATH (ServiceCollection); compose phủ ARTIFACT (Dockerfile publish + config binding từ env + service networking + boot ordering + credential thật). Hai lớp khác nhau.
+- Alternatives: (a) chỉ boot healthy, không seed (loại: publisher lazy → outbox rỗng KHÔNG chạm RabbitMQ → không chứng minh được kết nối broker); (b) trigger rotation qua HTTP (loại: skeleton chưa có login endpoint tạo refresh token → cần seed token; seed outbox trực tiếp đơn giản + tất định hơn); (c) dùng guest (loại: bị loopback-refuse — chính lỗi cần tránh).
+- Consequences: compose giờ là full event-driven stack demo (dev/staging). Prod: KHÔNG dùng credential mặc định + secret qua store + migrate out-of-band (AD-050) — đã ghi chú trong compose.
+- Reversibility: High (gỡ service rabbitmq + 4 dòng env = quay về compose Postgres+Host; cờ messaging tắt).
+- Traceability: AD-056 (worker), AD-057 (producer), AD-048 (adapter RabbitMQ), AD-051/054 (Docker/compose), F29/F35, closes phần compose-demo của N-059/N-061, post-base operational.
+### AD-059 — Nửa CONSUME: port `IIntegrationEventDispatcher` (Application) + core agnostic `EfIntegrationEventDispatcher` (Infrastructure), hiện thực §7.3
+- Status: Confirmed
+- Date: 2026-07-10
+- Decider: user (chốt "core + subscriber + topology tối thiểu") + AI(Kiro) thiết kế
+- Provenance/Evidence: `platform/src/Bedrock.Application/Messaging/Dispatch/{IIntegrationEventDispatcher,IncomingIntegrationMessage,InboxDispatchOutcome}.cs` + `platform/src/Bedrock.Infrastructure/Persistence/Messaging/EfIntegrationEventDispatcher.cs` + DI `OutboxDispatcherExtensions.AddIntegrationEventConsumer`. Verified in-session 2026-07-10: `Bedrock.Infrastructure.Tests/PostgresIntegrationEventDispatcherTests` (Postgres THẬT, 3 test): First_delivery_handles_once_and_records_inbox / Redelivery_is_idempotent_handler_runs_once (Duplicate, handler chạy đúng 1 lần) / Unknown_event_type_is_dead_lettered_without_inbox_or_handler. Full suite 235 xanh, 0 warning, 0 skip.
+- Context: N-063 phát hiện building-blocks consume (inbox store/registry/handler contract) CÓ nhưng KHÔNG orchestrator; §7.3 định nghĩa protocol nhưng base 21-task chỉ dựng building-blocks. Registry (AddIntegrationEventRegistry, AD-056) đang registered-but-unused.
+- Decision/Change: thêm PORT `IIntegrationEventDispatcher` (namespace `Messaging.Dispatch`) + impl agnostic `EfIntegrationEventDispatcher`: registry resolve EventType→CLR (unknown→`DeadLettered`, không crash R17.3) → `IUnitOfWork.ExecuteInTransactionAsync`: `TryMarkProcessedAsync` (trùng→`Duplicate`) → deserialize (OutboxSerialization.Options — CỐ ĐỊNH giống producer, tolerant reader) → gọi mọi `IIntegrationEventHandler<T>` (invoker generic AD-025) → `SaveChangesAsync` (inbox+business nguyên tử) → `Handled`. Lỗi handler → NÉM (rollback+rethrow) → transport NACK. Registry nay ĐƯỢC DÙNG (hết loose-end N-063).
+- Rationale (verifiable):
+  - **Port ở Application, impl ở Infrastructure (bản chất CP3):** adapter subscriber (RabbitMQ) chỉ được ref `Bedrock.Application` (CP3/`AdapterIsolationTests`), KHÔNG `Bedrock.Infrastructure`. Nên logic dispatch phải lộ qua PORT ở Application để adapter gọi — ĐỐI XỨNG publish (`IEventBusPublisher` port, impl adapter). Namespace `Messaging.Dispatch` → use case KHÔNG được ref (CP11 nguyên vẹn — verified 33 arch test).
+  - **Đối xứng `EfOutboxDispatcher`:** cùng triết lý cơ chế-tái-dùng-race-sensitive ở base (AD-010); invoker generic giữ kiểu exception (AD-025); transaction inbox+business nguyên tử = §7.3 postcondition (F30/CP8).
+  - **Scope mỗi message:** đăng ký Scoped + subscriber tạo scope/message → inbox/handler chung PlatformDbContext đang mở transaction.
+- Alternatives: (a) core generic theo TContext như EfOutboxDispatcher (loại: IInboxStore/IUnitOfWork đã trừu tượng context; non-generic gọn hơn cho single-module; multi-module = consumer per-module scope, ghi N-064); (b) đặt cả logic trong adapter (loại: phá CP3 — logic agnostic không được sống ở adapter tech; mất tái dùng cho adapter khác).
+- Consequences: consume có cơ chế đúng-một-lần tái dùng; adapter bất kỳ (RabbitMQ/khác) cắm vào port. Multi-module cần consumer + scope per-module (như dispatcher per-module).
+- Reversibility: Medium (port + impl + DI cộng thêm; gỡ = mất consume orchestrator).
+- Traceability: design §7.3/§5.2, AD-010/AD-025/AD-029, CP3/CP8/CP11, F30/R17.3, addresses N-063, post-base operational.
+
+### AD-060 — Subscriber RabbitMQ (adapter) + topology tối thiểu Host + chính sách NACK requeue=false (DLX cho prod)
+- Status: Confirmed
+- Date: 2026-07-10
+- Decider: user (chốt phương án 2) + AI(Kiro)
+- Provenance/Evidence: `platform/src/Adapters/Messaging.RabbitMq/{RabbitMqConsumer.cs,RabbitMqConsumerOptions.cs}` + `RabbitMqMessagingExtensions.AddRabbitMqConsumer`; Host `Program.cs` (block messaging: `AddIntegrationEventConsumer` + handler demo `UserTokenRefreshedLogHandler` + `AddRabbitMqConsumer(queue=starhill.identity, binding=identity.#)`). Verified in-session 2026-07-10: `Messaging.IntegrationTests/RabbitMqConsumeEndToEndTests` (Postgres+RabbitMQ THẬT: publish→subscriber qua đường thật `AddRabbitMqConsumer`→`AddHostedService`→`BackgroundService`→dispatch→handler chạy 1 lần + inbox mark persist). Full suite 235 xanh, 0 warning, 0 skip.
+- Context: cần transport nhận message từ RabbitMQ và feed core AD-059. Topology (queue/binding/nack) là quyết định app (N-063).
+- Decision/Change: `RabbitMqConsumer : BackgroundService` (mirror publisher): declare exchange(topic,durable)+queue(durable)+binding + QoS prefetch + `BasicConsumeAsync` (manual ack); mỗi delivery tạo DI SCOPE → resolve port `IIntegrationEventDispatcher` → dispatch → ACK (Handled/Duplicate/DeadLettered) hoặc NACK requeue=false (handler lỗi). Header decode: MessageId=`BasicProperties.MessageId`, event-type=header (byte[]→UTF8). Envelope hỏng → ACK-drop+log. Topology Host: queue `starhill.identity`, binding `identity.#`, consumer-name=queue.
+- Rationale (verifiable):
+  - **NACK requeue=false (không requeue=true):** requeue=true → hot-loop VÔ HẠN khi handler luôn lỗi (poison) — tệ hơn. requeue=false tránh hot-loop; production cấu hình DLX (`x-dead-letter-exchange` qua `QueueArguments`) để requeue=false ĐI VÀO DLX thay vì drop. Race-loser PK inbox: winner đã handle → drop loser an toàn (hiệu ứng đã xảy ra 1 lần).
+  - **Scope mỗi delivery:** dispatcher/handler/inbox Scoped → mỗi message một PlatformDbContext → an toàn xử lý song song (prefetch>1).
+  - **Adapter ref port (Application), KHÔNG Infrastructure:** giữ CP3 (`Hosting.Abstractions` không nằm trong danh sách cấm CP3). Verified build + AdapterIsolationTests xanh.
+  - **Header event-type là byte[]:** AMQP field table encode string thành longstr → consume ra byte[]; decode UTF-8 (không giả định string).
+- Alternatives: (a) requeue=true (loại: hot-loop poison); (b) không manual-ack/autoAck=true (loại: mất message khi crash giữa nhận và xử lý — phá at-least-once); (c) bake DLX mặc định vào base (loại: topology là app — N-063; để `QueueArguments` cho Host khai).
+- Consequences: sample Host consume `identity.#` + log; production PHẢI cấu hình DLX (nếu không, handler-lỗi-liên-tục = drop). Ghi rõ trong code + N-064.
+- Reversibility: High (bỏ AddRabbitMqConsumer = không consume; core AD-059 vẫn dùng được với adapter khác).
+- Traceability: AD-059 (core/port), AD-048 (publisher đối xứng), F29/F35/CP3, design §7.3, post-base operational.

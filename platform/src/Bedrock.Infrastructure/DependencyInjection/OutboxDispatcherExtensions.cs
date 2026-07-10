@@ -34,6 +34,31 @@ public static class OutboxDispatcherExtensions
     }
 
     /// <summary>
+    /// (OPT-IN) Lên lịch chạy dispatcher outbox của <typeparamref name="TContext"/> như một
+    /// <c>BackgroundService</c> poll định kỳ (<see cref="OutboxDispatcherHostedService{TContext}"/>).
+    /// <para>
+    /// Host GỌI TƯỜNG MINH khi muốn phát tự động — <c>AddBedrockPersistence</c>/<c>AddOutboxDispatcher</c>
+    /// KHÔNG tự đăng ký worker. Nhờ vậy lịch vẫn do Host quyết (giữ AD-047: "Host lên lịch", một mô hình duy
+    /// nhất); base chỉ cấp sẵn vỏ poll-loop đúng-đắn (scope mỗi lượt + không hạ host khi lỗi tạm + shutdown êm).
+    /// </para>
+    /// Yêu cầu đã gọi <see cref="AddOutboxDispatcher{TContext}"/> (đăng ký <see cref="IOutboxDispatcher"/>) và
+    /// có <see cref="IEventBusPublisher"/> (adapter, vd RabbitMQ). Named-options theo context.
+    /// </summary>
+    public static IServiceCollection AddOutboxDispatcherWorker<TContext>(
+        this IServiceCollection services,
+        Action<OutboxDispatcherWorkerOptions>? configure = null)
+        where TContext : PlatformDbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddOptions<OutboxDispatcherWorkerOptions>(OutboxDispatcherWorkerOptions.KeyFor<TContext>())
+            .Configure(options => configure?.Invoke(options));
+
+        services.AddHostedService<OutboxDispatcherHostedService<TContext>>();
+        return services;
+    }
+
+    /// <summary>
     /// Đăng ký job retention outbox cho DbContext <typeparamref name="TContext"/> (per-module, task 7.5).
     /// Base chỉ cung cấp LOGIC (<see cref="EfOutboxRetention{TContext}"/>); Host lên lịch chạy định kỳ — nhất
     /// quán với dispatcher (base KHÔNG có hosted-service). Named-options theo context: mỗi module đặt TTL riêng.
@@ -49,6 +74,23 @@ public static class OutboxDispatcherExtensions
             .Configure(options => configure?.Invoke(options));
 
         services.AddScoped<EfOutboxRetention<TContext>>();
+        return services;
+    }
+
+    /// <summary>
+    /// Wire phía CONSUME agnostic (design §7.3): <see cref="IInboxStore"/> (idempotency) + core
+    /// <see cref="IIntegrationEventDispatcher"/> (<see cref="EfIntegrationEventDispatcher"/>). Scoped: dùng chung
+    /// <c>PlatformDbContext</c>/scope với handler → inbox mark + business nguyên tử. Yêu cầu đã có
+    /// <see cref="AddBedrockPersistence"/> (IUnitOfWork) + <see cref="AddIntegrationEventRegistry"/> (registry) +
+    /// handler (<c>IIntegrationEventHandler&lt;T&gt;</c>) do app đăng ký. Adapter transport (vd RabbitMQ subscriber)
+    /// gọi port này per-message. KHÔNG tự đăng ký transport (Host chọn adapter + topology).
+    /// </summary>
+    public static IServiceCollection AddIntegrationEventConsumer(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.TryAddScoped<IInboxStore, EfInboxStore>();
+        services.TryAddScoped<IIntegrationEventDispatcher, EfIntegrationEventDispatcher>();
         return services;
     }
 

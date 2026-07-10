@@ -1,9 +1,14 @@
+using Adapters.Messaging.RabbitMq;
 using Bedrock.Api;
 using Bedrock.Application.DependencyInjection;
+using Bedrock.Application.Messaging;
 using Bedrock.Infrastructure.DependencyInjection;
 using Identity.Api.DependencyInjection;
+using Identity.Contracts.Events;
 using Identity.Infrastructure.DependencyInjection;
+using Identity.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using StarHill.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,6 +46,30 @@ var identityConnectionString = configuration.GetConnectionString("Identity")
 services.AddIdentityInfrastructure(options => options.UseNpgsql(identityConnectionString));
 services.AddIdentityApi();
 
+// (2b) OPT-IN messaging event-driven — mặc định TẮT (mirror opt-in migrate AD-053). Bật qua config
+//      Bedrock:Messaging:Enabled=true (docker-compose đặt cờ). Khi bật: cắm adapter RabbitMQ (OVERRIDE default
+//      fail-loud), đăng ký dispatcher outbox cho IdentityDbContext, LÊN LỊCH worker phát tự động (AD-056 —
+//      Host quyết lịch, giữ AD-047), và build registry EventType→CLR cho consumer. Khi tắt: giữ default
+//      ThrowingEventBusPublisher (không có gì tự phát) → sample host boot không cần RabbitMQ (smoke test xanh).
+if (bool.TryParse(configuration["Bedrock:Messaging:Enabled"], out var messagingEnabled) && messagingEnabled)
+{
+    services.AddRabbitMqMessaging(configuration);
+    services.AddOutboxDispatcher<IdentityDbContext>();
+    services.AddOutboxDispatcherWorker<IdentityDbContext>();
+    services.AddIntegrationEventRegistry(typeof(UserTokenRefreshedIntegrationEvent).Assembly);
+
+    // CONSUME side (AD-059): dispatch core agnostic (Bedrock.Infrastructure) + handler demo + subscriber RabbitMQ.
+    // Topology TỐI THIỂU cho sample (queue + binding) — quyết định app (N-063). Handler chạy trong transaction
+    // consume (inbox + business nguyên tử, F30). Multi-module thật: mỗi module một consumer + scope riêng.
+    services.AddIntegrationEventConsumer();
+    services.AddScoped<IIntegrationEventHandler<UserTokenRefreshedIntegrationEvent>, UserTokenRefreshedLogHandler>();
+    services.AddRabbitMqConsumer(o =>
+    {
+        o.QueueName = "starhill.identity";
+        o.RoutingKeys.Add("identity.#"); // nhận mọi event của module Identity (topic pattern).
+    });
+}
+
 // (3) Bọc pipeline behaviors SAU khi use case đã đăng ký (AD-037 — Scrutor chỉ decorate service đã có mặt).
 services.AddBedrockCore();
 
@@ -48,6 +77,16 @@ services.AddBedrockCore();
 services.ValidateSingleImplementationPorts();
 
 var app = builder.Build();
+
+// OPT-IN áp EF migration lúc start — CHỈ cho dev/compose SINGLE-INSTANCE (mặc định TẮT). Production giữ migrate
+// OUT-OF-BAND (AD-050 — an toàn đa-instance; nhiều replica không được đua nhau migrate). Bật qua config
+// Bedrock:ApplyMigrationsOnStartup=true (docker-compose đặt cờ này). Dùng indexer config (không cần Binder package).
+if (bool.TryParse(configuration["Bedrock:ApplyMigrationsOnStartup"], out var applyMigrations) && applyMigrations)
+{
+    await using var migrationScope = app.Services.CreateAsyncScope();
+    var identityDb = migrationScope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+    await identityDb.Database.MigrateAsync().ConfigureAwait(false);
+}
 
 // Slot #4 (HSTS/HTTPS-redirect) = TRÁCH NHIỆM HOST (AD-035). Sample host này chạy sau reverse-proxy terminate TLS
 // (design §3.5) nên KHÔNG tự redirect; deployment thật bật UseHsts/UseHttpsRedirection khi cần.

@@ -1,4 +1,5 @@
 using System.Reflection;
+using Adapters.Messaging.RabbitMq;
 using Bedrock.Api.Endpoints;
 using Bedrock.Application.Ports.Time;
 using Bedrock.Domain.Results;
@@ -46,4 +47,10 @@ internal static class ModuleAssemblies
     public static Assembly IdentityInfrastructure => typeof(IdentityDbContext).Assembly;
 
     public static Assembly IdentityApi => typeof(IdentityEndpointModule).Assembly;
+}
+
+/// <summary>Điểm truy cập assembly adapter mẫu <c>Adapters.Messaging.RabbitMq</c> — để kiểm CP3 (adapter isolation).</summary>
+internal static class AdapterAssemblies
+{
+    public static Assembly RabbitMqMessaging => typeof(RabbitMqEventBusPublisher).Assembly;
 }

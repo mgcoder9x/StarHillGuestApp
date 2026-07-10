@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Foundation.ArchitectureTests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+94c5d81202d18a8ca984513d3a46441f66034464")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+390014ea14ceaf00dcb8b5097ec7a1f8e0db70bf")]
 [assembly: System.Reflection.AssemblyProductAttribute("Foundation.ArchitectureTests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Foundation.ArchitectureTests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

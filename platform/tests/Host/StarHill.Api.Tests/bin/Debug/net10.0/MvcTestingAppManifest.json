@@ -1,13 +1,14 @@
 {
-  "Bedrock.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Api",
-  "Bedrock.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Application",
-  "Bedrock.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Domain",
-  "Bedrock.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Infrastructure",
-  "Bedrock.Messaging.Contracts, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Messaging.Contracts",
-  "Identity.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Modules\\Identity\\Identity.Api",
-  "Identity.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Modules\\Identity\\Identity.Application",
-  "Identity.Contracts, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Modules\\Identity\\Identity.Contracts",
-  "Identity.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Modules\\Identity\\Identity.Domain",
-  "Identity.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Modules\\Identity\\Identity.Infrastructure",
-  "StarHill.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Host\\StarHill.Api"
+  "Adapters.Messaging.RabbitMq, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Adapters\\Messaging.RabbitMq",
+  "Bedrock.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Api",
+  "Bedrock.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Application",
+  "Bedrock.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Domain",
+  "Bedrock.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Infrastructure",
+  "Bedrock.Messaging.Contracts, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Messaging.Contracts",
+  "Identity.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Modules\\Identity\\Identity.Api",
+  "Identity.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Modules\\Identity\\Identity.Application",
+  "Identity.Contracts, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Modules\\Identity\\Identity.Contracts",
+  "Identity.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Modules\\Identity\\Identity.Domain",
+  "Identity.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Modules\\Identity\\Identity.Infrastructure",
+  "StarHill.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Host\\StarHill.Api"
 }

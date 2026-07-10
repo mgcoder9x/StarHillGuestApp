@@ -1,22 +1,22 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\tests\\Bedrock.Api.Tests\\Bedrock.Api.Tests.csproj": {}
+    "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\tests\\Bedrock.Api.Tests\\Bedrock.Api.Tests.csproj": {}
   },
   "projects": {
-    "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Api\\Bedrock.Api.csproj": {
+    "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Api\\Bedrock.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Api\\Bedrock.Api.csproj",
+        "projectUniqueName": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Api\\Bedrock.Api.csproj",
         "projectName": "Bedrock.Api",
-        "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Api\\Bedrock.Api.csproj",
-        "packagesPath": "C:\\Users\\toann\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Api\\obj\\",
+        "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Api\\Bedrock.Api.csproj",
+        "packagesPath": "C:\\Users\\k.nguyen.manh.toan\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Api\\obj\\",
         "projectStyle": "PackageReference",
         "centralPackageVersionsManagementEnabled": true,
         "CentralPackageTransitivePinningEnabled": true,
         "configFilePaths": [
-          "C:\\Users\\toann\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\k.nguyen.manh.toan\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -29,8 +29,8 @@
             "framework": "net10.0",
             "targetAlias": "net10.0",
             "projectReferences": {
-              "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Application\\Bedrock.Application.csproj": {
-                "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Application\\Bedrock.Application.csproj"
+              "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Application\\Bedrock.Application.csproj": {
+                "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Application\\Bedrock.Application.csproj"
               }
             }
           }
@@ -90,13 +90,16 @@
             "Microsoft.AspNetCore.Mvc.Testing": "10.0.9",
             "Microsoft.AspNetCore.TestHost": "10.0.9",
             "Microsoft.EntityFrameworkCore": "10.0.9",
+            "Microsoft.EntityFrameworkCore.Design": "10.0.9",
             "Microsoft.EntityFrameworkCore.Sqlite": "10.0.9",
+            "Microsoft.Extensions.Configuration": "10.0.9",
             "Microsoft.Extensions.Configuration.Binder": "10.0.9",
             "Microsoft.Extensions.DependencyInjection": "10.0.9",
             "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.9",
             "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "10.0.9",
             "Microsoft.Extensions.Hosting.Abstractions": "10.0.9",
             "Microsoft.Extensions.Logging.Abstractions": "10.0.9",
+            "Microsoft.Extensions.Resilience": "10.7.0",
             "Microsoft.IdentityModel.JsonWebTokens": "8.0.1",
             "Microsoft.NET.Test.Sdk": "17.14.1",
             "Mono.Cecil": "0.11.6",
@@ -105,10 +108,14 @@
             "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.16.0",
             "OpenTelemetry.Extensions.Hosting": "1.16.0",
             "OpenTelemetry.Instrumentation.AspNetCore": "1.16.0",
+            "RabbitMQ.Client": "7.2.1",
             "Scrutor": "7.0.0",
             "SQLitePCLRaw.lib.e_sqlite3": "3.50.3",
+            "Testcontainers.PostgreSql": "4.13.0",
+            "Testcontainers.RabbitMq": "4.13.0",
             "xunit": "2.9.3",
-            "xunit.runner.visualstudio": "3.1.4"
+            "xunit.runner.visualstudio": "3.1.4",
+            "Xunit.SkippableFact": "1.5.61"
           },
           "imports": [
             "net461",
@@ -129,7 +136,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Users\\k.nguyen.manh.toan\\AppData\\Local\\Microsoft\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
@@ -547,19 +554,19 @@
         }
       }
     },
-    "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Application\\Bedrock.Application.csproj": {
+    "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Application\\Bedrock.Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Application\\Bedrock.Application.csproj",
+        "projectUniqueName": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Application\\Bedrock.Application.csproj",
         "projectName": "Bedrock.Application",
-        "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Application\\Bedrock.Application.csproj",
-        "packagesPath": "C:\\Users\\toann\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Application\\obj\\",
+        "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Application\\Bedrock.Application.csproj",
+        "packagesPath": "C:\\Users\\k.nguyen.manh.toan\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Application\\obj\\",
         "projectStyle": "PackageReference",
         "centralPackageVersionsManagementEnabled": true,
         "CentralPackageTransitivePinningEnabled": true,
         "configFilePaths": [
-          "C:\\Users\\toann\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\k.nguyen.manh.toan\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -572,11 +579,11 @@
             "framework": "net10.0",
             "targetAlias": "net10.0",
             "projectReferences": {
-              "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\Bedrock.Domain.csproj": {
-                "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\Bedrock.Domain.csproj"
+              "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\Bedrock.Domain.csproj": {
+                "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\Bedrock.Domain.csproj"
               },
-              "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Messaging.Contracts\\Bedrock.Messaging.Contracts.csproj": {
-                "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Messaging.Contracts\\Bedrock.Messaging.Contracts.csproj"
+              "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Messaging.Contracts\\Bedrock.Messaging.Contracts.csproj": {
+                "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Messaging.Contracts\\Bedrock.Messaging.Contracts.csproj"
               }
             }
           }
@@ -631,13 +638,16 @@
             "Microsoft.AspNetCore.Mvc.Testing": "10.0.9",
             "Microsoft.AspNetCore.TestHost": "10.0.9",
             "Microsoft.EntityFrameworkCore": "10.0.9",
+            "Microsoft.EntityFrameworkCore.Design": "10.0.9",
             "Microsoft.EntityFrameworkCore.Sqlite": "10.0.9",
+            "Microsoft.Extensions.Configuration": "10.0.9",
             "Microsoft.Extensions.Configuration.Binder": "10.0.9",
             "Microsoft.Extensions.DependencyInjection": "10.0.9",
             "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.9",
             "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "10.0.9",
             "Microsoft.Extensions.Hosting.Abstractions": "10.0.9",
             "Microsoft.Extensions.Logging.Abstractions": "10.0.9",
+            "Microsoft.Extensions.Resilience": "10.7.0",
             "Microsoft.IdentityModel.JsonWebTokens": "8.0.1",
             "Microsoft.NET.Test.Sdk": "17.14.1",
             "Mono.Cecil": "0.11.6",
@@ -646,10 +656,14 @@
             "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.16.0",
             "OpenTelemetry.Extensions.Hosting": "1.16.0",
             "OpenTelemetry.Instrumentation.AspNetCore": "1.16.0",
+            "RabbitMQ.Client": "7.2.1",
             "Scrutor": "7.0.0",
             "SQLitePCLRaw.lib.e_sqlite3": "3.50.3",
+            "Testcontainers.PostgreSql": "4.13.0",
+            "Testcontainers.RabbitMq": "4.13.0",
             "xunit": "2.9.3",
-            "xunit.runner.visualstudio": "3.1.4"
+            "xunit.runner.visualstudio": "3.1.4",
+            "Xunit.SkippableFact": "1.5.61"
           },
           "imports": [
             "net461",
@@ -667,7 +681,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Users\\k.nguyen.manh.toan\\AppData\\Local\\Microsoft\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",
@@ -945,19 +959,19 @@
         }
       }
     },
-    "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\Bedrock.Domain.csproj": {
+    "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\Bedrock.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\Bedrock.Domain.csproj",
+        "projectUniqueName": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\Bedrock.Domain.csproj",
         "projectName": "Bedrock.Domain",
-        "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\Bedrock.Domain.csproj",
-        "packagesPath": "C:\\Users\\toann\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\obj\\",
+        "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\Bedrock.Domain.csproj",
+        "packagesPath": "C:\\Users\\k.nguyen.manh.toan\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "centralPackageVersionsManagementEnabled": true,
         "CentralPackageTransitivePinningEnabled": true,
         "configFilePaths": [
-          "C:\\Users\\toann\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\k.nguyen.manh.toan\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -1000,13 +1014,16 @@
             "Microsoft.AspNetCore.Mvc.Testing": "10.0.9",
             "Microsoft.AspNetCore.TestHost": "10.0.9",
             "Microsoft.EntityFrameworkCore": "10.0.9",
+            "Microsoft.EntityFrameworkCore.Design": "10.0.9",
             "Microsoft.EntityFrameworkCore.Sqlite": "10.0.9",
+            "Microsoft.Extensions.Configuration": "10.0.9",
             "Microsoft.Extensions.Configuration.Binder": "10.0.9",
             "Microsoft.Extensions.DependencyInjection": "10.0.9",
             "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.9",
             "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "10.0.9",
             "Microsoft.Extensions.Hosting.Abstractions": "10.0.9",
             "Microsoft.Extensions.Logging.Abstractions": "10.0.9",
+            "Microsoft.Extensions.Resilience": "10.7.0",
             "Microsoft.IdentityModel.JsonWebTokens": "8.0.1",
             "Microsoft.NET.Test.Sdk": "17.14.1",
             "Mono.Cecil": "0.11.6",
@@ -1015,10 +1032,14 @@
             "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.16.0",
             "OpenTelemetry.Extensions.Hosting": "1.16.0",
             "OpenTelemetry.Instrumentation.AspNetCore": "1.16.0",
+            "RabbitMQ.Client": "7.2.1",
             "Scrutor": "7.0.0",
             "SQLitePCLRaw.lib.e_sqlite3": "3.50.3",
+            "Testcontainers.PostgreSql": "4.13.0",
+            "Testcontainers.RabbitMq": "4.13.0",
             "xunit": "2.9.3",
-            "xunit.runner.visualstudio": "3.1.4"
+            "xunit.runner.visualstudio": "3.1.4",
+            "Xunit.SkippableFact": "1.5.61"
           },
           "imports": [
             "net461",
@@ -1036,7 +1057,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Users\\k.nguyen.manh.toan\\AppData\\Local\\Microsoft\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",
@@ -1314,19 +1335,19 @@
         }
       }
     },
-    "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Messaging.Contracts\\Bedrock.Messaging.Contracts.csproj": {
+    "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Messaging.Contracts\\Bedrock.Messaging.Contracts.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Messaging.Contracts\\Bedrock.Messaging.Contracts.csproj",
+        "projectUniqueName": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Messaging.Contracts\\Bedrock.Messaging.Contracts.csproj",
         "projectName": "Bedrock.Messaging.Contracts",
-        "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Messaging.Contracts\\Bedrock.Messaging.Contracts.csproj",
-        "packagesPath": "C:\\Users\\toann\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Messaging.Contracts\\obj\\",
+        "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Messaging.Contracts\\Bedrock.Messaging.Contracts.csproj",
+        "packagesPath": "C:\\Users\\k.nguyen.manh.toan\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Messaging.Contracts\\obj\\",
         "projectStyle": "PackageReference",
         "centralPackageVersionsManagementEnabled": true,
         "CentralPackageTransitivePinningEnabled": true,
         "configFilePaths": [
-          "C:\\Users\\toann\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\k.nguyen.manh.toan\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -1369,13 +1390,16 @@
             "Microsoft.AspNetCore.Mvc.Testing": "10.0.9",
             "Microsoft.AspNetCore.TestHost": "10.0.9",
             "Microsoft.EntityFrameworkCore": "10.0.9",
+            "Microsoft.EntityFrameworkCore.Design": "10.0.9",
             "Microsoft.EntityFrameworkCore.Sqlite": "10.0.9",
+            "Microsoft.Extensions.Configuration": "10.0.9",
             "Microsoft.Extensions.Configuration.Binder": "10.0.9",
             "Microsoft.Extensions.DependencyInjection": "10.0.9",
             "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.9",
             "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "10.0.9",
             "Microsoft.Extensions.Hosting.Abstractions": "10.0.9",
             "Microsoft.Extensions.Logging.Abstractions": "10.0.9",
+            "Microsoft.Extensions.Resilience": "10.7.0",
             "Microsoft.IdentityModel.JsonWebTokens": "8.0.1",
             "Microsoft.NET.Test.Sdk": "17.14.1",
             "Mono.Cecil": "0.11.6",
@@ -1384,10 +1408,14 @@
             "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.16.0",
             "OpenTelemetry.Extensions.Hosting": "1.16.0",
             "OpenTelemetry.Instrumentation.AspNetCore": "1.16.0",
+            "RabbitMQ.Client": "7.2.1",
             "Scrutor": "7.0.0",
             "SQLitePCLRaw.lib.e_sqlite3": "3.50.3",
+            "Testcontainers.PostgreSql": "4.13.0",
+            "Testcontainers.RabbitMq": "4.13.0",
             "xunit": "2.9.3",
-            "xunit.runner.visualstudio": "3.1.4"
+            "xunit.runner.visualstudio": "3.1.4",
+            "Xunit.SkippableFact": "1.5.61"
           },
           "imports": [
             "net461",
@@ -1405,7 +1433,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Users\\k.nguyen.manh.toan\\AppData\\Local\\Microsoft\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",
@@ -1683,19 +1711,19 @@
         }
       }
     },
-    "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\tests\\Bedrock.Api.Tests\\Bedrock.Api.Tests.csproj": {
+    "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\tests\\Bedrock.Api.Tests\\Bedrock.Api.Tests.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\tests\\Bedrock.Api.Tests\\Bedrock.Api.Tests.csproj",
+        "projectUniqueName": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\tests\\Bedrock.Api.Tests\\Bedrock.Api.Tests.csproj",
         "projectName": "Bedrock.Api.Tests",
-        "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\tests\\Bedrock.Api.Tests\\Bedrock.Api.Tests.csproj",
-        "packagesPath": "C:\\Users\\toann\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\tests\\Bedrock.Api.Tests\\obj\\",
+        "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\tests\\Bedrock.Api.Tests\\Bedrock.Api.Tests.csproj",
+        "packagesPath": "C:\\Users\\k.nguyen.manh.toan\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\tests\\Bedrock.Api.Tests\\obj\\",
         "projectStyle": "PackageReference",
         "centralPackageVersionsManagementEnabled": true,
         "CentralPackageTransitivePinningEnabled": true,
         "configFilePaths": [
-          "C:\\Users\\toann\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\k.nguyen.manh.toan\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -1708,8 +1736,8 @@
             "framework": "net10.0",
             "targetAlias": "net10.0",
             "projectReferences": {
-              "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Api\\Bedrock.Api.csproj": {
-                "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\platform\\src\\Bedrock.Api\\Bedrock.Api.csproj"
+              "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Api\\Bedrock.Api.csproj": {
+                "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\platform\\src\\Bedrock.Api\\Bedrock.Api.csproj"
               }
             }
           }
@@ -1774,13 +1802,16 @@
             "Microsoft.AspNetCore.Mvc.Testing": "10.0.9",
             "Microsoft.AspNetCore.TestHost": "10.0.9",
             "Microsoft.EntityFrameworkCore": "10.0.9",
+            "Microsoft.EntityFrameworkCore.Design": "10.0.9",
             "Microsoft.EntityFrameworkCore.Sqlite": "10.0.9",
+            "Microsoft.Extensions.Configuration": "10.0.9",
             "Microsoft.Extensions.Configuration.Binder": "10.0.9",
             "Microsoft.Extensions.DependencyInjection": "10.0.9",
             "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.9",
             "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "10.0.9",
             "Microsoft.Extensions.Hosting.Abstractions": "10.0.9",
             "Microsoft.Extensions.Logging.Abstractions": "10.0.9",
+            "Microsoft.Extensions.Resilience": "10.7.0",
             "Microsoft.IdentityModel.JsonWebTokens": "8.0.1",
             "Microsoft.NET.Test.Sdk": "17.14.1",
             "Mono.Cecil": "0.11.6",
@@ -1789,10 +1820,14 @@
             "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.16.0",
             "OpenTelemetry.Extensions.Hosting": "1.16.0",
             "OpenTelemetry.Instrumentation.AspNetCore": "1.16.0",
+            "RabbitMQ.Client": "7.2.1",
             "Scrutor": "7.0.0",
             "SQLitePCLRaw.lib.e_sqlite3": "3.50.3",
+            "Testcontainers.PostgreSql": "4.13.0",
+            "Testcontainers.RabbitMq": "4.13.0",
             "xunit": "2.9.3",
-            "xunit.runner.visualstudio": "3.1.4"
+            "xunit.runner.visualstudio": "3.1.4",
+            "Xunit.SkippableFact": "1.5.61"
           },
           "imports": [
             "net461",
@@ -1813,7 +1848,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Users\\k.nguyen.manh.toan\\AppData\\Local\\Microsoft\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

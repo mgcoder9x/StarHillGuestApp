@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ResortQr.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+47c09b4cccadc2c8e2f169e7f058daf56fd9bdfa")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+390014ea14ceaf00dcb8b5097ec7a1f8e0db70bf")]
 [assembly: System.Reflection.AssemblyProductAttribute("ResortQr.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ResortQr.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

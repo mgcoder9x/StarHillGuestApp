@@ -110,7 +110,7 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
   - _Requirements: 33.1, 33.2, 33.3, 33.4_
   - _Correctness Properties: CP14_
 
-- [ ] 7. Outbox / Inbox — hiện thực persistence + dispatcher
+- [x] 7. Outbox / Inbox — hiện thực persistence + dispatcher
 - [x] 7.1 Schema + entity + EF config helper per-module
   - `modelBuilder.AddOutboxInbox()` map `outbox_message(id, event_type, schema_version, payload jsonb, occurred_at, processed_at?, error_count, next_attempt_at?, dead_lettered_at?, correlation_id)` + partial index pending; `inbox_message(message_id, consumer, processed_at)` PK `(message_id, consumer)` — vào schema của DbContext gọi helper (design §4.6: per-module).
   - Nghiệm thu: build 0 warning.
@@ -124,7 +124,7 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
   - Inbox `TryMarkProcessedAsync` idempotent (PK conflict → false). `IIntegrationEventTypeRegistry` build từ assemblies Contracts; EventType lạ → dead-letter.
   - Nghiệm thu: build 0 warning + unit test backoff/threshold.
   - _Requirements: 8.4, 8.5, 8.6, 9.1, 9.2, 9.3, 17.3_
-- [ ] 7.4 Integration test Outbox/Inbox (Testcontainers/PostgreSQL)
+- [x] 7.4 Integration test Outbox/Inbox (Testcontainers/PostgreSQL)
   - Test: command ghi state + outbox trong 1 transaction (rollback nếu lỗi); message giao 2 lần → handler chạy 1 lần; 2 dispatcher đồng thời không claim trùng message; message dead-letter không được claim lại.
   - Nghiệm thu: test xanh (cần Docker; skip-có-điều-kiện nếu thiếu) + 0 warning.
   - _Requirements: 32.2_
@@ -134,7 +134,7 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
   - Nghiệm thu: unit test chọn đúng tập row hết hạn (không xóa nhầm pending/dead-letter) + 0 warning.
   - _Requirements: 8.5_
 
-- [ ] 8. Refresh-token store nguyên tử (F5/F10/F19 — cơ chế, không nghiệp vụ)
+- [x] 8. Refresh-token store nguyên tử (F5/F10/F19 — cơ chế, không nghiệp vụ)
 - [x] 8.1 Ẩn `RefreshTokenRecord` trong Infrastructure + port nghiệp vụ + mapping helper
   - Entity persistence ở Infrastructure; Application chỉ thấy `IRefreshTokenStore` (task 3.1). Helper `modelBuilder.AddRefreshTokens(schema)` để module tiêu thụ sở hữu bảng trong schema của mình.
   - Schema `refresh_token` với `UNIQUE ux_refresh_hash`, index `user_id`/`family_id`.
@@ -144,7 +144,7 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
   - `TryConsumeAsync` = một `UPDATE ... WHERE id=@id AND revoked_at IS NULL`; consume+insert trong cùng `ExecuteInTransactionAsync`; reuse → revoke family.
   - Nghiệm thu: integration test SQLite consume-if-not-revoked xanh + 0 warning.
   - _Requirements: 10.1, 10.2, 10.3, 10.4_
-- [ ] 8.3 Integration test race rotation (Testcontainers, đa-connection)
+- [x] 8.3 Integration test race rotation (Testcontainers, đa-connection)
   - 2 request đồng thời → đúng 1 thắng; insert fail → consume rollback (không mất token).
   - Nghiệm thu: test xanh (cần Docker) + 0 warning.
   - _Requirements: 32.2_
@@ -204,7 +204,7 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
   - Nghiệm thu: unit test — gọi port fail-loud khi chưa có adapter → exception rõ ràng; `IAppCache` default miss-through; build 0 warning.
   - _Requirements: 16.1, 16.2, 16.4, 13.1_
 
-- [ ] 14. Adapter mẫu chứng minh "cắm không sửa lõi" (F29)
+- [x] 14. Adapter mẫu chứng minh "cắm không sửa lõi" (F29)
   - Hiện thực `Adapters.Messaging.RabbitMq` (`IEventBusPublisher`) + resilience ở biên (timeout → retry idempotent → circuit-breaker) + `AddRabbitMqMessaging(cfg)`.
   - Architecture test: `Adapters.*` chỉ ref Bedrock.Application (+ negative control); kiểm chứng bằng git-diff rằng thêm adapter KHÔNG sửa file lõi.
   - Nghiệm thu: integration test Testcontainers/RabbitMQ publish thành công + arch test xanh + 0 warning.
@@ -257,7 +257,7 @@ Kế hoạch triển khai `platform-base` gồm 21 task chia theo 5 nhóm bám b
   - _Requirements: 1.1, 29.1, 32.4_
   - _Correctness Properties: CP1, CP12_
 
-- [ ] 21. Definition of Done — kiểm chứng "base cực chất"
+- [x] 21. Definition of Done — kiểm chứng "base cực chất"
   - Xác nhận theo design §16: thêm module = 5 project + 1 dòng Host (boundary test xanh); thêm tech = 1 adapter + 1 dòng Host (0 file lõi bị sửa); command ghi luôn kèm outbox 1 transaction; domain event atomic; dispatcher claim exclusive; boot fail-fast mọi môi trường; telemetry 3 trụ + correlation thống nhất; health live/ready; không secret trong repo.
   - Nghiệm thu: chạy toàn bộ test suite (unit + architecture + integration + Testcontainers) — build 0 warning, tất cả xanh.
   - _Requirements: 31.1, 31.2, 32.1, 32.2, 32.3, 32.4_
