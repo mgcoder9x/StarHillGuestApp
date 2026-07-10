@@ -1,0 +1,12 @@
+model = "gpt-5.6-sol"
+model_provider = "hungnguyen"
+model_reasoning_effort = "low"
+approval_policy = "never"
+sandbox_mode = "read-only"
+
+[model_providers.hungnguyen]
+name = "HungNguyen Proxy"
+base_url = "https://codex.hungnguyen.codes/v1"
+wire_api = "responses"
+env_key = "HUNGNGUYEN_API_KEY"
+requires_openai_auth = false
