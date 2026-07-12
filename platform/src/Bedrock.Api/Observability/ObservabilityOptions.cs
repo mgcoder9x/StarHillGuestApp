@@ -17,4 +17,9 @@ public sealed class ObservabilityOptions
 
     /// <summary>Chuỗi thay thế phần nhạy cảm sau prefix. Mặc định "***".</summary>
     public string MaskPlaceholder { get; set; } = "***";
+
+    internal static bool IsValid(ObservabilityOptions options) =>
+        !string.IsNullOrWhiteSpace(options.MaskPlaceholder)
+        && options.MaskedPathPrefixes.All(prefix =>
+            !string.IsNullOrWhiteSpace(prefix) && prefix.StartsWith('/'));
 }

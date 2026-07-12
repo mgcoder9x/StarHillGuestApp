@@ -62,7 +62,9 @@ public sealed partial class OutboxDispatcherHostedService<TContext>(
         try
         {
             await using var scope = scopeFactory.CreateAsyncScope();
-            var dispatcher = scope.ServiceProvider.GetRequiredService<IOutboxDispatcher>();
+            // Resolve concrete generic theo TContext: nhiều module không thể rơi vào registration cuối của
+            // non-generic IOutboxDispatcher (A-01).
+            var dispatcher = scope.ServiceProvider.GetRequiredService<EfOutboxDispatcher<TContext>>();
             await dispatcher.DispatchPendingAsync(ct).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)

@@ -48,14 +48,31 @@ public sealed class IntegrationEventTypeRegistry : IIntegrationEventTypeRegistry
 
     private static string ReadEventType(Type type)
     {
-        // EventType là mã ổn định (thường literal) → đọc qua instance CHƯA init (không chạy constructor,
-        // không cần biết tham số). Nếu getter phụ thuộc field instance → sẽ lộ ra là lỗi thiết kế cần sửa.
-        var probe = (IntegrationEvent)RuntimeHelpers.GetUninitializedObject(type);
-        var eventType = probe.EventType;
+        // EventType là mã ổn định (biểu thức HẰNG/ĐỘC-LẬP-FIELD) → đọc qua instance CHƯA init (không chạy constructor).
+        // Nếu getter phụ thuộc field do ctor gán → trên instance chưa init sẽ trả null/ném → đây là LỖI THIẾT KẾ event:
+        // bọc để báo lỗi RÕ (nêu type + hợp đồng) thay vì NRE mơ hồ lúc boot (A-21). Guard build-time:
+        // Bedrock.ContractTests/IntegrationEventMetadataContractTests enforce hợp đồng này trước cả khi boot.
+        string? eventType;
+        try
+        {
+            var probe = (IntegrationEvent)RuntimeHelpers.GetUninitializedObject(type);
+            eventType = probe.EventType;
+        }
+#pragma warning disable CA1031 // Bọc RỘNG có chủ đích: bất kỳ lỗi đọc getter (NRE do field-dependent...) → quy về một lỗi cấu hình rõ ràng.
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"Không đọc được '{type.FullName}.EventType' trên instance CHƯA khởi tạo (registry đọc metadata lúc "
+                + "boot mà KHÔNG chạy constructor). EventType phải là biểu thức HẰNG/ĐỘC-LẬP-FIELD "
+                + "(vd: => \"identity.user_token_refreshed\"), KHÔNG phụ thuộc field do constructor gán.", ex);
+        }
+#pragma warning restore CA1031
+
         if (string.IsNullOrWhiteSpace(eventType))
         {
             throw new InvalidOperationException(
-                $"'{type.FullName}.EventType' rỗng — integration event phải trả mã ổn định khác rỗng.");
+                $"'{type.FullName}.EventType' rỗng/null trên instance chưa khởi tạo — phải là biểu thức hằng khác "
+                + "rỗng (độc-lập-field), là mã ổn định cho routing/deserialize.");
         }
 
         return eventType;

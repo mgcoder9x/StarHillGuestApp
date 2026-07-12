@@ -42,12 +42,15 @@ public sealed class PostgresFixture : IAsyncLifetime
             Available = true;
         }
 #pragma warning disable CA1031 // CỐ Ý: bất kỳ lỗi khởi động container ⇒ coi như thiếu Docker → skip (không fail suite).
-        catch (Exception)
+        catch (Exception) when (!IsContinuousIntegration())
 #pragma warning restore CA1031
         {
             Available = false;
         }
     }
+
+    private static bool IsContinuousIntegration() =>
+        string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase);
 
     public async Task DisposeAsync()
     {
@@ -99,7 +102,7 @@ public sealed class PostgresOutboxInboxTests(PostgresFixture fixture)
     {
         public ConcurrentBag<Guid> Ids { get; } = new();
 
-        public Task PublishAsync(OutboxMessage message, CancellationToken ct = default)
+        public Task PublishAsync(OutgoingIntegrationMessage message, CancellationToken ct = default)
         {
             Ids.Add(message.Id);
             return Task.CompletedTask;

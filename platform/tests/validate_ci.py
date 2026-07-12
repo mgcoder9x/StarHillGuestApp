@@ -9,6 +9,7 @@ Exit code: 0 = OK, 1 = có vi phạm, 2 = thiếu tiền đề (PyYAML / file).
 """
 import sys
 import pathlib
+import subprocess
 
 try:
     import yaml
@@ -23,6 +24,33 @@ CI_PATH = REPO_ROOT / ".github" / "workflows" / "ci.yml"
 # Bất biến kỳ vọng (AD-061). Cần siết thêm → bổ sung tại đây.
 REQUIRED_PUSH_BRANCHES = ("main", "master", "develop")
 REQUIRED_JOBS = ("build-test", "docker-image", "migration-bundle")
+
+# A-30/AD-090: KHÔNG được track build artifact (bin/obj) trong Git — .gitignore đã chặn, guard này chống ai đó
+# `git add -f` lại (anti-drift permanent, review A-30 bước 4). Pattern git-pathspec.
+ARTIFACT_PATHSPECS = ("**/bin/**", "**/obj/**")
+
+
+def validate_no_tracked_artifacts() -> list[str]:
+    """Fail nếu Git đang track file bin/obj (build artifact) — giữ repo sạch (A-30)."""
+    try:
+        result = subprocess.run(
+            ["git", "ls-files", "--", *ARTIFACT_PATHSPECS],
+            cwd=REPO_ROOT, capture_output=True, text=True, check=False,
+        )
+    except FileNotFoundError:
+        # Không có git trong môi trường (hiếm) → không chặn cứng; CI/dev luôn có git nên guard vẫn hiệu lực ở đó.
+        print("VALIDATE CI: (bỏ qua kiểm artifact — không thấy 'git' trong PATH)")
+        return []
+
+    if result.returncode != 0:
+        return [f"git ls-files lỗi khi kiểm artifact: {result.stderr.strip()}"]
+
+    tracked = [line for line in result.stdout.splitlines() if line.strip()]
+    if tracked:
+        sample = ", ".join(tracked[:3])
+        return [f"Git đang track {len(tracked)} file build-artifact (bin/obj) — phải `git rm --cached` "
+                f"(A-30). Ví dụ: {sample} ..."]
+    return []
 
 
 def validate(doc: dict) -> list[str]:
@@ -71,13 +99,15 @@ def main() -> int:
         return 2
     doc = yaml.safe_load(CI_PATH.read_text(encoding="utf-8"))
     errors = validate(doc)
+    errors += validate_no_tracked_artifacts()
     if errors:
         print("VALIDATE CI: FAIL")
         for e in errors:
             print(f"  - {e}")
         return 1
     print("VALIDATE CI: OK (push⊇main/master/develop + pull_request; concurrency cancel-in-progress; "
-          "permissions.contents=read; jobs build-test/docker-image/migration-bundle + timeouts)")
+          "permissions.contents=read; jobs build-test/docker-image/migration-bundle + timeouts; "
+          "0 tracked bin/obj artifact)")
     return 0
 
 

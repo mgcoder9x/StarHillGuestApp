@@ -31,6 +31,7 @@ public static class BedrockSecurityExtensions
         // Argon2id options (OWASP defaults; tune per prod). Stateless → hasher singleton.
         var hashingOptions = new PasswordHashingOptions();
         configuration.GetSection(PasswordHashingOptions.SectionName).Bind(hashingOptions);
+        PasswordHashingOptions.Validate(hashingOptions);
         services.TryAddSingleton(hashingOptions);
         services.TryAddSingleton<IPasswordHasher, Argon2idPasswordHasher>();
 
@@ -38,14 +39,20 @@ public static class BedrockSecurityExtensions
 
         // JWT key-ring: VALIDATE-ON-START (design §9.4/F35) — validate lúc host START (sau Build), KHÔNG lúc
         // đăng ký, để config nạp muộn (User-Secrets/env/test) được thấy mà vẫn fail-fast chặn boot khi sai.
-        // Bind LAZY qua Configure (đọc config sống ở thời điểm build options) — tránh đọc eager pre-Build.
-        services.AddOptions<JwtKeyRingOptions>()
-            .Configure(options => configuration.GetSection(JwtKeyRingOptions.SectionName).Bind(options))
-            .ValidateOnStart();
+        // Binding + concrete IDEMPOTENT: AuthCore (Bedrock.Api, verify) có thể đã đăng ký CÙNG instance (A-18 —
+        // sign + verify chia sẻ). Guard theo concrete để KHÔNG double-bind list Keys (append → trùng kid).
+        if (services.All(descriptor => descriptor.ServiceType != typeof(JwtKeyRingOptions)))
+        {
+            services.AddOptions<JwtKeyRingOptions>()
+                .Configure(options => configuration.GetSection(JwtKeyRingOptions.SectionName).Bind(options));
+            services.AddSingleton(sp => sp.GetRequiredService<IOptions<JwtKeyRingOptions>>().Value);
+        }
+
+        // Validate-on-start + validator là trách nhiệm SIGN side (Security) — luôn bật (idempotent: ValidateOnStart
+        // đánh dấu options đã cấu hình; validator qua TryAddEnumerable). Sai key-ring → chặn boot mọi môi trường.
+        services.AddOptions<JwtKeyRingOptions>().ValidateOnStart();
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IValidateOptions<JwtKeyRingOptions>, JwtKeyRingOptionsValidator>());
-        // Consumer (JwtTokenService) inject JwtKeyRingOptions trực tiếp → lấy từ options đã bind/validate.
-        services.TryAddSingleton(sp => sp.GetRequiredService<IOptions<JwtKeyRingOptions>>().Value);
         services.TryAddSingleton<IJwtTokenService, JwtTokenService>();
 
         // Khai 3 port bảo mật là BẮT BUỘC → RequiredPortsValidator chặn boot nếu thiếu (fail-secure §5.5 + F7).

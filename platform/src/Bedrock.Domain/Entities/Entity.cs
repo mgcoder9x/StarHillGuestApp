@@ -37,6 +37,16 @@ public abstract class Entity : IEquatable<Entity>
 
     public void ClearDomainEvents() => _domainEvents.Clear();
 
+    /// <summary>
+    /// Khôi phục event về đầu hàng đợi khi dispatch thất bại trước commit. Public để persistence mechanism có
+    /// thể giữ retry semantics; application code thông thường chỉ raise qua protected method.
+    /// </summary>
+    public void RestoreDomainEvents(IReadOnlyCollection<IDomainEvent> domainEvents)
+    {
+        ArgumentNullException.ThrowIfNull(domainEvents);
+        _domainEvents.InsertRange(0, domainEvents);
+    }
+
     public bool Equals(Entity? other)
     {
         if (other is null)

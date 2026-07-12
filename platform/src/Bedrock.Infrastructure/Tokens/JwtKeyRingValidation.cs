@@ -31,6 +31,18 @@ internal static class JwtKeyRingValidation
                 $"JwtKeyRingOptions.ActiveKid '{options.ActiveKid}' không có trong Keys.");
         }
 
+
+        var duplicateKids = options.Keys
+            .GroupBy(key => key.Kid, StringComparer.Ordinal)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToArray();
+        if (duplicateKids.Length > 0)
+        {
+            throw new InvalidOperationException(
+                "JwtKeyRingOptions có Kid trùng: " + string.Join(", ", duplicateKids));
+        }
+
         if (string.IsNullOrWhiteSpace(options.Issuer) || string.IsNullOrWhiteSpace(options.Audience))
         {
             throw new InvalidOperationException("JwtKeyRingOptions cần Issuer và Audience khác rỗng.");

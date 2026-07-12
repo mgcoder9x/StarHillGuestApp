@@ -13,6 +13,7 @@ public sealed class ErrorHandlingTests
     [InlineData(ErrorType.Forbidden, StatusCodes.Status403Forbidden)]
     [InlineData(ErrorType.NotFound, StatusCodes.Status404NotFound)]
     [InlineData(ErrorType.Conflict, StatusCodes.Status409Conflict)]
+    [InlineData(ErrorType.RateLimited, StatusCodes.Status429TooManyRequests)]
     [InlineData(ErrorType.Failure, StatusCodes.Status500InternalServerError)]
     public void ToStatusCode_should_map_each_error_type(ErrorType type, int expected)
     {

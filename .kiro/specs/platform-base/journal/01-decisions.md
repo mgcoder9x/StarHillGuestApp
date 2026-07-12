@@ -1022,3 +1022,436 @@
 - Consequences: Test qua UoW trên Postgres gặp unique-violation nay nhận `UniqueConstraintViolationException` (cập nhật `RefreshTokenRotationRaceTests`); test SQLite (`RefreshTokenStoreTests.Duplicate_hash`) vẫn nhận `DbUpdateException` (đúng — filter Postgres-only). Đây là bổ sung base cho nhu cầu sản phẩm (pha starhill-qr QR-AD-010) — base vẫn domain-agnostic.
 - Reversibility: Medium.
 - Traceability: EfUnitOfWork §5.1, ConcurrencyConflictException (mẫu), CP12 (giữ mã "conflict"); pha QR: QR-AD-010, design-modules/02-rooms.md §1.
+
+---
+
+### AD-070 — `.editorconfig generated_code=true` cho EF migrations (miễn analyzer style/quality)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro)
+- Provenance/Evidence: build thật `platform\scripts\vp.cmd build` FAIL `CA1861` tại `Identity.Infrastructure/Persistence/Migrations/20260712055600_AddOutboxClaimLease.cs(32)` (composite index `columns: new[]{...}`); sau khi thêm luật → `vp build` 0-warning (verified execute_pwsh phiên này). Mirror `starhill/.editorconfig` (QR-AD-009).
+- Context: đợt hardening tạo migration mới `AddOutboxClaimLease` (cho A-08 outbox lease) với composite index EF sinh dạng `new[]{...}` → CA1861 (constant array arg). `platform/.editorconfig` THIẾU luật miễn analyzer cho migration (khác `starhill/` đã có QR-AD-009). `TreatWarningsAsErrors=true` biến CA1861 thành lỗi chặn build.
+- Decision/Change: thêm khối `[**/Persistence/Migrations/*.cs]` → `generated_code = true` vào `platform/.editorconfig`.
+- Rationale (verifiable): **Root cause:** migration là CODE SINH TỰ ĐỘNG (`dotnet ef migrations`); sửa tay mảng thành `static readonly` để né CA1861 = fragile (mất khi regenerate) = fix ngọn. Đánh dấu `generated_code` → analyzer bỏ qua đúng bản chất + future-proof MỌI migration sau (không tái diễn).
+- Alternatives: (a) sửa tay migration thành `static readonly` array (loại: fragile, mất khi scaffold lại); (b) `NoWarn CA1861` toàn cục (loại: che rule ở code thường, mất bảo vệ nơi cần).
+- Consequences: mọi file dưới `**/Persistence/Migrations/` coi là generated → analyzer style/quality nới cho chúng. Chấp nhận: KHÔNG viết logic tay trong migration.
+- Reversibility: High (1 khối `.editorconfig`).
+- Traceability: mirror QR-AD-009 (starhill); review A-08 (migration của lease); build gate R31.1.
+
+---
+
+### AD-071 — `JwtKeyRingOptions` đăng ký IDEMPOTENT + LAZY, chia sẻ 1 instance giữa sign (Infra) và verify (Api)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro)
+- Provenance/Evidence: test thật (3 vòng `vp all` phiên này): trước fix `HostSmokeTests` 2 fail `IDX10703 key length zero` (JwtTokenService nhận key-ring rỗng); sau sửa lần 1 `Bedrock.Api.Tests` 10 fail `No service for JwtKeyRingOptions`; sau sửa lần 2 `HostSmokeTests` 3 fail `JwtKeyRingOptions có Kid trùng: dev`; sau fix cuối `vp all` = 248 test/0 fail. File: `Bedrock.Api/Authentication/BedrockAuthExtensions.cs`, `Bedrock.Infrastructure/DependencyInjection/BedrockSecurityExtensions.cs` (đã đọc).
+- Context: đợt hardening (review A-18) muốn sign + verify dùng CHUNG key material đã validate. AI đợt trước thêm `services.TryAddSingleton(keyRing)` với `keyRing` bind EAGER lúc registration ở `AddBedrockAuthCore`. Vì `AddBedrockApi`(AuthCore) chạy TRƯỚC `AddBedrockSecurity`, và secret nạp MUỘN (User-Secrets/env/test-inject), eager chụp secret RỖNG rồi SHADOW instance lazy đúng → sign+verify nhận key-ring rỗng (regression IDX10703).
+- Decision/Change: đăng ký binding + concrete `JwtKeyRingOptions` **IDEMPOTENT** — guard `services.All(d => d.ServiceType != typeof(JwtKeyRingOptions))` ở CẢ `AuthCore` lẫn `AddBedrockSecurity`; bind **LAZY** qua `AddOptions<JwtKeyRingOptions>().Configure(cfg.GetSection.Bind)`; `ValidateOnStart` + validator do sign-side (`AddBedrockSecurity`) sở hữu. JwtBearer verify dùng `.Configure<JwtKeyRingOptions>((o, shared) => …)` resolve instance chia sẻ.
+- Rationale (verifiable): **Root cause kép:** (1) bind EAGER lúc registration chụp config rỗng (secret nạp muộn) → phải bind LAZY để thấy config nạp sau (F35); (2) hai `AddOptions().Configure` cùng `.Bind` list `Keys` → config binder APPEND → 2 kid `dev` → validator "Kid trùng" → phải IDEMPOTENT (guard theo concrete, vì `AddOptions().Configure` KHÔNG idempotent). Đạt A-18 (một instance validate chia sẻ sign+verify, không drift) MÀ `Bedrock.Api` vẫn dùng độc lập được (verify-only, không cần AddBedrockSecurity).
+- Alternatives: (a) eager `TryAddSingleton(keyRing)` (loại: shadow instance rỗng — chính regression); (b) chỉ `AddBedrockSecurity` đăng ký (loại: `Bedrock.Api` standalone verify-only không resolve được → 500); (c) hai `Configure` không guard (loại: double-bind list Keys → trùng kid).
+- Consequences: guard `services.All(...)` là O(n) scan descriptor lúc boot (rẻ, một lần). AuthCore chạy trước → đăng ký binding+concrete; Security thêm ValidateOnStart+validator (idempotent).
+- Reversibility: Medium (đổi ở 2 extension method).
+- Traceability: review A-18; REFINES AD-008 (JwtKeyRingOptions điểm-chung ký/verify), AD-045 (JWT validate-on-start).
+
+---
+
+### AD-072 — Outbox dispatch dùng LEASE (claim ngắn → publish ngoài transaction → finalize guard-by-lease → lease-expiry recovery)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — verify + guard-hoá công việc hardening (review A-08)
+- Provenance/Evidence: đọc code thật `Bedrock.Infrastructure/Persistence/Messaging/EfOutboxDispatcher.cs` (`ClaimBatchWithLeaseAsync` = transaction NGẮN set `ClaimId`+`ClaimedUntil` rồi commit; `TryPublishAndFinalizeAsync` publish NGOÀI transaction, `ExecuteUpdate` guard `candidate.ClaimId == claimId`; claim query có `claimed_until IS NULL OR claimed_until <= now`) + `OutboxMessage.{ClaimId,ClaimedUntil}` + migration `20260712055600_AddOutboxClaimLease` (cột + index `ix_outbox_claimable`) + `OutboxDispatcherOptions.ClaimLease` (default 5m, `IsValid` > 0). Guard test: `OutboxDispatcherTests.{Expired_lease_is_reclaimed_and_published, Active_lease_held_by_other_instance_is_not_claimed}` — SQLite local, PASS 10/10 (verified execute_pwsh phiên này).
+- Context: review A-08 — dispatcher cũ (AD-016/AD-049) giữ DB transaction + row lock TRONG lúc gọi broker; broker chậm/timeout 10s/message × batch → giữ connection/lock lâu, kéo DB pool, nhân theo số module. Đợt hardening đã đổi sang lease pattern nhưng CHƯA có guard test crash-recovery → mục A-08 còn "đang dở".
+- Decision/Change: (1) claim batch bằng transaction NGẮN (`ClaimId`=Guid v7 + `ClaimedUntil`=now+ClaimLease) rồi commit ngay (nhả lock); (2) publish NGOÀI transaction; (3) finalize (ProcessedAt / backoff / dead-letter) qua `ExecuteUpdate` CHỈ khi còn giữ lease (`ClaimId==claimId`); (4) claim query loại row đang có lease còn hạn → lease hết hạn cho instance khác recovery sau crash.
+- Rationale (verifiable): **Root cause A-08:** giữ lock DB suốt thời gian gọi broker là sai — broker là hệ ngoài chậm/không tin cậy. Tách claim (ngắn, có lock) khỏi publish (ngoài lock) giảm blast radius. At-least-once giữ nguyên: crash sau publish trước finalize → lease hết hạn → phát lại → inbox dedupe (hiệu ứng đúng-một-lần nghiệp vụ). Finalize-guard-by-lease chống 2 instance cùng ghi.
+- Alternatives: (a) giữ row-lock suốt publish (loại: chính vấn đề A-08 — giữ lock khi broker chậm); (b) không lease, chỉ `next_attempt_at` (loại: crash giữa publish→mark làm message kẹt tới hết backoff, recovery chậm + không phân biệt "đang xử lý" vs "chờ retry").
+- Consequences: +2 cột (`claim_id`/`claimed_until`) + index `ix_outbox_claimable`; `ClaimLease` phải > worst-case publish một batch (nếu quá ngắn → 2 instance cùng xử lý một message, vẫn an toàn nhờ inbox nhưng phí publish).
+- Reversibility: Medium (rollback về AD-016 pure row-lock được, nhưng không nên).
+- Traceability: review A-08; REFINES AD-016 (atomic claim + backoff) + AD-049 (Npgsql SKIP LOCKED); R8.4–8.6; CP15; design §7.2.
+
+---
+
+### AD-073 — RabbitMQ reliability hardening (A-03/04/05): publisher gate-wraps-publish + reconnect + mandatory-confirm; consumer broker-side DLX/DLQ quarantine
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — verify + guard-hoá công việc hardening (review A-03/A-04/A-05)
+- Provenance/Evidence: đọc code thật:
+  - `RabbitMqEventBusPublisher` — `_channelGate.WaitAsync` bao TRỌN `_resiliencePipeline.ExecuteAsync(publish+confirm+retry)` (finally Release), KHÔNG chỉ bao tạo channel (A-04); `GetOrCreateChannelUnderLockAsync` dispose+tái tạo khi `_channel`/`_connection` KHÔNG `{ IsOpen: true }` (A-04 reconnect); `BasicPublishAsync(..., mandatory: true, ...)` + `CreateChannelOptions(publisherConfirmationsEnabled: true, publisherConfirmationTrackingEnabled: true)` → unroutable/không-confirm ném → dispatcher (AD-072) KHÔNG mark processed (A-05).
+  - `RabbitMqConsumer` — provision durable DLX (`DeadLetterExchangeName` mặc định `bedrock.dead-letter`) + DLQ (`{QueueName}.dead-letter` bind "#") + set `x-dead-letter-exchange` trên queue chính; Handled/Duplicate → ACK; unknown event-type (DeadLettered) / handler-fail / malformed-envelope → `BasicNackAsync(requeue:false)` → DLX (quarantine BROKER-SIDE, KHÔNG drop) (A-03).
+  - Guard local: `RabbitMqConsumerOptionsTests` (9 test — validate fail-fast QueueName/RoutingKeys/PrefetchCount/DeadLetterExchangeName + DLQ/consumer-name defaults) PASS 9/9 (verified phiên này). Runtime broker: `RabbitMqPublishIntegrationTests` + `RabbitMqConsumeEndToEndTests` (Testcontainers/CI).
+- Context: review A-03 (consume "dead-letter" thực chất ACK/drop — unknown/malformed/handler-fail biến mất), A-04 (semaphore chỉ bao tạo channel, không bao publish → concurrent publish hỏng frame; `_connection ??=` không tái tạo connection đã đóng), A-05 (`mandatory:false` → unroutable bị discard nhưng dispatcher vẫn mark processed → mất event "giả thành công").
+- Decision/Change: (A-04) gate ôm trọn publish+confirm+retry + reconnect khi đóng; (A-05) `mandatory:true` + confirmations-tracking → unroutable/không-confirm = publish failure (không mark processed); (A-03) consumer TỰ provision DLX+DLQ + `x-dead-letter-exchange`, mọi NACK requeue=false đi vào DLX (malformed/unknown/handler-fail đều quarantine, không drop). Sửa comment drift (docstring/log cũ ghi "ACK-drop" trong khi code NACK→DLX).
+- Rationale (verifiable): **A-04:** `IChannel` RabbitMQ.Client 7.x KHÔNG thread-safe cho publish đồng thời → phải serialize TRỌN thao tác, không chỉ tạo channel; connection đóng phải tái tạo (nếu không publish vĩnh viễn lỗi sau mạng chập). **A-05:** publisher-confirm chỉ chứng minh broker NHẬN, mandatory mới chứng minh CÓ QUEUE route — thiếu mandatory thì unroutable bị discard mà outbox tưởng thành công (mất event). **A-03:** dead-letter BROKER-SIDE (x-dead-letter-exchange + NACK requeue=false) nguyên tử với ack, không cần app publish quarantine (không có cửa mất khi quarantine-publish lỗi) — mạnh hơn app-side quarantine mà review gợi ý.
+- Alternatives: (a) app-side publish quarantine queue (loại: thêm publish có thể lỗi → cửa mất message; broker-side DLX nguyên tử hơn); (b) requeue=true khi handler lỗi (loại: hot-loop poison vô hạn); (c) giữ mandatory:false + alternate-exchange (loại: vẫn cần topology, mandatory+confirm đơn giản + đúng hơn).
+- Consequences: consumer luôn tạo DLX/DLQ (dù app chưa dùng) — chi phí topology nhỏ, đổi lấy không-drop. `mandatory:true` yêu cầu có queue bound trước khi publyيش (hoặc message vào DLX/return) — khớp thứ tự provision consumer-trước hoặc retry outbox.
+- Reversibility: Medium.
+- Traceability: review A-03/A-04/A-05; REFINES AD-048 (publisher confirms/resilience/channel) + AD-060 (subscriber + NACK requeue=false); R8; §9.2/§7.3.
+
+---
+
+### AD-074 — Idempotency behavior: Complete/Abort + key namespace (operation-type + principal) — hết "claim rồi quên"
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — verify + guard-hoá công việc hardening (review A-13)
+- Provenance/Evidence: đọc code thật `Bedrock.Application/Behaviors/IdempotencyCommandUseCaseDecorator.cs` (+ `IdempotencyUseCaseDecorator`): `IdempotencyKeyScope.For<TInput> = {typeof(TInput).FullName}:{TenantId ?? UserId ?? "anonymous"}:{rawKey}`; Success → `CompleteAsync`, Failure → `AbortAsync`, exception → `AbortAsync`+rethrow. `Bedrock.Application/Ports/Caching/CachingPorts.cs` — `IIdempotencyStore` có `TryBeginAsync`/`CompleteAsync`/`AbortAsync`. Guard: `IdempotencyDecoratorTests.{Failed_inner_releases_key_so_retry_is_allowed, Different_input_types_with_same_raw_key_do_not_collide}` PASS 6/6 (verified phiên này).
+- Context: review A-13 — idempotency v1 là "claim rồi quên" (chỉ `TryBegin`): inner trả Failure vẫn GIỮ key 24h; exception sau claim → retry hợp lệ bị chặn; key KHÔNG namespace → 2 command khác cùng raw key va chạm.
+- Decision/Change: `IIdempotencyStore` +`CompleteAsync`/`AbortAsync`; decorator Success→Complete, Failure/exception→Abort (nhả key); key namespaced theo operation-type (`typeof(TInput).FullName`) + principal (tenant/user/anonymous).
+- Rationale (verifiable): **Root cause A-13:** thiếu nhả claim → thất bại tạm thời khoá key đến hết TTL (chặn retry đúng). Abort-on-failure sửa gốc. Namespace theo type+principal chống va chạm cross-command/cross-tenant (2 lệnh khác nhau cùng "key-1" không đè nhau).
+- Alternatives: (a) full state-machine InProgress/Completed/Failed + response-hash replay (loại: là enhancement; v1 gate + Complete/Abort đủ cho dedup biên — giữ scope AD-039, KHÔNG over-engineer); (b) giữ chỉ TryBegin (loại: chính vấn đề A-13).
+- Consequences: adapter store phải impl Complete/Abort. GIỚI HẠN đã biết (ghi rõ, không giấu): idempotency store (distributed cache) KHÔNG nguyên tử với DB transaction nghiệp vụ → là gate best-effort ở biên, không phải exactly-once tuyệt đối; đủ cho dedup client/gateway retry.
+- Reversibility: Medium.
+- Traceability: review A-13; REFINES AD-039 (Idempotency v1 gate); §8.
+
+---
+
+### AD-075 — Domain-event dispatch LUÔN trong explicit transaction + restore-on-failure (không mất event)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — verify + guard-hoá công việc hardening (review A-14)
+- Provenance/Evidence: đọc code thật `Bedrock.Infrastructure/Persistence/EfUnitOfWork.cs` (`SaveChangesAsync`: nếu `context.Database.CurrentTransaction is null` → bọc `ExecuteInTransactionAsync(SaveChangesCoreAsync)`, ngược lại tham gia transaction hiện hành — reentrancy AD-012) + `PlatformDbContext.DispatchDomainEventsAsync` (dequeue+`ClearDomainEvents` → dispatch → `catch { RestoreDomainEvents(dequeued) per entity; throw; }`) + `Bedrock.Domain/Entities/Entity.RestoreDomainEvents` (InsertRange đầu hàng đợi). Guard: `DomainEventDispatchTests.Domain_events_are_restored_after_handler_failure` PASS 5/5 (verified phiên này).
+- Context: review A-14 — (1) `PlatformDbContext.SaveChangesAsync` dispatch event TRƯỚC `base.SaveChangesAsync`; nếu caller KHÔNG bọc `ExecuteInTransactionAsync` thì handler dùng `ExecuteUpdate`/raw-SQL/side-effect nằm NGOÀI atomic boundary mà CP14 tuyên bố; (2) event bị clear TRƯỚC dispatch → handler ném thì event MẤT, retry `SaveChangesAsync` cùng context không dispatch lại.
+- Decision/Change: (1) `EfUnitOfWork.SaveChangesAsync` tự mở explicit transaction khi chưa có → domain-event handler LUÔN chạy trong transaction (kể cả gọi SaveChanges trực tiếp); (2) clear event nhưng SNAPSHOT + `RestoreDomainEvents` khi dispatch ném → event không mất, retry re-dispatch được.
+- Rationale (verifiable): **Root cause A-14:** handler ghi thẳng DB (ExecuteUpdate/raw-SQL) phải cùng transaction với `base.SaveChanges` để rollback đồng bộ — nếu SaveChanges không mở transaction, ghi của handler auto-commit ngay, base fail sau đó KHÔNG rollback được ghi handler (CP14 vỡ). Wrap-in-transaction sửa gốc. Restore-on-failure giữ semantics "event không mất" cho in-process dispatch.
+- Alternatives: (a) dispatch sau commit (loại: mất nguyên tử — side-effect chạy dù state rollback); (b) clear chỉ sau dispatch-success (loại: handler có thể raise thêm event ở vòng sau nên phải dequeue trước; snapshot+restore đơn giản + đúng hơn).
+- Consequences: mọi `SaveChangesAsync` mở một transaction (BEGIN/COMMIT — chi phí nhỏ; reentrancy AD-012 tránh lồng khi đã có transaction).
+- Reversibility: Medium.
+- Traceability: review A-14; REFINES AD-007 (dispatch trước commit) + AD-012 (reentrancy) + CP14; R33; §7.5.
+
+---
+
+### AD-076 — Fail-fast validate-on-start cho MỌI options family (A-16)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — verify + guard-hoá công việc hardening (review A-16)
+- Provenance/Evidence: đọc code thật wiring: `Bedrock.Api/HttpSecurity/BedrockHttpSecurityExtensions.cs` (`HttpSecurityOptions.Validate(options)` eager lúc registration) + `Bedrock.Infrastructure/DependencyInjection/OutboxDispatcherExtensions.cs` (`OutboxDispatcher/Worker/Retention` đều `.Configure(...).Validate(IsValid, ...).ValidateOnStart()`) + `Bedrock.Api/BedrockApiExtensions.cs` (`ObservabilityOptions` `.Validate(ObservabilityOptions.IsValid).ValidateOnStart()`) + `BedrockSecurityExtensions.cs` (`PasswordHashingOptions.Validate` eager). Guard LOCAL: `OptionsValidationTests` (PasswordHashing + Outbox Dispatcher/Worker/Retention) + `HttpSecurityOptionsTests` (proxy IP/CIDR/rate-limit/CORS) + `RabbitMqConsumerOptionsTests` (AD-073) + `RabbitMqOptionsTests` (AD-048).
+- Context: review A-16 — nhiều options mới chỉ bind, KHÔNG validate: `HttpSecurityOptions` (limit/window/queue/forward, CIDR/IP sai bị BỎ QUA ÂM THẦM, CrossSite origin rỗng không fail), `PasswordHashingOptions`, `OutboxDispatcher/Worker/Retention`, `ObservabilityOptions` → lệch R13.3/R25.2 (fail-fast mọi môi trường).
+- Decision/Change: mỗi options family có `Validate`/`IsValid` (biên rõ ràng) + wire fail-fast: options đăng ký qua `AddOptions<T>` dùng `.Validate(...).ValidateOnStart()`; options bind eager (HttpSecurity/PasswordHashing) gọi `Validate(...)` ngay tại `AddXxx` (ném trước Build). HttpSecurity nay REJECT IP/CIDR sai + CrossSite bắt buộc origin cụ thể (không wildcard + credentials).
+- Rationale (verifiable): **Root cause A-16:** bind-không-validate = cấu hình sai lọt tới runtime rồi hỏng khó chẩn (hoặc tệ hơn: CIDR sai bị bỏ qua → proxy không được tin → IP client sai → rate-limit/audit sai). Fail-fast chuyển lỗi cấu hình về lúc BOOT (một mô hình duy nhất R25.2), CI/deploy bắt ngay.
+- Alternatives: (a) validate lazy khi dùng (loại: lỗi hiện muộn, khó chẩn, có thể chạy một phần rồi mới chết); (b) bỏ qua giá trị sai (loại: chính lỗ hổng "CIDR sai âm thầm" review nêu).
+- Consequences: cấu hình sai chặn boot (đúng ý). Test giữ validator là pure/đúng biên.
+- Reversibility: High (validator là hàm thuần + một dòng wiring).
+- Traceability: review A-16; R13.3/R25.2; bổ trợ AD-045 (JWT ValidateOnStart), AD-034 (rate-limit), AD-048/AD-073 (RabbitMq options).
+
+---
+
+### AD-077 — Argon2 PHC: bound tham số + enforce version + giới hạn input, TỪ CHỐI TRƯỚC allocation (A-17)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — verify + guard-hoá công việc hardening (review A-17)
+- Provenance/Evidence: đọc code thật `Bedrock.Infrastructure/Cryptography/Argon2idPasswordHasher.cs` (`Verify`: `PasswordHashingOptions.IsWithinBounds(parsed.Memory, parsed.Iterations, parsed.Parallelism, salt.Length, hash.Length)` gọi TRƯỚC `Compute` → out-of-bounds trả false KHÔNG cấp phát; `TryParse` enforce `parts[2]=="v=19"`; password `GetByteCount > 4096` → false; `Hash.EnsurePasswordSize` ném ArgumentException) + `PasswordHashingOptions` (const Min/Max: memory 8MiB..1GiB, iter 1..20, par 1..32, salt 16..64, hash 32..128). Guard: `PasswordHasherTests.{Verify_rejects_tampered_hash_with_out_of_bounds_params, Verify_rejects_unsupported_version, Oversized_password_is_bounded}` (thêm phiên này) + roundtrip/malformed cũ.
+- Context: review A-17 — `Verify` parse memory/iterations/parallelism/hash-size TỪ chuỗi PHC lưu trữ rồi cấp phát/tính TRỰC TIẾP; parser KHÔNG enforce version, KHÔNG chặn tham số cực lớn → DB corruption/tampering (đổi m=2000000) gây CPU/memory DoS.
+- Decision/Change: `Verify` gọi `IsWithinBounds(parsed.*)` TRƯỚC `Compute` (reject cấu hình vượt policy trước khi cấp phát); enforce Argon2 version 19; giới hạn password ≤ 4096 byte (Hash ném, Verify false); options tạo hash cũng validate bounds (AD-076).
+- Rationale (verifiable): **Root cause A-17:** tin mù tham số trong dữ liệu-cung-cấp (PHC từ DB) = lỗ hổng DoS thật — một hash bị sửa m=2GB làm mỗi lần verify cấp phát 2GB. Reject-before-allocate cắt đúng gốc: kiểm biên rẻ (so sánh int) TRƯỚC thao tác đắt (cấp phát + Argon2). Version enforce tránh nhầm thuật toán/tham số khác nghĩa.
+- Alternatives: (a) tin tham số PHC (loại: DoS — chính vấn đề); (b) chỉ giới hạn lúc Hash không lúc Verify (loại: Verify mới là bề mặt nhận dữ-liệu-cung-cấp/tampered).
+- Consequences: hash tạo bởi cấu hình NGOÀI policy hiện tại (vd đổi bound thu hẹp) sẽ verify=false → cần rehash; đánh đổi chấp nhận (an toàn > tương thích cấu hình cực đoan). `NeedsRehash`/`VerifyResult` (rehash-on-login khi nâng cost) CHƯA thêm vào port — enhancement hoãn (PHC self-describing đã hỗ trợ về mặt dữ liệu).
+- Reversibility: Medium.
+- Traceability: review A-17; R27/R28; bổ trợ AD-076 (bound options), §5.7.
+
+---
+
+### AD-078 — Error invariant (code/message non-empty) + RateLimited thành first-class ErrorType (→429) (A-26)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — verify + guard-hoá công việc hardening (review A-26)
+- Provenance/Evidence: đọc code thật `Bedrock.Domain/Results/Error.cs` (ctor public `ArgumentException.ThrowIfNullOrWhiteSpace(code)`+`(message)`; `Error.None` qua private ctor `allowEmpty`) + `ErrorType.cs` (thêm `RateLimited`) + `ErrorTypeToHttp.cs` (`RateLimited => 429`) + `CommonErrors.cs` (`RateLimited`). Guard: `ErrorTests` (blank code/message ném; None rỗng OK; factory→đúng type) + `ErrorHandlingTests.ToStatusCode_should_map_each_error_type` (+RateLimited→429).
+- Context: review A-26 — `Error` là positional record KHÔNG validate → tạo được Error code/message rỗng vô nghĩa; và rate-limit 429 xử lý edge-only (AD-034) tạo bất nhất: `ErrorType` không có RateLimited nên use case/domain không thể biểu diễn 429 qua Result.
+- Decision/Change: (1) `Error` enforce code/message non-empty ở ctor (None là ngoại lệ sentinel chủ đích); (2) thêm `ErrorType.RateLimited` + map 429 nhất quán + `CommonErrors.RateLimited` → 429 giờ có đường đi qua Error/ProblemDetails thống nhất (không chỉ edge middleware).
+- Rationale (verifiable): **Root cause A-26:** thiếu invariant → Error rỗng lọt được (bug ẩn); ErrorType thiếu RateLimited → mô hình lỗi không đồng nhất (một status có 2 cách sinh khác nhau). Enforce ở ctor bắt sớm; promote RateLimited làm mọi 429 đi qua một shape ProblemDetails (review option (b): "add type mapping consistently").
+- Alternatives: (a) RateLimited edge-only, bỏ khỏi ErrorType (loại: use case không biểu diễn được 429; giữ bất nhất); (b) giữ positional record không validate (loại: chính lỗ hổng — Error rỗng).
+- Consequences: `ErrorType` 7 loại (thêm RateLimited) → snapshot CP12 (`ErrorCodeSnapshotTests`) gồm `rate_limited` (vp all xanh xác nhận đồng bộ). Edge rate-limit middleware (AD-034 `OnRejected`) VẪN dùng `CommonErrors.RateLimited()` trực tiếp — nay cùng type/shape với đường Result.
+- Reversibility: Medium.
+- Traceability: review A-26; REFINES AD-034 (rate-limit 429 — nay RateLimited là first-class ErrorType, không còn "chỉ edge"); §4.4; CP12.
+
+---
+
+### AD-079 — ExceptionHandlingMiddleware phân biệt client-abort vs lỗi server; response-đã-start thì rethrow (A-27)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — verify + guard-hoá công việc hardening (review A-27)
+- Provenance/Evidence: đọc code thật `Bedrock.Api/ErrorHandling/ExceptionHandlingMiddleware.cs`: `catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)` → nuốt êm (không log, không ghi); mọi catch có `if (context.Response.HasStarted) throw;` (giữ nguyên exception gốc). Guard: `ExceptionHandlingMiddlewareTests.{Client_aborted_cancellation_is_swallowed_not_500, Cancellation_not_caused_by_abort_becomes_500, Unhandled_exception_becomes_500_problem_details}`.
+- Context: review A-27 — catch-all cũ bắt CẢ request-aborted `OperationCanceledException` → log Error + cố ghi 500 lên connection ĐÃ ĐÓNG (noise + status sai + có thể ném khi ghi). Và khi response đã started, tạo exception mới làm mất context gốc.
+- Decision/Change: (1) branch riêng cho client-abort (OCE + RequestAborted.IsCancellationRequested) → không log/không ghi; (2) OCE KHÔNG do abort (vd timeout nội bộ) rơi xuống generic → 500 đúng nghĩa; (3) `Response.HasStarted` → rethrow exception gốc (preserve context) thay vì ghi đè.
+- Rationale (verifiable): **Root cause A-27:** client tự ngắt KHÔNG phải lỗi server — log Error là nhiễu (false alarm on-call), ghi 500 lên connection đã đóng là vô nghĩa/có thể ném. Dùng `when` filter theo `RequestAborted` phân biệt chính xác abort thật với cancellation nội bộ (timeout → vẫn là 500). HasStarted→rethrow giữ stack/type gốc cho tầng trên.
+- Alternatives: (a) catch mọi OCE thành 500 (loại: noise + status sai — chính vấn đề); (b) nuốt MỌI OCE (loại: che cả timeout nội bộ đáng-500).
+- Consequences: request client-abort không xuất hiện log Error (đúng) → nếu cần đo abort rate, dùng metric riêng (không phải error log). 
+- Reversibility: Medium.
+- Traceability: review A-27; §3.5 slot #3; bổ trợ CP13 (masked log).
+
+---
+
+### AD-080 — Soft-delete = NAMED query filter (compose, không ghi đè) + audit-created metadata bất biến trước caller (A-25)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — verify + guard-hoá công việc hardening (review A-25). REFINES quyết định soft-delete filter + audit set gốc (design §7.5 / AD-004-liên-quan persistence conventions), không lật.
+- Provenance/Evidence: verify EF Core 10.0.9 có overload `EntityTypeBuilder.HasQueryFilter(string filterKey, LambdaExpression)` (đọc `~/.nuget/packages/microsoft.entityframeworkcore/10.0.9/.../Microsoft.EntityFrameworkCore.xml`). Đọc code thật `Bedrock.Infrastructure/Persistence/PlatformDbContext.cs`: (1) `public const string SoftDeleteFilterName = "SoftDelete"`, `OnModelCreating` gọi `HasQueryFilter(SoftDeleteFilterName, BuildIsNotDeletedFilter(clrType))`; (2) `ApplyAudit` case Modified set `entry.Property(nameof(IAuditable.CreatedAt)).IsModified = false` + `CreatedByUserId` tương tự. Guard: `ConventionTests.Audit_created_metadata_is_protected_from_caller_tampering` + `SoftDeleteFilterCompositionTests.Module_named_filter_composes_with_soft_delete_filter_instead_of_overriding` (2/2 pass local SQLite).
+- Context: review A-25. (1) `HasQueryFilter(expr)` UNNAMED cũ: EF Core 10 chỉ giữ MỘT unnamed filter mỗi entity → module thêm filter tenant riêng sẽ GHI ĐÈ filter soft-delete → bản ghi đã xóa mềm lộ trở lại (lỗ bảo mật/đúng đắn). (2) `ApplyAudit` Modified cũ chỉ set Updated* → caller cố ý gán `CreatedAt`/`CreatedByUserId` rồi Save thì EF vẫn persist (metadata tạo bị giả mạo).
+- Decision/Change: (1) đặt TÊN cho soft-delete filter (`SoftDeleteFilterName`) → EF Core 10 COMPOSE (AND) các named filter khác tên → module bổ sung filter (tên khác) mà KHÔNG mất soft-delete; (2) trong case Modified, đánh dấu `CreatedAt`/`CreatedByUserId` là `IsModified = false` → EF loại khỏi câu UPDATE → metadata tạo do infrastructure sở hữu, caller không ghi đè được.
+- Rationale (verifiable): **Root cause A-25:** unnamed filter là API "thay thế" theo thiết kế của EF → phụ thuộc thứ tự đăng ký + ẩn; named filter là hợp đồng compose tường minh (fix tận gốc thay vì workaround gộp điều kiện tenant vào lambda soft-delete — vốn phá tách biệt lõi⊥module F3/F4). Bảo vệ Created* bằng `IsModified=false` là cơ chế EF chuẩn (per-property), không cần shadow/backing-field trick.
+- Alternatives: (a) gộp điều kiện tenant vào chính lambda soft-delete (loại: lõi phải biết khái niệm tenant của module → phá F3/F4; không mở rộng cho filter khác); (b) chặn tamper bằng cách reload+copy Created* trước Save (loại: thêm round-trip DB + không nguyên tử); (c) để Created* trong shadow property (loại: đổi shape entity + API nghiệp vụ, breaking).
+- Consequences: Module thêm query filter PHẢI dùng overload có tên (khác `"SoftDelete"`) để compose; nếu lỡ dùng unnamed sẽ ghi đè — đã có `SoftDeleteFilterCompositionTests` làm mẫu + cảnh báo trong docstring `SoftDeleteFilterName`. Caller không còn cách set lại Created* qua đường Save thường (đúng ý đồ); nếu cần chỉnh sửa hành chính (rất hiếm) phải thao tác chủ đích ngoài audit convention.
+- Reversibility: Medium (đổi lại unnamed + bỏ IsModified=false là 2 dòng, nhưng sẽ tái mở lỗ hổng).
+- Traceability: review A-25; design §7.5 (soft-delete + audit conventions); bổ trợ tách lõi⊥module (F3/F4).
+
+---
+
+### AD-081 — Tách envelope transport BẤT BIẾN `OutgoingIntegrationMessage` khỏi record persistence `OutboxMessage` (A-20)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — verify + guard-hoá công việc hardening (review A-20).
+- Provenance/Evidence: đọc code thật `Bedrock.Application/Messaging/Dispatch/{IEventBusPublisher.cs, OutboxMessage.cs}`, `Adapters/Messaging.RabbitMq/{RabbitMqEventBusPublisher.cs, RabbitMqMessageMapper.cs}`, `Bedrock.Infrastructure/Persistence/Messaging/EfOutboxDispatcher.cs`. Xác nhận adapter chỉ dùng `Id/EventType/SchemaVersion/Payload/CorrelationId` (mapper) — KHÔNG dùng cột retry. Tạo mới `OutgoingIntegrationMessage.cs` (sealed record, init-only, đối xứng `IncomingIntegrationMessage`). Guard: `DecisionGuardTests.AD081_EventBusPublisher_port_takes_immutable_outgoing_envelope_not_outbox_record` (param type = OutgoingIntegrationMessage; không có 6 cột retry; mọi property init-only). Build 0-warning; guard + `RabbitMqMessageMapperTests` (4) pass.
+- Context: review A-20 — `IEventBusPublisher.PublishAsync(OutboxMessage)` khiến adapter bus (pluggable, F29) nhận nguyên record persistence mutable với các cột retry/lease (`ProcessedAt/ErrorCount/NextAttemptAt/DeadLetteredAt/ClaimId/ClaimedUntil`). Adapter không cần và KHÔNG NÊN biết trạng thái outbox nội bộ; record mutable còn dễ bị adapter vô tình sửa.
+- Decision/Change: (1) thêm `OutgoingIntegrationMessage` (Application, `Messaging.Dispatch`) — sealed record BẤT BIẾN chỉ id/type/version/payload/occurred/correlation; (2) đổi `IEventBusPublisher.PublishAsync` nhận envelope này; (3) `EfOutboxDispatcher` map record→envelope (`ToOutgoing`) ngay trước publish; (4) RabbitMq mapper/publisher + `ThrowingEventBusPublisher` + toàn bộ test đổi theo. Wire format (MessageId/headers/routing key/body) GIỮ NGUYÊN.
+- Rationale (verifiable): **Root cause A-20:** port là ranh giới lõi↔adapter (F29 "cắm không sửa lõi") → hợp đồng port phải tối thiểu + bất biến, không lộ chi tiết lưu trữ. Envelope immutable loại nguy cơ adapter mutate trạng thái + thu hẹp bề mặt phụ thuộc (adapter chỉ thấy dữ liệu gửi đi). Đây là fix bản chất (đổi hợp đồng port) thay vì fix ngọn (chỉ ẩn field bằng comment).
+- Alternatives: (a) giữ `OutboxMessage` nhưng để interface con chỉ lộ field cần (loại: vẫn truyền reference mutable, adapter cast được về record đầy đủ); (b) đánh dấu các cột retry `internal` trên OutboxMessage (loại: EF cần map chúng + writer/dispatcher cùng assembly Infrastructure ≠ Application nơi OutboxMessage đang ở → không khả thi sạch).
+- Consequences: DEFER (chưa làm trong turn này, ghi rõ để không mất dấu — xem N-075): review còn đề xuất dời `OutboxMessage`→`OutboxRecord` INTERNAL trong Infrastructure + `InboxMessage` internal (dùng `InternalsVisibleTo` cho test). Sau khi port đã sạch, đây là tinh chỉnh namespace/visibility (KHÔNG còn là rò rỉ port) nhưng đụng ~6 file test đa-assembly → tách increment riêng để tránh drift.
+- Reversibility: Medium (gộp lại envelope vào record là đảo được, nhưng tái mở rò rỉ).
+- Traceability: review A-20; design §5.2 (adapter mỏng, payload thô + headers), §7.2 (dispatcher); F29 (adapter pluggable); đối xứng `IncomingIntegrationMessage` (A-10).
+
+---
+
+### AD-082 — Consume-side validate envelope: mang content-type/schema-version + dispatcher yêu cầu JSON trước handler (A-10)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — verify + guard-hoá công việc hardening (review A-10).
+- Provenance/Evidence: đọc code thật `RabbitMqConsumer.OnReceivedAsync` (CHỈ đọc MessageId + event-type header, VỨT content-type/schema-version property/header), `IncomingIntegrationMessage` (thiếu ContentType/SchemaVersion), `EfIntegrationEventDispatcher.DispatchAsync` (đã CÓ id-match `integrationEvent.Id != message.MessageId → throw`; deserialize-fail đã đi NACK→DLX). Đã sửa: `OutboxSerialization.{ContentType, IsJsonContentType}`, thêm `IncomingIntegrationMessage.{ContentType, SchemaVersion}` (init, đối xứng OutgoingIntegrationMessage), validate content-type ở đầu `DispatchAsync` (fail-fast → DeadLettered), consumer populate 2 field từ delivery. Guard mới: `IntegrationEventEnvelopeValidationTests` (4: non-json→DeadLettered, missing→DeadLettered, json+charset→Handled, id-mismatch→throw) — SQLite, 8/8 pass (cùng InboxMetricsTests). Build 0-warning.
+- Context: review A-10 — R22/R24 envelope integrity mới đúng nửa PRODUCER, chưa xuyên bus: consumer vứt content-type + schema-version → dispatcher không thể validate; message content-type lạ (foreign producer/misconfig) chỉ bị bắt gián tiếp khi deserialize ném (muộn, sau khi đã mở transaction + mark inbox).
+- Decision/Change: (1) `IncomingIntegrationMessage` mang `ContentType` + `SchemaVersion` (ngừng vứt metadata — đối xứng envelope OUTGOING AD-081); (2) dispatcher AGNOSTIC validate `IsJsonContentType(ContentType)` TRƯỚC khi resolve/deserialize/mở-transaction → lạ/thiếu → `DeadLettered` (quarantine sạch, consumer NACK requeue=false → DLX); (3) giữ + KHOÁ id-match integrity bằng guard test.
+- Rationale (verifiable): **Root cause A-10:** metadata envelope bị vứt ở tầng transport → tầng agnostic mất khả năng validate. Fix bản chất = mang metadata lên envelope (hợp đồng) + validate ở dispatcher agnostic (mọi transport hưởng lợi — F30/§7.3), KHÔNG nhét validate rải rác trong adapter. Content-type là hợp đồng JSON CỐ ĐỊNH (AD-015/§5.2) nên đây là BẤT BIẾN kiểm được, không phải policy. Fail-fast trước transaction tiết kiệm 1 vòng inbox-mark + rõ diagnostics (DeadLettered thay vì exception mơ hồ).
+- Alternatives: (a) validate content-type trong RabbitMqConsumer (loại: chỉ RabbitMQ hưởng, transport khác vẫn hở — vi phạm "dispatcher validate" của review + F30 agnostic); (b) dựa deserialize-exception hiện có (loại: bắt muộn sau khi mở transaction/mark inbox, diagnostics mơ hồ, tốn 1 vòng).
+- Consequences: DEFER có chủ đích, KHÔNG bịa policy: (i) kiểm schema-version *tương thích theo từng EventType* cần registry keyed `(EventType, Version)` → thuộc **A-21** (SchemaVersion nay đã được MANG sẵn để A-21 dùng); (ii) khôi phục W3C trace context + tạo child Activity từ traceparent → thuộc **A-29**. Test dựng `IncomingIntegrationMessage` trực tiếp PHẢI set `ContentType="application/json"` (message thật luôn có) — đã cập nhật InboxMetricsTests + PostgresIntegrationEventDispatcherTests.
+- Reversibility: Medium.
+- Traceability: review A-10; design §5.2 (hợp đồng JSON), §7.3 (dispatcher agnostic), R22/R24, F30; đối xứng AD-081; liên quan A-21/A-29.
+
+---
+
+### AD-083 — Registry integration-event: enforce hợp đồng metadata field-independent; KEY theo EventType (không (EventType,SchemaVersion)) (A-21)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — verify + guard-hoá công việc hardening (review A-21).
+- Provenance/Evidence: đọc code thật `IntegrationEventTypeRegistry.ReadEventType` (dùng `RuntimeHelpers.GetUninitializedObject` + đọc virtual `EventType`; getter phụ thuộc field → NRE mơ hồ lúc boot), `IntegrationEventSchemaSnapshotTests` (cùng cơ chế), `IntegrationEvent` base (`EventType` abstract + `SchemaVersion` virtual=1). VERIFY versioning trong `requirements.md`: **R22.2** (thêm field ⇒ chỉ optional, backward-compat), **R22.3** (breaking ⇒ EventType MỚI v2 song song + consumer tolerant reader). Đã sửa: hardening `ReadEventType` (try/catch → lỗi RÕ nêu type + hợp đồng), thêm guard `Bedrock.ContractTests/IntegrationEventMetadataContractTests` (2 test: metadata field-independent + non-empty + SchemaVersion≥1; EventType unique) — 4/4 pass (cùng snapshot cũ). Build 0-warning.
+- Context: review A-21 nêu 2 điều: (1) đọc metadata qua uninitialized-instance là brittle, compiler không enforce → event getter phụ-thuộc-field làm boot lỗi khó hiểu; (2) "registry key nên là (EventType, SchemaVersion) hoặc có policy version compatibility".
+- Decision/Change:
+  - (1) **Enforce hợp đồng field-independence bằng build-gate** thay vì đổi cơ chế: hardening `ReadEventType` báo lỗi rõ (nêu type + yêu cầu biểu thức hằng/độc-lập-field) + guard test quét MỌI IntegrationEvent trong Contracts assembly (EventType đọc-được/khác-rỗng + SchemaVersion≥1 + unique). Lỗi bị bắt lúc BUILD, không phải boot.
+  - (2) **GIỮ key = EventType (KHÔNG (EventType,SchemaVersion), KHÔNG version-rejection).**
+- Rationale (verifiable): **Về (2) — lý do CHÍNH XÁC, có kiểm chứng, chỉnh lại giả định của review:** mô hình versioning của DESIGN (R22.2/R22.3, §9.1 tolerant reader) quy định: cùng một `EventType` chỉ tiến hoá THÊM FIELD OPTIONAL (backward/forward-compat qua tolerant reader — System.Text.Json bỏ field lạ, field thiếu = default); mọi thay đổi BREAKING phải đổi sang `EventType` MỚI (chuỗi khác). ⇒ Hai message cùng EventType nhưng khác SchemaVersion LUÔN tương thích đọc được ⇒ (a) key theo (EventType,SchemaVersion) là THỪA và sẽ MÂU THUẪN design (design không cho nhiều schema-khác-nhau chung một EventType); (b) version-rejection là KHÔNG cần (không có version nào của một EventType đã-biết mà không đọc được). Vậy key theo EventType là ĐÚNG THEO THIẾT KẾ. SchemaVersion là metadata cho snapshot/quan sát (F32), không phải khoá định tuyến. **Về (1):** đổi sang attribute/static-abstract là phương án robust hơn nhưng LÀ THAY ĐỔI hợp đồng tác giả event (design §4.5/AD-006 định EventType là instance getter) + đụng mọi event + cần DV/sửa design → chọn ENFORCE (đúng triết lý dự án "biến quy ước thành guard test = fail build") đạt an toàn tương đương mà không lệch design.
+- Alternatives: (a) attribute `[IntegrationEvent("code", Version=n)]` làm nguồn metadata type-level (loại lúc này: thay đổi authoring model + DV + churn nhiều event; enforcement đạt an toàn tương đương); (b) static-abstract interface member (loại: registry vẫn quét reflection nên không hưởng compile-time; lại buộc giữ CẢ static + instance cho publish → drift); (c) key (EventType,SchemaVersion) + policy compat (loại: mâu thuẫn mô hình versioning R22.3 như trên — sẽ là speculation vì design không định nghĩa luật reject version).
+- Consequences: Nếu tương lai đổi versioning strategy (cho nhiều schema chung EventType) thì phải mở AD mới + rất có thể key lại — nhưng đó là thay đổi design, không làm bây giờ. Guard test hiện quét 2 Contracts assembly (giống snapshot); khi A-11 (auto-discover toàn solution) làm xong sẽ cập nhật cả hai cùng lúc.
+- Reversibility: High (guard test + hardening là bổ sung; không đổi API).
+- Traceability: review A-21; R22.2/R22.3 (versioning), §9.1 (tolerant reader), F32; AD-006 (registry EventType→type); liên quan A-22 (snapshot mạnh hơn) + A-11 (auto-discover).
+
+---
+
+### AD-084 — Trace xuyên bus: dispatcher tạo consumer span là con của trace gốc (propagate qua CorrelationId W3C) (A-29)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — verify + guard-hoá công việc hardening (review A-29).
+- Provenance/Evidence: đọc code thật `EfOutboxWriter` (`CorrelationId = Activity.Current?.Id` — W3C traceparent lúc enqueue), `RabbitMqMessageMapper` (set AMQP `CorrelationId` property từ envelope), `RabbitMqConsumer` (BỎ QUA CorrelationId, KHÔNG tạo Activity), `EfIntegrationEventDispatcher` (chỉ metric, không span), `BedrockTelemetry.ActivitySource` (đã có, name "Bedrock", đã `AddSource` trong OTel wiring). Đã sửa: thêm `IncomingIntegrationMessage.CorrelationId`, consumer populate từ `ea.BasicProperties.CorrelationId`, dispatcher `StartActivity($"consume {EventType}", Consumer, parentContext)` với parent parse từ CorrelationId (`ActivityContext.TryParse`). Guard: `IntegrationEventTracePropagationTests` (2: child-of-propagated-context qua ActivityListener + graceful-no-correlation) — 2/2 pass non-Docker. Build 0-warning.
+- Context: review A-29 — "Outbox lưu Activity.Current.Id nhưng consumer bỏ qua BasicProperties.CorrelationId và không start child Activity; không có producer/consumer/handler spans". Trace GỐC (request enqueue) không nối được với xử lý phía consumer → mất khả năng đối soát xuyên bus (F34/F21/R24).
+- Decision/Change: (1) `IncomingIntegrationMessage` mang `CorrelationId` (traceparent W3C — hoàn tất metadata envelope, tiếp nối A-10); (2) dispatcher AGNOSTIC tạo consumer span (`ActivityKind.Consumer`) parent = context parse từ CorrelationId (parse fail/null → ambient `Activity.Current`, graceful); (3) span mang tag messaging.* + outcome. Handler chạy TRONG span này → mọi span/log con nối về trace gốc.
+- Rationale (verifiable): **Root cause A-29 (xuyên bus):** với Outbox, publish do WORKER chạy ở trace khác/không-trace; linkage Ý NGHĨA là trace GỐC lúc enqueue → xử lý consume. `CorrelationId = Activity.Current.Id` (W3C) CHÍNH LÀ traceparent của trace gốc → `ActivityContext.TryParse` khôi phục được → tạo consumer span là con của nó. Đặt span ở dispatcher AGNOSTIC (không ở adapter) → MỌI transport hưởng lợi (F30/§7.3, nhất quán AD-082). `StartActivity` trả null khi không có listener → zero-overhead khi tắt telemetry (mọi `?.` an toàn). Dùng `CorrelationId` (traceparent-format có sẵn) thay vì thêm header `traceparent` riêng: khớp thiết kế hiện hành (producer đã lưu Activity.Id vào CorrelationId), không đổi wire format.
+- Alternatives: (a) thêm header `traceparent`/`tracestate` riêng theo OTel messaging convention thay vì dùng CorrelationId (loại lúc này: đổi wire format + producer phải ghi header riêng; CorrelationId ĐÃ mang đúng traceparent-format → dùng lại là tối thiểu + đủ; tracestate propagation là enhancement sau); (b) tạo span ở RabbitMqConsumer (loại: chỉ RabbitMQ hưởng, transport khác vẫn hở — vi phạm F30 agnostic).
+- Consequences: DEFER có chủ đích (KHÔNG bịa, ghi rõ): các phần KHÁC của A-29 tách riêng — (i) oldest-pending backlog GAUGE (observable gauge có cache/throttle) trùng phạm vi **A-28** (operability); (ii) metric external-auth success/fail thuộc adapter external-auth (chưa có consumer adapter); (iii) verify EF query-time metric emission (AddMeter EF) cần integration. `tracestate` chưa propagate (chỉ traceparent). Producer/publish span (worker) chưa thêm — trace gốc đã là span API request (AspNetCore instrumentation), consumer span nối về đó là đủ chứng minh xuyên bus.
+- Reversibility: High (span là bổ sung; không đổi API công khai ngoài field envelope).
+- Traceability: review A-29; F34/F21 (correlation/trace), R24 (telemetry), §7.3 (dispatcher agnostic); tiếp nối A-10 (envelope) + AD-082; liên quan A-28 (gauge).
+
+---
+
+### AD-085 — AddBedrockCore idempotency-guard: gọi lần 2 → NÉM (chống double-decoration pipeline) (A-12)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — verify + guard-hoá công việc hardening (review A-12).
+- Provenance/Evidence: đọc code thật `BedrockCoreExtensions.AddBedrockCore` (gọi `RegisterValidators` + `DecoratePipeline` với Scrutor `TryDecorate` — KHÔNG guard số lần gọi) + verify MỌI call site (`grep AddBedrockCore`): chỉ Host `StarHill.Api/Program.cs` (platform + starhill) gọi ĐÚNG 1 lần + 2 test PipelineOrderTests; KHÔNG module nào gọi → guard throw-lần-2 an toàn (không vỡ call site hợp lệ). Đã thêm sentinel `BedrockCoreMarker` (đăng ký instance, ctor private) + throw khi đã tồn tại. Guard: `BedrockCoreIdempotencyTests` (gọi-1-lần OK; gọi-2-lần throw) — 7/7 pass (cùng PipelineOrderTests). Build 0-warning.
+- Context: review A-12 nêu nhiều điểm về DI-registration; một trong đó: "Gọi AddBedrockCore hai lần có nguy cơ duplicate validator và double-decoration". Scrutor `TryDecorate` bọc MỌI service hiện có → gọi 2 lần = bọc HAI lớp behaviors ⇒ validation/authorization/idempotency/transaction chạy 2 lần (transaction lồng, idempotency claim đúp) = sai nghiêm trọng + validator đăng ký trùng.
+- Decision/Change: `AddBedrockCore` idempotency-guarded — sentinel `BedrockCoreMarker` (instance, ctor private → ValidateOnBuild an toàn); gọi lần 2 → `InvalidOperationException` fail-loud (KHÔNG no-op âm thầm) nêu rõ chỉ gọi 1 lần ở composition root sau khi module đã đăng ký use case.
+- Rationale (verifiable): **Root cause:** double-decoration là bug composition thật + âm thầm (không lỗi biên dịch). Fail-loud lộ ngay lúc compose (đồng nhất triết lý F35/R13 + AD-071 idempotent-register). Chọn THROW (không no-op) vì gọi 2 lần LUÔN là lỗi (không có ngữ cảnh hợp lệ) — no-op sẽ giấu lỗi cấu hình.
+- Alternatives: (a) no-op lần 2 (loại: giấu lỗi composition — im lặng bỏ lần gọi thứ 2 có thể khiến dev tưởng đã thêm gì đó); (b) làm DecoratePipeline tự-idempotent bằng cách kiểm đã-decorate (loại: fragile, Scrutor không expose trạng thái sạch; sentinel rõ ràng hơn).
+- Consequences: A-12 còn 3 phần CHƯA làm (ghi rõ, KHÔNG bịa — A-12 giữ PARTIAL): (i) `ValidateSingleImplementationPorts` bỏ qua OPEN-GENERIC — nhưng scenario chính "duplicate IRepository<> qua 2 context unkeyed" ĐÃ bị `PersistenceRegistrationRegistry.AddUnkeyed` chặn (A-01/`Two_unkeyed_contexts_fail_fast`); mở rộng guard open-generic blanket có rủi ro FALSE-POSITIVE (decorator/validator open-generic hợp lệ) → cần thiết kế whitelist cẩn thận, hoãn; (ii) use case đăng ký SAU AddBedrockCore không được bọc pipeline (ordering hazard) → cần finalization pattern (`FinalizeBedrock`) là thay đổi API lớn hơn; (iii) `AddBedrockCore(params Assembly[])` chỉ scan validator (không scan use case) — đúng thiết kế hiện tại (use case đăng ký riêng), chỉ là tên/comment dễ gây kỳ vọng.
+- Reversibility: High (guard là bổ sung; không đổi chữ ký công khai).
+- Traceability: review A-12; §8 (pipeline behaviors), AD-037 (Scrutor decorate), F35/R13 (fail-fast); liên quan A-01 (PersistenceRegistrationRegistry đã chặn duplicate context).
+
+---
+
+### AD-086 — Hợp đồng giao Outbox = at-least-once, KHÔNG cam kết ordering; poison độc-lập không chặn message khác (A-09)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — verify + guard-hoá công việc hardening (review A-09).
+- Provenance/Evidence: VERIFY design §7.2 (dòng ~398) ĐÃ ghi "**Không cam kết global ordering** khi có retry/claim song song — consumer phải tolerant thứ tự xấp xỉ"; requirements R8.4 mô tả claim "theo thứ tự occurred_at" (dễ HIỂU NHẦM là guarantee giao); R8.5 (backoff per-message, "không chặn message khác"); đọc `EfOutboxDispatcher` (`ORDER BY occurred_at` = heuristic claim; `TryPublishAndFinalizeAsync` per-message độc lập, guard-by-lease). Đã sửa: docstring `IOutboxDispatcher` nêu HỢP ĐỒNG unordered tường minh (contract surface); thêm guard `OutboxDispatcherTests.Poison_message_does_not_block_other_messages_in_batch`. Build 0-warning; 11/11 OutboxDispatcherTests pass.
+- Context: review A-09 — "Query order theo OccurredAt nhưng nhiều dispatcher SKIP LOCKED có thể publish event sau của cùng aggregate trước event trước... Nếu không bảo đảm ordering, phải ghi rõ contract là unordered; không nên chỉ nói theo occurred_at." Design đã nói ở §7.2 nhưng hợp đồng CHƯA hiện diện ở PORT surface (`IOutboxDispatcher`) và chưa có guard cho tính chất hành vi cốt lõi.
+- Decision/Change: (1) Formalize hợp đồng: giao Outbox là **at-least-once, KHÔNG ordering** (không global, không per-aggregate FIFO); `ORDER BY occurred_at` chỉ best-effort claim; (2) mỗi message xử lý ĐỘC LẬP — poison (backoff/dead-letter) KHÔNG chặn message khác trong batch; (3) ordered delivery (nếu module cần) = mở rộng PartitionKey+sequence, KHÔNG phải mặc định base. Nêu hợp đồng ở docstring `IOutboxDispatcher` + guard tính độc-lập.
+- Rationale (verifiable): **Root cause A-09:** rủi ro là DEV HIỂU NHẦM "theo occurred_at" = FIFO guarantee → thiết kế nghiệp vụ dựa FIFO tuyệt đối (sai). Fix bản chất = phát biểu hợp đồng CHÍNH XÁC tại contract surface (port) + KHOÁ tính chất hành vi có thật (poison-isolation/độc-lập per-message) bằng test — KHÔNG bịa tính năng ordering (chưa module nào cần → xây PartitionKey+sequence lúc này là speculation, vi phạm "không suy đoán"). Poison-isolation là tính chất ĐÚNG của at-least-once unordered (mỗi message độc lập) và kiểm chứng được (SelectiveFailurePublisher: poison đứng trước vẫn không chặn message tốt).
+- Alternatives: (a) thêm PartitionKey+sequence + single-active-consumer để bảo đảm ordering (loại lúc này: speculation — chưa có yêu cầu ordering từ module; là mở rộng lớn khi thật sự cần); (b) chỉ sửa doc không guard (loại: bỏ lỡ cơ hội khoá tính chất độc-lập-per-message chống hồi quy).
+- Consequences: Module KHÔNG được thiết kế dựa FIFO tuyệt đối của bus (đã nêu ở port docstring + design §7.2). Nếu tương lai một module cần ordering nghiêm ngặt → mở AD mới + thêm PartitionKey/sequence (không phá hợp đồng hiện tại vì "unordered" là superset).
+- Reversibility: High (doc + guard bổ sung; không đổi behavior/chữ ký).
+- Traceability: review A-09; design §7.2 ("không cam kết global ordering"), requirements R8.4/R8.5, F25/F33; bổ trợ AD-016 (backoff)/AD-072 (lease).
+
+---
+
+### AD-087 — Outbox operability: cột `last_error`/`last_attempt_at` (sanitize+bound) cho chẩn đoán fail (A-28)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — verify + guard-hoá công việc hardening (review A-28).
+- Provenance/Evidence: đọc `OutboxMessage` (chỉ ErrorCount/NextAttemptAt/DeadLetteredAt/ClaimId/ClaimedUntil — KHÔNG lưu vì-sao-fail), `EfOutboxDispatcher.TryPublishAndFinalizeAsync` (catch KHÔNG capture exception), `OutboxInboxModelBuilderExtensions`, migration mẫu `AddOutboxClaimLease` + `IdentityDbContextFactory` (design-time). VERIFY tooling: `dotnet tool restore` + `dotnet ef --version`=10.0.9 OK trước khi sinh migration. Đã thêm: `OutboxMessage.{LastError, LastAttemptAt, MaxLastErrorLength=1024}`; map `LastError` HasMaxLength(1024); dispatcher `catch (Exception ex)` set `last_error=SanitizeError(ex)`+`last_attempt_at=failedAt` ở CẢ nhánh backoff + dead-letter; migration `20260712104027_AddOutboxLastError` (2 cột, schema identity, Down chuẩn) + snapshot cập nhật (verify chứa last_error/last_attempt_at). Guard: `OutboxDispatcherTests.{Dispatch_failure_records_last_error_and_last_attempt, Dead_letter_records_last_error}` — 13/13 pass. Build 0-warning.
+- Context: review A-28 — "Outbox chỉ lưu error count/next attempt, không lưu last_error/last_attempt_at... Khi production lỗi, operator khó trả lời vì sao, event nào". Chẩn đoán fail là thông tin ops thiết yếu cho sản phẩm thương mại.
+- Decision/Change: thêm `last_error` (varchar 1024, nullable) + `last_attempt_at` (timestamptz, nullable) vào `outbox_message`; dispatcher ghi `KiểuException: message` (cắt bound) + thời điểm ở mọi lần publish thất bại (backoff và dead-letter). Migration per-module chuẩn (AD-050) sinh bằng `dotnet ef` (đã verify tooling), snapshot đồng bộ (không model-drift).
+- Rationale (verifiable): **Root cause A-28 (phần này):** thiếu dữ liệu chẩn đoán → dead-letter chỉ là "đã bỏ" mà không biết VÌ SAO. Lưu `last_error` (sanitize = kiểu+message, bound 1024 chống text vô hạn + giới hạn rò rỉ vào cột) + `last_attempt_at` cho operator trả lời trực tiếp. Sinh migration bằng `dotnet ef` (verify tooling TRƯỚC) thay vì viết tay = đúng chuẩn + snapshot tự đồng bộ (không drift). Exception ở đây từ `IEventBusPublisher.PublishAsync` (network/serialize adapter) — hiếm khi chứa payload nên type+message an toàn.
+- Alternatives: (a) bảng audit riêng cho lỗi (loại lúc này: over-engineer; cột trên outbox đủ + nguyên tử với finalize); (b) lưu full stack-trace (loại: dài vô hạn + dễ rò; type+message bound đủ chẩn đoán); (c) viết migration tay (loại: rủi ro lệch snapshot — dùng `dotnet ef` chuẩn hơn).
+- Consequences: DEFER các phần khác của A-28 (ghi rõ): (i) **oldest-pending backlog GAUGE** — cần cache refresh bởi worker + ObservableGauge (callback sync không được query DB mỗi scrape); thiết kế throttle riêng → increment sau; (ii) **replay/admin/requeue contract** — cần quyết định bảo mật/quyền + audit (sản phẩm), chưa làm; (iii) **inbox status/error/duration** — schema change inbox, chưa cần. ĐỒNG BỘ starhill (Task C): starhill có bản copy outbox → khi port phải thêm cùng migration + verify.
+- Reversibility: Medium (migration có Down; cột nullable không phá dữ liệu cũ).
+- Traceability: review A-28; AD-050 (migration per-module), AD-003/AD-016/AD-072 (dead-letter/backoff/lease), R8.5; F25/F33.
+
+---
+
+### AD-088 — Auth-model quyết định: base = JWT bearer token-in-body/header (không auth-cookie); cookie/CSRF/CORS = coherent + opt-in (A-15)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — verify + guard-hoá công việc hardening (review A-15 yêu cầu "chọn 1 trong 2 phương án").
+- Provenance/Evidence: đọc code thật: `Identity.Api/IdentityEndpointModule` (`/identity/token/refresh` nhận `RefreshRequest` BODY → `RefreshTokenCommand(request.RefreshToken)`, trả `RefreshTokenResult{AccessToken,RefreshToken,...}` trong RESPONSE BODY, `.AllowAnonymous()` — KHÔNG Set-Cookie); `HttpSecurityOptions.Validate` (CrossSite bắt buộc CorsAllowedOrigins, cấm `*`, origin phải absolute http/https + path=="/"); `BedrockHttpSecurityExtensions` (CookiePolicy HttpOnly.Always+Secure.Always+SameSite theo mode; `AddAntiforgery` header X-CSRF-TOKEN + cookie HttpOnly/Secure/SameSite theo mode; CORS cross-site chỉ origin khai + credentials, same-site đóng); `BedrockApiExtensions.UseBedrockApi` (UseCookiePolicy #1.5, UseCors #8, UseAntiforgery sau authz); `CookieSecurityDefaults`. Guard hiện có: `HttpSecurityOptionsTests` (Validate đầy đủ) + `HttpSecurityConfigTests` (ForwardedHeaders + cookie flags + **antiforgery-by-mode MỚI**) — 16/16 pass. Build 0-warning.
+- Context: review A-15 cho rằng cookie/CSRF là "half-measure" (snapshot TRƯỚC đợt hardening). Sau đợt hardening (AI trước) + verify của tôi: hạ tầng cookie/CSRF/CORS ĐÃ đầy đủ + coherent; và auth THẬT của base là bearer-in-body.
+- Decision/Change: chốt auth-model là **HYBRID**: (1) endpoint base tự thân dùng **JWT bearer** (access token ở header Authorization, refresh token ở JSON body) — KHÔNG dùng auth-cookie → **CSRF-as-cookie KHÔNG áp dụng** cho endpoint base (bearer không được trình duyệt tự gửi cross-site); (2) base VẪN cung cấp hạ tầng cookie/CSRF/CORS **coherent + OPT-IN** cho app/module chọn luồng cookie hoặc FE cross-site: `CookieSecurityDefaults` (HttpOnly+Secure+SameSite), antiforgery (X-CSRF-TOKEN), CORS siết (CrossSite chỉ origin khai + credentials; SameSite đóng), `Validate` chặn cấu hình nguy hiểm (`*` + credentials, origin sai). Đây là phương án 1 (cho base) + hạ tầng phương án 2 (opt-in) — KHÔNG half-measure.
+- Rationale (verifiable): **Root cause A-15:** rủi ro "false security" khi có option cookie nửa vời. Sự thật sau verify: (a) base không set auth-cookie nên không có CSRF-cookie vector cho chính nó (đúng phương án 1); (b) hạ tầng cookie/CSRF/CORS đã đầy đủ + `Validate` nghiêm (cấm wildcard+credentials — lỗ hổng CORS kinh điển) nên KHÔNG phải nửa vời. Ghi rõ quyết định = loại bỏ "cảm giác an toàn giả" bằng cách nói ĐÚNG mô hình.
+- Alternatives: (a) bỏ hẳn cookie/CSRF khỏi base (loại: mất khả năng hỗ trợ app cookie/cross-site — hạ tầng opt-in đã coherent, giữ lại có giá trị); (b) chuyển refresh token sang HttpOnly cookie mặc định (loại: đổi hợp đồng API + buộc mọi client dùng cookie — quyết định sản phẩm, không nên ép ở base).
+- Consequences: Module/app dùng luồng cookie PHẢI tự set cookie qua `CookieSecurityDefaults` + bật CSRF token khi CrossSite (RequiresCsrf). **CORS behavioral e2e** (preflight allow origin khai / reject origin lạ) CHƯA có guard end-to-end — hiện chỉ guard `Validate` (chặn injection cấu hình) + registration; ghi rõ để KHÔNG tự nhận đã phủ e2e (có thể thêm TestHost sau). HSTS/HTTPS-redirect vẫn là trách nhiệm Host (AD-035).
+- Reversibility: High (quyết định + guard bổ sung; không đổi behavior).
+- Traceability: review A-15; R15 (cookie/CSRF), F17 (cookie/CORS mode), F16 (forwarded headers); bổ trợ AD-023 (claim JWT-native)/AD-035 (HSTS Host)/AD-067 (security headers).
+
+---
+
+### AD-089 — Contract snapshot descriptor CANONICAL (generic args + array + nullability value/reference) (A-22)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — verify + guard-hoá công việc hardening (review A-22).
+- Provenance/Evidence: đọc `IntegrationEventSchemaSnapshotTests.FriendlyTypeName` cũ (`Type.Name` thuần + chỉ Nullable<value>) → `List<string>` và `List<int>` đều ra "List`1", không thấy nullability reference. Đã tạo `ContractSchema.{FriendlyTypeName, DescribeProperty}` (generic args đầy đủ + array đệ quy + Nullable<value> + reference-nullable qua `NullabilityInfoContext`); snapshot test dùng helper. Guard: `ContractSchemaPrecisionTests` (4: generic-arg distinguish List<String>≠List<Int32> + Dictionary<String,Int32>; array String[]; value Guid≠Guid?; reference String≠String?). Snapshot hiện tại KHÔNG đổi (props toàn Guid/DateTimeOffset non-null → render y hệt) → ExpectedSchema giữ nguyên. 8/8 ContractTests pass, build 0-warning.
+- Context: review A-22 — "Event snapshot dùng Type.Name; List<string> và List<int> đều hiện List`1. Không ghi generic arguments đầy đủ, nullable annotations..." → snapshot BỎ SÓT breaking-change tinh vi (đổi element generic / thêm nullable) — điểm yếu của chính cơ chế chống-drift.
+- Decision/Change: làm descriptor snapshot CHÍNH XÁC hơn — render generic args đầy đủ, array element, và nullability CẢ value (Nullable<T>) LẪN reference (NullabilityInfoContext). Không đổi snapshot hiện có (props hiện tại không generic/nullable).
+- Rationale (verifiable): **Root cause A-22 (phần descriptor):** snapshot chỉ mạnh bằng độ chính xác của descriptor; `Type.Name` gộp `List<string>`≡`List<int>` ⇒ đổi kiểu element (breaking) KHÔNG bị bắt. Làm descriptor phân biệt = tăng SỨC của guard chống-drift đúng như user yêu cầu ("cách cực mạnh tránh drift"). Đây là hardening MECHANISM (không phải feature speculation) — verify bằng test với type tổng hợp.
+- Alternatives: (a) full canonical JSON Schema/OpenAPI cho mỗi event (loại lúc này: lớn + cần golden-file infra; descriptor chuỗi đã bắt được các khác biệt compatibility chính); (b) giữ Type.Name (loại: bỏ sót generic/nullable — chính vấn đề).
+- Consequences: DEFER (ghi rõ): (i) discover TOÀN contract assemblies tự động (thay hardcode 2 assembly) trùng phạm vi **A-11** (auto-discover); (ii) JSON property-name/converter/enum-values/default-values + golden-file — nâng cấp sâu hơn khi cần versioning contract nghiêm ngặt; (iii) error snapshot cũng nên discover-all (A-11). Hiện `ContractSchemaPrecisionTests` bảo đảm descriptor đúng để khi contract có generic/nullable thì snapshot sẽ bắt.
+- Reversibility: High (helper + test bổ sung; snapshot không đổi).
+- Traceability: review A-22; F32 (versioning), R32.4 (contract test); bổ trợ AD-083 (metadata contract)/CP12 (error code snapshot); liên quan A-11 (auto-discover).
+
+---
+
+### AD-090 — Gỡ build-artifact (bin/obj) khỏi Git index + guard chống tái-track (A-30)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: user (duyệt tường minh "OK — repo-wide") trên đề xuất + plan của AI(Kiro).
+- Provenance/Evidence: `git ls-files "**/bin/**" "**/obj/**"` = 4238 file tracked (platform 2125, foundation 1006, resort-qr 1067, Reference 40; starhill 0). `platform/.gitignore`+`starhill/.gitignore` ĐÃ có `bin/`+`obj/` (nguyên nhân: track TRƯỚC khi ignore). Thực thi `git rm --cached --pathspec-from-file` (list ghi UTF-8 no-BOM qua .NET vì `>` PowerShell ra UTF-16+BOM làm git lỗi pathspec) → gỡ 4238 khỏi index. VERIFY: file đĩa còn (Test-Path=True), tracked bin/obj còn lại = 0, staged-deletion = 4238, CHƯA commit (user tự commit). Guard: `validate_ci.py::validate_no_tracked_artifacts` (chạy trong `vp ci`) fail nếu `git ls-files` còn khớp bin/obj. `vp all`/`vp ci`/`vp journal` xanh sau khi gỡ.
+- Context: review A-30 — 2.125 file/235MB (platform) build-artifact bị Git track → clone/diff/status chậm, binary noise che thay đổi thật, merge-conflict artifact sau mỗi build. Review dặn làm RIÊNG + review trước khi chạy (worktree đang nhiều thay đổi user).
+- Decision/Change: (1) `git rm --cached` repo-wide (4238) — chỉ gỡ INDEX, KHÔNG xoá file đĩa, KHÔNG commit (user commit); (2) thêm guard build-gate ở `validate_ci.py` (vp ci): tracked bin/obj > 0 → FAIL (anti-drift permanent, chống `git add -f`).
+- Rationale (verifiable): **Root cause A-30:** `.gitignore` đúng nhưng git vẫn theo dõi file đã-track từ trước → fix gốc = gỡ khỏi index (không phải sửa .gitignore — đã đúng). `--cached` giữ file đĩa nên build không ảnh hưởng (verify `vp all` xanh). Guard trong `vp ci` biến "đừng commit artifact" từ quy ước thành build-gate (đúng triết lý anti-drift). Repo-wide (thay chỉ platform) theo user chọn để sạch triệt để; starhill vốn đã sạch.
+- Alternatives: (a) chỉ platform (2125) (loại: user chọn repo-wide cho sạch toàn bộ); (b) `git filter-branch`/BFG xoá khỏi LỊCH SỬ (loại: rewrite history nguy hiểm + đụng mọi clone — chỉ gỡ tracking hiện tại là đủ cho hygiene, lịch sử cũ không ảnh hưởng workflow); (c) chỉ sửa .gitignore (loại: KHÔNG gỡ file đã-track — không giải quyết gì).
+- Consequences: User PHẢI commit việc gỡ (4238 staged deletion) để hoàn tất; sau commit, `git status`/clone sạch. Guard `vp ci` từ nay chặn tái-track. Lịch sử Git cũ vẫn chứa artifact (không rewrite — chấp nhận: chỉ ảnh hưởng size lịch sử, không ảnh hưởng workflow hiện tại). ĐỒNG BỘ starhill (Task C): starhill đã sạch, chỉ cần giữ .gitignore.
+- Reversibility: High (chưa commit; nếu muốn hoàn tác: `git reset` để unstage — file đĩa nguyên).
+- Traceability: review A-30 (repository hygiene); AD-062 (command-governance validate_ci là nhà cố định); bổ trợ AD-061 (CI invariants).
+
+---
+
+### AD-091 — [P0 SECURITY] Forwarded Headers an-toàn-mặc-định: chỉ xử lý X-Forwarded-* khi có proxy/network tin cậy (re-audit P0-01)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — xử lý finding P0-01 của re-audit `re-audit-architecture-implementation-2026-07-12.md`.
+- Provenance/Evidence: re-audit P0-01 tuyên bố `ConfigureForwardedHeaders` clear trust-list + không cấu hình → trust mọi proxy → spoof IP. TÔI KHÔNG tin suy luận doc (search cho thấy .NET 8.0.17/9.0.6 "ignore từ proxy lạ" — dễ tưởng đã an toàn) mà VIẾT TEST BEHAVIORAL: `ForwardedHeadersTrustTests` (TestServer + `RemoteIpAddress`=203.0.113.9 untrusted + header `X-Forwarded-For: 1.2.3.4`). KẾT QUẢ TRƯỚC FIX: observed = "1.2.3.4" ⇒ **SPOOF ĐƯỢC** (audit ĐÚNG, giả thuyết doc của tôi SAI). Fix: gate `ForwardedHeaders = None` khi `KnownProxies.Count==0 && KnownIPNetworks.Count==0`, ngược lại `XForwardedFor|XForwardedProto`. SAU FIX: untrusted→giữ IP thật (không spoof), trusted-proxy→honor, `RateLimitIntegrationTests` vẫn xanh — 3/3 pass.
+- Context: middleware ForwardedHeaders chạy #1, RemoteIpAddress sau đó là partition-key của rate-limiter #9. Trust-list rỗng + XFF bật ⇒ (trên build .NET 10 hiện tại) header từ client trực tiếp VẪN được xử lý ⇒ client giả IP để né/đổ rate-limit; X-Forwarded-Proto giả ảnh hưởng URL/cookie/redirect.
+- Decision/Change: xử lý X-Forwarded-* CHỈ khi có ≥1 proxy/network khai tin cậy (`hasTrustedSource`); không có → `ForwardedHeaders.None` (bỏ qua header, giữ IP kết nối thật). An-toàn-mặc-định, ĐỘC LẬP phiên bản framework (không dựa vào hành vi hardening có thể khác giữa các bản .NET).
+- Rationale (verifiable): **Root cause:** bật parsing forwarded-header mà KHÔNG có nguồn tin cậy = trust-all (chứng minh bằng test empirical, không phải suy luận). Fix bản chất = không parse khi chưa khai tin cậy (declare-to-trust) → an toàn bất kể framework. Prod sau reverse-proxy khai `KnownProxies`/`KnownNetworks` → parsing bật + chỉ tin nguồn đó. Nếu quên khai → header bị bỏ qua (rate-limit degrade về per-proxy — AN TOÀN, không spoof — operator sẽ nhận ra để khai).
+- Alternatives: (a) thêm cờ `ForwardedHeadersEnabled` + fail-fast nếu bật mà thiếu proxy (loại lúc này: thêm option + đổi hành vi; gate theo trust-list đã an-toàn-mặc-định + đủ, ít bề mặt hơn); (b) tin hành vi .NET tự ignore (loại: TEST CHỨNG MINH build hiện tại KHÔNG ignore → không được dựa vào).
+- Consequences: Prod behind-proxy PHẢI khai `HttpSecurity:KnownProxies`/`KnownNetworks` để rate-limit partition theo client thật (nếu không → per-proxy, an toàn nhưng kém mịn). Ghi rõ cho deployment. Đây là finding re-audit ngoài A-01..35 (liên quan F16/A-15-security).
+- Reversibility: High (gate là 3 dòng; nhưng bỏ = tái mở P0).
+- Traceability: re-audit P0-01; F16 (forwarded headers), N-014 (rate-limit 2 tầng); bổ trợ AD-088 (auth-model)/AD-034 (rate-limit edge).
+
+---
+
+### AD-092 — [Gate 0] Idempotency scope key = tenant VÀ user (hai chiều) + hash rawKey (re-audit P1-03, REFINES AD-074)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — xử lý Gate-0 finding P1-03 của re-audit.
+- Provenance/Evidence: đọc `IdempotencyKeyScope.For` — cũ: `principal = TenantId ?? UserId ?? "anonymous"` + rawKey ghép thẳng. Bug: FALLBACK → khi có tenant thì UserId bị bỏ → hai user cùng tenant + cùng rawKey đụng key. Đã sửa: `t={TenantId|"-"}:u={UserId|"anon"}` (hai chiều độc lập) + `Convert.ToHexStringLower(SHA256.HashData(rawKey))`. Guard: `IdempotencyDecoratorTests.{Same_key_same_tenant_different_users_do_not_collide, Same_key_same_identity_still_conflicts}` (+7 test cũ) — 9/9 pass. Build 0-warning.
+- Context: re-audit P1-03 — idempotency scope collision xuyên user cùng tenant + anonymous chung namespace + rawKey không hash/bound.
+- Decision/Change: (1) scope key gồm CẢ tenant VÀ user (không fallback loại trừ) → key = `{TInput.FullName}:t={tenant}:u={user}:{sha256(rawKey)}`; (2) hash rawKey (SHA-256 hex thường) → bound độ dài + không lưu raw key (có thể nhạy cảm) vào store/log.
+- Rationale (verifiable): **Root cause P1-03:** fallback `??` làm mất chiều user khi có tenant → hai user hợp lệ chặn nhau (correctness + nhẹ là DoS lẫn nhau). Fix bản chất = tenant/user là HAI CHIỀU trong key, không phải loại trừ. Hash rawKey vừa bound (chống phình store/log) vừa tránh rò dữ liệu nhạy cảm client nhét vào key. Guard chứng minh cross-user không đụng + cùng-identity vẫn idempotent (không phá tính năng).
+- Alternatives: (a) chỉ thêm user vào fallback chain (loại: vẫn là một chiều, không sửa gốc); (b) không hash, chỉ bound cắt (loại: raw key vẫn lộ + cắt có thể va chạm prefix).
+- Consequences: DEFER (ghi rõ — Wave 1, cần đổi CONTRACT port `IIdempotencyStore`): fencing token (`TryBegin` trả owner token, `Complete/Abort` compare-and-set — chống stale abort) + response replay (trả kết quả cũ thay vì conflict). Anonymous (tenant+user đều null → `t=-:u=anon`) VẪN chung namespace — hạn chế đã biết: endpoint cần idempotency cho ẩn danh phải cấp client/session key ổn định (policy endpoint, ngoài decorator). Đổi format key → khoá cũ trong store (nếu có) coi như mới (chấp nhận: TTL 24h tự dọn).
+- Reversibility: High (đổi hàm build key; behavior idempotency giữ nguyên cho cùng-identity).
+- Traceability: re-audit P1-03; REFINES AD-074 (Complete/Abort + namespace), AD-039 (idempotency v1); F23 (multi-tenant); Gate 0.
+
+---
+
+### AD-093 — [Gate 0] schema-version là invariant: thiếu/lỗi/overflow → 0 (invalid), dispatcher quarantine nếu <1 (re-audit P1-02, REFINES AD-082)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — xử lý Gate-0 finding P1-02 của re-audit.
+- Provenance/Evidence: đọc `RabbitMqConsumer.DecodeSchemaVersion` cũ (default 1 khi thiếu; `long→(int)` cast trực tiếp → overflow wrap) + `EfIntegrationEventDispatcher` (không validate SchemaVersion). Đã sửa: consumer trả 0 (sentinel invalid) khi thiếu/không-phân-giải/overflow/âm; dispatcher validate `SchemaVersion < 1 → DeadLettered` (đặt cạnh content-type check). Sửa comment `IncomingIntegrationMessage` (nói "registry keyed theo version" — SAI theo AD-083 → viết lại). Guard: `IntegrationEventEnvelopeValidationTests.Invalid_schema_version_is_dead_lettered` (0 và -1). 6/6 pass, build 0-warning.
+- Context: re-audit P1-02 — schema-version chưa là invariant runtime: header thiếu/rác giả dạng v1; `long` overflow wrap; dispatcher chỉ validate content-type + payload-id, không validate version.
+- Decision/Change: (1) consumer decode KHÔNG default 1 âm thầm — thiếu/không-phân-giải/overflow → 0 (invalid); `long` chỉ cast khi trong range int, ngoài range → 0; (2) dispatcher AGNOSTIC quarantine khi `SchemaVersion < 1` (invariant, đối xứng content-type — mọi transport hưởng lợi).
+- Rationale (verifiable): **Root cause P1-02:** default-1 âm thầm + overflow-wrap khiến producer hỏng/foreign qua được như v1 → deserialize "thành công" nhưng sai semantic. Fix bản chất = coi version bất thường là malformed envelope (quarantine), validate ở tầng agnostic. Về "compatibility policy": mô hình versioning (AD-083/R22.3: breaking → EventType MỚI + tolerant reader) đã bảo đảm mọi version của MỘT EventType tương thích → chỉ cần invariant `>=1` (bắt producer sai), KHÔNG cần range-check per-event (sẽ mâu thuẫn AD-083).
+- Alternatives: (a) giữ default 1 (loại: chính là bug — giả dạng v1); (b) thêm supported-version-range per EventType vào registry (loại: mâu thuẫn AD-083 "breaking→EventType mới"; là speculation vì chưa có multi-version cùng EventType).
+- Consequences: Producer PHẢI gắn schema-version header > 0 (Bedrock publisher luôn gắn từ `OutgoingIntegrationMessage.SchemaVersion` >=1). Message thiếu header (foreign/legacy) nay bị quarantine thay vì xử lý như v1 — đúng ý (fail-loud). Record default `IncomingIntegrationMessage.SchemaVersion=1` giữ cho construction lập trình (test); transport là nguồn authoritative set 0 khi header bất thường.
+- Reversibility: High (validate + decode; behavior message hợp lệ không đổi).
+- Traceability: re-audit P1-02; REFINES AD-082 (envelope validate consume), AD-083 (versioning model), R22.3; Gate 0.
+
+---
+
+### AD-094 — [Gate 0] Domain-event failure boundary bao TRỌN dispatch→convention→base-save (re-audit P1-01, mở rộng AD-075)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — xử lý Gate-0 finding P1-01 của re-audit.
+- Provenance/Evidence: đọc `PlatformDbContext.SaveChangesAsync` — cũ: `DispatchDomainEventsAsync` tự restore CHỈ khi dispatch ném; `ApplySoftDelete`/`ApplyAudit`/`base.SaveChangesAsync` chạy SAU, ngoài vùng restore → ném ở đó làm mất event (đã clear). Đã sửa: một failure boundary ở `SaveChangesAsync` — sink `List<(Entity,Events)>` gom mọi dequeue; catch restore (thứ tự ngược) rồi rethrow; bỏ try/catch cục bộ trong dispatch loop. Guard: `DomainEventDispatchTests.Domain_events_restored_when_convention_or_save_fails_after_dispatch` (TestClock.Throw → ApplySoftDelete ném SAU dispatch → event restored) — FAIL trên code cũ, PASS sau fix. 6/6 pass, build 0-warning.
+- Context: re-audit P1-01 — domain event chỉ restore nếu dispatcher ném; nếu dispatch thành công nhưng base.SaveChanges/audit/soft-delete/depth-limit ném sau đó → event đã clear + KHÔNG restore → retry commit state nhưng mất side-effect/reaction.
+- Decision/Change: gom mọi event đã dequeue trong một attempt vào sink; bọc dispatch + convention + base-save trong try/catch chung; ném ở BẤT KỲ bước nào sau dequeue → restore toàn bộ (thứ tự ngược để giữ đúng thứ tự event) → rethrow. Depth-limit throw giờ cũng được restore (không silent-drop).
+- Rationale (verifiable): **Root cause P1-01:** vùng restore quá hẹp (chỉ quanh DispatchAsync). Vì dispatch dequeue+clear event khỏi entity TRƯỚC các bước ghi, mọi lỗi sau đó làm mất event in-memory. Fix bản chất = failure boundary phủ TOÀN BỘ cửa sổ trước-commit (một nơi restore duy nhất, phủ mọi đường ném). Test dùng clock ném để mô phỏng bước-sau-dispatch fail một cách tất định (dispatch không dùng clock; ApplySoftDelete/ApplyAudit dùng).
+- Alternatives: (a) chỉ thêm try/catch quanh base.SaveChanges (loại: bỏ sót ApplySoftDelete/ApplyAudit/depth-limit — vá ngọn); (b) dispatch SAU base.SaveChanges (loại: phá CP14 atomic — side-effect handler phải commit cùng transaction với state).
+- Consequences: Nếu caller RETRY SaveChanges trên CÙNG context sau lỗi, event (gồm event do handler raise) được restore → dispatch lại toàn bộ (re-stage handler effect — đúng vì attempt lỗi đã rollback). Nuance: handler-raised event khi restore + retry có thể chạy lại handler tương ứng (chấp nhận: attempt lỗi không commit gì; thường retry tạo scope mới). Ghi rõ.
+- Reversibility: High (thu hẹp boundary lại là đảo được, nhưng tái mở lỗ mất event).
+- Traceability: re-audit P1-01; mở rộng AD-075 (restore-on-dispatch-throw), CP14 (atomic dispatch), R33; Gate 0.
+
+---
+
+### AD-095 — [Gate 0] Consumer retry tier phân tầng transient/permanent (re-audit P0-02)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — xử lý Gate-0 finding P0-02 của re-audit (mục cuối Gate 0).
+- Provenance/Evidence: đọc `RabbitMqConsumer.OnReceivedAsync` cũ — MỌI lỗi dispatch (handler ném) đều NACK requeue=false → DLX NGAY (không phân biệt lỗi tạm thời với lỗi vĩnh viễn) → một hiccup DB/network làm message rơi thẳng quarantine, mất tự-hồi-phục. Đã sửa: tách `RabbitMqDeliveryPolicy` (hàm THUẦN) + retry topology + retry-publish channel confirms trong consumer. Guard: `RabbitMqDeliveryPolicyTests` (10 test, exhaustive ForOutcome/ForException/IsPermanent + ngưỡng attempt) + `RabbitMqConsumerOptionsTests` (MaxDeliveryAttempts<1, RetryDelay<=0, retry exchange rỗng, effective retry queue, defaults) — 32/32 pass, build 0-warning; e2e `RabbitMqConsumeEndToEndTests.Transient_handler_failure_is_retried_with_delay_then_succeeds` (Testcontainers, skip khi thiếu Docker) chứng minh retry→delay→success + inbox đúng-một-lần.
+- Context: re-audit P0-02 — thiếu retry tier: lỗi transient (DB/network/timeout/handler tạm) bị đối xử như poison vĩnh viễn → mất khả năng tự hồi phục của consumer; không có backoff/giới hạn số lần.
+- Decision/Change: phân loại lỗi tại `RabbitMqDeliveryPolicy`:
+  - **Permanent** = dispatch trả `InboxDispatchOutcome.DeadLettered` (unknown type/content-type/schema sai) HOẶC exception `JsonException` (payload không deserialize được) → `DeadLetter` NGAY (retry vô ích).
+  - **Transient** = exception khác → `Retry` nếu `priorAttempts + 1 < MaxDeliveryAttempts` (còn lượt), hết lượt → `DeadLetter`.
+  - Retry = APP-PUBLISH sang retry-exchange (topic durable) → retry-queue có `x-message-ttl`=RetryDelay + `x-dead-letter-exchange`=MAIN exchange → hết TTL tự dead-letter QUAY LẠI main (giữ routing key gốc) → redeliver. Đếm số vòng bằng header ứng dụng `x-bedrock-attempt` (app tự tăng), KHÔNG parse `x-death`.
+  - Final DLQ GIỮ NGUYÊN cơ chế broker-side NACK requeue=false (main queue `x-dead-letter-exchange`=DLX không đổi → tránh PRECONDITION_FAILED khi re-declare).
+- Rationale (verifiable):
+  - **Root cause P0-02:** không có kênh trung gian giữa "ack" và "quarantine vĩnh viễn" → mọi trục trặc tạm thời = mất message reaction. Fix bản chất = thêm tầng retry có delay + giới hạn deterministic, tách quyết định vào hàm thuần để kiểm chứng đầy đủ KHÔNG cần broker (phần logic rủi ro nhất).
+  - **Vì sao channel retry RIÊNG có publisher-confirms:** retry là app-publish (khác dead-letter final broker-side). Nếu ACK bản gốc TRƯỚC khi broker xác nhận nhận bản retry → hiccup broker làm MẤT message (phá at-least-once). Confirms bắt `TryPublishToRetryAsync` chờ broker-ack; publish lỗi → KHÔNG ack, NACK requeue=false → DLX final (bảo toàn, không rơi message). Channel tách khỏi consume channel để không xen chuỗi delivery/ack; publish serialize qua gate (IChannel không an toàn publish đồng thời).
+  - **Vì sao đếm qua header ứng dụng, không `x-death`:** `x-death` gộp theo cặp (queue,reason), có thể reset/di dời khi topology đổi → không tin cậy để giới hạn. App tự tăng → ngưỡng deterministic, unit-test được.
+  - **Vì sao JsonException = permanent:** deserialize/id-mismatch là hỏng payload/envelope — retry cho ra lỗi y hệt, chỉ tốn vòng lặp; quarantine ngay để soi.
+- Alternatives: (a) plugin `rabbitmq_delayed_message_exchange` (loại: phụ thuộc plugin broker, không thuần AMQP, khó portable); (b) parse `x-death` để đếm (loại: không tin cậy như trên); (c) publish retry trên chính consume channel không confirms (loại: mất message khi broker hiccup — phá at-least-once); (d) requeue=true để retry (loại: hot-loop poison khi handler luôn lỗi, không có delay/giới hạn).
+- Consequences: message transient bị trễ tối đa `MaxDeliveryAttempts × RetryDelay` trước khi vào DLQ (đánh đổi latency lấy tự-hồi-phục). Retry giữ MessageId → inbox idempotency dedupe nếu redeliver trùng. Retry topology thêm 1 exchange + 1 queue/consumer; retry-publish thêm 1 channel confirms/consumer. Config sai (MaxDeliveryAttempts<1, RetryDelay<=0) chặn boot (fail-fast).
+- Reversibility: Medium (gỡ retry tier → quay lại DLX-ngay; nhưng tái mở lỗ mất tự-hồi-phục transient).
+- Traceability: re-audit P0-02 (Gate 0 — mục cuối); liên quan AD-073 (RabbitMQ reliability), AD-082 (envelope content-type → DeadLettered), AD-093 (schema-version invalid → DeadLettered), CP11; F29.
+
+---
+
+### AD-096 — [Wave 1] Error invariant fields GET-ONLY (không init) — re-audit P1-08 (refine AD-078/A-26)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — xử lý Wave-1 finding P1-08 của re-audit.
+- Provenance/Evidence: đọc `Error.cs` — `Code`/`Message`/`Type` là public `init` → dù constructor cấm rỗng, caller vẫn `validError with { Code = "" }` (record clone) hoặc đổi Type sau validate → A-26 KHÔNG thực sự enforce. Đã sửa: ba field thành GET-ONLY (bỏ `init`), giữ `Details { get; init; }` để `WithDetails` clone. Guard: `ErrorTests.{Invariant_fields_have_no_public_setter (Code/Message/Type, reflection SetMethod == null), Details_remains_settable_for_with_expression, WithDetails_preserves_core_fields_and_attaches_details}`. 18/18 pass, build 0-warning.
+- Context: re-audit P1-08 — A-26 chỉ validate ở constructor; public init cho phép record `with` bỏ qua invariant → error rỗng/không đồng nhất type có thể lọt vào snapshot/error-mapping.
+- Decision/Change: `Code`/`Message`/`Type` get-only; mọi tạo error đi qua constructor/factory (đã validate). `Details` giữ `init` (không thuộc invariant code/message) để `WithDetails` = `this with { Details = ... }` vẫn hoạt động; record copy-constructor sao chép backing field ba core → giữ nguyên qua clone.
+- Rationale (verifiable): **Root cause P1-08:** invariant chỉ ở một cửa (constructor) trong khi có cửa thứ hai (init setter qua `with`). Fix bản chất = ĐÓNG cửa thứ hai (get-only) thay vì thêm validate rải rác. Reflection test khẳng định không còn setter — bắt được nếu ai đó thêm lại `init`.
+- Alternatives: (a) thêm validate trong một custom init setter (loại: C# init không cho validate gọn + vẫn cho gán rỗng nếu quên); (b) đổi Error thành class thường bỏ record (loại: mất giá trị equality/`with` cho Details, phá call-site). Get-only giữ record semantics mà vẫn khoá invariant.
+- Consequences: KHÔNG thể `with { Code = ... }` (đúng ý đồ). `WithDetails` vẫn dùng được. Không call-site nào trong repo dùng `with { Code/Message/Type }` (đã grep — 0 kết quả) nên không phá build.
+- Reversibility: High (thêm lại `init` là đảo được, nhưng tái mở lỗ bypass).
+- Traceability: re-audit P1-08; refine AD-078 (A-26 Error invariants); F20 error contract; R29.
+
+---
+
+### AD-097 — [Wave 1] Outbox last_error REDACT thật (không chỉ truncate) — re-audit P1-07 (refine AD-087)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — xử lý Wave-1 finding P1-07 của re-audit.
+- Provenance/Evidence: đọc `EfOutboxDispatcher.SanitizeError` — chỉ `"{Kiểu}: {ex.Message}"` + cắt `MaxLastErrorLength`; tên "Sanitize" gây hiểu nhầm ĐÃ làm sạch trong khi `ex.Message` từ driver có thể chứa connection string/credential/token/query → rò vào cột `outbox.last_error` + admin/telemetry. Đã sửa: tách helper THUẦN `OutboxErrorFormatter.Redact` (redact URI-credentials + cặp key nhạy cảm + Bearer token) + đổi tên phản ánh đúng; dispatcher gọi nó. Guard: `OutboxErrorFormatterTests` (13: classification prefix, URI creds, kv password/pwd/token/api_key/access_key/secret, bearer có/không key Authorization, message vô hại giữ nguyên, bound length, null throws). 13/13 pass, build 0-warning.
+- Context: re-audit P1-07 — `SanitizeError` chỉ truncate → không thực sự sanitize; rủi ro lưu secret/PII.
+- Decision/Change: helper thuần `OutboxErrorFormatter.Redact(ex)` = `{KiểuException}: {redact(message)}` cắt `MaxLastErrorLength`. Redaction (regex source-generated `[GeneratedRegex]`): (1) `scheme://user:pass@` → `scheme://***:***@` (giữ scheme/host để chẩn đoán); (2) `Bearer <token>` → `Bearer ***`; (3) `(password|pwd|passwd|token|secret|api[_-]?key|access[_-]?key|authorization|auth)[=:]value` → `key=***`.
+- Rationale (verifiable): **Root cause P1-07:** tin `Exception.Message` là an toàn để lưu nguyên. Fix bản chất = redact các mẫu secret phổ biến TRƯỚC khi lưu + giữ classification (tên kiểu — máy-đọc, không nhạy cảm) làm tín hiệu chẩn đoán ổn định. Tách hàm thuần cho phép unit-test đầy đủ luật redaction (không cần DB). GHI RÕ giới hạn: redaction theo mẫu là BEST-EFFORT (giảm rủi ro), không thay thế việc chỉ log detail đầy đủ vào sink có kiểm soát access — nêu trong docstring.
+- Alternatives: (a) chỉ đổi tên `FormatBoundedError` (loại: đúng tên nhưng KHÔNG giảm rủi ro rò — re-audit yêu cầu redact); (b) chỉ lưu tên kiểu, bỏ message (loại: mất khả năng chẩn đoán "vì sao fail" — đánh mất giá trị A-28); (c) redact toàn bộ message thành "***" (loại: mất chẩn đoán). Redact-theo-mẫu giữ cân bằng chẩn đoán/bảo mật.
+- Consequences: `outbox.last_error` giờ đã redact + bound. Redaction best-effort (mẫu mới lạ có thể lọt) → chấp nhận, ghi rõ. Không đổi schema (cột không đổi) → không cần migration.
+- Reversibility: High (helper thuần, đổi luật redaction dễ; không đụng schema).
+- Traceability: re-audit P1-07; refine AD-087 (A-28 last_error); F25/F33.

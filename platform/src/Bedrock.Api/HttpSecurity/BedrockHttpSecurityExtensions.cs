@@ -1,7 +1,10 @@
 using System.Globalization;
 using System.Net;
 using System.Threading.RateLimiting;
+using Bedrock.Api.ErrorHandling;
+using Bedrock.Domain.Results;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
@@ -24,7 +27,26 @@ public static class BedrockHttpSecurityExtensions
 
         var options = new HttpSecurityOptions();
         configuration.GetSection(HttpSecurityOptions.SectionName).Bind(options);
+        HttpSecurityOptions.Validate(options);
         services.AddSingleton(options);
+
+        services.Configure<CookiePolicyOptions>(cookie =>
+        {
+            cookie.HttpOnly = HttpOnlyPolicy.Always;
+            cookie.Secure = CookieSecurePolicy.Always;
+            cookie.MinimumSameSitePolicy = options.CookieSameSiteMode == CookieSameSiteMode.CrossSite
+                ? SameSiteMode.None
+                : SameSiteMode.Lax;
+        });
+        services.AddAntiforgery(antiforgery =>
+        {
+            antiforgery.HeaderName = "X-CSRF-TOKEN";
+            antiforgery.Cookie.HttpOnly = true;
+            antiforgery.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            antiforgery.Cookie.SameSite = options.CookieSameSiteMode == CookieSameSiteMode.CrossSite
+                ? SameSiteMode.None
+                : SameSiteMode.Lax;
+        });
 
         ConfigureForwardedHeaders(services, options);
         ConfigureRateLimiter(services, options);
@@ -37,7 +59,6 @@ public static class BedrockHttpSecurityExtensions
     private static void ConfigureForwardedHeaders(IServiceCollection services, HttpSecurityOptions options) =>
         services.Configure<ForwardedHeadersOptions>(forwarded =>
         {
-            forwarded.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
             forwarded.ForwardLimit = options.ForwardLimit;
             forwarded.KnownProxies.Clear();
             forwarded.KnownIPNetworks.Clear();
@@ -58,6 +79,15 @@ public static class BedrockHttpSecurityExtensions
                     forwarded.KnownIPNetworks.Add(parsed);
                 }
             }
+
+            // P0-01/AD-091 (SECURITY): CHỈ bật xử lý X-Forwarded-* khi có ÍT NHẤT một proxy/network được khai tin cậy.
+            // KHÔNG có → ForwardedHeaders.None → header bị BỎ QUA → client gọi trực tiếp KHÔNG spoof được IP/scheme
+            // (rate-limit #9 partition theo IP kết nối THẬT). An-toàn-mặc-định, ĐỘC LẬP phiên bản framework — kiểm
+            // chứng behavioral bằng ForwardedHeadersTrustTests (test empirical bắt được: trust-list rỗng vẫn honor XFF).
+            var hasTrustedSource = forwarded.KnownProxies.Count > 0 || forwarded.KnownIPNetworks.Count > 0;
+            forwarded.ForwardedHeaders = hasTrustedSource
+                ? ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+                : ForwardedHeaders.None;
         });
 
     // #9 RateLimiter: partition theo IP thật (RemoteIpAddress đã resolve ở #1) → 429 khi vượt.
@@ -85,10 +115,8 @@ public static class BedrockHttpSecurityExtensions
                         ((int)retryAfter.TotalSeconds).ToString(CultureInfo.InvariantCulture);
                 }
 
-                // 429 là mối quan tâm TẦNG EDGE (không phải domain Error/ErrorType) — ghi problem+json trực tiếp (AD-034).
-                response.ContentType = "application/problem+json";
-                await response.WriteAsync(
-                    "{\"title\":\"Too Many Requests\",\"status\":429,\"code\":\"rate_limited\"}", token);
+                await ProblemDetailsWriter.WriteAsync(context.HttpContext, CommonErrors.RateLimited())
+                    .WaitAsync(token);
             };
         });
 

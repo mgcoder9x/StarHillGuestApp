@@ -26,6 +26,7 @@ public static class OutboxInboxModelBuilderExtensions
 
             entity.Property(m => m.EventType).IsRequired();
             entity.Property(m => m.Payload).IsRequired();
+            entity.Property(m => m.LastError).HasMaxLength(OutboxMessage.MaxLastErrorLength); // A-28: bound diagnostic text.
             if (isNpgsql)
             {
                 // jsonb: query/index được trên Postgres; provider khác giữ text (SQLite không có jsonb).
@@ -36,6 +37,9 @@ public static class OutboxInboxModelBuilderExtensions
             // Filter dùng literal snake_case khớp quy ước cột (processed_at/dead_lettered_at). Hỗ trợ cả Npgsql + SQLite.
             entity.HasIndex(m => m.OccurredAt)
                 .HasDatabaseName("ix_outbox_pending")
+                .HasFilter("processed_at IS NULL AND dead_lettered_at IS NULL");
+            entity.HasIndex(m => new { m.ClaimedUntil, m.NextAttemptAt, m.OccurredAt })
+                .HasDatabaseName("ix_outbox_claimable")
                 .HasFilter("processed_at IS NULL AND dead_lettered_at IS NULL");
         });
 

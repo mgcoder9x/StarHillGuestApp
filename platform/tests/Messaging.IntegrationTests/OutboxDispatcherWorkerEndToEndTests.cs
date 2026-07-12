@@ -46,12 +46,15 @@ public sealed class OutboxDispatcherWorkerEndToEndTests : IAsyncLifetime
             _available = true;
         }
 #pragma warning disable CA1031 // CỐ Ý: thiếu Docker ⇒ skip (không fail suite).
-        catch (Exception)
+        catch (Exception) when (!IsContinuousIntegration())
 #pragma warning restore CA1031
         {
             _available = false;
         }
     }
+
+    private static bool IsContinuousIntegration() =>
+        string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase);
 
     public async Task DisposeAsync()
     {

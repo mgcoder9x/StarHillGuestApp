@@ -64,6 +64,27 @@ public sealed class DomainEventDispatchTests
     }
 
     [Fact]
+    public async Task Domain_events_are_restored_after_handler_failure() // A-14: event KHÔNG mất → retry re-dispatch được
+    {
+        await using var harness = await PersistenceHarness.CreateAsync(services =>
+            services.AddScoped<IDomainEventHandler<TestThingCreated>, ThrowingHandler>());
+
+        await using var scope = harness.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IRepository<TestThing>>();
+        var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+
+        var thing = new TestThing { Name = "with-event" };
+        thing.EmitCreated();
+        repo.Add(thing);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => uow.SaveChangesAsync());
+
+        // Handler ném giữa chừng → dispatch loop KHÔI PHỤC event về entity (snapshot+restore) thay vì mất âm thầm →
+        // lần SaveChanges sau (retry) còn dispatch lại được. Đây là behavior A-14 (clear-rồi-restore-khi-lỗi).
+        Assert.NotEmpty(thing.DomainEvents);
+    }
+
+    [Fact]
     public async Task Exceeding_max_dispatch_depth_throws_clear_error()
     {
         await using var harness = await PersistenceHarness.CreateAsync(services =>
@@ -82,6 +103,28 @@ public sealed class DomainEventDispatchTests
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => uow.SaveChangesAsync());
         Assert.Contains("vượt trần", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Domain_events_restored_when_convention_or_save_fails_after_dispatch() // P1-01/AD-094
+    {
+        await using var harness = await PersistenceHarness.CreateAsync();
+        await using var scope = harness.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+
+        var thing = new TestThing { Name = "x" };
+        thing.EmitCreated();
+        db.Things.Add(thing);
+
+        // Dispatch (KHÔNG dùng clock) chạy TRƯỚC + THÀNH CÔNG (dequeue+clear event); rồi ApplySoftDelete đọc clock →
+        // NÉM = mô phỏng bước SAU dispatch (convention/base-save) thất bại.
+        harness.Clock.Throw = true;
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => db.SaveChangesAsync());
+
+        // Failure boundary (AD-094) RESTORE event đã dequeue → KHÔNG mất (retry còn dispatch được). Code cũ (AD-075)
+        // chỉ restore khi DISPATCH ném → test này sẽ FAIL trên code cũ (event bị mất khi convention/save ném sau dispatch).
+        Assert.Single(thing.DomainEvents);
     }
 
     [Fact]

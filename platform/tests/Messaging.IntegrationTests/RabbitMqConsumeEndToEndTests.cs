@@ -57,12 +57,15 @@ public sealed class RabbitMqConsumeEndToEndTests : IAsyncLifetime
             _available = true;
         }
 #pragma warning disable CA1031 // CỐ Ý: thiếu Docker ⇒ skip.
-        catch (Exception)
+        catch (Exception) when (!IsContinuousIntegration())
 #pragma warning restore CA1031
         {
             _available = false;
         }
     }
+
+    private static bool IsContinuousIntegration() =>
+        string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase);
 
     public async Task DisposeAsync()
     {
@@ -76,6 +79,15 @@ public sealed class RabbitMqConsumeEndToEndTests : IAsyncLifetime
     private sealed class Recorder
     {
         public ConcurrentBag<Guid> Handled { get; } = [];
+
+        // P0-02: số lần GIAO (kể cả lần lỗi) theo message id — dùng cho test retry tier.
+        public ConcurrentDictionary<Guid, int> Deliveries { get; } = new();
+
+        // P0-02: số lần handler ném transient (để khẳng định đã retry đúng số vòng).
+        public int TransientFailures;
+
+        /// <summary>Số lần giao TRANSIENT cần fail trước khi thành công (0 = luôn thành công).</summary>
+        public int FailFirst { get; set; }
     }
 
     private sealed class MsgConsumeHandler(Recorder recorder) : IIntegrationEventHandler<MsgConsumeEvent>
@@ -83,6 +95,14 @@ public sealed class RabbitMqConsumeEndToEndTests : IAsyncLifetime
         public Task HandleAsync(MsgConsumeEvent integrationEvent, CancellationToken ct = default)
         {
             ArgumentNullException.ThrowIfNull(integrationEvent);
+            var delivery = recorder.Deliveries.AddOrUpdate(integrationEvent.Id, 1, (_, n) => n + 1);
+            if (delivery <= recorder.FailFirst)
+            {
+                Interlocked.Increment(ref recorder.TransientFailures);
+                // Lỗi TRANSIENT (không phải JsonException) → policy Retry (còn lượt) → publish retry → redeliver.
+                throw new InvalidOperationException($"transient failure #{delivery} for {integrationEvent.Id}");
+            }
+
             recorder.Handled.Add(integrationEvent.Id);
             return Task.CompletedTask;
         }
@@ -143,7 +163,7 @@ public sealed class RabbitMqConsumeEndToEndTests : IAsyncLifetime
         var payload = JsonSerializer.Serialize(
             new MsgConsumeEvent(messageId, DateTimeOffset.UtcNow, "hello"), PayloadOptions);
         var publisher = provider.GetRequiredService<IEventBusPublisher>();
-        await publisher.PublishAsync(new OutboxMessage
+        await publisher.PublishAsync(new OutgoingIntegrationMessage
         {
             Id = messageId,
             EventType = EventType,
@@ -167,6 +187,96 @@ public sealed class RabbitMqConsumeEndToEndTests : IAsyncLifetime
             Assert.Contains(messageId, recorder.Handled);
 
             // Inbox mark persist (idempotency) — đọc ở scope mới.
+            await using var scope = provider.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<MsgTestDbContext>();
+            Assert.Equal(1, await db.Set<InboxMessage>().CountAsync(m => m.MessageId == messageId));
+        }
+        finally
+        {
+            await subscriber.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [SkippableFact]
+    public async Task Transient_handler_failure_is_retried_with_delay_then_succeeds()
+    {
+        Skip.IfNot(_available, "Docker/Postgres/RabbitMQ không khả dụng — bỏ qua retry end-to-end test.");
+
+        const string retryExchange = "bedrock.events.retrytest";
+        const string retryQueue = "retrytest.queue";
+
+        var rabbitUri = new Uri(_rabbit.GetConnectionString());
+        var rabbitUser = rabbitUri.UserInfo.Split(':', 2);
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["RabbitMq:HostName"] = rabbitUri.Host,
+                ["RabbitMq:Port"] = rabbitUri.Port.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["RabbitMq:UserName"] = Uri.UnescapeDataString(rabbitUser[0]),
+                ["RabbitMq:Password"] = rabbitUser.Length > 1 ? Uri.UnescapeDataString(rabbitUser[1]) : string.Empty,
+                ["RabbitMq:ExchangeName"] = retryExchange,
+            })
+            .Build();
+
+        var recorder = new Recorder { FailFirst = 2 }; // fail 2 lần đầu (transient) → retry → thành công lần 3.
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<ICurrentUser>(new StubCurrentUser());
+        services.AddBedrockPersistence<MsgTestDbContext>(o => o.UseNpgsql(_postgres.GetConnectionString()));
+        services.AddRabbitMqMessaging(configuration);
+        services.AddIntegrationEventRegistry(typeof(MsgConsumeEvent).Assembly);
+        services.AddIntegrationEventConsumer();
+        services.AddSingleton(recorder);
+        services.AddScoped<IIntegrationEventHandler<MsgConsumeEvent>, MsgConsumeHandler>();
+        services.AddRabbitMqConsumer(o =>
+        {
+            o.QueueName = retryQueue;
+            o.RoutingKeys.Add("msg.#");
+            o.MaxDeliveryAttempts = 5;
+            o.RetryDelay = TimeSpan.FromSeconds(1); // TTL nhỏ để test nhanh; vẫn chứng minh delay-requeue.
+            o.RetryExchangeName = "bedrock.retrytest.retry";
+            o.DeadLetterExchangeName = "bedrock.retrytest.dead-letter";
+        });
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<MsgTestDbContext>().Database.EnsureCreatedAsync();
+        }
+
+        // Start subscriber TRƯỚC → nó tự provision toàn bộ topology (main+DLX+retry) và bind → tránh xung đột pre-declare.
+        var subscriber = provider.GetServices<IHostedService>().OfType<RabbitMqConsumer>().Single();
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        await subscriber.StartAsync(cts.Token);
+        try
+        {
+            // Chờ subscriber sẵn sàng (exchange+queue+binding tồn tại) rồi mới publish → không mất message do đua timing.
+            await Task.Delay(1000);
+
+            var messageId = Guid.CreateVersion7();
+            var payload = JsonSerializer.Serialize(
+                new MsgConsumeEvent(messageId, DateTimeOffset.UtcNow, "retry"), PayloadOptions);
+            var publisher = provider.GetRequiredService<IEventBusPublisher>();
+            await publisher.PublishAsync(new OutgoingIntegrationMessage
+            {
+                Id = messageId,
+                EventType = EventType,
+                SchemaVersion = 1,
+                Payload = payload,
+                OccurredAt = DateTimeOffset.UtcNow,
+            });
+
+            // Poll tới khi handler thành công (sau 2 vòng retry, mỗi vòng ~ RetryDelay).
+            for (var attempt = 0; attempt < 300 && recorder.Handled.IsEmpty; attempt++)
+            {
+                await Task.Delay(100);
+            }
+
+            Assert.Contains(messageId, recorder.Handled);           // cuối cùng xử lý thành công.
+            Assert.Equal(2, recorder.TransientFailures);            // đúng 2 lần fail transient trước khi thành công.
+            Assert.Equal(3, recorder.Deliveries[messageId]);        // giao 3 lần: fail, fail, success.
+
+            // Inbox chỉ mark 1 lần (2 vòng đầu rollback không commit) → đúng-một-lần bất chấp redelivery.
             await using var scope = provider.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<MsgTestDbContext>();
             Assert.Equal(1, await db.Set<InboxMessage>().CountAsync(m => m.MessageId == messageId));

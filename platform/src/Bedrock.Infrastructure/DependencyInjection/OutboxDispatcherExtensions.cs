@@ -26,10 +26,34 @@ public static class OutboxDispatcherExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddOptions<OutboxDispatcherOptions>(OutboxDispatcherOptions.KeyFor<TContext>())
-            .Configure(options => configure?.Invoke(options));
+            .Configure(options => configure?.Invoke(options))
+            .Validate(OutboxDispatcherOptions.IsValid, "Outbox dispatcher options không hợp lệ.")
+            .ValidateOnStart();
 
-        services.AddScoped<IOutboxDispatcher, EfOutboxDispatcher<TContext>>();
+        services.AddScoped<EfOutboxDispatcher<TContext>>();
+        services.AddScoped<IOutboxDispatcher>(sp => sp.GetRequiredService<EfOutboxDispatcher<TContext>>());
         services.TryAddScoped<IInboxStore, EfInboxStore>();
+        return services;
+    }
+
+    /// <summary>Đăng ký dispatcher keyed cho một module; worker vẫn resolve concrete theo TContext.</summary>
+    public static IServiceCollection AddOutboxDispatcher<TContext>(
+        this IServiceCollection services,
+        string moduleKey,
+        Action<OutboxDispatcherOptions>? configure = null)
+        where TContext : PlatformDbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentException.ThrowIfNullOrWhiteSpace(moduleKey);
+
+        services.AddOptions<OutboxDispatcherOptions>(OutboxDispatcherOptions.KeyFor<TContext>())
+            .Configure(options => configure?.Invoke(options))
+            .Validate(OutboxDispatcherOptions.IsValid, "Outbox dispatcher options không hợp lệ.")
+            .ValidateOnStart();
+        services.AddScoped<EfOutboxDispatcher<TContext>>();
+        services.AddKeyedScoped<IOutboxDispatcher>(
+            moduleKey,
+            (sp, _) => sp.GetRequiredService<EfOutboxDispatcher<TContext>>());
         return services;
     }
 
@@ -52,7 +76,9 @@ public static class OutboxDispatcherExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddOptions<OutboxDispatcherWorkerOptions>(OutboxDispatcherWorkerOptions.KeyFor<TContext>())
-            .Configure(options => configure?.Invoke(options));
+            .Configure(options => configure?.Invoke(options))
+            .Validate(OutboxDispatcherWorkerOptions.IsValid, "Outbox worker PollInterval phải > 0.")
+            .ValidateOnStart();
 
         services.AddHostedService<OutboxDispatcherHostedService<TContext>>();
         return services;
@@ -71,7 +97,9 @@ public static class OutboxDispatcherExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddOptions<OutboxRetentionOptions>(OutboxRetentionOptions.KeyFor<TContext>())
-            .Configure(options => configure?.Invoke(options));
+            .Configure(options => configure?.Invoke(options))
+            .Validate(OutboxRetentionOptions.IsValid, "Outbox retention TTL phải > 0.")
+            .ValidateOnStart();
 
         services.AddScoped<EfOutboxRetention<TContext>>();
         return services;
@@ -91,6 +119,29 @@ public static class OutboxDispatcherExtensions
 
         services.TryAddScoped<IInboxStore, EfInboxStore>();
         services.TryAddScoped<IIntegrationEventDispatcher, EfIntegrationEventDispatcher>();
+        return services;
+    }
+
+    /// <summary>
+    /// Wire consumer theo module key để UoW/Inbox/handler của module không resolve nhầm DbContext hoặc handler
+    /// của module khác. Các dependency keyed phải được đăng ký bởi AddBedrockPersistence(moduleKey, ...).
+    /// </summary>
+    public static IServiceCollection AddIntegrationEventConsumer<TContext>(
+        this IServiceCollection services,
+        string moduleKey)
+        where TContext : PlatformDbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentException.ThrowIfNullOrWhiteSpace(moduleKey);
+
+        services.AddKeyedScoped<IIntegrationEventDispatcher>(
+            moduleKey,
+            (sp, _) => new EfIntegrationEventDispatcher(
+                sp.GetRequiredKeyedService<Bedrock.Application.Ports.Persistence.IUnitOfWork>(moduleKey),
+                sp.GetRequiredKeyedService<IInboxStore>(moduleKey),
+                sp.GetRequiredService<IIntegrationEventTypeRegistry>(),
+                sp,
+                moduleKey));
         return services;
     }
 

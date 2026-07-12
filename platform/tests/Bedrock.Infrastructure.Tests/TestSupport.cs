@@ -74,7 +74,17 @@ public sealed class TestDbContext(
 // ── Test doubles cho port ───────────────────────────────────────────────────
 public sealed class TestClock : IClock
 {
-    public DateTimeOffset UtcNow { get; set; } = new(2026, 7, 8, 12, 0, 0, TimeSpan.Zero);
+    private DateTimeOffset _utcNow = new(2026, 7, 8, 12, 0, 0, TimeSpan.Zero);
+
+    /// <summary>Khi true, đọc <see cref="UtcNow"/> NÉM — mô phỏng bước SAU dispatch (soft-delete/audit dùng clock)
+    /// thất bại, để kiểm failure boundary restore domain-event (P1-01/AD-094).</summary>
+    public bool Throw { get; set; }
+
+    public DateTimeOffset UtcNow
+    {
+        get => Throw ? throw new InvalidOperationException("TestClock: cố tình ném để test failure boundary.") : _utcNow;
+        set => _utcNow = value;
+    }
 }
 
 public sealed class TestCurrentUser : ICurrentUser

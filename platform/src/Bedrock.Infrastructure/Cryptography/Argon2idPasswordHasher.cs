@@ -19,6 +19,8 @@ public sealed class Argon2idPasswordHasher(PasswordHashingOptions options) : IPa
     public string Hash(string password)
     {
         ArgumentNullException.ThrowIfNull(password);
+        PasswordHashingOptions.Validate(options);
+        EnsurePasswordSize(password);
 
         var salt = RandomNumberGenerator.GetBytes(options.SaltSize);
         var hash = Compute(password, salt, options.MemoryKib, options.Iterations, options.DegreeOfParallelism, options.HashSize);
@@ -32,10 +34,24 @@ public sealed class Argon2idPasswordHasher(PasswordHashingOptions options) : IPa
     {
         ArgumentNullException.ThrowIfNull(password);
         ArgumentNullException.ThrowIfNull(hash);
+        if (Encoding.UTF8.GetByteCount(password) > 4096)
+        {
+            return false;
+        }
 
         try
         {
             if (!TryParse(hash, out var parsed))
+            {
+                return false;
+            }
+
+            if (!PasswordHashingOptions.IsWithinBounds(
+                    parsed.Memory,
+                    parsed.Iterations,
+                    parsed.Parallelism,
+                    parsed.Salt.Length,
+                    parsed.Hash.Length))
             {
                 return false;
             }
@@ -90,7 +106,7 @@ public sealed class Argon2idPasswordHasher(PasswordHashingOptions options) : IPa
             return false;
         }
 
-        if (!parts[2].StartsWith("v=", StringComparison.Ordinal))
+        if (!string.Equals(parts[2], $"v={Argon2Version}", StringComparison.Ordinal))
         {
             return false;
         }
@@ -123,6 +139,14 @@ public sealed class Argon2idPasswordHasher(PasswordHashingOptions options) : IPa
         return int.TryParse(segment.AsSpan(tag.Length), NumberStyles.None, CultureInfo.InvariantCulture, out var value)
             ? value
             : null;
+    }
+
+    private static void EnsurePasswordSize(string password)
+    {
+        if (Encoding.UTF8.GetByteCount(password) > 4096)
+        {
+            throw new ArgumentException("Password UTF-8 length must not exceed 4096 bytes.", nameof(password));
+        }
     }
 
     private readonly record struct ParsedHash(int Memory, int Iterations, int Parallelism, byte[] Salt, byte[] Hash);

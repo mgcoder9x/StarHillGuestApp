@@ -1,4 +1,8 @@
 using Bedrock.Application.UseCases;
+using Bedrock.Application.Messaging;
+using Bedrock.Application.Ports.Persistence;
+using Bedrock.Application.Ports.Security;
+using Bedrock.Application.Ports.Time;
 using Bedrock.Infrastructure.DependencyInjection;
 using FluentValidation;
 using Identity.Application.RefreshToken;
@@ -16,6 +20,8 @@ namespace Identity.Infrastructure.DependencyInjection;
 /// </summary>
 public static class IdentityInfrastructureExtensions
 {
+    public const string PersistenceKey = "identity";
+
     public static IServiceCollection AddIdentityInfrastructure(
         this IServiceCollection services,
         Action<DbContextOptionsBuilder> configureDbContext)
@@ -24,10 +30,18 @@ public static class IdentityInfrastructureExtensions
         ArgumentNullException.ThrowIfNull(configureDbContext);
 
         // DbContext + repo/UoW/outbox-writer/refresh-store + DB readiness check (schema "identity").
-        services.AddBedrockPersistence<IdentityDbContext>(configureDbContext);
+        services.AddBedrockPersistence<IdentityDbContext>(PersistenceKey, configureDbContext);
 
-        // Use case rotation (scoped — dùng chung scope/DbContext với UoW). Host gọi AddBedrockCore sau → bọc pipeline.
-        services.AddScoped<IUseCase<RefreshTokenCommand, RefreshTokenResult>, RefreshAccessTokenUseCase>();
+        // Factory resolve toàn bộ persistence port bằng module key. Không có global PlatformDbContext alias nên
+        // module thứ hai không thể làm Identity trỏ nhầm context theo registration order (A-01).
+        services.AddScoped<IUseCase<RefreshTokenCommand, RefreshTokenResult>>(sp =>
+            new RefreshAccessTokenUseCase(
+                sp.GetRequiredKeyedService<IRefreshTokenStore>(PersistenceKey),
+                sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
+                sp.GetRequiredService<IClock>(),
+                sp.GetRequiredService<ITokenGenerator>(),
+                sp.GetRequiredService<IJwtTokenService>(),
+                sp.GetRequiredKeyedService<IOutboxWriter>(PersistenceKey)));
 
         // Validator của module (ValidationUseCaseDecorator nhận qua IEnumerable<IValidator<RefreshTokenCommand>>).
         services.AddTransient<IValidator<RefreshTokenCommand>, RefreshTokenCommandValidator>();

@@ -74,7 +74,10 @@ public sealed class PostgresIntegrationEventDispatcherTests(PostgresFixture fixt
     {
         var payload = JsonSerializer.SerializeToUtf8Bytes(
             new ConsumeTestEvent(id, DateTimeOffset.UtcNow, data), OutboxSerialization.Options);
-        return new IncomingIntegrationMessage(id, Consumer, eventType, payload);
+        return new IncomingIntegrationMessage(id, Consumer, eventType, payload)
+        {
+            ContentType = "application/json",
+        };
     }
 
     private static async Task<InboxDispatchOutcome> DispatchAsync(ServiceProvider provider, IncomingIntegrationMessage message)

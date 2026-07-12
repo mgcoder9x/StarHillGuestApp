@@ -21,12 +21,15 @@ public sealed class IdentityDbContextFactory : IDesignTimeDbContextFactory<Ident
 {
     public IdentityDbContext CreateDbContext(string[] args)
     {
-        var options = new DbContextOptionsBuilder<IdentityDbContext>()
-            .UseNpgsql("Host=localhost;Database=identity_design_time;Username=postgres;Password=postgres")
-            .UseSnakeCaseNamingConvention()
-            .Options;
+        var builder = new DbContextOptionsBuilder<IdentityDbContext>();
+        builder.UseIdentityNpgsql("Host=localhost;Database=identity_design_time;Username=postgres;Password=postgres");
+        builder.UseSnakeCaseNamingConvention();
 
-        return new IdentityDbContext(options, DesignTimeStub.Instance, DesignTimeStub.Instance, DesignTimeStub.Instance);
+        return new IdentityDbContext(
+            builder.Options,
+            DesignTimeStub.Instance,
+            DesignTimeStub.Instance,
+            DesignTimeStub.Instance);
     }
 
     /// <summary>Stub design-time cho <see cref="IClock"/>/<see cref="ICurrentUser"/>/<see cref="IDomainEventDispatcher"/>

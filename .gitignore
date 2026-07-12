@@ -1,0 +1,42 @@
+# Root .gitignore — ignore build artifacts across ALL sub-solutions
+# (platform/, foundation/, resort-qr/, starhill/, Reference/). Fix tận gốc: trước đây
+# không có root .gitignore nên bin/obj của foundation/resort-qr/Reference bị track lẫn
+# vào repo. Artifact tái sinh từ source → KHÔNG commit.
+
+# .NET build artifacts
+bin/
+obj/
+[Bb]uild/
+[Oo]ut/
+[Dd]ebug/
+[Rr]elease/
+
+# Visual Studio / Rider / VS Code (giữ .vscode chia sẻ nếu team muốn — bỏ comment nếu cần)
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.idea/
+
+# EF migration bundle = artifact deploy (self-contained, có thể ~100MB) — sinh ở CI/local.
+efbundle*
+
+# Test / coverage output
+[Tt]est[Rr]esults/
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+
+# NuGet
+*.nupkg
+*.snupkg
+.packages/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Temp / scratch
+.tmp-codex-app-v2-smoke/

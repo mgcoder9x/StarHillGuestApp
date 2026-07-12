@@ -5,9 +5,9 @@ using RabbitMQ.Client;
 namespace Adapters.Messaging.RabbitMq;
 
 /// <summary>
-/// Ánh xạ THUẦN <see cref="OutboxMessage"/> → primitives RabbitMQ (routing key / body / properties). Tách khỏi
-/// I/O để test được KHÔNG cần broker. Adapter mỏng: publish payload THÔ + headers (không cần CLR type — §5.2);
-/// consumer dùng <c>IIntegrationEventTypeRegistry</c> deserialize.
+/// Ánh xạ THUẦN <see cref="OutgoingIntegrationMessage"/> → primitives RabbitMQ (routing key / body / properties).
+/// Tách khỏi I/O để test được KHÔNG cần broker. Adapter mỏng: publish payload THÔ + headers (không cần CLR type
+/// — §5.2); consumer dùng <c>IIntegrationEventTypeRegistry</c> deserialize.
 /// </summary>
 internal static class RabbitMqMessageMapper
 {
@@ -18,19 +18,19 @@ internal static class RabbitMqMessageMapper
     public const string SchemaVersionHeader = "schema-version";
 
     /// <summary>Routing key = EventType → consumer bind theo pattern topic (vd <c>identity.*</c>).</summary>
-    public static string RoutingKeyOf(OutboxMessage message)
+    public static string RoutingKeyOf(OutgoingIntegrationMessage message)
     {
         ArgumentNullException.ThrowIfNull(message);
         return message.EventType;
     }
 
-    public static ReadOnlyMemory<byte> BodyOf(OutboxMessage message)
+    public static ReadOnlyMemory<byte> BodyOf(OutgoingIntegrationMessage message)
     {
         ArgumentNullException.ThrowIfNull(message);
         return Encoding.UTF8.GetBytes(message.Payload);
     }
 
-    public static BasicProperties PropertiesOf(OutboxMessage message)
+    public static BasicProperties PropertiesOf(OutgoingIntegrationMessage message)
     {
         ArgumentNullException.ThrowIfNull(message);
 

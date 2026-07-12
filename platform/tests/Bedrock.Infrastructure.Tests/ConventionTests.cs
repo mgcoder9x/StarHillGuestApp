@@ -76,6 +76,46 @@ public sealed class ConventionTests
     }
 
     [Fact]
+    public async Task Audit_created_metadata_is_protected_from_caller_tampering() // A-25
+    {
+        await using var harness = await PersistenceHarness.CreateAsync();
+        var createdAt = harness.Clock.UtcNow;
+        var originalActor = harness.User.UserId;
+
+        Guid id;
+        await using (var scope = harness.CreateScope())
+        {
+            var repo = scope.ServiceProvider.GetRequiredService<IRepository<TestThing>>();
+            var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            var thing = new TestThing { Name = "a" };
+            id = thing.Id;
+            repo.Add(thing);
+            await uow.SaveChangesAsync();
+        }
+
+        harness.Clock.UtcNow = createdAt.AddHours(1);
+        await using (var scope = harness.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+            var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            var loaded = await db.Things.SingleAsync(t => t.Id == id);
+            loaded.CreatedAt = createdAt.AddYears(-10);          // caller CỐ Ý tampering metadata tạo
+            loaded.CreatedByUserId = Guid.CreateVersion7();
+            loaded.Name = "b";
+            await uow.SaveChangesAsync();
+        }
+
+        await using (var scope = harness.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+            var loaded = await db.Things.SingleAsync(t => t.Id == id);
+            Assert.Equal(createdAt, loaded.CreatedAt);           // infrastructure sở hữu → KHÔNG bị caller ghi đè
+            Assert.Equal(originalActor, loaded.CreatedByUserId); // KHÔNG bị caller ghi đè
+            Assert.Equal("b", loaded.Name);                      // thay đổi hợp lệ vẫn persist
+        }
+    }
+
+    [Fact]
     public async Task SoftDelete_marks_flag_and_query_filter_excludes()
     {
         await using var harness = await PersistenceHarness.CreateAsync();

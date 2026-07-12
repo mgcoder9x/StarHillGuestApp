@@ -18,11 +18,48 @@ public sealed class RabbitMqConsumerOptions
     /// </summary>
     public string ConsumerName { get; set; } = string.Empty;
 
+    /// <summary>
+    /// DI key của integration-event dispatcher thuộc module sở hữu queue. Null/rỗng chỉ dành cho host
+    /// single-context legacy; modular host phải đặt key để inbox/UoW/handler không resolve nhầm module.
+    /// </summary>
+    public string DispatcherServiceKey { get; set; } = string.Empty;
+
     /// <summary>Routing key/pattern bind queue vào topic exchange (vd <c>identity.#</c> hoặc <c>identity.user_token_refreshed</c>). Ít nhất một.</summary>
     public IList<string> RoutingKeys { get; } = [];
 
     /// <summary>QoS prefetch (số message chưa-ack tối đa mỗi consumer). Mỗi delivery xử lý trong SCOPE riêng → an toàn song song. Mặc định 10.</summary>
     public ushort PrefetchCount { get; set; } = 10;
+
+    /// <summary>
+    /// P0-02: số lần GIAO tối đa cho lỗi TRANSIENT (DB/network/timeout/handler tạm) trước khi vào final DLQ. Mỗi lần
+    /// giao thất bại transient → retry có delay; đạt ngưỡng → quarantine. Mặc định 5. Lỗi PERMANENT (envelope/type/
+    /// schema sai) KHÔNG retry (vào DLQ ngay). Phải >= 1.
+    /// </summary>
+    public int MaxDeliveryAttempts { get; set; } = 5;
+
+    /// <summary>P0-02: delay giữa các lần retry transient (message chờ trong retry-queue TTL rồi quay lại). Mặc định 5s. Phải > 0.</summary>
+    public TimeSpan RetryDelay { get; set; } = TimeSpan.FromSeconds(5);
+
+    /// <summary>Header mang số lần đã giao (app quản để đếm tin cậy, không phụ thuộc parse <c>x-death</c>).</summary>
+    public const string AttemptHeader = "x-bedrock-attempt";
+
+    /// <summary>Retry exchange (durable) — nơi app publish message cần retry; route tới retry-queue.</summary>
+    public string RetryExchangeName { get; set; } = "bedrock.retry";
+
+    /// <summary>Retry queue. Rỗng = <c>{QueueName}.retry</c>. Có <c>x-message-ttl</c>=RetryDelay + dead-letter về main exchange.</summary>
+    public string RetryQueueName { get; set; } = string.Empty;
+
+    internal string EffectiveRetryQueueName =>
+        string.IsNullOrWhiteSpace(RetryQueueName) ? QueueName + ".retry" : RetryQueueName;
+
+    /// <summary>Durable dead-letter exchange do consumer tự provision; mọi reject không-requeue đi vào đây.</summary>
+    public string DeadLetterExchangeName { get; set; } = "bedrock.dead-letter";
+
+    /// <summary>Queue quarantine. Rỗng = tự dùng <c>{QueueName}.dead-letter</c>.</summary>
+    public string DeadLetterQueueName { get; set; } = string.Empty;
+
+    internal string EffectiveDeadLetterQueueName =>
+        string.IsNullOrWhiteSpace(DeadLetterQueueName) ? QueueName + ".dead-letter" : DeadLetterQueueName;
 
     /// <summary>
     /// Đối số queue tuỳ chọn (vd <c>x-dead-letter-exchange</c> để poison đi vào DLX thay vì drop). Base KHÔNG áp
@@ -57,6 +94,26 @@ public sealed class RabbitMqConsumerOptions
         if (options.PrefetchCount == 0)
         {
             throw new InvalidOperationException("RabbitMqConsumerOptions.PrefetchCount phải > 0.");
+        }
+
+        if (options.MaxDeliveryAttempts < 1)
+        {
+            throw new InvalidOperationException("RabbitMqConsumerOptions.MaxDeliveryAttempts phải >= 1.");
+        }
+
+        if (options.RetryDelay <= TimeSpan.Zero)
+        {
+            throw new InvalidOperationException("RabbitMqConsumerOptions.RetryDelay phải > 0.");
+        }
+
+        if (string.IsNullOrWhiteSpace(options.RetryExchangeName))
+        {
+            throw new InvalidOperationException("RabbitMqConsumerOptions.RetryExchangeName rỗng.");
+        }
+
+        if (string.IsNullOrWhiteSpace(options.DeadLetterExchangeName))
+        {
+            throw new InvalidOperationException("RabbitMqConsumerOptions.DeadLetterExchangeName rỗng.");
         }
     }
 }

@@ -23,6 +23,18 @@ public sealed class EfUnitOfWork(PlatformDbContext context) : IUnitOfWork
 {
     public async Task<int> SaveChangesAsync(CancellationToken ct = default)
     {
+        // Domain-event handlers chạy bên trong explicit transaction kể cả caller chỉ gọi SaveChangesAsync.
+        // Nếu đã ở trong ExecuteInTransactionAsync thì dùng transaction hiện hành (không mở lồng).
+        if (context.Database.CurrentTransaction is null)
+        {
+            return await ExecuteInTransactionAsync(SaveChangesCoreAsync, ct).ConfigureAwait(false);
+        }
+
+        return await SaveChangesCoreAsync(ct).ConfigureAwait(false);
+    }
+
+    private async Task<int> SaveChangesCoreAsync(CancellationToken ct)
+    {
         try
         {
             return await context.SaveChangesAsync(ct).ConfigureAwait(false);
@@ -90,7 +102,7 @@ public sealed class EfUnitOfWork(PlatformDbContext context) : IUnitOfWork
                 }
                 catch
                 {
-                    await transaction.RollbackAsync(ct).ConfigureAwait(false);
+                    await transaction.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
                     throw;
                 }
             }

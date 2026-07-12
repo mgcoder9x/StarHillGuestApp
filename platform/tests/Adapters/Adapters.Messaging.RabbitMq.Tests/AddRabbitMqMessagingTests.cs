@@ -16,7 +16,7 @@ public sealed class AddRabbitMqMessagingTests
 {
     private sealed class DummyDefaultPublisher : IEventBusPublisher
     {
-        public Task PublishAsync(OutboxMessage message, CancellationToken ct = default) => Task.CompletedTask;
+        public Task PublishAsync(OutgoingIntegrationMessage message, CancellationToken ct = default) => Task.CompletedTask;
     }
 
     private static IConfiguration Config(string hostName = "localhost", string exchange = "test.events") =>

@@ -32,55 +32,68 @@ public sealed class RabbitMqEventBusPublisher : IEventBusPublisher, IAsyncDispos
         _resiliencePipeline = RabbitMqResiliencePipelineFactory.Create(options.Resilience);
     }
 
-    public async Task PublishAsync(OutboxMessage message, CancellationToken ct = default)
+    public async Task PublishAsync(OutgoingIntegrationMessage message, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(message);
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        await _resiliencePipeline.ExecuteAsync(
-            async token =>
-            {
-                var channel = await GetOrCreateChannelAsync(token).ConfigureAwait(false);
-                await channel.BasicPublishAsync(
-                    exchange: _options.ExchangeName,
-                    routingKey: RabbitMqMessageMapper.RoutingKeyOf(message),
-                    mandatory: false,
-                    basicProperties: RabbitMqMessageMapper.PropertiesOf(message),
-                    body: RabbitMqMessageMapper.BodyOf(message),
-                    cancellationToken: token).ConfigureAwait(false);
-            },
-            ct).ConfigureAwait(false);
+        // RabbitMQ IChannel không hỗ trợ concurrent publish. Gate bao TRỌN publish + confirm + retries,
+        // không chỉ bao channel creation (A-04).
+        await _channelGate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await _resiliencePipeline.ExecuteAsync(
+                async token =>
+                {
+                    var channel = await GetOrCreateChannelUnderLockAsync(token).ConfigureAwait(false);
+                    await channel.BasicPublishAsync(
+                        exchange: _options.ExchangeName,
+                        routingKey: RabbitMqMessageMapper.RoutingKeyOf(message),
+                        mandatory: true,
+                        basicProperties: RabbitMqMessageMapper.PropertiesOf(message),
+                        body: RabbitMqMessageMapper.BodyOf(message),
+                        cancellationToken: token).ConfigureAwait(false);
+                },
+                ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            _channelGate.Release();
+        }
     }
 
-    private async Task<IChannel> GetOrCreateChannelAsync(CancellationToken ct)
+    /// <summary>Caller phải đang giữ <see cref="_channelGate"/>.</summary>
+    private async Task<IChannel> GetOrCreateChannelUnderLockAsync(CancellationToken ct)
     {
         if (_channel is { IsOpen: true })
         {
             return _channel;
         }
 
-        await _channelGate.WaitAsync(ct).ConfigureAwait(false);
-        try
+        if (_channel is not null)
         {
-            if (_channel is { IsOpen: true })
+            await _channel.DisposeAsync().ConfigureAwait(false);
+            _channel = null;
+        }
+
+        if (_connection is not { IsOpen: true })
+        {
+            if (_connection is not null)
             {
-                return _channel;
+                await _connection.DisposeAsync().ConfigureAwait(false);
             }
 
-            _connection ??= await _connectionFactory.CreateConnectionAsync(ct).ConfigureAwait(false);
-            _channel = await _connection.CreateChannelAsync(_channelOptions, ct).ConfigureAwait(false);
-            await _channel.ExchangeDeclareAsync(
-                exchange: _options.ExchangeName,
-                type: ExchangeType.Topic,
-                durable: true,
-                autoDelete: false,
-                cancellationToken: ct).ConfigureAwait(false);
-            return _channel;
+            _connection = await _connectionFactory.CreateConnectionAsync(ct).ConfigureAwait(false);
         }
-        finally
-        {
-            _channelGate.Release();
-        }
+
+        _channel = await _connection.CreateChannelAsync(_channelOptions, ct).ConfigureAwait(false);
+        await _channel.ExchangeDeclareAsync(
+            exchange: _options.ExchangeName,
+            type: ExchangeType.Topic,
+            durable: true,
+            autoDelete: false,
+            cancellationToken: ct).ConfigureAwait(false);
+        return _channel;
     }
 
     public async ValueTask DisposeAsync()
@@ -91,16 +104,25 @@ public sealed class RabbitMqEventBusPublisher : IEventBusPublisher, IAsyncDispos
         }
 
         _disposed = true;
-        if (_channel is not null)
+        await _channelGate.WaitAsync().ConfigureAwait(false);
+        try
         {
-            await _channel.DisposeAsync().ConfigureAwait(false);
-        }
+            if (_channel is not null)
+            {
+                await _channel.DisposeAsync().ConfigureAwait(false);
+                _channel = null;
+            }
 
-        if (_connection is not null)
+            if (_connection is not null)
+            {
+                await _connection.DisposeAsync().ConfigureAwait(false);
+                _connection = null;
+            }
+        }
+        finally
         {
-            await _connection.DisposeAsync().ConfigureAwait(false);
+            _channelGate.Release();
+            _channelGate.Dispose();
         }
-
-        _channelGate.Dispose();
     }
 }

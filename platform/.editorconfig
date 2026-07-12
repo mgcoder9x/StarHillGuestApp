@@ -29,6 +29,12 @@ dotnet_naming_style.prefix_i_style.capitalization = pascal_case
 [tests/**/*.cs]
 dotnet_diagnostic.CA1707.severity = none
 
+# EF Core migration = CODE SINH TỰ ĐỘNG (dotnet ef migrations). KHÔNG hand-edit để thỏa style/quality analyzer
+# (sửa tay = fragile; regenerate sẽ mất). Đánh dấu generated_code → analyzer bỏ qua (vd CA1861 với composite
+# index `new[]{...}` EF sinh). Chính sách áp cho MỌI module (Identity/ResortConfig/Rooms/... về sau).
+[**/Persistence/Migrations/*.cs]
+generated_code = true
+
 [*.{json,xml,props,targets,csproj,slnx}]
 indent_size = 2
 

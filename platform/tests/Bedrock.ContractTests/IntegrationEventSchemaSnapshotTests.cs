@@ -51,11 +51,8 @@ public sealed class IntegrationEventSchemaSnapshotTests
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(p => p.Name is not (nameof(IntegrationEvent.EventType) or nameof(IntegrationEvent.SchemaVersion)))
             .OrderBy(p => p.Name, StringComparer.Ordinal)
-            .Select(p => $"{p.Name}:{FriendlyTypeName(p.PropertyType)}");
+            .Select(p => $"{p.Name}:{ContractSchema.DescribeProperty(p)}"); // A-22: canonical (generic/array/nullable).
 
         return $"{instance.EventType} v{instance.SchemaVersion} {{ {string.Join(", ", properties)} }}";
     }
-
-    private static string FriendlyTypeName(Type type) =>
-        Nullable.GetUnderlyingType(type) is { } inner ? $"{FriendlyTypeName(inner)}?" : type.Name;
 }

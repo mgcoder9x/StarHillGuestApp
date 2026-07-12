@@ -30,7 +30,9 @@ public static class BedrockApiExtensions
         services.AddBedrockHttpSecurity(configuration); // F16/F17: ForwardedHeaders + rate-limit + CORS (task 11).
 
         services.AddOptions<ObservabilityOptions>()
-            .Bind(configuration.GetSection(ObservabilityOptions.SectionName));
+            .Bind(configuration.GetSection(ObservabilityOptions.SectionName))
+            .Validate(ObservabilityOptions.IsValid, "Observability path mask options không hợp lệ.")
+            .ValidateOnStart();
         services.AddSingleton(sp => new PathMasker(sp.GetRequiredService<IOptions<ObservabilityOptions>>().Value));
 
         services.AddBedrockObservability(configuration); // F34/R24: OpenTelemetry 3 trụ + W3C traceparent.
@@ -47,6 +49,7 @@ public static class BedrockApiExtensions
         ArgumentNullException.ThrowIfNull(app);
 
         app.UseForwardedHeaders();                          // #1 — IP/scheme thật cho mọi middleware sau (F16).
+        app.UseCookiePolicy();
         app.UseMiddleware<CorrelationIdMiddleware>();       // #2
         app.UseMiddleware<ExceptionHandlingMiddleware>();   // #3
         // #4 HSTS / HTTPS redirect — TRÁCH NHIỆM HOST (deployment/TLS; base có thể chạy sau proxy terminate TLS).
@@ -57,6 +60,7 @@ public static class BedrockApiExtensions
         app.UseRateLimiter();                               // #9 — partition theo IP thật đã resolve ở #1 (F16).
         app.UseAuthentication();                             // #10
         app.UseAuthorization();
+        app.UseAntiforgery();
         app.UseEndpoints(endpoints =>                        // #11
         {
             endpoints.MapBedrockHealth();

@@ -23,4 +23,36 @@ public sealed class PasswordHashingOptions
 
     /// <summary>Độ dài hash (byte), ≥ 32.</summary>
     public int HashSize { get; set; } = 32;
+
+    internal const int MinMemoryKib = 8 * 1024;
+    internal const int MaxMemoryKib = 1024 * 1024;
+    internal const int MaxIterations = 20;
+    internal const int MaxParallelism = 32;
+    internal const int MinSaltSize = 16;
+    internal const int MaxSaltSize = 64;
+    internal const int MinHashSize = 32;
+    internal const int MaxHashSize = 128;
+
+    public static void Validate(PasswordHashingOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (!IsWithinBounds(
+                options.MemoryKib,
+                options.Iterations,
+                options.DegreeOfParallelism,
+                options.SaltSize,
+                options.HashSize))
+        {
+            throw new InvalidOperationException(
+                "PasswordHashing options vượt policy an toàn: memory 8MiB..1GiB, iterations 1..20, "
+                + "parallelism 1..32, salt 16..64 byte, hash 32..128 byte.");
+        }
+    }
+
+    internal static bool IsWithinBounds(int memory, int iterations, int parallelism, int saltSize, int hashSize) =>
+        memory is >= MinMemoryKib and <= MaxMemoryKib
+        && iterations is >= 1 and <= MaxIterations
+        && parallelism is >= 1 and <= MaxParallelism
+        && saltSize is >= MinSaltSize and <= MaxSaltSize
+        && hashSize is >= MinHashSize and <= MaxHashSize;
 }

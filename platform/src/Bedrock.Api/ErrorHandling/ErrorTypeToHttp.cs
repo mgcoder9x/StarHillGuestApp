@@ -16,6 +16,7 @@ public static class ErrorTypeToHttp
         ErrorType.Forbidden => StatusCodes.Status403Forbidden,
         ErrorType.NotFound => StatusCodes.Status404NotFound,
         ErrorType.Conflict => StatusCodes.Status409Conflict,
+        ErrorType.RateLimited => StatusCodes.Status429TooManyRequests,
         ErrorType.Failure => StatusCodes.Status500InternalServerError,
         _ => StatusCodes.Status500InternalServerError,
     };

@@ -11,8 +11,8 @@ namespace Adapters.Messaging.RabbitMq.Tests;
 
 /// <summary>
 /// INTEGRATION (Testcontainers/RabbitMQ — F29, task 14): chứng minh <see cref="RabbitMqEventBusPublisher"/> publish
-/// một <see cref="OutboxMessage"/> tới topic exchange thật và consumer bind theo routing key = EventType nhận lại
-/// ĐÚNG payload + headers (adapter mỏng §5.2). Publisher-confirms bật → PublishAsync chỉ trả về khi broker đã nhận.
+/// một <see cref="OutgoingIntegrationMessage"/> tới topic exchange thật và consumer bind theo routing key = EventType
+/// nhận lại ĐÚNG payload + headers (adapter mỏng §5.2). Publisher-confirms bật → PublishAsync chỉ trả về khi broker nhận.
 /// Skip có điều kiện nếu môi trường KHÔNG có Docker (N-012 — KHÔNG xoá, chạy khi có Docker/CI).
 /// </summary>
 public sealed class RabbitMqPublishIntegrationTests : IAsyncLifetime
@@ -33,12 +33,15 @@ public sealed class RabbitMqPublishIntegrationTests : IAsyncLifetime
             _dockerAvailable = true;
         }
 #pragma warning disable CA1031 // CỐ Ý: bất kỳ lỗi khởi động container nào ⇒ coi như môi trường thiếu Docker → skip test (không fail suite).
-        catch (Exception)
+        catch (Exception) when (!IsContinuousIntegration())
 #pragma warning restore CA1031
         {
             _dockerAvailable = false;
         }
     }
+
+    private static bool IsContinuousIntegration() =>
+        string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase);
 
     public async Task DisposeAsync()
     {
@@ -94,7 +97,7 @@ public sealed class RabbitMqPublishIntegrationTests : IAsyncLifetime
         var queue = await consumerChannel.QueueDeclareAsync();
         await consumerChannel.QueueBindAsync(queue.QueueName, ExchangeName, EventType);
 
-        var message = new OutboxMessage
+        var message = new OutgoingIntegrationMessage
         {
             Id = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"),
             EventType = EventType,

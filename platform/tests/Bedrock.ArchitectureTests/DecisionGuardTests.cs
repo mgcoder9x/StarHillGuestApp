@@ -1,3 +1,4 @@
+using Bedrock.Application.Messaging.Dispatch;
 using Bedrock.Application.Ports.Html;
 using Bedrock.Domain.Results;
 using Bedrock.Messaging.Contracts;
@@ -42,5 +43,36 @@ public sealed class DecisionGuardTests
     public void AD021_HtmlSanitizer_must_live_in_ports_html_namespace()
     {
         Assert.Equal("Bedrock.Application.Ports.Html", typeof(IHtmlSanitizer).Namespace);
+    }
+
+    // AD-081 (A-20): port transport IEventBusPublisher CHỈ nhận envelope BẤT BIẾN OutgoingIntegrationMessage,
+    // KHÔNG lộ shape persistence/retry của OutboxMessage cho adapter bus (pluggable F29).
+    [Fact]
+    public void AD081_EventBusPublisher_port_takes_immutable_outgoing_envelope_not_outbox_record()
+    {
+        // (1) Tham số PublishAsync PHẢI là OutgoingIntegrationMessage (không phải OutboxMessage).
+        var publishMethod = typeof(IEventBusPublisher).GetMethod(nameof(IEventBusPublisher.PublishAsync))!;
+        var messageParam = publishMethod.GetParameters()[0];
+        Assert.Same(typeof(OutgoingIntegrationMessage), messageParam.ParameterType);
+        Assert.NotSame(typeof(OutboxMessage), messageParam.ParameterType);
+
+        // (2) Envelope KHÔNG được chứa cột retry/persistence (rò rỉ trạng thái outbox nội bộ ra transport).
+        var leakingMembers = new[]
+        {
+            "ProcessedAt", "ErrorCount", "NextAttemptAt", "DeadLetteredAt", "ClaimId", "ClaimedUntil",
+        };
+        foreach (var member in leakingMembers)
+        {
+            Assert.Null(typeof(OutgoingIntegrationMessage).GetProperty(member));
+        }
+
+        // (3) Envelope PHẢI bất biến: mọi property công khai là init-only (không setter mutable).
+        var externalInit = typeof(System.Runtime.CompilerServices.IsExternalInit);
+        foreach (var prop in typeof(OutgoingIntegrationMessage).GetProperties())
+        {
+            var setter = prop.SetMethod;
+            Assert.True(setter is null || setter.ReturnParameter.GetRequiredCustomModifiers().Contains(externalInit),
+                $"Property {prop.Name} của OutgoingIntegrationMessage phải init-only (AD-081).");
+        }
     }
 }

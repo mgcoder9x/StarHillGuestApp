@@ -33,12 +33,15 @@ public sealed class IdentityMigrationTests : IAsyncLifetime
             _available = true;
         }
 #pragma warning disable CA1031 // CỐ Ý: lỗi khởi động container ⇒ coi như thiếu Docker → skip.
-        catch (Exception)
+        catch (Exception) when (!IsContinuousIntegration())
 #pragma warning restore CA1031
         {
             _available = false;
         }
     }
+
+    private static bool IsContinuousIntegration() =>
+        string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase);
 
     public async Task DisposeAsync()
     {
@@ -67,7 +70,7 @@ public sealed class IdentityMigrationTests : IAsyncLifetime
 
         var services = new ServiceCollection();
         services.AddSingleton<ICurrentUser>(new StubCurrentUser());
-        services.AddIdentityInfrastructure(o => o.UseNpgsql(_container.GetConnectionString()));
+        services.AddIdentityInfrastructure(o => o.UseIdentityNpgsql(_container.GetConnectionString()));
         await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
 
         await using var scope = provider.CreateAsyncScope();
@@ -80,12 +83,34 @@ public sealed class IdentityMigrationTests : IAsyncLifetime
         var applied = await db.Database.GetAppliedMigrationsAsync();
         Assert.Contains(applied, m => m.Contains("InitialCreate", StringComparison.Ordinal));
 
+        var connection = db.Database.GetDbConnection();
+        await connection.OpenAsync();
+        await using (var command = connection.CreateCommand())
+        {
+            command.CommandText = """
+                SELECT table_schema
+                FROM information_schema.tables
+                WHERE table_name = '__EFMigrationsHistory'
+                ORDER BY table_schema;
+                """;
+            var schemas = new List<string>();
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                schemas.Add(reader.GetString(0));
+            }
+
+            Assert.Equal([IdentityDbContext.SchemaName], schemas);
+        }
+
         // (2) Bảng outbox_message tồn tại + query được (schema khớp model): không ném là đủ chứng minh bảng/cột đúng.
         Assert.False(await db.Set<OutboxMessage>().AnyAsync());
 
         // (3) Round-trip refresh_token qua store (ux_refresh_hash + cột snake_case hoạt động thật).
-        var store = scope.ServiceProvider.GetRequiredService<IRefreshTokenStore>();
-        var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var store = scope.ServiceProvider.GetRequiredKeyedService<IRefreshTokenStore>(
+            IdentityInfrastructureExtensions.PersistenceKey);
+        var uow = scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(
+            IdentityInfrastructureExtensions.PersistenceKey);
         var snapshot = new RefreshTokenSnapshot(
             Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
             "hash-migrate", DateTimeOffset.UtcNow.AddDays(30), null);

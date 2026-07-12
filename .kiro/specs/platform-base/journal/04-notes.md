@@ -757,3 +757,51 @@
 - **CÒN (I10 — khi cần):** doc-per-version (ShouldInclude theo GroupName) khi có v2; Swagger UI ở Host; bảo vệ endpoint /openapi ở prod (Host quyết).
 - Provenance: `platform/src/Bedrock.Api/OpenApi/BedrockOpenApiExtensions.cs`, `BedrockApiExtensions.cs` (wire opt-in), `Bedrock.Api.Tests/OpenApi/BedrockOpenApiTests.cs`, `Directory.Packages.props` (pin); `vp` run in-session 2026-07-10.
 - Tổng bản ghi journal: AD 68, DV 16, TO 11, N 73.
+
+---
+
+### N-074 — Đợt hardening 2026-07-12 (review deep-architecture) + Hardening Ledger + drift cần đóng
+- Verified: ✅ `platform\scripts\vp.cmd all` → build 0-warning + validate-ci + **248 test / 0 fail / 17 skip (Docker)**; `vp journal` → INV-1..5 = 5/5 (phiên 2026-07-12, AI Kiro).
+- **Bối cảnh:** một AI khác chạy đợt hardening lớn theo `deep-architecture-review-2026-07-12.md` (~50 file, +1262/−448) nhưng hết token giữa chừng → worktree để lại **build/test GÃY**. AI Kiro khôi phục xanh + kiểm toán:
+  - **FIX-1 (AD-070):** build gãy `CA1861` migration mới `AddOutboxClaimLease` → `.editorconfig generated_code` (mirror QR-AD-009).
+  - **FIX-2 (AD-071):** regression JWT key-ring (A-18 dở) — eager-bind rỗng shadow instance lazy → IDX10703; fix = đăng ký IDEMPOTENT+LAZY chia sẻ 1 instance sign/verify.
+- **Sổ theo dõi:** `.kiro/specs/platform-base/hardening-2026-07-12-ledger.md` — bảng A-01..A-35 với MỨC KIỂM CHỨNG (V0 đã-đọc-code / V1 compile+claim / V2 Docker-only / V3 chưa-làm). Đọc ledger trước khi tin "đã xong".
+- **Đã V0 (đọc code + test):** A-01 (keyed persistence + `MultiModulePersistenceTests`), A-02 (`EfInboxStore` atomic ON CONFLICT), A-06 (`IdentityNpgsqlOptionsExtensions` MigrationsHistoryTable), A-07 (CI fail-closed 7 fixture), A-18 (JWT unify).
+- **DRIFT LỚN (cạm bẫy — đọc kỹ):** AI đợt trước triển khai A-01..A-18 + thêm guard test nhưng **KHÔNG thêm AD entry nào** vào journal. INV-2 chỉ ép "AD đã ghi phải có guard", KHÔNG ép "code mới phải có AD" → journal đứng yên ở AD-069 dù code đi xa (under-documented). Đóng dần: mỗi hạng mục khi V0-hoá → thêm AD mới (số kế tiếp) — KHÔNG bịa; chỉ ghi khi đã đọc code.
+- **NEXT (ưu tiên):** V0-hoá + hoàn thiện **A-08** (outbox lease dispatcher — migration `AddOutboxClaimLease` đã có, cần đọc `EfOutboxDispatcher` xác nhận claim-ngắn→publish-ngoài-transaction→mark). Rồi A-03/04/05 (RabbitMQ), A-13/14/15/16/17/26/27 (đọc code V1→V0).
+- **Đồng bộ base→starhill (QR-N-002):** hardening chỉ ở `platform/`; `starhill/` còn dùng Bedrock cũ. A-01 (keyed persistence) sẽ đổi chữ ký `AddBedrockPersistence` → khi port phải sửa `Add{Rooms,ResortConfig,Identity}Infrastructure` của starhill + verify cả hai.
+
+---
+
+### N-075 — DEFER (A-20/AD-081): dời `OutboxMessage`→`OutboxRecord` internal + `InboxMessage` internal (2026-07-12)
+- Trạng thái: DEFER có chủ đích (KHÔNG phải bỏ sót). Đã đóng phần RÒ RỈ PORT của A-20 (AD-081: `IEventBusPublisher` nay nhận `OutgoingIntegrationMessage` bất biến). Phần còn lại của review A-20 = tinh chỉnh layering thuần.
+- Nội dung defer: review đề xuất dời `OutboxMessage` khỏi `Bedrock.Application.Messaging.Dispatch` xuống `Bedrock.Infrastructure` dưới tên `OutboxRecord` với visibility `internal` (persistence record không nên nằm ở Application), và làm `InboxMessage` internal; test truy cập qua `InternalsVisibleTo` hoặc query helper.
+- Lý do defer (verifiable): (1) sau AD-081, `OutboxMessage` KHÔNG còn xuất hiện trên bất kỳ port nào lộ cho use case (CP11 đã chặn use case chạm namespace `Dispatch`) hay cho adapter transport → rủi ro rò rỉ thực tế đã hết; phần còn lại chỉ là "nhà ở đúng tầng". (2) `OutboxMessage` bị tham chiếu bởi ~6 file test ĐA-ASSEMBLY qua `db.Set<OutboxMessage>()` (`Bedrock.Infrastructure.Tests`, `Messaging.IntegrationTests`, `Modules/Identity.IntegrationTests`) → biến internal + dời assembly = đụng nhiều `InternalsVisibleTo` + đổi using hàng loạt → nên tách INCREMENT riêng để không trộn với thay đổi port (giữ mỗi tăng-tiến nhỏ, dễ verify, tránh drift).
+- Khi làm tiếp: cập nhật AD-081 Consequences (đánh dấu phần defer đã đóng) + có thể thêm AD mới nếu đổi tên/đổi assembly là quyết định đáng ghi; thêm guard "OutboxMessage/OutboxRecord không thuộc assembly Application" (DependencyRuleTests) nếu thực thi.
+- Traceability: review A-20 (bullet 2-3); AD-081; F19 (inbox persistence-only ẩn Infrastructure).
+
+---
+
+### N-076 — FE cho phần QR (starhill): PHẢI hỏi user chọn template; ưu tiên Vue.js (2026-07-12)
+- Provenance: user chỉ thị trực tiếp phiên 2026-07-12: "khi qua sang qr thì nhớ phần FE cần hỏi tôi chọn temp cho FE nhé. Nên chọn vuejs".
+- Ý nghĩa: khi bắt đầu Task C (đồng bộ base→starhill) HOẶC làm phần frontend của resort-qr-portal, TRƯỚC khi scaffold FE phải HỎI user xác nhận template/stack FE. Mặc định đề xuất **Vue.js** (user đã nghiêng về lựa chọn này) nhưng vẫn phải hỏi chốt (không tự quyết).
+- Trạng thái: pending — chưa tới bước FE. Ghi để KHÔNG quên (base hiện chỉ backend; FE ngoài scope platform-base).
+- Traceability: Task C (ledger §7 đồng bộ base→starhill); resort-qr-portal spec (FE slice).
+
+---
+
+### N-077 — Re-audit 2026-07-12 (`re-audit-architecture-implementation-2026-07-12.md`): đánh giá + xử lý (điểm 7.2/10)
+- Provenance: user cung cấp bản re-audit chuyên sâu; yêu cầu đánh giá độ chính xác + xử lý cấp chuyên gia.
+- **Đánh giá độ chính xác (đã verify từng phần bằng đọc code + test, KHÔNG tin mù):**
+  - **P0-01 (Forwarded Headers trust-all) = ĐÚNG (đã xác nhận EMPIRICAL).** Test `ForwardedHeadersTrustTests` chứng minh trust-list rỗng → client spoof được IP (giả thuyết "doc .NET tự ignore" của tôi SAI). ĐÃ FIX (AD-091) + guard. Đây là bài học: verify runtime, không suy luận doc.
+  - **P0-02 (transient handler → thẳng DLQ, thiếu retry tier) = ĐÚNG.** Consumer NACK requeue=false cho MỌI exception (kể cả DB/network tạm). Cần retry classification + delayed-retry topology. → OPEN (Gate 0).
+  - **P1-01 (domain-event mất nếu SaveChanges fail SAU dispatch) = ĐÚNG một phần.** Restore chỉ bọc quanh DispatchAsync; base.SaveChanges/audit/soft-delete/depth fail sau đó → event đã clear, không restore. A-14 hạ PARTIAL. → Gate 0.
+  - **P1-02 (schema-version chưa là invariant: default 1 khi thiếu/lỗi, long→int overflow) = ĐÚNG.** A-10 hạ PARTIAL. → Gate 0.
+  - **P1-03 (idempotency scope: TenantId THAY user → collision xuyên user; anonymous chung namespace; thiếu fencing/hash) = ĐÚNG.** A-13 hạ PARTIAL. → Gate 0.
+  - **P1-08 (`Error` invariant bị bypass qua public `init` + record `with`) = ĐÚNG.** A-26 hạ PARTIAL. → Wave 1.
+  - **P1-07 (`SanitizeError` chỉ truncate, không redact secret/PII) = ĐÚNG.** Đổi tên/redact. → Wave 1.
+  - P1-04..06, P1-09..16, P2-01..13: phần lớn HỢP LÝ (consumer lifecycle/health, DLQ per-module, lease renewal, command/query split, keyed-context bijection, auto-discover, registry uninitialized-object, verify-only JWT validate, trace vs correlation, messaging-off silent, operability, public surface, supply-chain pin, .gitattributes, coverage gate...). Chấp nhận là backlog thật.
+  - **Ledger drift audit chỉ ra (P2-07) = ĐÚNG:** test count cũ (248) đã stale (thực tế ~328); bảng bỏ A-23/A-24; nhiều "DONE" nên là "PARTIAL" (invariant chưa đóng hết đường phá). Bài học: "DONE" nghĩa "invariant không còn đường phá + guard", không phải "đã thêm code/test một nhánh".
+- **Phán quyết chấp nhận:** giữ kiến trúc lõi (không rewrite); ưu tiên **Gate 0** (P0-01✅, P0-02, P1-01, P1-02, P1-03) trước khi mở rộng module/QR. Nhiều "DONE" trước đây HẠ xuống PARTIAL trong ledger (trung thực > thành tích).
+- **Đã xử lý ngay:** P0-01 (AD-091, fix + behavioral guard).
+- Traceability: re-audit doc; Gate 0/Wave 1..4 (re-audit §8).

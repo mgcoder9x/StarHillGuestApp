@@ -46,6 +46,12 @@ public sealed class ThrowingIdempotencyStore : IIdempotencyStore
 {
     public Task<bool> TryBeginAsync(string idempotencyKey, TimeSpan ttl, CancellationToken ct = default) =>
         throw NoAdapterError.For("IIdempotencyStore", "Cache");
+
+    public Task CompleteAsync(string idempotencyKey, TimeSpan ttl, CancellationToken ct = default) =>
+        throw NoAdapterError.For("IIdempotencyStore", "Cache");
+
+    public Task AbortAsync(string idempotencyKey, CancellationToken ct = default) =>
+        throw NoAdapterError.For("IIdempotencyStore", "Cache");
 }
 
 /// <summary>Default fail-loud <see cref="IRateLimitStore"/> (distributed) (§5.5).</summary>
@@ -58,7 +64,7 @@ public sealed class ThrowingRateLimitStore : IRateLimitStore
 /// <summary>Default fail-loud <see cref="IEventBusPublisher"/> — không có bus adapter thì KHÔNG publish âm thầm (F25).</summary>
 public sealed class ThrowingEventBusPublisher : IEventBusPublisher
 {
-    public Task PublishAsync(OutboxMessage message, CancellationToken ct = default) =>
+    public Task PublishAsync(OutgoingIntegrationMessage message, CancellationToken ct = default) =>
         throw NoAdapterError.For("IEventBusPublisher", "Messaging");
 }
 

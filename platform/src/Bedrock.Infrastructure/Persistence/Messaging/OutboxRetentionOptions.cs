@@ -19,4 +19,8 @@ public sealed class OutboxRetentionOptions
 
     /// <summary>Khóa named-options theo kiểu DbContext → mỗi module có cấu hình retention độc lập.</summary>
     internal static string KeyFor<TContext>() => typeof(TContext).FullName ?? typeof(TContext).Name;
+
+    internal static bool IsValid(OutboxRetentionOptions options) =>
+        options.ProcessedRetention > TimeSpan.Zero
+        && (options.DeadLetterRetention is null || options.DeadLetterRetention > TimeSpan.Zero);
 }

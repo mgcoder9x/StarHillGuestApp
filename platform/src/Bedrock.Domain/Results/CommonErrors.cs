@@ -32,7 +32,7 @@ public static class CommonErrors
         Error.Conflict("concurrency_conflict", "The resource was modified concurrently. Reload and try again.");
 
     public static Error RateLimited(string message = "Too many requests. Please try again later.")
-        => new("rate_limited", message, ErrorType.Failure);
+        => Error.RateLimited("rate_limited", message);
 
     public static Error Unexpected(string message = "An unexpected error occurred.")
         => Error.Unexpected("unexpected", message);

@@ -1,4 +1,5 @@
 using Bedrock.Application.Ports.Caching;
+using Bedrock.Application.Ports.Users;
 using Bedrock.Application.UseCases;
 using Bedrock.Domain.Results;
 
@@ -14,23 +15,49 @@ public sealed class IdempotencyUseCaseDecorator<TInput, TOutput> : IUseCase<TInp
 {
     private readonly IUseCase<TInput, TOutput> _inner;
     private readonly IIdempotencyStore _store;
+    private readonly ICurrentUser _currentUser;
 
-    public IdempotencyUseCaseDecorator(IUseCase<TInput, TOutput> inner, IIdempotencyStore store)
+    public IdempotencyUseCaseDecorator(
+        IUseCase<TInput, TOutput> inner,
+        IIdempotencyStore store,
+        ICurrentUser currentUser)
     {
         ArgumentNullException.ThrowIfNull(inner);
         ArgumentNullException.ThrowIfNull(store);
+        ArgumentNullException.ThrowIfNull(currentUser);
         _inner = inner;
         _store = store;
+        _currentUser = currentUser;
     }
 
     public async Task<Result<TOutput>> ExecuteAsync(TInput input, CancellationToken ct = default)
     {
         if (input is IIdempotentCommand command)
         {
-            var isFirst = await _store.TryBeginAsync(command.IdempotencyKey, IdempotencyDefaults.Ttl, ct).ConfigureAwait(false);
+            var key = IdempotencyKeyScope.For<TInput>(command.IdempotencyKey, _currentUser);
+            var isFirst = await _store.TryBeginAsync(key, IdempotencyDefaults.Ttl, ct).ConfigureAwait(false);
             if (!isFirst)
             {
                 return Result<TOutput>.Failure(IdempotencyDefaults.Conflict);
+            }
+            try
+            {
+                var result = await _inner.ExecuteAsync(input, ct).ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    await _store.CompleteAsync(key, IdempotencyDefaults.Ttl, ct).ConfigureAwait(false);
+                }
+                else
+                {
+                    await _store.AbortAsync(key, ct).ConfigureAwait(false);
+                }
+
+                return result;
+            }
+            catch
+            {
+                await _store.AbortAsync(key, CancellationToken.None).ConfigureAwait(false);
+                throw;
             }
         }
 

@@ -31,6 +31,24 @@ public sealed class OutboxMessage
     /// <summary>Khác null = dead-letter (cách ly, không retry tự động — AD-003/AD-016).</summary>
     public DateTimeOffset? DeadLetteredAt { get; set; }
 
+    /// <summary>Lease owner của dispatcher. Null = chưa được claim hoặc đã finalize.</summary>
+    public Guid? ClaimId { get; set; }
+
+    /// <summary>Lease hết hạn để instance khác recovery sau crash.</summary>
+    public DateTimeOffset? ClaimedUntil { get; set; }
+
+    /// <summary>
+    /// Thông điệp lỗi publish gần nhất (P1-07: đã REDACT credential/token + classification <c>KiểuException: message</c>,
+    /// cắt tối đa <see cref="MaxLastErrorLength"/> ký tự) — chẩn đoán operability (A-28: "vì sao event này fail"). Null = chưa lỗi.
+    /// </summary>
+    public string? LastError { get; set; }
+
+    /// <summary>Thời điểm lần thử publish THẤT BẠI gần nhất (đi kèm <see cref="LastError"/>). Null = chưa lỗi.</summary>
+    public DateTimeOffset? LastAttemptAt { get; set; }
+
     /// <summary>Correlation/trace để đối soát xuyên suốt (F34/F21).</summary>
     public string? CorrelationId { get; init; }
+
+    /// <summary>Trần độ dài <see cref="LastError"/> (bound chống text vô hạn + giới hạn rò rỉ — A-28).</summary>
+    public const int MaxLastErrorLength = 1024;
 }

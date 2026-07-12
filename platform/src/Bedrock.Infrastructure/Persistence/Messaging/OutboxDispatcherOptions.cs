@@ -7,7 +7,7 @@ namespace Bedrock.Infrastructure.Persistence.Messaging;
 public sealed class OutboxDispatcherOptions
 {
     /// <summary>Số message tối đa claim trong một lượt poll (giữ transaction ngắn).</summary>
-    public int BatchSize { get; set; } = 100;
+    public int BatchSize { get; set; } = 20;
 
     /// <summary>Ngưỡng số lần publish thất bại → cách ly dead-letter (R8.5, không retry vô hạn).</summary>
     public int MaxAttempts { get; set; } = 10;
@@ -18,6 +18,16 @@ public sealed class OutboxDispatcherOptions
     /// <summary>Trần độ trễ giữa các lần retry (chống backoff phình vô hạn).</summary>
     public TimeSpan MaxDelay { get; set; } = TimeSpan.FromMinutes(30);
 
+    /// <summary>Thời gian giữ claim; phải dài hơn worst-case publish của một batch.</summary>
+    public TimeSpan ClaimLease { get; set; } = TimeSpan.FromMinutes(5);
+
     /// <summary>Khóa named-options theo kiểu DbContext → mỗi module có cấu hình dispatcher độc lập.</summary>
     internal static string KeyFor<TContext>() => typeof(TContext).FullName ?? typeof(TContext).Name;
+
+    internal static bool IsValid(OutboxDispatcherOptions options) =>
+        options.BatchSize > 0
+        && options.MaxAttempts > 0
+        && options.BaseDelay > TimeSpan.Zero
+        && options.MaxDelay >= options.BaseDelay
+        && options.ClaimLease > TimeSpan.Zero;
 }

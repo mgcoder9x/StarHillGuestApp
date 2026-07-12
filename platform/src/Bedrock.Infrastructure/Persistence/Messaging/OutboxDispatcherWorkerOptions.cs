@@ -20,4 +20,6 @@ public sealed class OutboxDispatcherWorkerOptions
 
     /// <summary>Khóa named-options theo kiểu DbContext → mỗi module có nhịp poll worker độc lập.</summary>
     internal static string KeyFor<TContext>() => typeof(TContext).FullName ?? typeof(TContext).Name;
+
+    internal static bool IsValid(OutboxDispatcherWorkerOptions options) => options.PollInterval > TimeSpan.Zero;
 }

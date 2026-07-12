@@ -34,4 +34,54 @@ public sealed class HttpSecurityOptions
 
     /// <summary>Tên CORS policy áp ở pipeline slot #8.</summary>
     public string CorsPolicyName { get; set; } = "BedrockDefault";
+
+    public static void Validate(HttpSecurityOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (options.ForwardLimit <= 0)
+        {
+            throw new InvalidOperationException("HttpSecurity:ForwardLimit phải > 0.");
+        }
+
+        if (options.RateLimitPermitLimit <= 0 || options.RateLimitWindowSeconds <= 0 || options.RateLimitQueueLimit < 0)
+        {
+            throw new InvalidOperationException(
+                "HttpSecurity rate-limit yêu cầu PermitLimit/WindowSeconds > 0 và QueueLimit >= 0.");
+        }
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(options.CorsPolicyName);
+        foreach (var proxy in options.KnownProxies)
+        {
+            if (!System.Net.IPAddress.TryParse(proxy, out _))
+            {
+                throw new InvalidOperationException($"HttpSecurity:KnownProxies chứa IP không hợp lệ: '{proxy}'.");
+            }
+        }
+
+        foreach (var network in options.KnownNetworks)
+        {
+            if (!System.Net.IPNetwork.TryParse(network, out _))
+            {
+                throw new InvalidOperationException($"HttpSecurity:KnownNetworks chứa CIDR không hợp lệ: '{network}'.");
+            }
+        }
+
+        if (options.CookieSameSiteMode == CookieSameSiteMode.CrossSite)
+        {
+            if (options.CorsAllowedOrigins.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    "CrossSite mode yêu cầu ít nhất một HttpSecurity:CorsAllowedOrigins cụ thể.");
+            }
+
+            foreach (var origin in options.CorsAllowedOrigins)
+            {
+                if (origin == "*" || !Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+                    || uri.Scheme is not ("http" or "https") || uri.PathAndQuery != "/")
+                {
+                    throw new InvalidOperationException($"CORS origin không hợp lệ/không an toàn: '{origin}'.");
+                }
+            }
+        }
+    }
 }

@@ -20,6 +20,10 @@ namespace Bedrock.Application.DependencyInjection;
 /// đăng ký từ trong (Transaction) ra ngoài (Logging). Transaction chỉ áp cho <see cref="ICommandUseCase{TInput}"/>
 /// (AD-040); họ value-returning không có Transaction (query đọc không mở transaction thừa).
 /// </para>
+/// <para>
+/// <b>IDEMPOTENCY (A-12/AD-085):</b> chỉ gọi MỘT lần ở composition root. Gọi lần 2 → NÉM (fail-loud) vì sẽ bọc
+/// pipeline HAI lớp (validation/authorization/idempotency/transaction chạy 2 lần) + validator trùng.
+/// </para>
 /// </summary>
 public static class BedrockCoreExtensions
 {
@@ -28,9 +32,34 @@ public static class BedrockCoreExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(assemblies);
 
+        // A-12: IDEMPOTENCY GUARD — AddBedrockCore chỉ được gọi MỘT lần ở composition root. Gọi lần 2 sẽ khiến
+        // Scrutor Decorate bọc pipeline HAI lớp (Validation/Authorization/Idempotency/Transaction chạy 2 lần =
+        // sai nghiêm trọng: transaction lồng, idempotency claim 2 lần, validate 2 lần) + đăng ký validator trùng.
+        // Fail-loud (không no-op âm thầm) để lộ lỗi composition ngay (F35/R13, đồng nhất AD-071 idempotent-register).
+        if (services.Any(descriptor => descriptor.ServiceType == typeof(BedrockCoreMarker)))
+        {
+            throw new InvalidOperationException(
+                "AddBedrockCore đã được gọi rồi — chỉ gọi MỘT lần ở composition root (Host), SAU khi mọi module đã "
+                + "đăng ký use case. Gọi lại sẽ bọc pipeline behaviors HAI lớp (validation/authorization/idempotency/"
+                + "transaction chạy 2 lần) và đăng ký validator trùng.");
+        }
+
+        services.AddSingleton(BedrockCoreMarker.Instance);
+
         RegisterValidators(services, assemblies);
         DecoratePipeline(services);
         return services;
+    }
+
+    /// <summary>Sentinel đánh dấu <see cref="AddBedrockCore"/> đã chạy trên collection này (idempotency guard A-12).
+    /// Đăng ký dạng INSTANCE → DI không dựng lại (ValidateOnBuild an toàn); ctor private chặn tạo ngoài.</summary>
+    private sealed class BedrockCoreMarker
+    {
+        public static readonly BedrockCoreMarker Instance = new();
+
+        private BedrockCoreMarker()
+        {
+        }
     }
 
     /// <summary>

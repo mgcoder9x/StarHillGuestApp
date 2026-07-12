@@ -34,6 +34,12 @@ public interface IDistributedLock
 public interface IIdempotencyStore
 {
     Task<bool> TryBeginAsync(string idempotencyKey, TimeSpan ttl, CancellationToken ct = default);
+
+    /// <summary>Chuyển claim sang Completed; duplicate tiếp theo phải bị chặn/replay bởi adapter.</summary>
+    Task CompleteAsync(string idempotencyKey, TimeSpan ttl, CancellationToken ct = default);
+
+    /// <summary>Nhả claim sau failure/exception để retry hợp lệ không bị khóa đến hết TTL.</summary>
+    Task AbortAsync(string idempotencyKey, CancellationToken ct = default);
 }
 
 /// <summary>

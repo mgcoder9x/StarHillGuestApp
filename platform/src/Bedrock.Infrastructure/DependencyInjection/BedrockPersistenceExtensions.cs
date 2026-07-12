@@ -1,5 +1,6 @@
 using Bedrock.Application.Events;
 using Bedrock.Application.Messaging;
+using Bedrock.Application.Messaging.Dispatch;
 using Bedrock.Application.Ports.Persistence;
 using Bedrock.Application.Ports.Security;
 using Bedrock.Application.Ports.Time;
@@ -32,9 +33,10 @@ public static class BedrockPersistenceExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configureDbContext);
 
-        // Clock singleton (không state); dispatcher scoped (cùng scope với DbContext → handler chung transaction).
-        services.TryAddSingleton<IClock, SystemClock>();
-        services.TryAddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+        var registrations = GetOrCreatePersistenceRegistrations(services);
+        registrations.AddUnkeyed(typeof(TContext));
+
+        AddPersistenceFoundation<TContext>(services, configureDbContext);
 
         // Outbox writer (use case chỉ thấy IOutboxWriter — CP11). Scoped: dùng chung PlatformDbContext/scope
         // → EnqueueAsync ghi outbox CÙNG transaction với state. Bảng outbox chỉ tồn tại nếu module gọi
@@ -45,16 +47,91 @@ public static class BedrockPersistenceExtensions
         // Chỉ hoạt động nếu module đã map bảng qua modelBuilder.AddRefreshTokens(schema) — per-module opt-in.
         services.TryAddScoped<IRefreshTokenStore, EfRefreshTokenStore>();
 
+        // PlatformDbContext (base) resolve về CHÍNH instance TContext trong scope → repo/UoW dùng chung ChangeTracker.
+        services.AddScoped<PlatformDbContext>(sp => sp.GetRequiredService<TContext>());
+        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
+
+        AddDatabaseHealthCheck<TContext>(services);
+
+        return services;
+    }
+
+    /// <summary>
+    /// Đăng ký persistence có key cho modular monolith nhiều DbContext. Mọi port phụ thuộc context được resolve
+    /// bằng cùng <paramref name="moduleKey"/> nên không có last-registration-wins giữa các module.
+    /// Repository aggregate đăng ký tường minh bằng <see cref="AddBedrockRepository{TContext,TEntity}"/>.
+    /// </summary>
+    public static IServiceCollection AddBedrockPersistence<TContext>(
+        this IServiceCollection services,
+        string moduleKey,
+        Action<DbContextOptionsBuilder> configureDbContext)
+        where TContext : PlatformDbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentException.ThrowIfNullOrWhiteSpace(moduleKey);
+        ArgumentNullException.ThrowIfNull(configureDbContext);
+
+        var registrations = GetOrCreatePersistenceRegistrations(services);
+        registrations.AddKeyed(moduleKey, typeof(TContext));
+
+        AddPersistenceFoundation<TContext>(services, configureDbContext);
+
+        services.AddKeyedScoped<IUnitOfWork>(
+            moduleKey,
+            (sp, _) => new EfUnitOfWork(sp.GetRequiredService<TContext>()));
+        services.AddKeyedScoped<IOutboxWriter>(
+            moduleKey,
+            (sp, _) => new EfOutboxWriter(sp.GetRequiredService<TContext>()));
+        services.AddKeyedScoped<IRefreshTokenStore>(
+            moduleKey,
+            (sp, _) => new EfRefreshTokenStore(
+                sp.GetRequiredService<TContext>(),
+                sp.GetRequiredService<IClock>()));
+        services.AddKeyedScoped<IInboxStore>(
+            moduleKey,
+            (sp, _) => new EfInboxStore(
+                sp.GetRequiredService<TContext>(),
+                sp.GetRequiredService<IClock>()));
+
+        AddDatabaseHealthCheck<TContext>(services);
+        return services;
+    }
+
+    /// <summary>Đăng ký repository aggregate theo đúng module key/DbContext; không dùng global context alias.</summary>
+    public static IServiceCollection AddBedrockRepository<TContext, TEntity>(
+        this IServiceCollection services,
+        string moduleKey)
+        where TContext : PlatformDbContext
+        where TEntity : Bedrock.Domain.Entities.Entity
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentException.ThrowIfNullOrWhiteSpace(moduleKey);
+
+        services.AddKeyedScoped<IRepository<TEntity>>(
+            moduleKey,
+            (sp, _) => new EfRepository<TEntity>(sp.GetRequiredService<TContext>()));
+        return services;
+    }
+
+    private static void AddPersistenceFoundation<TContext>(
+        IServiceCollection services,
+        Action<DbContextOptionsBuilder> configureDbContext)
+        where TContext : PlatformDbContext
+    {
+        services.TryAddSingleton<IClock, SystemClock>();
+        services.TryAddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+
         services.AddDbContext<TContext>((_, options) =>
         {
             configureDbContext(options);
             options.UseSnakeCaseNamingConvention();
         });
+    }
 
-        // PlatformDbContext (base) resolve về CHÍNH instance TContext trong scope → repo/UoW dùng chung ChangeTracker.
-        services.AddScoped<PlatformDbContext>(sp => sp.GetRequiredService<TContext>());
-        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
-        services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
+    private static void AddDatabaseHealthCheck<TContext>(IServiceCollection services)
+        where TContext : PlatformDbContext
+    {
 
         // Readiness: DB check gắn tag "ready" (design §9.6 / R34); timeout 5s (task 6.3).
         // Tên PER-CONTEXT (AD-042): nhiều module cùng gọi AddBedrockPersistence với TContext khác nhau → tên
@@ -75,6 +152,50 @@ public static class BedrockPersistenceExtensions
             }
         });
 
-        return services;
+    }
+
+    private static PersistenceRegistrationRegistry GetOrCreatePersistenceRegistrations(IServiceCollection services)
+    {
+        var existing = services.FirstOrDefault(d => d.ServiceType == typeof(PersistenceRegistrationRegistry))
+            ?.ImplementationInstance as PersistenceRegistrationRegistry;
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        var created = new PersistenceRegistrationRegistry();
+        services.AddSingleton(created);
+        return created;
+    }
+
+    private sealed class PersistenceRegistrationRegistry
+    {
+        private Type? _unkeyedContext;
+        private readonly Dictionary<string, Type> _keyedContexts = new(StringComparer.Ordinal);
+
+        public void AddUnkeyed(Type contextType)
+        {
+            if (_unkeyedContext is null)
+            {
+                _unkeyedContext = contextType;
+                return;
+            }
+
+            throw new InvalidOperationException(
+                $"Unkeyed AddBedrockPersistence chỉ hỗ trợ một DbContext nhưng đã có '{_unkeyedContext.FullName}' "
+                + $"và đang thêm '{contextType.FullName}'. Dùng overload moduleKey cho modular monolith nhiều module.");
+        }
+
+        public void AddKeyed(string moduleKey, Type contextType)
+        {
+            if (_keyedContexts.TryGetValue(moduleKey, out var existing))
+            {
+                throw new InvalidOperationException(
+                    $"Persistence module key '{moduleKey}' đã gắn với '{existing.FullName}', không thể gắn thêm "
+                    + $"'{contextType.FullName}'. Module key phải duy nhất và ổn định.");
+            }
+
+            _keyedContexts.Add(moduleKey, contextType);
+        }
     }
 }

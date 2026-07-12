@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Hosting;
 
 namespace Adapters.Messaging.RabbitMq;
 
@@ -49,9 +50,10 @@ public static class RabbitMqMessagingExtensions
         var consumerOptions = new RabbitMqConsumerOptions();
         configure(consumerOptions);
         RabbitMqConsumerOptions.Validate(consumerOptions);
-        services.AddSingleton(consumerOptions);
-
-        services.AddHostedService<RabbitMqConsumer>();
+        // Mỗi call giữ options riêng trong factory, cho phép nhiều module/queue cùng Host mà không last-wins
+        // trên một RabbitMqConsumerOptions singleton.
+        services.AddSingleton<IHostedService>(sp =>
+            ActivatorUtilities.CreateInstance<RabbitMqConsumer>(sp, consumerOptions));
         return services;
     }
 }

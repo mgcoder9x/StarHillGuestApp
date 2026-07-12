@@ -24,18 +24,37 @@ public sealed class ExceptionHandlingMiddleware(
         {
             await next(context);
         }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            // Client đã ngắt kết nối: không phải lỗi server và không thể ghi response đáng tin cậy.
+        }
         catch (ConcurrencyConflictException)
         {
+            if (context.Response.HasStarted)
+            {
+                throw;
+            }
+
             await WriteIfPossibleAsync(context, CommonErrors.Concurrency);
         }
         catch (UniqueConstraintViolationException)
         {
+            if (context.Response.HasStarted)
+            {
+                throw;
+            }
+
             // Uncaught unique-violation (use case không map thành Error riêng) → 409 chung. Module thường
             // BẮT UniqueConstraintViolationException để trả Error nghiệp vụ cụ thể (vd số phòng đã tồn tại).
             await WriteIfPossibleAsync(context, CommonErrors.Conflict());
         }
         catch (Exception ex)
         {
+            if (context.Response.HasStarted)
+            {
+                throw;
+            }
+
             if (logger.IsEnabled(LogLevel.Error))
             {
                 var maskedPath = masker.Mask(context.Request.Path.Value);
@@ -49,13 +68,6 @@ public sealed class ExceptionHandlingMiddleware(
 
     private static async Task WriteIfPossibleAsync(HttpContext context, Error error)
     {
-        if (context.Response.HasStarted)
-        {
-            // Response đã bắt đầu → không thể ghi ProblemDetails; để lỗi nổi lên (không nuốt âm thầm).
-            throw new InvalidOperationException(
-                "Cannot write ProblemDetails: response already started.");
-        }
-
         context.Response.Clear();
         await ProblemDetailsWriter.WriteAsync(context, error);
     }

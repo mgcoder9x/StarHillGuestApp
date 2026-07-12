@@ -60,7 +60,10 @@ public sealed class InboxMetricsTests
         await using var harness = await CreateHarnessAsync(new CountingHandler());
 
         var message = new IncomingIntegrationMessage(
-            Guid.CreateVersion7(), "test-consumer", "does.not.exist", "{}"u8.ToArray());
+            Guid.CreateVersion7(), "test-consumer", "does.not.exist", "{}"u8.ToArray())
+        {
+            ContentType = "application/json",
+        };
         var outcome = await DispatchAsync(harness, message);
 
         Assert.Equal(InboxDispatchOutcome.DeadLettered, outcome);
@@ -91,7 +94,10 @@ public sealed class InboxMetricsTests
         var evt = new ThingHappened(Guid.CreateVersion7(), new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "x");
         id = evt.Id;
         var payload = JsonSerializer.SerializeToUtf8Bytes(evt, CamelCase);
-        return new IncomingIntegrationMessage(evt.Id, "test-consumer", "test.thing_happened", payload);
+        return new IncomingIntegrationMessage(evt.Id, "test-consumer", "test.thing_happened", payload)
+        {
+            ContentType = "application/json",
+        };
     }
 
     private static async Task<InboxDispatchOutcome> DispatchAsync(PersistenceHarness harness, IncomingIntegrationMessage message)

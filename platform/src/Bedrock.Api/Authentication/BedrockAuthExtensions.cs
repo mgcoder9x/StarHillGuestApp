@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Bedrock.Api.Authentication;
@@ -22,31 +23,42 @@ public static class BedrockAuthExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        // Bind LOCAL (chỉ để cấu hình JwtBearer: Issuer/Audience + resolver key). KHÔNG đăng ký làm singleton
-        // JwtKeyRingOptions: singleton concrete đến từ AddBedrockSecurity qua IOptions (validate-on-start, thấy
-        // config nạp muộn — F35/task 19). ResolveKeys chạy LAZY lúc verify token (không đụng lúc boot).
-        var keyRing = new JwtKeyRingOptions();
-        configuration.GetSection(JwtKeyRingOptions.SectionName).Bind(keyRing);
+        // JwtBearer verify dùng JwtKeyRingOptions CHIA SẺ (A-18). Đăng ký binding + concrete IDEMPOTENT: chỉ MỘT
+        // lần dù cả AuthCore (verify) lẫn AddBedrockSecurity (sign) cùng gọi → tránh double-bind list Keys (config
+        // binder APPEND → trùng kid). TryAdd không đủ (AddOptions().Configure luôn THÊM 1 IConfigureOptions → bind
+        // 2 lần) nên guard theo sự hiện diện của concrete JwtKeyRingOptions. Bind LAZY (thấy config nạp muộn — F35);
+        // KHÔNG bind eager (secret chưa nạp lúc registration). Standalone Bedrock.Api (verify-only) vẫn resolve được.
+        if (services.All(descriptor => descriptor.ServiceType != typeof(JwtKeyRingOptions)))
+        {
+            services.AddOptions<JwtKeyRingOptions>()
+                .Configure(options => configuration.GetSection(JwtKeyRingOptions.SectionName).Bind(options));
+            services.AddSingleton(sp => sp.GetRequiredService<IOptions<JwtKeyRingOptions>>().Value);
+        }
 
         services.AddHttpContextAccessor();
         services.TryAddScoped<ICurrentUser, HttpContextCurrentUser>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options =>
+            .AddJwtBearer();
+        services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+            .Configure<JwtKeyRingOptions>((options, sharedKeyRing) =>
             {
                 options.MapInboundClaims = false;   // giữ claim JWT-native ("sub"/"role"/...) — AD-023
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
-                    ValidIssuer = keyRing.Issuer,
+                    ValidIssuer = sharedKeyRing.Issuer,
                     ValidateAudience = true,
-                    ValidAudience = keyRing.Audience,
+                    ValidAudience = sharedKeyRing.Audience,
                     ValidateIssuerSigningKey = true,
                     ValidateLifetime = true,
+                    RequireSignedTokens = true,
+                    RequireExpirationTime = true,
+                    ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
                     ClockSkew = TimeSpan.FromSeconds(30),
                     NameClaimType = "sub",
                     RoleClaimType = "role",
-                    IssuerSigningKeyResolver = (_, _, kid, _) => ResolveKeys(keyRing, kid),
+                    IssuerSigningKeyResolver = (_, _, kid, _) => ResolveKeys(sharedKeyRing, kid),
                 };
                 options.Events = BuildProblemDetailsEvents();
             });
@@ -56,8 +68,10 @@ public static class BedrockAuthExtensions
     }
 
     private static IEnumerable<SecurityKey> ResolveKeys(JwtKeyRingOptions keyRing, string? kid) =>
-        [.. keyRing.Keys
-            .Where(k => string.IsNullOrEmpty(kid) || string.Equals(k.Kid, kid, StringComparison.Ordinal))
+        string.IsNullOrWhiteSpace(kid)
+            ? []
+            : [.. keyRing.Keys
+            .Where(k => string.Equals(k.Kid, kid, StringComparison.Ordinal))
             .Select(k => (SecurityKey)new SymmetricSecurityKey(Convert.FromBase64String(k.Secret)) { KeyId = k.Kid })];
 
     private static JwtBearerEvents BuildProblemDetailsEvents() => new()

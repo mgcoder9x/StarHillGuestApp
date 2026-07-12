@@ -6,12 +6,12 @@ using Xunit;
 namespace Adapters.Messaging.RabbitMq.Tests;
 
 /// <summary>
-/// Guard mapping THUẦN OutboxMessage → RabbitMQ primitives (không cần broker). Khoá hợp đồng adapter mỏng (§5.2):
-/// routing key = EventType, body = payload thô, headers mang event-type/schema-version, message persistent.
+/// Guard mapping THUẦN OutgoingIntegrationMessage → RabbitMQ primitives (không cần broker). Khoá hợp đồng adapter
+/// mỏng (§5.2): routing key = EventType, body = payload thô, headers mang event-type/schema-version, persistent.
 /// </summary>
 public sealed class RabbitMqMessageMapperTests
 {
-    private static OutboxMessage Message(string? correlationId = "corr-1") => new()
+    private static OutgoingIntegrationMessage Message(string? correlationId = "corr-1") => new()
     {
         Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
         EventType = "identity.user_token_refreshed",

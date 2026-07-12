@@ -39,6 +39,13 @@ public abstract class PlatformDbContext : DbContext
     protected virtual int MaxDomainEventDispatchDepth => 25;
 
     /// <summary>
+    /// Tên filter soft-delete (EF Core 10 NAMED query filter — A-25). Module thêm filter riêng (vd tenant) bằng
+    /// tên KHÁC sẽ COMPOSE (AND) với filter này thay vì GHI ĐÈ (unnamed filter thứ hai sẽ thay thế). Public để
+    /// module/test tham chiếu nhất quán.
+    /// </summary>
+    public const string SoftDeleteFilterName = "SoftDelete";
+
+    /// <summary>
     /// Điểm override chuẩn của EF (mọi <c>SaveChangesAsync</c> công khai đều đi qua đây). Trình tự (design §7.5):
     /// (1) vòng dispatch domain-event → (2) áp soft-delete + audit → (3) MỘT <c>base.SaveChangesAsync</c>
     /// → toàn bộ (state gốc + hiệu ứng handler) commit nguyên tử (CP14).
@@ -47,10 +54,27 @@ public abstract class PlatformDbContext : DbContext
         bool acceptAllChangesOnSuccess,
         CancellationToken cancellationToken = default)
     {
-        await DispatchDomainEventsAsync(cancellationToken).ConfigureAwait(false);
-        ApplySoftDelete();
-        ApplyAudit();
-        return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken).ConfigureAwait(false);
+        // P1-01 (AD-094): FAILURE BOUNDARY bao TRỌN dispatch → soft-delete/audit → base save. Nếu BẤT KỲ bước nào
+        // SAU khi đã dequeue event ném (dispatch, convention, hoặc base.SaveChanges), restore MỌI event đã dequeue
+        // về đúng entity (thứ tự ngược) → KHÔNG mất event (attempt/retry sau vẫn dispatch được). Trước đây chỉ
+        // dispatch-throw mới restore (AD-075) → SaveChanges/convention throw sau dispatch làm mất event âm thầm.
+        var dequeued = new List<(Entity Entity, IDomainEvent[] Events)>();
+        try
+        {
+            await DispatchDomainEventsAsync(dequeued, cancellationToken).ConfigureAwait(false);
+            ApplySoftDelete();
+            ApplyAudit();
+            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            for (var i = dequeued.Count - 1; i >= 0; i--)
+            {
+                dequeued[i].Entity.RestoreDomainEvents(dequeued[i].Events);
+            }
+
+            throw;
+        }
     }
 
     /// <summary>
@@ -73,10 +97,11 @@ public abstract class PlatformDbContext : DbContext
         {
             var clrType = entityType.ClrType;
 
-            // Soft-delete: query filter loại bản ghi đã xóa mềm (agnostic — SQLite test được).
+            // Soft-delete: NAMED query filter (A-25) loại bản ghi đã xóa mềm. Named → compose với filter module
+            // (vd tenant) thay vì bị ghi đè. Agnostic (SQLite test được).
             if (typeof(ISoftDeletable).IsAssignableFrom(clrType))
             {
-                modelBuilder.Entity(clrType).HasQueryFilter(BuildIsNotDeletedFilter(clrType));
+                modelBuilder.Entity(clrType).HasQueryFilter(SoftDeleteFilterName, BuildIsNotDeletedFilter(clrType));
             }
 
             // Concurrency token: CHỈ Npgsql — map thủ công RowVersion → system column "xmin" (kiểu xid,
@@ -102,7 +127,7 @@ public abstract class PlatformDbContext : DbContext
         return Expression.Lambda(Expression.Not(isDeleted), parameter);
     }
 
-    private async Task DispatchDomainEventsAsync(CancellationToken ct)
+    private async Task DispatchDomainEventsAsync(List<(Entity Entity, IDomainEvent[] Events)> dequeuedSink, CancellationToken ct)
     {
         var depth = 0;
         while (true)
@@ -120,7 +145,8 @@ public abstract class PlatformDbContext : DbContext
 
             if (depth >= MaxDomainEventDispatchDepth)
             {
-                // R33.4 / task 6.4: vượt trần → ném lỗi rõ, KHÔNG silent-drop event.
+                // R33.4 / task 6.4: vượt trần → ném lỗi rõ, KHÔNG silent-drop event (caller SaveChangesAsync restore
+                // toàn bộ event đã dequeue qua failure boundary — P1-01/AD-094).
                 throw new InvalidOperationException(
                     $"Dispatch domain-event vượt trần {MaxDomainEventDispatchDepth} vòng — nghi vòng lặp vô hạn "
                     + "(handler liên tục raise event mới). Xem lại handler hoặc tăng MaxDomainEventDispatchDepth.");
@@ -129,11 +155,16 @@ public abstract class PlatformDbContext : DbContext
             var events = new List<IDomainEvent>();
             foreach (var entity in entitiesWithEvents)
             {
-                events.AddRange(entity.DomainEvents);
+                var dequeued = entity.DomainEvents.ToArray();
+                dequeuedSink.Add((entity, dequeued)); // ghi vào sink chung → failure boundary ở SaveChangesAsync restore.
+                events.AddRange(dequeued);
                 entity.ClearDomainEvents();
             }
 
+            // KHÔNG try/catch cục bộ: restore do failure boundary bao ngoài (SaveChangesAsync) đảm nhận — phủ CẢ
+            // dispatch-throw LẪN convention/base-save throw sau dispatch (AD-094 mở rộng AD-075).
             await _domainEventDispatcher.DispatchAsync(events, ct).ConfigureAwait(false);
+
             depth++;
         }
     }
@@ -169,6 +200,10 @@ public abstract class PlatformDbContext : DbContext
                 case EntityState.Modified:
                     entry.Entity.UpdatedAt = now;
                     entry.Entity.UpdatedByUserId = actor;
+                    // A-25: metadata TẠO do infrastructure sở hữu — caller sửa CreatedAt/CreatedByUserId KHÔNG được
+                    // persist (đánh dấu IsModified=false → EF loại khỏi UPDATE). Bảo toàn bất biến "created bất biến".
+                    entry.Property(nameof(IAuditable.CreatedAt)).IsModified = false;
+                    entry.Property(nameof(IAuditable.CreatedByUserId)).IsModified = false;
                     break;
                 default:
                     break;

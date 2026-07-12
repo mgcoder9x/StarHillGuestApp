@@ -32,25 +32,44 @@ public sealed class EfOutboxDispatcher<TContext>(
     public async Task DispatchPendingAsync(CancellationToken ct = default)
     {
         var options = optionsMonitor.Get(OutboxDispatcherOptions.KeyFor<TContext>());
+        var claimId = Guid.CreateVersion7();
+        var now = clock.UtcNow;
+        var batch = await ClaimBatchWithLeaseAsync(
+            claimId,
+            now,
+            now + options.ClaimLease,
+            options.BatchSize,
+            ct).ConfigureAwait(false);
 
-        // ExecutionStrategy: tương thích retry của Npgsql — transaction do CHÍNH strategy mở lại khi retry.
-        var strategy = context.Database.CreateExecutionStrategy();
-        await strategy.ExecuteAsync(async () =>
+        // Publish ngoài DB transaction: broker chậm không giữ connection/row lock. Crash trước finalize → lease
+        // hết hạn và message được phát lại (at-least-once, inbox dedupe).
+        foreach (var message in batch)
         {
-            var transaction = await context.Database.BeginTransactionAsync(ct).ConfigureAwait(false);
-            await using (transaction.ConfigureAwait(false))
+            await TryPublishAndFinalizeAsync(message, claimId, options, ct).ConfigureAwait(false);
+        }
+    }
+
+    private async Task<List<OutboxMessage>> ClaimBatchWithLeaseAsync(
+        Guid claimId,
+        DateTimeOffset now,
+        DateTimeOffset claimedUntil,
+        int batchSize,
+        CancellationToken ct)
+    {
+        var strategy = context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync(ct).ConfigureAwait(false);
+            var batch = await ClaimBatchAsync(now, batchSize, ct).ConfigureAwait(false);
+            foreach (var message in batch)
             {
-                var now = clock.UtcNow;
-                var batch = await ClaimBatchAsync(now, options.BatchSize, ct).ConfigureAwait(false);
-
-                foreach (var message in batch)
-                {
-                    await TryPublishAsync(message, options, ct).ConfigureAwait(false);
-                }
-
-                await context.SaveChangesAsync(ct).ConfigureAwait(false);
-                await transaction.CommitAsync(ct).ConfigureAwait(false);
+                message.ClaimId = claimId;
+                message.ClaimedUntil = claimedUntil;
             }
+
+            await context.SaveChangesAsync(ct).ConfigureAwait(false);
+            await transaction.CommitAsync(ct).ConfigureAwait(false);
+            return batch;
         }).ConfigureAwait(false);
     }
 
@@ -81,6 +100,7 @@ public sealed class EfOutboxDispatcher<TContext>(
             .ConfigureAwait(false);
         return [.. candidates
             .Where(m => m.NextAttemptAt is null || m.NextAttemptAt <= now)
+            .Where(m => m.ClaimedUntil is null || m.ClaimedUntil <= now)
             .OrderBy(m => m.OccurredAt)
             .Take(batchSize)];
     }
@@ -101,37 +121,94 @@ public sealed class EfOutboxDispatcher<TContext>(
         return "SELECT * FROM " + qualified
             + " WHERE processed_at IS NULL AND dead_lettered_at IS NULL"
             + " AND (next_attempt_at IS NULL OR next_attempt_at <= {0})"
+            + " AND (claimed_until IS NULL OR claimed_until <= {0})"
             + " ORDER BY occurred_at LIMIT {1} FOR UPDATE SKIP LOCKED";
     }
 
     private static string Quote(string identifier) =>
         "\"" + identifier.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
 
-    private async Task TryPublishAsync(OutboxMessage message, OutboxDispatcherOptions options, CancellationToken ct)
+    /// <summary>Map record outbox (persistence, mutable) → envelope BẤT BIẾN hướng transport (A-20/AD-081).</summary>
+    private static OutgoingIntegrationMessage ToOutgoing(OutboxMessage message) => new()
+    {
+        Id = message.Id,
+        EventType = message.EventType,
+        SchemaVersion = message.SchemaVersion,
+        Payload = message.Payload,
+        OccurredAt = message.OccurredAt,
+        CorrelationId = message.CorrelationId,
+    };
+
+    private async Task TryPublishAndFinalizeAsync(
+        OutboxMessage message,
+        Guid claimId,
+        OutboxDispatcherOptions options,
+        CancellationToken ct)
     {
 #pragma warning disable CA1031 // Publish tới bus ngoài có thể ném BẤT KỲ (network/serialize/adapter). Phải bắt rộng để backoff/dead-letter và cách ly poison — không rethrow để message khác trong batch vẫn xử lý (design §7.2).
         try
         {
-            await publisher.PublishAsync(message, ct).ConfigureAwait(false);
-            message.ProcessedAt = clock.UtcNow;
-            OutboxMetrics.RecordPublished(message.ProcessedAt.Value - message.OccurredAt); // R24.3: published + publish-lag.
-        }
-        catch (Exception) when (!ct.IsCancellationRequested)
-        {
-            message.ErrorCount++;
-            if (message.ErrorCount >= options.MaxAttempts)
+            // A-20: map record persistence → envelope BẤT BIẾN hướng transport (adapter không thấy cột retry/lease).
+            await publisher.PublishAsync(ToOutgoing(message), ct).ConfigureAwait(false);
+            var processedAt = clock.UtcNow;
+            var affected = await context.Set<OutboxMessage>()
+                .Where(candidate => candidate.Id == message.Id && candidate.ClaimId == claimId)
+                .ExecuteUpdateAsync(
+                    setters => setters
+                        .SetProperty(candidate => candidate.ProcessedAt, processedAt)
+                        .SetProperty(candidate => candidate.ClaimId, (Guid?)null)
+                        .SetProperty(candidate => candidate.ClaimedUntil, (DateTimeOffset?)null),
+                    ct)
+                .ConfigureAwait(false);
+            if (affected == 1)
             {
-                message.DeadLetteredAt = clock.UtcNow; // cách ly, không retry tự động (R8.5/AD-016).
-                OutboxMetrics.RecordDeadLettered(); // R24.3: dead-letter count.
+                OutboxMetrics.RecordPublished(processedAt - message.OccurredAt);
+            }
+        }
+        catch (Exception ex) when (!ct.IsCancellationRequested)
+        {
+            var errorCount = message.ErrorCount + 1;
+            var failedAt = clock.UtcNow;
+            var lastError = OutboxErrorFormatter.Redact(ex); // P1-07/A-28: redact secret + classification + bound.
+            if (errorCount >= options.MaxAttempts)
+            {
+                var affected = await context.Set<OutboxMessage>()
+                    .Where(candidate => candidate.Id == message.Id && candidate.ClaimId == claimId)
+                    .ExecuteUpdateAsync(
+                        setters => setters
+                            .SetProperty(candidate => candidate.ErrorCount, errorCount)
+                            .SetProperty(candidate => candidate.DeadLetteredAt, failedAt)
+                            .SetProperty(candidate => candidate.LastError, lastError)
+                            .SetProperty(candidate => candidate.LastAttemptAt, failedAt)
+                            .SetProperty(candidate => candidate.ClaimId, (Guid?)null)
+                            .SetProperty(candidate => candidate.ClaimedUntil, (DateTimeOffset?)null),
+                        ct)
+                    .ConfigureAwait(false);
+                if (affected == 1)
+                {
+                    OutboxMetrics.RecordDeadLettered();
+                }
             }
             else
             {
-                var backoff = OutboxBackoff.ComputeBackoff(message.ErrorCount, options);
+                var backoff = OutboxBackoff.ComputeBackoff(errorCount, options);
 
                 // Jitter tất định theo Id (0..20%): trải tải chống thundering herd mà KHÔNG dùng RNG (test được).
                 var jitterSeed = message.Id.GetHashCode() & int.MaxValue; // & MaxValue: tránh Math.Abs(int.MinValue) overflow.
                 var jitterFraction = (jitterSeed % 1000) / 1000.0 * 0.2;
-                message.NextAttemptAt = clock.UtcNow + backoff + (backoff * jitterFraction);
+                var nextAttemptAt = failedAt + backoff + (backoff * jitterFraction);
+                await context.Set<OutboxMessage>()
+                    .Where(candidate => candidate.Id == message.Id && candidate.ClaimId == claimId)
+                    .ExecuteUpdateAsync(
+                        setters => setters
+                            .SetProperty(candidate => candidate.ErrorCount, errorCount)
+                            .SetProperty(candidate => candidate.NextAttemptAt, nextAttemptAt)
+                            .SetProperty(candidate => candidate.LastError, lastError)
+                            .SetProperty(candidate => candidate.LastAttemptAt, failedAt)
+                            .SetProperty(candidate => candidate.ClaimId, (Guid?)null)
+                            .SetProperty(candidate => candidate.ClaimedUntil, (DateTimeOffset?)null),
+                        ct)
+                    .ConfigureAwait(false);
             }
         }
 #pragma warning restore CA1031

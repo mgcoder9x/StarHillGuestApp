@@ -42,12 +42,15 @@ public sealed class RefreshRotationEmitsEventTests : IAsyncLifetime
             _available = true;
         }
 #pragma warning disable CA1031 // CỐ Ý: lỗi khởi động container ⇒ skip (thiếu Docker, N-012).
-        catch (Exception)
+        catch (Exception) when (!IsContinuousIntegration())
 #pragma warning restore CA1031
         {
             _available = false;
         }
     }
+
+    private static bool IsContinuousIntegration() =>
+        string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase);
 
     public async Task DisposeAsync()
     {
@@ -64,7 +67,7 @@ public sealed class RefreshRotationEmitsEventTests : IAsyncLifetime
 
         var services = new ServiceCollection();
         services.AddSingleton<ICurrentUser>(new StubCurrentUser());
-        services.AddIdentityInfrastructure(o => o.UseNpgsql(_container.GetConnectionString()));
+        services.AddIdentityInfrastructure(o => o.UseIdentityNpgsql(_container.GetConnectionString()));
         await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
 
         await using (var migrateScope = provider.CreateAsyncScope())
@@ -78,8 +81,10 @@ public sealed class RefreshRotationEmitsEventTests : IAsyncLifetime
         // Seed một refresh token HỢP LỆ (hash khớp cách use case băm) trong một scope riêng.
         await using (var seedScope = provider.CreateAsyncScope())
         {
-            var store = seedScope.ServiceProvider.GetRequiredService<IRefreshTokenStore>();
-            var uow = seedScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            var store = seedScope.ServiceProvider.GetRequiredKeyedService<IRefreshTokenStore>(
+                IdentityInfrastructureExtensions.PersistenceKey);
+            var uow = seedScope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(
+                IdentityInfrastructureExtensions.PersistenceKey);
             await store.AddAsync(new RefreshTokenSnapshot(
                 Guid.CreateVersion7(), userId, Guid.CreateVersion7(),
                 Sha256Hex(rawToken), DateTimeOffset.UtcNow.AddDays(30), RevokedAt: null));
@@ -91,12 +96,12 @@ public sealed class RefreshRotationEmitsEventTests : IAsyncLifetime
         {
             var sp = rotateScope.ServiceProvider;
             var useCase = new RefreshAccessTokenUseCase(
-                sp.GetRequiredService<IRefreshTokenStore>(),
-                sp.GetRequiredService<IUnitOfWork>(),
+                sp.GetRequiredKeyedService<IRefreshTokenStore>(IdentityInfrastructureExtensions.PersistenceKey),
+                sp.GetRequiredKeyedService<IUnitOfWork>(IdentityInfrastructureExtensions.PersistenceKey),
                 sp.GetRequiredService<IClock>(),
                 new FakeTokenGenerator(),
                 new FakeJwt(),
-                sp.GetRequiredService<IOutboxWriter>());
+                sp.GetRequiredKeyedService<IOutboxWriter>(IdentityInfrastructureExtensions.PersistenceKey));
 
             var result = await useCase.ExecuteAsync(new RefreshTokenCommand(rawToken));
             Assert.True(result.IsSuccess);

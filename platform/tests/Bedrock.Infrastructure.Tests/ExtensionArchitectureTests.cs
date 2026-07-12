@@ -67,7 +67,7 @@ public sealed class ExtensionArchitectureTests
             provider.GetRequiredService<IRateLimitStore>().TryAcquireAsync("p", 1, TimeSpan.FromSeconds(1)));
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             provider.GetRequiredService<IEventBusPublisher>().PublishAsync(
-                new OutboxMessage { EventType = "x", Payload = "{}", OccurredAt = DateTimeOffset.UtcNow }));
+                new OutgoingIntegrationMessage { Id = Guid.CreateVersion7(), EventType = "x", SchemaVersion = 1, Payload = "{}", OccurredAt = DateTimeOffset.UtcNow }));
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             provider.GetRequiredService<ISearchIndex<SearchDoc>>().IndexAsync(new SearchDoc("1")));
         await Assert.ThrowsAsync<InvalidOperationException>(() =>

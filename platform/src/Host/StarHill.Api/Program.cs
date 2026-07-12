@@ -43,7 +43,7 @@ services.AddExternalAuthCore();
 var identityConnectionString = configuration.GetConnectionString("Identity")
     ?? throw new InvalidOperationException(
         "Thiếu ConnectionStrings:Identity — fail-fast (F35). Cấu hình connection string cho module Identity.");
-services.AddIdentityInfrastructure(options => options.UseNpgsql(identityConnectionString));
+services.AddIdentityInfrastructure(options => options.UseIdentityNpgsql(identityConnectionString));
 services.AddIdentityApi();
 
 // (2b) OPT-IN messaging event-driven — mặc định TẮT (mirror opt-in migrate AD-053). Bật qua config
@@ -54,18 +54,20 @@ services.AddIdentityApi();
 if (bool.TryParse(configuration["Bedrock:Messaging:Enabled"], out var messagingEnabled) && messagingEnabled)
 {
     services.AddRabbitMqMessaging(configuration);
-    services.AddOutboxDispatcher<IdentityDbContext>();
+    services.AddOutboxDispatcher<IdentityDbContext>(IdentityInfrastructureExtensions.PersistenceKey);
     services.AddOutboxDispatcherWorker<IdentityDbContext>();
     services.AddIntegrationEventRegistry(typeof(UserTokenRefreshedIntegrationEvent).Assembly);
 
     // CONSUME side (AD-059): dispatch core agnostic (Bedrock.Infrastructure) + handler demo + subscriber RabbitMQ.
     // Topology TỐI THIỂU cho sample (queue + binding) — quyết định app (N-063). Handler chạy trong transaction
     // consume (inbox + business nguyên tử, F30). Multi-module thật: mỗi module một consumer + scope riêng.
-    services.AddIntegrationEventConsumer();
-    services.AddScoped<IIntegrationEventHandler<UserTokenRefreshedIntegrationEvent>, UserTokenRefreshedLogHandler>();
+    services.AddIntegrationEventConsumer<IdentityDbContext>(IdentityInfrastructureExtensions.PersistenceKey);
+    services.AddKeyedScoped<IIntegrationEventHandler<UserTokenRefreshedIntegrationEvent>, UserTokenRefreshedLogHandler>(
+        IdentityInfrastructureExtensions.PersistenceKey);
     services.AddRabbitMqConsumer(o =>
     {
         o.QueueName = "starhill.identity";
+        o.DispatcherServiceKey = IdentityInfrastructureExtensions.PersistenceKey;
         o.RoutingKeys.Add("identity.#"); // nhận mọi event của module Identity (topic pattern).
     });
 }

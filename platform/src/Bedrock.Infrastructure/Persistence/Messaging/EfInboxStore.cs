@@ -1,18 +1,17 @@
 using Bedrock.Application.Messaging.Dispatch;
 using Bedrock.Application.Ports.Time;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Bedrock.Infrastructure.Persistence.Messaging;
 
 /// <summary>
 /// Impl <see cref="IInboxStore"/> (idempotency phía consumer — F30, design §7.3). STAGE bản ghi
-/// <see cref="InboxMessage"/> vào ChangeTracker (không tự commit) → mark inbox + business của handler cùng
-/// một <c>SaveChanges</c>/transaction. Trả <c>true</c> nếu lần đầu, <c>false</c> nếu đã xử lý.
+/// claim <see cref="InboxMessage"/> bằng INSERT atomic trong transaction hiện hành. Claim được flush TRƯỚC
+/// handler nhưng chưa commit; handler lỗi → transaction rollback claim, delivery sau thử lại được.
 /// <para>
-/// Guard trùng cấp DB là PK <c>(message_id, consumer)</c>: hai consumer đồng thời → đúng một thắng ở commit
-/// (kẻ thua nhận PK violation → NACK/redeliver → lần sau <see cref="TryMarkProcessedAsync"/> thấy đã tồn tại →
-/// bỏ qua). Bản kiểm tra tồn tại ở đây chặn double-run trong luồng tuần tự thường gặp; tính nguyên tử dưới
-/// tải đồng thời được kiểm chứng ở task 7.4 (Testcontainers).
+/// Guard trùng cấp DB là PK <c>(message_id, consumer)</c>. PostgreSQL dùng <c>ON CONFLICT DO NOTHING</c>,
+/// SQLite dùng <c>INSERT OR IGNORE</c>; vì arbitration xảy ra trước handler nên race không thể chạy handler hai lần.
 /// </para>
 /// </summary>
 public sealed class EfInboxStore(PlatformDbContext context, IClock clock) : IInboxStore
@@ -21,20 +20,29 @@ public sealed class EfInboxStore(PlatformDbContext context, IClock clock) : IInb
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(consumer);
 
-        var alreadyProcessed = await context.Set<InboxMessage>()
-            .AnyAsync(m => m.MessageId == messageId && m.Consumer == consumer, ct)
-            .ConfigureAwait(false);
-        if (alreadyProcessed)
-        {
-            return false;
-        }
+        var (table, schema) = ResolveTable();
+        var qualified = schema is null ? Quote(table) : $"{Quote(schema)}.{Quote(table)}";
+        var insert = context.Database.IsNpgsql() ? "INSERT INTO " : "INSERT OR IGNORE INTO ";
+        var conflict = context.Database.IsNpgsql() ? " ON CONFLICT DO NOTHING" : string.Empty;
+        var sql = insert + qualified
+            + " (message_id, consumer, processed_at) VALUES ({0}, {1}, {2})"
+            + conflict;
 
-        context.Set<InboxMessage>().Add(new InboxMessage
-        {
-            MessageId = messageId,
-            Consumer = consumer,
-            ProcessedAt = clock.UtcNow,
-        });
-        return true;
+        var affected = await context.Database
+            .ExecuteSqlRawAsync(sql, [messageId, consumer, clock.UtcNow], ct)
+            .ConfigureAwait(false);
+        return affected == 1;
     }
+
+    private (string Table, string? Schema) ResolveTable()
+    {
+        var entityType = context.Model.FindEntityType(typeof(InboxMessage))
+            ?? throw new InvalidOperationException("InboxMessage chưa được map (thiếu AddOutboxInbox?).");
+        return (
+            entityType.GetTableName() ?? throw new InvalidOperationException("InboxMessage không có tên bảng."),
+            entityType.GetSchema());
+    }
+
+    private static string Quote(string identifier) =>
+        "\"" + identifier.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
 }
