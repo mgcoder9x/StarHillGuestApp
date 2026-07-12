@@ -56,3 +56,5 @@ C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\src\Mod
 C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\src\Modules\Identity\Identity.Infrastructure\obj\Debug\net10.0\ref\Identity.Infrastructure.dll
 C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\src\Modules\Identity\Identity.Infrastructure\bin\Debug\net10.0\Identity.Infrastructure.runtimeconfig.json
 C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\src\Modules\Identity\Identity.Infrastructure\obj\Debug\net10.0\Identity.Infrastructure.genruntimeconfig.cache
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Modules\Identity\Identity.Infrastructure\bin\Debug\net10.0\Identity.Infrastructure.runtimeconfig.json
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Modules\Identity\Identity.Infrastructure\obj\Debug\net10.0\Identity.Infrastructure.genruntimeconfig.cache

@@ -1,0 +1,50 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Bedrock.Domain/Bedrock.Domain.csproj" />
+    <Project Path="src/Bedrock.Messaging.Contracts/Bedrock.Messaging.Contracts.csproj" />
+    <Project Path="src/Bedrock.Application/Bedrock.Application.csproj" />
+    <Project Path="src/Bedrock.Api/Bedrock.Api.csproj" />
+    <Project Path="src/Bedrock.Infrastructure/Bedrock.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/Identity.Contracts/Identity.Contracts.csproj" />
+    <Project Path="src/Modules/Identity/Identity.Domain/Identity.Domain.csproj" />
+    <Project Path="src/Modules/Identity/Identity.Application/Identity.Application.csproj" />
+    <Project Path="src/Modules/Identity/Identity.Infrastructure/Identity.Infrastructure.csproj" />
+    <Project Path="src/Modules/Identity/Identity.Api/Identity.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/ResortConfig/">
+    <Project Path="src/Modules/ResortConfig/ResortConfig.Contracts/ResortConfig.Contracts.csproj" />
+    <Project Path="src/Modules/ResortConfig/ResortConfig.Domain/ResortConfig.Domain.csproj" />
+    <Project Path="src/Modules/ResortConfig/ResortConfig.Application/ResortConfig.Application.csproj" />
+    <Project Path="src/Modules/ResortConfig/ResortConfig.Infrastructure/ResortConfig.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Rooms/">
+    <Project Path="src/Modules/Rooms/Rooms.Contracts/Rooms.Contracts.csproj" />
+    <Project Path="src/Modules/Rooms/Rooms.Domain/Rooms.Domain.csproj" />
+    <Project Path="src/Modules/Rooms/Rooms.Application/Rooms.Application.csproj" />
+    <Project Path="src/Modules/Rooms/Rooms.Infrastructure/Rooms.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Adapters/">
+    <Project Path="src/Adapters/Messaging.RabbitMq/Adapters.Messaging.RabbitMq.csproj" />
+  </Folder>
+  <Folder Name="/src/Host/">
+    <Project Path="src/Host/StarHill.Api/StarHill.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Bedrock.UnitTests/Bedrock.UnitTests.csproj" />
+    <Project Path="tests/Bedrock.ArchitectureTests/Bedrock.ArchitectureTests.csproj" />
+    <Project Path="tests/StarHill.ArchitectureTests/StarHill.ArchitectureTests.csproj" />
+    <Project Path="tests/Bedrock.Api.Tests/Bedrock.Api.Tests.csproj" />
+    <Project Path="tests/Bedrock.Infrastructure.Tests/Bedrock.Infrastructure.Tests.csproj" />
+    <Project Path="tests/Bedrock.ContractTests/Bedrock.ContractTests.csproj" />
+    <Project Path="tests/Modules/Identity.UnitTests/Identity.UnitTests.csproj" />
+    <Project Path="tests/Modules/Identity.IntegrationTests/Identity.IntegrationTests.csproj" />
+    <Project Path="tests/Modules/ResortConfig.UnitTests/ResortConfig.UnitTests.csproj" />
+    <Project Path="tests/Modules/ResortConfig.IntegrationTests/ResortConfig.IntegrationTests.csproj" />
+    <Project Path="tests/Modules/Rooms.IntegrationTests/Rooms.IntegrationTests.csproj" />
+    <Project Path="tests/Host/StarHill.Api.Tests/StarHill.Api.Tests.csproj" />
+    <Project Path="tests/Adapters/Adapters.Messaging.RabbitMq.Tests/Adapters.Messaging.RabbitMq.Tests.csproj" />
+    <Project Path="tests/Messaging.IntegrationTests/Messaging.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

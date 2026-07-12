@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    ResortConfig.Contracts (PUBLIC surface — matrix §3.3): CHỈ reference Bedrock.Messaging.Contracts.
+    Chứa i18n (ITranslation/Translated/ITranslationResolver) + query DTO/interface để module khác
+    (Rules/Faq/GuestAccess/...) chạm ResortConfig qua ĐÂY (F30). KHÔNG ref Application/Domain/Infra.
+    LƯU Ý (QR-DV-002): ITranslationResolver KHÔNG kế thừa ISingletonService (marker ở Bedrock.Application,
+    Contracts không được ref) → resolver đăng ký thủ công ở Infrastructure.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Bedrock.Messaging.Contracts\Bedrock.Messaging.Contracts.csproj" />
+  </ItemGroup>
+</Project>

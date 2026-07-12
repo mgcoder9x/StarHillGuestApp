@@ -262,3 +262,5 @@ C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\tests\B
 C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\tests\Bedrock.Api.Tests\obj\Debug\net10.0\Bedrock.Api.Tests.pdb
 C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\tests\Bedrock.Api.Tests\obj\Debug\net10.0\Bedrock.Api.Tests.genruntimeconfig.cache
 C:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\platform\tests\Bedrock.Api.Tests\obj\Debug\net10.0\ref\Bedrock.Api.Tests.dll
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\tests\Bedrock.Api.Tests\bin\Debug\net10.0\Microsoft.AspNetCore.OpenApi.dll
+C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\tests\Bedrock.Api.Tests\bin\Debug\net10.0\Microsoft.OpenApi.dll

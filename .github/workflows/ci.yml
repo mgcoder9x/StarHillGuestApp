@@ -3,13 +3,24 @@ name: CI
 # Chạy trên push + PR. Runner ubuntu-latest có sẵn Docker → Testcontainers (RabbitMQ/PostgreSQL) chạy thật.
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, develop]
   pull_request:
+
+# Hủy run cũ khi có push mới trên CÙNG ref → tiết kiệm runner + tránh nhiều run e2e chạy song song tranh
+# tài nguyên Docker/Testcontainers (đúng lớp flaky đã ghi N-053/N-064). Group theo ref → nhánh khác không hủy nhau.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least-privilege (tinh thần F35/AD-038): mọi job CHỈ đọc repo; checkout + upload-artifact không cần quyền ghi.
+permissions:
+  contents: read
 
 jobs:
   build-test:
     name: build + test (0 warning + Testcontainers)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,6 +49,7 @@ jobs:
   docker-image:
     name: docker build Host
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,6 +65,7 @@ jobs:
     # KHÔNG cần SDK/ef-tool trên target, KHÔNG auto-migrate trong app (an toàn đa-instance).
     name: EF migration bundle (deploy artifact)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4

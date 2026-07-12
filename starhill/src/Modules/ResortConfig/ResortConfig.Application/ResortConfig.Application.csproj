@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    ResortConfig.Application (vertical-by-feature — matrix §3.3): reference ResortConfig.Domain +
+    ResortConfig.Contracts + Bedrock.Application (ports/behaviors). KHÔNG ref Infrastructure/EF/ASP.NET.
+    (FluentValidation thêm khi module có validator — slice sau; B.1 chưa có.)
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\ResortConfig.Domain\ResortConfig.Domain.csproj" />
+    <ProjectReference Include="..\ResortConfig.Contracts\ResortConfig.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Bedrock.Application\Bedrock.Application.csproj" />
+  </ItemGroup>
+</Project>

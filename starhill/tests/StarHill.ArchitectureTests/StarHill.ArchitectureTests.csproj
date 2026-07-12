@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Test project GOVERNANCE của SẢN PHẨM StarHill (tách khỏi Bedrock.ArchitectureTests vendored của base).
+    Đây là NƠI Ở của mọi guard test pha QR: journal-consistency (QR-*), và về sau CP1..15 + ModuleBoundary
+    cho các module QR. Dev-time, KHÔNG đóng gói (IsPackable=false). Journal test chỉ đọc markdown ở .kiro/
+    nên KHÔNG cần ProjectReference nào — giữ tối giản (thêm ref/NetArchTest khi viết arch test QR).
+  -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="NetArchTest.Rules" />
+  </ItemGroup>
+
+  <!-- Module QR ResortConfig — để arch test kiểm ranh giới module (CP4/CP5). Thêm module khác khi dựng. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Modules\ResortConfig\ResortConfig.Contracts\ResortConfig.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\ResortConfig\ResortConfig.Domain\ResortConfig.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\ResortConfig\ResortConfig.Application\ResortConfig.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\ResortConfig\ResortConfig.Infrastructure\ResortConfig.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Rooms\Rooms.Contracts\Rooms.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Rooms\Rooms.Domain\Rooms.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Rooms\Rooms.Application\Rooms.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Rooms\Rooms.Infrastructure\Rooms.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

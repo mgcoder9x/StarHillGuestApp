@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <!--
+    End-to-end messaging backbone: EfOutboxDispatcher (Bedrock.Infrastructure) + RabbitMqEventBusPublisher
+    (Adapters.Messaging.RabbitMq) với Postgres + RabbitMQ THẬT. Đây là mức "Host tích hợp" (compose infra + adapter)
+    — test project được phép ref cả hai (khác lõi: lõi giữ ranh giới, arch-test CP3 gác).
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Testcontainers.RabbitMq" />
+    <PackageReference Include="Xunit.SkippableFact" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Bedrock.Infrastructure\Bedrock.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Adapters\Messaging.RabbitMq\Adapters.Messaging.RabbitMq.csproj" />
+  </ItemGroup>
+</Project>

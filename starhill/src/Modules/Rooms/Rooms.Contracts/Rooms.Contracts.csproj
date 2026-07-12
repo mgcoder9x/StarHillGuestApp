@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Rooms.Contracts (PUBLIC surface — matrix §3.3): CHỈ reference Bedrock.Messaging.Contracts. Lộ IRoomTokenResolver
+    (cho GuestAccess.resolve + Housekeeping.complete-by-token) + DTO thuần. KHÔNG marker DI (đăng ký thủ công ở Infra).
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Bedrock.Messaging.Contracts\Bedrock.Messaging.Contracts.csproj" />
+  </ItemGroup>
+</Project>

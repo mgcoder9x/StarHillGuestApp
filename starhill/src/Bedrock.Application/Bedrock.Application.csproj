@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Application layer (I2/matrix §3.3): reference CHỈ Domain + Messaging.Contracts (kernel zero-dep).
+    KHÔNG EF/ASP.NET/adapter/module. FluentValidation + Microsoft.Extensions.* Abstractions + Scrutor
+    được whitelist làm composition plumbing (AD-018) — không phải "công nghệ swap được".
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Bedrock.Domain\Bedrock.Domain.csproj" />
+    <ProjectReference Include="..\Bedrock.Messaging.Contracts\Bedrock.Messaging.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Scrutor" />
+  </ItemGroup>
+</Project>

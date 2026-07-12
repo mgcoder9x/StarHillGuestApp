@@ -8,19 +8,19 @@
     "netcoreapp3.1": []
   },
   "packageFolders": {
-    "C:\\Users\\k.nguyen.manh.toan\\.nuget\\packages\\": {}
+    "C:\\Users\\toann\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\Reference\\EPS.Vuexy\\Vuexy.csproj",
+      "projectUniqueName": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\Reference\\EPS.Vuexy\\Vuexy.csproj",
       "projectName": "Vuexy",
-      "projectPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\Reference\\EPS.Vuexy\\Vuexy.csproj",
-      "packagesPath": "C:\\Users\\k.nguyen.manh.toan\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\k.nguyen.manh.toan\\Desktop\\TOANM\\WORK\\StarHillGuestApp\\Reference\\EPS.Vuexy\\obj\\",
+      "projectPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\Reference\\EPS.Vuexy\\Vuexy.csproj",
+      "packagesPath": "C:\\Users\\toann\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\toann\\Desktop\\WORK_PRO\\StarHillGuestApp\\Reference\\EPS.Vuexy\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\k.nguyen.manh.toan\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\toann\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "netcoreapp3.1"
@@ -88,7 +88,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Users\\k.nguyen.manh.toan\\AppData\\Local\\Microsoft\\dotnet\\sdk\\10.0.301\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301\\RuntimeIdentifierGraph.json"
       }
     }
   }

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Identity.Application (vertical-by-feature — matrix §3.3): reference Identity.Domain + Identity.Contracts
+    (của CHÍNH module — để phát event) + Bedrock.Application (ports/behaviors/use-case). KHÔNG ref
+    Identity.Infrastructure/EF/ASP.NET. FluentValidation whitelist cho validator (như Bedrock.Application, AD-018).
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Identity.Domain\Identity.Domain.csproj" />
+    <ProjectReference Include="..\Identity.Contracts\Identity.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Bedrock.Application\Bedrock.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Cho test truy cập hằng internal (RefreshTokenLifetime) để khoá AD-041 mà không phơi ra API công khai. -->
+    <InternalsVisibleTo Include="Identity.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+</Project>

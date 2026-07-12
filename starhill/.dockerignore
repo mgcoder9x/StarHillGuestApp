@@ -1,0 +1,6 @@
+# Loại artifact build/local khỏi Docker context (nhanh + không lẫn output cũ vào image).
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/*.user

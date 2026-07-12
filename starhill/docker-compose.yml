@@ -1,0 +1,58 @@
+# Chạy CẢ STACK local/staging: PostgreSQL + RabbitMQ + Host. Chứng minh "sản phẩm chạy được" end-to-end,
+# GỒM đường event-driven (Outbox → worker → RabbitMQ) trên ARTIFACT THẬT (image build từ Dockerfile), không
+# chỉ Testcontainers. LƯU Ý (F35): secret dưới đây là DEV placeholder (compose = dev/staging). Production nạp
+# secret qua orchestrator/secret store + áp migration OUT-OF-BAND (KHÔNG bật ApplyMigrationsOnStartup ở prod
+# đa-instance — AD-050) + KHÔNG dùng credential mặc định.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: starhill_identity
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d starhill_identity"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3.13
+    environment:
+      # Dùng user RIÊNG (không 'guest'): 'guest' của RabbitMQ chỉ connect được qua LOOPBACK → từ container `host`
+      # (non-loopback qua mạng compose) sẽ bị TỪ CHỐI. Đây là chi tiết deployment thật mà compose-với-image phơi
+      # ra (Testcontainers map localhost nên không lộ). Dev placeholder — prod nạp qua secret store (F35).
+      RABBITMQ_DEFAULT_USER: bedrock
+      RABBITMQ_DEFAULT_PASS: bedrock
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  host:
+    build:
+      context: .
+      dockerfile: src/Host/StarHill.Api/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # Connection string trỏ service `postgres` trong mạng compose.
+      ConnectionStrings__Identity: "Host=postgres;Port=5432;Database=starhill_identity;Username=postgres;Password=postgres"
+      # DEV placeholder secret (base64 ≥32B). Prod nạp qua secret store (F35).
+      Jwt__Keys__0__Secret: "ZGV2LXBsYWNlaG9sZGVyLWp3dC1zaWduaW5nLWtleS0wMTIzNDU2Nzg5YWJjZGVm"
+      # CHỈ dev/compose single-instance: Host tự áp migration lúc start. Prod đa-instance KHÔNG bật (AD-050).
+      Bedrock__ApplyMigrationsOnStartup: "true"
+      # BẬT event-driven (opt-in, AD-056): cắm RabbitMQ + đăng ký dispatcher + LÊN LỊCH worker phát tự động.
+      Bedrock__Messaging__Enabled: "true"
+      RabbitMq__HostName: "rabbitmq"
+      RabbitMq__Port: "5672"
+      RabbitMq__UserName: "bedrock"
+      RabbitMq__Password: "bedrock"
+    ports:
+      - "18080:8080"

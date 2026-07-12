@@ -10,6 +10,7 @@
         "dependencies": {
           "Bedrock.Application": "1.0.0",
           "Microsoft.Extensions.Configuration.Binder": "10.0.9",
+          "Microsoft.Extensions.Diagnostics.HealthChecks": "10.0.9",
           "Microsoft.Extensions.Hosting.Abstractions": "10.0.9",
           "Microsoft.Extensions.Resilience": "10.7.0",
           "RabbitMQ.Client": "7.2.1"
@@ -122,6 +123,28 @@
           "lib/net10.0/Microsoft.Extensions.Diagnostics.ExceptionSummarization.dll": {
             "assemblyVersion": "10.7.0.0",
             "fileVersion": "10.700.26.30905"
+          }
+        }
+      },
+      "Microsoft.Extensions.Diagnostics.HealthChecks/10.0.9": {
+        "dependencies": {
+          "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions": "10.0.9",
+          "Microsoft.Extensions.Hosting.Abstractions": "10.0.9",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.9",
+          "Microsoft.Extensions.Options": "10.0.9"
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.Extensions.Diagnostics.HealthChecks.dll": {
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.926.27113"
+          }
+        }
+      },
+      "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions/10.0.9": {
+        "runtime": {
+          "lib/net10.0/Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions.dll": {
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.926.27113"
           }
         }
       },
@@ -408,6 +431,20 @@
       "sha512": "sha512-Kc4XbbxtCzvn2P/fKF48xLWPbp3N5DV0MkJlgPJHEb47PUqCJ6kEl/JTKfpmP7QLuwYjx2QxKTdtwXfpjgA6KQ==",
       "path": "microsoft.extensions.diagnostics.exceptionsummarization/10.7.0",
       "hashPath": "microsoft.extensions.diagnostics.exceptionsummarization.10.7.0.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Diagnostics.HealthChecks/10.0.9": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-I3mmGlsR73z+7SJJ1ngUG6JfH+UEVTm/42leXxzzr6OKC9DqYIqwZKAjumoH3HEcRqfGPOpo/lfECifQN7qgUA==",
+      "path": "microsoft.extensions.diagnostics.healthchecks/10.0.9",
+      "hashPath": "microsoft.extensions.diagnostics.healthchecks.10.0.9.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions/10.0.9": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-/pbRl7IJW3QFzEwBGtgEvcEUbL9OGFe+1uTMisWLIS+NaHH5+PEQ3/Sw58c4UqXKlC/rtqFp+qSOGelEelNAjA==",
+      "path": "microsoft.extensions.diagnostics.healthchecks.abstractions/10.0.9",
+      "hashPath": "microsoft.extensions.diagnostics.healthchecks.abstractions.10.0.9.nupkg.sha512"
     },
     "Microsoft.Extensions.FileProviders.Abstractions/10.0.9": {
       "type": "package",

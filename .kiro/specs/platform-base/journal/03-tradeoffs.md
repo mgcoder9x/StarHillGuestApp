@@ -95,3 +95,25 @@
 - Vì sao chấp nhận: refresh-token store là **cơ chế** (không phải policy nghiệp vụ) → lên lõi hợp lý; bảng vẫn thuộc schema module (giữ F31).
 - Điều kiện xem xét lại: nếu chỉ Identity từng dùng và không module nào khác cần → có thể hạ store xuống Modules.Identity để lõi gọn hơn.
 - Reversibility: Medium. Ref: AD-010, F19/F31.
+
+---
+
+### TO-010 — RabbitMQ health-check: connection NGẮN mỗi probe vs tái dùng connection
+- Chosen: mở connection ngắn-hạn mỗi lần probe rồi dispose (AD-064).
+- Provenance/Evidence: `RabbitMqHealthCheck.CheckHealthAsync` (`await using connection = CreateConnectionAsync`).
+- Phía connection-ngắn (chọn): đơn giản + ĐỘC LẬP trạng thái publisher/consumer (probe đo đúng "broker có kết nối được không" bất kể publisher đã lazy-connect chưa); không ghép chặt internals.
+- Phía tái-dùng-connection (bỏ): nhẹ hơn (không mở TCP+AMQP mỗi probe) nhưng phải chia sẻ connection của publisher/consumer → ghép chặt, và một connection "cached open" có thể che giấu lỗi mạng thoáng qua.
+- Vì sao chấp nhận chi phí: readiness probe chạy thưa (vài giây/lần); chi phí mở connection ngắn không đáng kể so với giá trị "đo thật + độc lập". Đúng cho base/demo.
+- Điều kiện xem xét lại: nếu tần suất probe cao + tải lớn khiến mở connection thành chi phí đáng kể → chuyển sang health-check tái dùng một connection chuyên dụng (long-lived) có phát hiện đứt.
+- Reversibility: High (đổi impl health-check cục bộ). Ref: AD-064, design §9.6/R34.
+
+---
+
+### TO-011 — Outbox-lag: publish-lag INLINE (tuổi-lúc-publish) vs oldest-pending-age GAUGE (DB-poll)
+- Chosen: histogram `bedrock.outbox.publish.lag` đo `now - occurred_at` LÚC publish thành công, phát inline trong dispatcher (AD-065).
+- Provenance/Evidence: `OutboxMetrics.RecordPublished(lag)` gọi trong `EfOutboxDispatcher.TryPublishAsync`.
+- Phía inline-publish-lag (chọn): rẻ + không DB-poll + không gauge sync-over-async + không scoped-DbContext-trong-callback; đo trễ end-to-end THỰC (message được gửi trễ bao lâu) — hữu ích trực tiếp cho alerting SLA.
+- Phía oldest-pending-age gauge (bỏ giai đoạn này): phản ánh tồn đọng hiện thời kể cả message CHƯA publish (bắt được "dispatcher chết → pending phình"); nhưng cần ObservableGauge query `MIN(occurred_at) WHERE pending` mỗi lần collect → sync-over-async + tạo scope/DbContext trong callback process-lifetime (giòn) + per-context.
+- Vì sao chấp nhận: publish-lag phủ phần lớn nhu cầu quan sát trễ; dead-letter count + error_count đã báo hiệu kẹt. "Dispatcher chết hoàn toàn" thì health-check/liveness + thiếu metric published (rate=0) cũng lộ.
+- Điều kiện xem xét lại: nếu vận hành cần cảnh báo tồn đọng khi dispatcher NGƯNG hẳn (publish-lag không phát vì không publish) → thêm oldest-pending-age gauge (thiết kế cẩn thận: background poller cập nhật giá trị + gauge đọc cache, per-context).
+- Reversibility: High (thêm gauge là cộng thêm). Ref: AD-065, R24.3/§7.2.

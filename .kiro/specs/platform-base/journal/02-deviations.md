@@ -210,6 +210,7 @@
 - Consequences: khi Host bật OpenAPI, nhóm theo version dựa `ApiVersion` metadata/group-name sẵn có (không phải làm lại base). Acceptance task 17 (snapshot + /v1 + 0 warning) VẪN đạt đầy đủ.
 - Reversibility: High (thêm OpenAPI ở Host không phá base; hoặc bổ sung `AddBedrockOpenApi` sau).
 - Traceability: R22.1, design §9.1/§3.2, task 17, I10.
+- **Resolved:** AD-068 (base cấp doc-gen native OPT-IN `AddBedrockOpenApi`/`MapBedrockOpenApi` — /openapi/v1.json; Swagger UI VẪN Host). Phần "doc-gen ở base" của DV-015 nay đã làm; phần "UI = Host" giữ nguyên.
 
 ---
 

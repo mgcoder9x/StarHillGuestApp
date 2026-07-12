@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Rooms.Infrastructure (persistence + composition nửa-Infra — matrix §3.3): reference Rooms.Application
+    (kế thừa Domain/Contracts) + Bedrock.Infrastructure. Slice B-Rooms.2b: thêm Rooms.Application (use case) →
+    thay ref Domain+Contracts trực tiếp bằng Application (mirror Identity.Infrastructure). KHÔNG ref
+    Bedrock.Api/Rooms.Api (Api⊥Infra I7). Nửa-Api (IEndpointModule) ở Rooms.Api (slice sau); Host ráp hai nửa.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Rooms.Application\Rooms.Application.csproj" />
+    <ProjectReference Include="..\..\..\Bedrock.Infrastructure\Bedrock.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+    <!-- QRCoder: render QR PNG thuần managed (PngByteQRCode — không System.Drawing/SkiaSharp) cho QrCoderQrService. -->
+    <PackageReference Include="QRCoder" />
+  </ItemGroup>
+</Project>

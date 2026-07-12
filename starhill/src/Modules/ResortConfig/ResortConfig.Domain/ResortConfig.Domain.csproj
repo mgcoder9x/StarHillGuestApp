@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    ResortConfig.Domain (POCO nghiệp vụ cấu hình resort): reference CHỈ Bedrock.Domain.
+    KHÔNG EF/ASP.NET/module khác (matrix §3.3). Ràng buộc kỹ thuật (MaxLength/index) ở EF config (Infrastructure).
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Bedrock.Domain\Bedrock.Domain.csproj" />
+  </ItemGroup>
+</Project>
