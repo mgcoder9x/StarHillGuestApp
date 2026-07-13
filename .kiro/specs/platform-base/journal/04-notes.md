@@ -843,3 +843,11 @@
 - Các finding TÔI ĐÃ FIX phiên gần đây (thật sự còn ngỏ): P1-07 (AD-097), P1-08 (AD-096), P1-10-bijection (AD-101), P1-15 (AD-100), P1-11-error-snapshot (QR-AD-018), QR P1(a)/(b) (QR-AD-016/017).
 - **CÒN NGỎ THẬT (không phải stale):** P1-14 (trace/correlation split — cần schema migration cross-tree + design-first, không Docker-verify đầy đủ được → nên design-first trước khi code); P1-04 broker-restart (Docker, defer N-079); P1-16 oldest-pending gauge (defer TO-011); P1-12 GetUninitializedObject (defer có lý do AD-083).
 - **BÀI HỌC anti-drift:** re-audit là snapshot một thời điểm; PHẢI verify từng finding bằng code hiện tại trước khi làm (đã tránh 4 lần làm trùng mục đã đóng). Ledger/re-audit KHÔNG thay thế đọc code.
+
+
+### N-082 — P1-14 có DESIGN-FIRST doc, CHỜ user valid trước khi code (2026-07-13)
+- Tạo `.kiro/specs/platform-base/design-P1-14-trace-correlation-split.md` — thiết kế đầy đủ tách business CorrelationId khỏi W3C trace (traceparent+tracestate), kiểm chứng được, blast-radius + migration plan + verify plan (ActivityListener assert tracestate + snapshot migration, không Docker).
+- **Quyết định thiết kế chốt trong doc (chưa code):** D2 additive 2 cột `trace_parent`/`trace_state` (không rename correlation_id — an toàn data); D4 `CorrelationId=null` (business-correlation port là follow-up, không suy diễn từ TraceId); D7 dùng `ActivityContext.Parse(traceParent, traceState)` (giữ tracestate); D8 defer producer publish span.
+- **CHỜ user chốt Q1/Q2/Q3 (mục §8 doc)** trước khi triển khai — vì đụng schema migration cross-tree (platform + starhill Identity) không Docker-verify đầy đủ được → design-first đúng process user.
+- Khi triển khai: theo §9 (6 increment), thêm AD mới (số kế tiếp) + guard-map + TO entries.
+- KHÔNG code gì phiên này cho P1-14 — chỉ design (đúng "chuẩn bị thiết kế rõ → valid → mới triển khai").
