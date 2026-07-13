@@ -144,3 +144,12 @@
 - **Fallout đã xử lý:** đổi ctor `CreateRoomUseCase` (+1 dep) làm 3 harness `Rooms.IntegrationTests` (RoomsUseCaseTests/RenderRoomQrPngUseCaseTests/RoomsPostgresConstraintTests) thiếu `IResortExistenceQuery` → thêm stub dùng chung `TestResortExistenceQuery` (trả true). `RoomsPersistenceTests` không đụng (dùng DbContext trực tiếp, không resolve CreateRoom).
 - Verify: `starhill scripts\vp.cmd all` = build 0-warning + validate-ci + full suite 0-fail (Rooms.UnitTests 2/2, Rooms.IntegrationTests 22 pass/2 skip-Docker); `vp journal` QR INV-1..5 = 5/5.
 - CÒN LẠI P1 (review): (b) default-language nguyên tử ở ResortConfig aggregate; (c) Dashboard shape (QR-TO-003). Xem end.md §6.
+
+
+### QR-N-018 — DEFER (cần Docker): set-default-language nguyên tử trên Npgsql khi viết use case
+- Ngày 2026-07-13 (máy toann — không Docker).
+- P1(b) đã đặt bất biến + primitive `ResortLanguagePolicy.TrySetDefault` (in-memory nguyên tử) + guard (QR-AD-017). NHƯNG khi viết use case `SetDefaultLanguage` thật (kèm admin API slice B.3), phải xử lý sắc thái Npgsql:
+  - `TrySetDefault` set target.IsDefault=true + gỡ default cũ, rồi use case `SaveChangesAsync` MỘT lần. Trên Npgsql, EF phát nhiều câu UPDATE THỨ TỰ KHÔNG đảm bảo → có thể set target=true TRƯỚC khi unset default cũ → trạng thái 2-default TẠM THỜI → vi phạm `ux_lang_default` (partial-unique index, NON-deferrable, kiểm ngay từng-hàng, KHÔNG hoãn tới commit).
+  - Hướng xử lý (chọn khi có Docker để KIỂM CHỨNG, không đoán): (a) một câu SQL `UPDATE ... SET is_default = (code = @target)` cho cả tập (nguyên tử, không trạng thái trung gian); hoặc (b) unset-tất-cả rồi set-target bằng 2 ExecuteUpdate tuần tự trong 1 transaction; hoặc (c) đổi index thành CONSTRAINT DEFERRABLE INITIALLY DEFERRED (lưu ý: partial-unique bắt buộc là INDEX, không defer được → loại (c) trừ khi bỏ partial).
+  - KHÔNG merge use case set-default nếu chưa có e2e Postgres (Testcontainers) chứng minh không vi phạm index giữa-transaction.
+- Máy hiện tại KHÔNG Docker → chỉ làm được phần thuần (đã làm). Ghi để KHÔNG quên + KHÔNG bịa "đã fix Npgsql".

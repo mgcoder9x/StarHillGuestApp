@@ -64,6 +64,15 @@ public sealed class ResortConfigSeeder
 
     private async Task SeedLanguagesAsync(Guid resortId, CancellationToken cancellationToken)
     {
+        // P1(b) FAIL-FAST chống drift dữ liệu seed: template PHẢI có ĐÚNG MỘT default (bất biến miền —
+        // ResortLanguagePolicy). Nếu ai sửa mảng thành 0 hoặc 2 default → boot NỔ rõ ràng, thay vì i18n mất
+        // defaultCode runtime (0-default) hay vi phạm ux_lang_default (2-default). Biến lỗi im lặng → loud.
+        if (Languages.Count(l => l.IsDefault) != 1)
+        {
+            throw new InvalidOperationException(
+                "ResortConfigSeeder.Languages vi phạm bất biến: phải có ĐÚNG MỘT ngôn ngữ IsDefault=true.");
+        }
+
         var existing = await _db.ResortLanguages
             .Where(l => l.ResortId == resortId)
             .Select(l => l.Code)
