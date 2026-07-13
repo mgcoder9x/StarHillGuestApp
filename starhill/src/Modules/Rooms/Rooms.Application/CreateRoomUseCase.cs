@@ -5,6 +5,7 @@ using Bedrock.Application.Ports.Users;
 using Bedrock.Application.UseCases;
 using Bedrock.Domain.Results;
 using FluentValidation;
+using ResortConfig.Contracts.Queries;
 using Rooms.Domain;
 
 namespace Rooms.Application;
@@ -14,8 +15,14 @@ namespace Rooms.Application;
 /// all-or-nothing). Bất biến: đúng 1 token Active/phòng, Version=1. Bắt <see cref="UniqueConstraintViolationException"/>
 /// (base QR-AD-010): <c>ux_room_number</c> (trùng số phòng đang sống) → <see cref="RoomsErrors.RoomNumberTaken"/>;
 /// ràng buộc khác (vd đua token) → <see cref="RoomsErrors.QrGenerationFailed"/>. Inject <see cref="IRepository{T}"/>
-/// TRỰC TIẾP (DV-002 — IUnitOfWork Bedrock KHÔNG có Repository accessor). QR-DV-004: dùng <c>input.ResortId</c>
-/// (KHÔNG đọc Resort từ repo — Resort ở module ResortConfig).
+/// TRỰC TIẾP (DV-002 — IUnitOfWork Bedrock KHÔNG có Repository accessor).
+/// <para>
+/// P1(a) — THẨM ĐỊNH tham chiếu resort: KHÔNG có FK chéo-schema sang ResortConfig (QR-DV-003) nên toàn vẹn tham
+/// chiếu phải làm ở seam ứng dụng — kiểm <c>IResortExistenceQuery.ExistsAsync(input.ResortId)</c> TRƯỚC khi tạo
+/// (validator chỉ chặn ResortId rỗng, KHÔNG kiểm tồn tại). Đặt trong use case (không phải validator) vì đây là
+/// kiểm STATEFUL cần DB — validator phải thuần/không I/O. Resort không tồn tại → <see cref="RoomsErrors.ResortNotFound"/>,
+/// dừng SỚM (không sinh token/không ghi). Kiểm tồn tại đứng TRƯỚC token-gen để không tốn công + không side-effect.
+/// </para>
 /// </summary>
 public sealed class CreateRoomUseCase : IUseCase<CreateRoomInput, CreateRoomResult>
 {
@@ -25,6 +32,7 @@ public sealed class CreateRoomUseCase : IUseCase<CreateRoomInput, CreateRoomResu
     private readonly ICurrentUser _currentUser;
     private readonly IClock _clock;
     private readonly ITokenGenerator _tokenGenerator;
+    private readonly IResortExistenceQuery _resorts;
 
     public CreateRoomUseCase(
         IRepository<Room> rooms,
@@ -32,7 +40,8 @@ public sealed class CreateRoomUseCase : IUseCase<CreateRoomInput, CreateRoomResu
         IUnitOfWork unitOfWork,
         ICurrentUser currentUser,
         IClock clock,
-        ITokenGenerator tokenGenerator)
+        ITokenGenerator tokenGenerator,
+        IResortExistenceQuery resorts)
     {
         _rooms = rooms;
         _tokens = tokens;
@@ -40,11 +49,18 @@ public sealed class CreateRoomUseCase : IUseCase<CreateRoomInput, CreateRoomResu
         _currentUser = currentUser;
         _clock = clock;
         _tokenGenerator = tokenGenerator;
+        _resorts = resorts;
     }
 
     public async Task<Result<CreateRoomResult>> ExecuteAsync(CreateRoomInput input, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(input);
+
+        // P1(a): resort tham chiếu phải tồn tại (thay FK chéo-schema). Dừng sớm nếu không → tránh phòng mồ côi.
+        if (!await _resorts.ExistsAsync(input.ResortId, ct).ConfigureAwait(false))
+        {
+            return Result.Failure<CreateRoomResult>(RoomsErrors.ResortNotFound);
+        }
 
         var token = await RoomTokenFactory.GenerateUniqueTokenAsync(_tokens, _tokenGenerator, ct).ConfigureAwait(false);
         if (token is null)

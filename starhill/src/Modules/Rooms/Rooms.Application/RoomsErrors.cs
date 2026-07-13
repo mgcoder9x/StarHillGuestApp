@@ -20,6 +20,11 @@ public static class RoomsErrors
     public static Error RoomNotFound =>
         Error.NotFound("not_found", "Không tìm thấy phòng.");
 
+    /// <summary>Resort được tham chiếu không tồn tại (P1(a) — thẩm định cross-module trước khi tạo phòng).
+    /// Code riêng <c>resort_not_found</c> để client phân biệt với phòng-không-tồn-tại.</summary>
+    public static Error ResortNotFound =>
+        Error.NotFound("resort_not_found", "Không tìm thấy resort được tham chiếu.");
+
     /// <summary>Cấu hình thiếu/không hợp lệ (vd GuestWebBaseUrl thiếu hoặc không https) — Req 15.6.</summary>
     public static Error InvalidConfiguration =>
         Error.Validation("invalid_configuration", "Cấu hình chưa hợp lệ (thiếu GuestWebBaseUrl https).");

@@ -38,6 +38,9 @@ public static class ResortConfigInfrastructureExtensions
         // Query đọc settings (Contracts) cho module khác (consumer đầu: Rooms.RenderQrPng đọc GuestWebBaseUrl).
         services.AddScoped<IResortSettingsQuery, EfResortSettingsQuery>();
 
+        // Query kiểm tồn tại resort (Contracts) — Rooms.CreateRoom thẩm định ResortId trước khi tạo phòng (P1(a)).
+        services.AddScoped<IResortExistenceQuery, EfResortExistenceQuery>();
+
         return services;
     }
 }

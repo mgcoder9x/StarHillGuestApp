@@ -34,6 +34,7 @@
     <Project Path="tests/Modules/Identity.IntegrationTests/Identity.IntegrationTests.csproj" />
     <Project Path="tests/Modules/ResortConfig.UnitTests/ResortConfig.UnitTests.csproj" />
     <Project Path="tests/Modules/ResortConfig.IntegrationTests/ResortConfig.IntegrationTests.csproj" />
+    <Project Path="tests/Modules/Rooms.UnitTests/Rooms.UnitTests.csproj" />
     <Project Path="tests/Modules/Rooms.IntegrationTests/Rooms.IntegrationTests.csproj" />
     <Project Path="tests/Host/StarHill.Api.Tests/StarHill.Api.Tests.csproj" />
   </Folder>

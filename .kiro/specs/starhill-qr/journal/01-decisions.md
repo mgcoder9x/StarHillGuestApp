@@ -176,3 +176,17 @@
 - Alternatives readiness: (a) thêm retry connect trong consumer (thuộc base platform/ — ngoài phạm vi P0 starhill; để lại resilience sau); (b) giữ `ping` (loại: race đã chứng minh gây crash).
 - Consequences: build Docker sản phẩm cần checkout cả platform/ + starhill/ (mono-repo — đã vậy). Broker restart lúc chạy vẫn có thể StopHost (resilience base — defer, mirror platform N-079).
 - Reversibility: Easy. Traceability: QR-AD-012 (context hệ quả D1-a); QR-AD-014 (1-DB); design §1.2.
+
+
+---
+
+### QR-AD-016 — CreateRoom thẩm định tồn tại Resort qua query port (P1(a) — toàn vẹn tham chiếu cross-module)
+- Status: Done
+- Date: 2026-07-13
+- Decider: AI (máy toann, không Docker — verify bằng unit test thuần).
+- Provenance/Evidence: đọc `CreateRoomUseCase.cs` — dùng `input.ResortId` TRỰC TIẾP, chỉ `CreateRoomValidator` kiểm `ResortId.NotEmpty()` (rỗng), KHÔNG kiểm resort có TỒN TẠI → tạo được phòng trỏ tới resortId không có thật (phòng "mồ côi"). Vì schema-per-module + KHÔNG FK chéo-schema (QR-DV-003) nên DB không chặn. Đã thêm: query port `IResortExistenceQuery` (ResortConfig.Contracts.Queries) + impl `EfResortExistenceQuery` (AsNoTracking + AnyAsync, chỉ EXISTS) + đăng ký scoped ở `AddResortConfigInfrastructure`; `CreateRoomUseCase` inject + kiểm TRƯỚC token-gen; resort không tồn tại → `RoomsErrors.ResortNotFound` (code mới `resort_not_found`, NotFound). Guard MỚI: project `Rooms.UnitTests` (Rooms trước đây KHÔNG có unit test — vá gap) + `CreateRoomUseCaseTests` (2 test, fake port, KHÔNG Docker): (1) resort vắng → ResortNotFound + KHÔNG Add/Save/token-gen; (2) resort tồn tại → tạo phòng+token Active/Version=1, Save 1 lần. 2/2 pass.
+- Decision/Change: toàn vẹn tham chiếu resort làm ở SEAM ứng dụng (query port cross-module qua Contracts — F30), KHÔNG phải validator (validator phải thuần/không I/O; kiểm tồn tại là STATEFUL cần DB). Kiểm đứng TRƯỚC token-gen để dừng sớm, không tốn công/không side-effect. Thêm error code riêng `resort_not_found` (phân biệt với `not_found` của phòng) để client localize.
+- Rationale (verifiable): **Root cause:** không có ràng buộc nào chặn resortId ma (không FK chéo-schema — QR-DV-003) → phải kiểm ở tầng ứng dụng. Đặt trong use case (không validator) vì FluentValidation async-DB-rule là anti-pattern (validator nên thuần) và đây là bất biến nghiệp vụ, không phải shape input. Query port giữ Rooms.Application ⊥ ResortConfig.{Domain,Infrastructure} (chỉ .Contracts — RoomsBoundaryTests vẫn xanh).
+- Alternatives: (a) kiểm trong CreateRoomValidator qua async rule (loại: validator phụ thuộc DB/port, phá thuần-tính + khó test + chạy 2 lần nếu re-validate); (b) không kiểm, dựa caller (loại: mất toàn vẹn — chính lỗ P1(a)); (c) thêm FK chéo-schema (loại: phá QR-DV-003 schema-per-module ownership). 
+- Consequences: thêm 1 round-trip DB (EXISTS) mỗi CreateRoom — chấp nhận (thao tác admin tần suất thấp). TOCTOU resort-bị-xoá về lý thuyết tồn tại nhưng Resort seed-once không có thao tác xoá → không hiện thực (ghi rõ ở docstring port). Error `resort_not_found` HIỆN CHƯA được `ErrorCodeSnapshotTests` gác (snapshot chỉ quét Bedrock.Domain+Identity.Domain, không quét Rooms.Application) — gap sẵn có của catalog Rooms, ghi nhận (QR-N sau nếu mở rộng snapshot sang module Application).
+- Reversibility: Easy (gỡ check + port). Traceability: review P1(a); QR-DV-003 (no cross-schema FK), QR-DV-004 (caller phân giải ResortId), F30 (Contracts seam), CP4 (module boundary).

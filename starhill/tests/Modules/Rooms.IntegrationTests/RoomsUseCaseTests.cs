@@ -56,6 +56,7 @@ public sealed class RoomsUseCaseTests
         services.AddSingleton<ICurrentUser>(new StubCurrentUser());
         services.AddSingleton<IClock, FixedClock>();
         services.AddSingleton<ITokenGenerator, SequentialTokenGenerator>();
+        services.AddSingleton<ResortConfig.Contracts.Queries.IResortExistenceQuery>(new TestResortExistenceQuery());
         services.AddRoomsInfrastructure(o => o.UseSqlite(connection));
         var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
 

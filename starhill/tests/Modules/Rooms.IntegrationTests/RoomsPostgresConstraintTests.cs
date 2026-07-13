@@ -75,6 +75,7 @@ public sealed class RoomsPostgresConstraintTests : IAsyncLifetime
         services.AddSingleton<ICurrentUser>(new StubCurrentUser());
         services.AddSingleton<Bedrock.Application.Ports.Time.IClock, FixedClock>();
         services.AddSingleton<Bedrock.Application.Ports.Security.ITokenGenerator, SequentialTokenGenerator>();
+        services.AddSingleton<ResortConfig.Contracts.Queries.IResortExistenceQuery>(new TestResortExistenceQuery());
         services.AddRoomsInfrastructure(o => o.UseNpgsql(_container.GetConnectionString()));
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
     }

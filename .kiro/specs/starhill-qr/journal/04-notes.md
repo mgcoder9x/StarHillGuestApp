@@ -135,3 +135,12 @@
 - **Test Identity.IntegrationTests thích ứng keyed**: resolve `IRefreshTokenStore`/`IUnitOfWork`/`IOutboxWriter` bằng `GetRequiredKeyedService<T>(IdentityInfrastructureExtensions.PersistenceKey)` — cascade hợp lệ của keyed base.
 - **CÒN LẠI (defer có chủ đích)**: (a) resilience broker-restart (consumer StopHost khi RabbitMQ restart) — thuộc base platform/ (mirror platform N-079), ngoài phạm vi P0 starhill; (b) migration bundle Rooms trong `starhill-ci.yml` (hiện chỉ Identity+ResortConfig — Rooms có migration, nên thêm khi hoàn tất deploy pipeline); (c) P1 cũ (ResortId invariant qua query port, default-language nguyên tử, Dashboard shape) — sau P0.
 - **NEXT**: P1 hoặc slice B-Rooms.3 (Rooms.Api + Identity auth) tùy ưu tiên. Nền đã vững: keyed base một-nguồn (drift bất khả thi), compose boot 3 module xác minh.
+
+
+### QR-N-017 — P1(a) XONG: CreateRoom thẩm định Resort + tạo project `Rooms.UnitTests`
+- Ngày 2026-07-13 (máy toann — KHÔNG Docker; verify bằng unit test thuần).
+- **P1(a)** (QR-AD-016): `CreateRoomUseCase` giờ kiểm `IResortExistenceQuery.ExistsAsync(input.ResortId)` TRƯỚC khi tạo → resort ma → `RoomsErrors.ResortNotFound` (code `resort_not_found`). Port `IResortExistenceQuery` + impl `EfResortExistenceQuery` (AnyAsync) + đăng ký scoped ở `AddResortConfigInfrastructure`. Factory DI Rooms truyền thêm `IResortExistenceQuery` (Host ráp cả 2 module nên có sẵn).
+- **Cấu trúc MỚI cần biết:** tạo project test `starhill/tests/Modules/Rooms.UnitTests` (trước đây Rooms KHÔNG có unit test — chỉ IntegrationTests SQLite/Docker). Đã thêm vào `starhill/Platform.slnx`. Chứa `CreateRoomUseCaseTests` (2 test fake-port, chạy mọi máy). KHI thêm use case Rooms mới → ưu tiên unit test ở đây (không cần Docker) trước integration.
+- **Fallout đã xử lý:** đổi ctor `CreateRoomUseCase` (+1 dep) làm 3 harness `Rooms.IntegrationTests` (RoomsUseCaseTests/RenderRoomQrPngUseCaseTests/RoomsPostgresConstraintTests) thiếu `IResortExistenceQuery` → thêm stub dùng chung `TestResortExistenceQuery` (trả true). `RoomsPersistenceTests` không đụng (dùng DbContext trực tiếp, không resolve CreateRoom).
+- Verify: `starhill scripts\vp.cmd all` = build 0-warning + validate-ci + full suite 0-fail (Rooms.UnitTests 2/2, Rooms.IntegrationTests 22 pass/2 skip-Docker); `vp journal` QR INV-1..5 = 5/5.
+- CÒN LẠI P1 (review): (b) default-language nguyên tử ở ResortConfig aggregate; (c) Dashboard shape (QR-TO-003). Xem end.md §6.

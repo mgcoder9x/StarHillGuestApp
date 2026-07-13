@@ -97,7 +97,7 @@ cd platform & scripts\vp.cmd            REM build + validate-ci + test base
 
 1. **Resilience broker-restart** (consumer `RabbitMqConsumer` StopHost khi RabbitMQ restart) — thuộc BASE `platform/` (mirror platform N-079). Ngoài phạm vi P0 starhill. Cân nhắc: retry-connect có backoff + `BackgroundServiceExceptionBehavior.Ignore` hoặc health-degrade thay vì StopHost.
 2. **Migration bundle Rooms** trong `.github/workflows/starhill-ci.yml` (hiện chỉ Identity+ResortConfig; Rooms ĐÃ có migration → thêm job bundle Rooms cho deploy pipeline out-of-band).
-3. **P1 cũ (từ review, chưa làm):** (a) ResortId invariant của Rooms qua query port (kiểm resort tồn tại trước CreateRoom); (b) default-language nguyên tử ở ResortConfig aggregate; (c) Dashboard shape = Application+Api thay vì nhét Host (QR-TO-003 để ngỏ khi phức tạp lên).
+3. **P1 cũ (từ review):** ~~(a) ResortId invariant của Rooms qua query port~~ **XONG 2026-07-13 (QR-AD-016, máy toann không-Docker)** — `IResortExistenceQuery` + kiểm trong `CreateRoom` + project mới `Rooms.UnitTests` (xem QR-N-017); (b) default-language nguyên tử ở ResortConfig aggregate; (c) Dashboard shape = Application+Api thay vì nhét Host (QR-TO-003 để ngỏ khi phức tạp lên).
 4. **Slice B-Rooms.3:** `Rooms.Api` (admin CRUD Admin-only/read Staff + `qr.png` endpoint + rotate-token) — cần Identity auth + Role→policy (QR-AD-005). Caller phân giải resortId single-resort (QR-DV-004).
 5. **Các module QR còn lại (design-first trước khi code):** GuestAccess (nền cho Rules/Concierge/Housekeeping), Rules, Concierge (chat guest↔staff, QR-AD-004), Housekeeping, Faq, Dashboard-ở-Host. Xem `docs/resort-qr-portal/` + `.kiro/specs/starhill-qr/design.md` + `design-modules/`.
 

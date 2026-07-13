@@ -80,6 +80,7 @@ public sealed class RenderRoomQrPngUseCaseTests
         services.AddSingleton<IClock, FixedClock>();
         services.AddSingleton<ITokenGenerator, SequentialTokenGenerator>();
         services.AddSingleton<IResortSettingsQuery>(new StubResortSettingsQuery(baseUrl));
+        services.AddSingleton<IResortExistenceQuery>(new TestResortExistenceQuery());
         services.AddRoomsInfrastructure(o => o.UseSqlite(connection));
         var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
 

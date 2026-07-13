@@ -58,7 +58,8 @@ public static class RoomsInfrastructureExtensions
             sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
             sp.GetRequiredService<ICurrentUser>(),
             sp.GetRequiredService<IClock>(),
-            sp.GetRequiredService<ITokenGenerator>()));
+            sp.GetRequiredService<ITokenGenerator>(),
+            sp.GetRequiredService<IResortExistenceQuery>())); // P1(a): thẩm định ResortId (Host ráp cả 2 module).
 
         services.AddScoped<IUseCase<RotateRoomTokenInput, RotateRoomTokenResult>>(sp => new RotateRoomTokenUseCase(
             sp.GetRequiredKeyedService<IRepository<Room>>(PersistenceKey),

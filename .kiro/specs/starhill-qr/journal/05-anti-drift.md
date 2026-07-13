@@ -50,6 +50,7 @@
 | QR-AD-013 keyed persistence 3 module (P0-1 no last-registration-wins) | compile-enforce (base AD-098 `ICommandUseCase:ITransactionalUseCase`) + Host boot `WebApplicationFactory` (ValidateOnBuild=true) resolve keyed đúng | ✅ P0: StarHill.Api.Tests 3/3; Identity/Rooms/ResortConfig integration pass; void command khai `PersistenceKey` |
 | QR-AD-014 một DB nhiều schema (P0-2) + migration Identity khớp base | `PendingModelChangesWarning` test (Identity.IntegrationTests) chống migration-lệch-model; boot log `CREATE SCHEMA identity/resort_config/rooms` cùng DB `starhill` | ✅ P0: Identity.IntegrationTests 2/2; docker-compose migrate 3 schema verify |
 | QR-AD-015 compose boot end-to-end (P0-3): repo-root context + RabbitMQ readiness | `docker compose up` → `/health/ready`=200; `starhill-ci.yml` docker-image build context repo-root; healthcheck `check_port_connectivity` | ✅ P0: 3 container Up, health ready/live=200 (Docker thật) |
+| QR-AD-016 CreateRoom thẩm định tồn tại Resort qua `IResortExistenceQuery` (P1(a) — thay FK chéo-schema, chống phòng mồ côi) | `Rooms.UnitTests/CreateRoomUseCaseTests` (2, fake port, KHÔNG Docker): resort vắng→ResortNotFound+không ghi; resort có→tạo phòng+token | ✅ P1(a): 2/2 pass; check TRƯỚC token-gen; giữ Rooms.Application ⊥ ResortConfig.{Domain,Infra} (RoomsBoundaryTests) |
 
 - design.md pha QR: getDiagnostics **0** (Kiro Spec Format hợp lệ) — kiểm mỗi lần sửa.
 - QR-AD-003 (deploy) + QR-AD-004 (tên Concierge): không code-enforceable trực tiếp — enforce bằng review + naming khi tạo project.

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Rooms.Application kéo transitive: Rooms.Domain, ResortConfig.Contracts, Bedrock.Application (ports). -->
+    <ProjectReference Include="..\..\..\src\Modules\Rooms\Rooms.Application\Rooms.Application.csproj" />
+  </ItemGroup>
+</Project>
