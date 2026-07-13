@@ -153,3 +153,12 @@
   - Hướng xử lý (chọn khi có Docker để KIỂM CHỨNG, không đoán): (a) một câu SQL `UPDATE ... SET is_default = (code = @target)` cho cả tập (nguyên tử, không trạng thái trung gian); hoặc (b) unset-tất-cả rồi set-target bằng 2 ExecuteUpdate tuần tự trong 1 transaction; hoặc (c) đổi index thành CONSTRAINT DEFERRABLE INITIALLY DEFERRED (lưu ý: partial-unique bắt buộc là INDEX, không defer được → loại (c) trừ khi bỏ partial).
   - KHÔNG merge use case set-default nếu chưa có e2e Postgres (Testcontainers) chứng minh không vi phạm index giữa-transaction.
 - Máy hiện tại KHÔNG Docker → chỉ làm được phần thuần (đã làm). Ghi để KHÔNG quên + KHÔNG bịa "đã fix Npgsql".
+
+
+### QR-N-019 — Thêm Rooms vào migration-bundle CI (đóng gap deploy pipeline §6.2)
+- Ngày 2026-07-13 (máy toann — verify EMPIRICAL không cần Docker).
+- **Gap:** `starhill-ci.yml` job `migration-bundle` có Identity + ResortConfig bundle nhưng THIẾU Rooms (comment còn ghi "Rooms → thêm bundle tương ứng"). Rooms có migrations (`20260711133837_InitialCreate`: ux_room_number/ux_qr_active/ux_qrtoken_token) + `RoomsDbContextFactory` (IDesignTimeDbContextFactory parameterless) → schema `rooms` KHÔNG được deploy qua pipeline bundle out-of-band (AD-050/055: áp migration TRƯỚC rollout, không auto-migrate trong app) → deploy thiếu schema.
+- **Fix:** thêm 2 bước vào job `migration-bundle`: `dotnet ef migrations bundle --project/--startup-project src/Modules/Rooms/Rooms.Infrastructure --self-contained -r linux-x64 -o efbundle-rooms` + upload artifact `starhill-efbundle-rooms` (mirror Identity/ResortConfig).
+- **Verify EMPIRICAL (không cần Docker — bundle chỉ compile+publish, connection dummy):** chạy chính lệnh C:
+  `dotnet ef migrations bundle --project ... Rooms.Infrastructure --self-contained -r linux-x64 -o efbundle-rooms-verify --force` → "Build succeeded. Building bundle... Done." (exit 0). Artifact tạo được (đã xoá; `efbundle*` gitignored). `vp ci` validate-ci vẫn OK sau sửa yaml.
+- KHÔNG phải quyết định thiết kế mới (chỉ hoàn tất pattern đã dự liệu) → ghi N, không AD. Deploy runbook: chạy 3 bundle (identity/resortconfig/rooms) TRƯỚC rollout Host.
