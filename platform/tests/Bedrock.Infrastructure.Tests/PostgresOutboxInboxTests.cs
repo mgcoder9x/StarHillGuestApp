@@ -119,6 +119,8 @@ public sealed class PostgresOutboxInboxTests(PostgresFixture fixture)
         services.AddSingleton<IClock>(clock);
         services.AddSingleton<ICurrentUser>(new TestCurrentUser { UserId = Guid.CreateVersion7() });
         services.AddBedrockPersistence<PgOutboxDbContext>(o => o.UseNpgsql(fixture.Container.GetConnectionString()));
+        services.AddBedrockOutbox<PgOutboxDbContext>();
+        services.AddBedrockInbox<PgOutboxDbContext>();
         services.AddSingleton(publisher);
         services.AddOutboxDispatcher<PgOutboxDbContext>(configure);
         services.AddOutboxRetention<PgOutboxDbContext>(configureRetention);

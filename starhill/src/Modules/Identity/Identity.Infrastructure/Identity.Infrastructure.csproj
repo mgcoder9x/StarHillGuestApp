@@ -6,7 +6,7 @@
   -->
   <ItemGroup>
     <ProjectReference Include="..\Identity.Application\Identity.Application.csproj" />
-    <ProjectReference Include="..\..\..\Bedrock.Infrastructure\Bedrock.Infrastructure.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Infrastructure\Bedrock.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

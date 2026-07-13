@@ -1,5 +1,4 @@
 using Bedrock.Application.Ports.Security;
-using Bedrock.Infrastructure.Tokens;
 
 namespace Bedrock.Infrastructure.Tests;
 

@@ -8,6 +8,7 @@ namespace Bedrock.Infrastructure.Persistence.Messaging;
 /// <list type="bullet">
 ///   <item><c>bedrock.outbox.published</c> — counter: số event publish thành công tới bus.</item>
 ///   <item><c>bedrock.outbox.dead_lettered</c> — counter: số event bị dead-letter (vượt MaxAttempts). = "dead-letter count".</item>
+///   <item><c>bedrock.outbox.lease_lost</c> — counter: dispatcher mất ownership trước khi finalize.</item>
 ///   <item><c>bedrock.outbox.publish.lag</c> — histogram (s): tuổi message lúc publish (<c>now - occurred_at</c>) → proxy "outbox lag".</item>
 /// </list>
 /// <para>
@@ -26,6 +27,10 @@ internal static class OutboxMetrics
         "bedrock.outbox.dead_lettered", unit: "{message}",
         description: "Số integration event outbox bị dead-letter (vượt MaxAttempts) — R24.3.");
 
+    private static readonly Counter<long> LeaseLostCounter = BedrockTelemetry.Meter.CreateCounter<long>(
+        "bedrock.outbox.lease_lost", unit: "{message}",
+        description: "Số integration event outbox mất lease ownership trước khi finalize.");
+
     private static readonly Histogram<double> PublishLagHistogram = BedrockTelemetry.Meter.CreateHistogram<double>(
         "bedrock.outbox.publish.lag", unit: "s",
         description: "Độ trễ outbox: giây từ occurred_at tới lúc publish thành công (proxy outbox lag) — R24.3.");
@@ -39,4 +44,6 @@ internal static class OutboxMetrics
 
     /// <summary>Ghi nhận một event bị dead-letter (R24.3 dead-letter count).</summary>
     public static void RecordDeadLettered() => DeadLetteredCounter.Add(1);
+
+    public static void RecordLeaseLost() => LeaseLostCounter.Add(1);
 }

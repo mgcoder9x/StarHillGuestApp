@@ -50,10 +50,47 @@ public static class RabbitMqMessagingExtensions
         var consumerOptions = new RabbitMqConsumerOptions();
         configure(consumerOptions);
         RabbitMqConsumerOptions.Validate(consumerOptions);
+        GetOrCreateConsumerRegistry(services).Add(consumerOptions.QueueName);
+
+        var state = new RabbitMqConsumerState(consumerOptions.QueueName);
         // Mỗi call giữ options riêng trong factory, cho phép nhiều module/queue cùng Host mà không last-wins
         // trên một RabbitMqConsumerOptions singleton.
         services.AddSingleton<IHostedService>(sp =>
-            ActivatorUtilities.CreateInstance<RabbitMqConsumer>(sp, consumerOptions));
+            ActivatorUtilities.CreateInstance<RabbitMqConsumer>(sp, consumerOptions, state));
+        services.AddHealthChecks().AddCheck(
+            $"rabbitmq-consumer:{consumerOptions.QueueName}",
+            new RabbitMqConsumerHealthCheck(state),
+            failureStatus: HealthStatus.Unhealthy,
+            tags: ["ready"]);
         return services;
+    }
+
+    private static ConsumerRegistrationRegistry GetOrCreateConsumerRegistry(IServiceCollection services)
+    {
+        var existing = services.FirstOrDefault(descriptor =>
+                descriptor.ServiceType == typeof(ConsumerRegistrationRegistry))
+            ?.ImplementationInstance as ConsumerRegistrationRegistry;
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        var created = new ConsumerRegistrationRegistry();
+        services.AddSingleton(created);
+        return created;
+    }
+
+    private sealed class ConsumerRegistrationRegistry
+    {
+        private readonly HashSet<string> _queues = new(StringComparer.Ordinal);
+
+        public void Add(string queueName)
+        {
+            if (!_queues.Add(queueName))
+            {
+                throw new InvalidOperationException(
+                    $"RabbitMQ consumer queue '{queueName}' đã được đăng ký. Mỗi queue chỉ có một consumer trong Host.");
+            }
+        }
     }
 }

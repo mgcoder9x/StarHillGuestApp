@@ -5,7 +5,7 @@
 ---
 
 ### QR-AD-001 — Sản phẩm QR = bản VENDORED-COPY của base tại `starhill/`; `platform/` giữ SẠCH/tái dùng
-- Status: Confirmed
+- Status: Superseded by QR-AD-012 (2026-07-13) — mô hình vendored-copy đã sinh drift 50-file thực đo (P0-1/2/3 catastrophic); user duyệt lại chuyển sang D1-a cross-tree ProjectReference. Provenance/Evidence bên dưới giữ nguyên cho lịch sử.
 - Date: 2026-07-10
 - Decider: user (chốt) — "nếu làm qr trên base cần copy ra rồi làm để giữ sạch base; trước khi làm phải đảm bảo base tốt".
 - Provenance/Evidence: cổng base-tốt verify qua `platform\scripts\vp.cmd` (build 0-warning + 247 test 0-fail + validate-ci OK) + `vp journal` (JournalConsistency 5/5). Copy `robocopy platform starhill /E /XD bin obj` (exit=1 = thành công). Verify copy: `starhill\scripts\vp.cmd build` → 0-warning độc lập (mọi project build từ `starhill\src\...`).
@@ -130,3 +130,49 @@
 - Rationale (verifiable): tôn trọng dependency graph (fix drift thứ tự); query port ResortConfig giờ có consumer thật → hết "speculative API" (đúng I10 — build khi cần); IRoomTokenResolver là surface cross-module đúng cho các module hạ nguồn.
 - Alternatives: làm GuestAccess trước (loại: thiếu resolver Rooms → không resolve được token).
 - Reversibility: Easy (design). Traceability: design-modules/02-rooms.md §0/§2/§7; QR-AD-002; ResortConfig QR-N-009 (query port hoãn).
+
+### QR-AD-012 — Đảo mô hình tiêu thụ base: D1-a cross-tree ProjectReference (xóa bản-copy base) — SUPERSEDES QR-AD-001
+- Status: Done
+- Date: 2026-07-13
+- Decider: user (duyệt phiên này — chọn "Duyệt D1-a — chạy liền một mạch tới xanh" qua userInput) sau khi AI trình bày lý do fix-tận-gốc.
+- Provenance/Evidence: (1) drift ĐO THẬT khi so `platform/src` vs `starhill/src` (Bedrock.*+Adapters, loại bin/obj): same=86, differ=50, only-platform=7, only-starhill=2 → bản-copy đã lệch 50 file, KHÔNG có keyed persistence + mọi fix hardening base. (2) design `platform-base/design.md:16` "lõi nền tái sử dụng cho **nhiều dự án**" → base phải THUẦN. (3) Sau D1-a: `dotnet build Platform.slnx` = 0 warning/0 error (baseline trước đó cũng 0/0 → so sánh sạch); full test 66/0-fail; Host boot `WebApplicationFactory` (ValidateOnBuild) pass.
+- Context: QR-AD-001 chọn vendored-copy để "base sạch tuyệt đối + sản phẩm tự chủ". Thực tế: bản-copy KHÔNG được đồng bộ → lệch 50 file, thiếu keyed persistence → P0-1 catastrophic. Bản-copy là GỐC RỄ của drift.
+- Decision/Change: (1) XÓA khỏi starhill 6 project base bản-copy (`Bedrock.Domain/Application/Api/Infrastructure/Messaging.Contracts` + `Adapters/Messaging.RabbitMq`) + 6 project test-base bản-copy (`Bedrock.{UnitTests,Api.Tests,ArchitectureTests,Infrastructure.Tests}`, `Messaging.IntegrationTests`, `Adapters/...RabbitMq.Tests`). (2) Mọi module/Host/test nghiệp vụ ProjectReference thẳng `platform/src/*` qua property `$(PlatformSrc)=$(MSBuildThisFileDirectory)..\platform\src` (Directory.Build.props). (3) `starhill/Platform.slnx` chỉ còn project nghiệp vụ QR (base build transitive). (4) `verify.ps1`/`starhill-ci.yml` chỉ gác journal QR; journal base do platform/ gác.
+- Rationale (verifiable): fix TẬN GỐC — xóa bản base thứ hai ⇒ chỉ còn MỘT base vật lý ⇒ drift BẤT KHẢ THI (D1-c diff-guard chỉ *phát hiện* drift = fix ngọn). Không cản đa-sản-phẩm: monorepo nhiều sản phẩm cùng ProjectReference `platform/src` là pattern chuẩn. `Directory.*.props` phân giải theo cây từng .csproj → base dùng props platform/, sản phẩm dùng props starhill/ → không lẫn version.
+- Alternatives: (a) D1-a' MERGE starhill vào platform/Platform.slnx (loại: nhồi module 1 sản phẩm vào base tái-dùng-nhiều-dự-án — bẩn base); (b) D1-c giữ 2 cây + CI diff-guard (loại: gốc rễ 2-bản vẫn còn = fix ngọn); (c) D1-b NuGet nội bộ (để dành cho khi sản phẩm TÁCH REPO — version isolation; hiện premature).
+- Consequences: starhill build phụ thuộc platform/ hiện diện cạnh nó (chấp nhận: cùng repo). Base tiến hóa → sản phẩm nhận NGAY lúc compile (fail-fast tốt, không drift âm thầm). Docker build context phải = repo root (xem QR-AD-015).
+- Reversibility: Medium (git revert khôi phục; nhưng không nên — đây là hướng đúng lâu dài).
+- Traceability: SUPERSEDES QR-AD-001; QR-AD-013/014/015 (các P0 fix xây trên nền này); QR-TO-004; platform-base design §Overview line 16.
+
+### QR-AD-013 — Keyed persistence 3 module (fix P0-1 catastrophic last-registration-wins)
+- Status: Done
+- Date: 2026-07-13
+- Decider: AI (áp keyed API của base mới; cơ chế đã có sẵn ở platform — mirror module Identity mẫu).
+- Provenance/Evidence: (1) TRƯỚC: `starhill/src/Host/Program.cs` gọi `AddIdentityInfrastructure→AddResortConfigInfrastructure→AddRoomsInfrastructure` tuần tự, mỗi cái `AddBedrockPersistence<TContext>(cfg)` UNKEYED → Microsoft DI last-wins → `IUnitOfWork`/`IOutboxWriter`/`IRefreshTokenStore`/`PlatformDbContext`/generic `IRepository<>` resolve về `RoomsDbContext` cho MỌI module. (2) base mới `ICommandUseCase<TInput> : ITransactionalUseCase` (AD-098) compile-enforce `PersistenceKey` → build FAIL đúng 3 void command Rooms (Update/ChangeStatus/Delete) → xác nhận gap tồn tại. (3) Sau fix: build 0-warning; Host boot `ValidateOnBuild=true` pass (StarHill.Api.Tests 3/3); Identity/Rooms/ResortConfig integration (Testcontainers) pass.
+- Decision/Change: (1) thêm hằng module key ở Contracts: `IdentityModule/ResortConfigModule/RoomsModule.PersistenceKey` (= schema `identity`/`resort_config`/`rooms`). (2) mỗi Infrastructure DI dùng overload KEYED `AddBedrockPersistence<TContext>(PersistenceKey, cfg)`; Identity thêm `AddBedrockOutbox/Inbox/RefreshTokens<TContext>(key)` (khớp `IdentityDbContext.OnModelCreating`); Rooms thêm `AddBedrockRepository<RoomsDbContext, Room/RoomQrToken>(key)`. (3) use case resolve port qua FACTORY `GetRequiredKeyedService<T>(PersistenceKey)` (mirror platform Identity). (4) 3 void command Rooms khai `public string PersistenceKey => RoomsModule.PersistenceKey`. (5) Host messaging keyed: `AddOutboxDispatcher<IdentityDbContext>(key)`, `AddIntegrationEventConsumer<IdentityDbContext>(key)`, `AddKeyedScoped<IIntegrationEventHandler<...>>(key)`, `o.DispatcherServiceKey=key`.
+- Rationale (verifiable): keyed = mỗi port phụ thuộc context resolve theo module key → KHÔNG còn last-registration-wins; compile-enforce (ICommandUseCase) bắt use case void quên key ngay lúc build (không chờ runtime). ResortConfig chỉ cần persistence keyed (seeder/query inject `ResortConfigDbContext` cụ thể — không dùng port dùng chung) nhưng VẪN phải keyed để không đụng `PersistenceRegistrationRegistry` (2 DbContext unkeyed = ném).
+- Alternatives: (a) port riêng keyed cho từng module thủ công (loại: trùng lặp; base đã có keyed API); (b) giữ unkeyed + tách Host thành 3 process (loại: phá modular-monolith một-process của design).
+- Consequences: test Identity.IntegrationTests phải resolve keyed (`GetRequiredKeyedService<IRefreshTokenStore/IUnitOfWork/IOutboxWriter>(key)`) — đã cập nhật. Module mới sau này BẮT BUỘC theo khuôn keyed.
+- Reversibility: Medium. Traceability: QR-AD-012 (nền); base AD-098 (compile-enforce ICommandUseCase); design §4.6; platform Modules/Identity (mẫu keyed).
+
+### QR-AD-014 — Một PostgreSQL vật lý, schema-per-module (fix P0-2) + regenerate migration Identity khớp base mới
+- Status: Done
+- Date: 2026-07-13
+- Decider: AI (sửa code cho khớp design đã chốt — KHÔNG phải quyết định mở).
+- Provenance/Evidence: (1) TRƯỚC: `appsettings.json` trỏ 3 DB khác nhau (`starhill_identity`/`starhill_resort_config`/`starhill_rooms`) — LỆCH design `platform-base/design.md` §1.2 line 38 "một PostgreSQL vật lý (schema-per-module)" + §4.6 line 402 "1 DbContext + 1 schema... Cùng một PostgreSQL vật lý nhưng tách schema". (2) Sau fix, boot docker-compose THẬT: log Host `Applying migration InitialCreate` → `CREATE SCHEMA identity` + `CREATE SCHEMA resort_config` + `CREATE SCHEMA rooms` — cả 3 schema tạo trong CÙNG DB `starhill`; `/health/ready`=200.
+- Decision/Change: (1) `appsettings.json` gộp cả 3 connection về `Database=starhill` (schema tách ở `DbContext.HasDefaultSchema`, giữ nguyên). (2) Vì base mới đổi schema outbox/inbox/refresh, model `IdentityDbContext` lệch migration cũ (`PendingModelChangesWarning` fail Identity.IntegrationTests) → REGENERATE migration Identity `InitialCreate` (`dotnet ef migrations add`, timestamp 20260713075245) khớp model base mới. ResortConfig/Rooms KHÔNG map outbox/inbox/refresh → migration không lệch (integration pass không cần regen).
+- Rationale (verifiable): khớp design "1 DB nhiều schema" — migration per-module tạo `__EFMigrationsHistory` riêng trong schema mình → deploy/migrate độc lập (design §4.6) mà vẫn một DB. Regenerate (không delta) vì module skeleton chưa deploy → một `InitialCreate` sạch phản ánh model hiện tại (delta trên migration chưa từng áp = nhiễu).
+- Alternatives: (a) giữ 3 DB (loại: lệch design, tốn tài nguyên, mất "một transaction/atomic khả năng liên schema"); (b) thêm delta migration (loại: skeleton chưa deploy → InitialCreate sạch tốt hơn).
+- Consequences: deploy tạo 1 database `starhill`, migrate 3 bundle (Identity/ResortConfig/Rooms) vào đó. `PendingModelChangesWarning` test (Identity.IntegrationTests) giờ là guard chống migration-lệch-model.
+- Reversibility: Easy (config + migration files). Traceability: QR-AD-013 (base keyed đổi schema); design §1.2/§4.6.
+
+### QR-AD-015 — Compose boot end-to-end 3 module (fix P0-3): repo-root Docker context + RabbitMQ readiness gate
+- Status: Done
+- Date: 2026-07-13
+- Decider: AI.
+- Provenance/Evidence: (1) TRƯỚC: compose `postgres` chỉ tạo `starhill_identity` + host chỉ override `ConnectionStrings__Identity` → ResortConfig/Rooms trỏ `localhost` trong container + DB không tồn tại → migrate fail-fast → boot hỏng. (2) D1-a khiến Host ProjectReference `platform/src` (ngoài context `starhill/`) → Docker build context `starhill/` không thấy `platform/`. (3) Boot thực tế lộ RabbitMQ `BrokerUnreachableException ---> SocketException(111) Connection refused` — consumer kết nối lúc AMQP 5672 chưa mở (healthcheck `ping` báo healthy trước khi listener sẵn) → BackgroundService StopHost → Kestrel bind hủy → host crash. (4) Sau 3 fix: `docker compose up` → cả 3 container Up, `/health/ready`=200, `/health/live`=200.
+- Decision/Change: (1) compose `postgres` `POSTGRES_DB=starhill` + host override CẢ 3 `ConnectionStrings__{Identity,ResortConfig,Rooms}` → service `postgres`/DB `starhill`. (2) Dockerfile build context = REPO ROOT (compose `context: ..`, `dockerfile: starhill/src/Host/StarHill.Api/Dockerfile`); Dockerfile `COPY platform/ platform/` + `COPY starhill/ starhill/` (giữ layout tương đối → `$(PlatformSrc)=/src/platform/src`); thêm `.dockerignore` ở repo root (loại bin/obj/.git). (3) RabbitMQ healthcheck `rabbitmq-diagnostics check_port_connectivity` (+ `start_period: 30s`) — gate `depends_on: service_healthy` tới khi AMQP 5672 thật sự nhận kết nối. (4) `starhill-ci.yml` job `docker-image` build context repo root khớp Dockerfile mới.
+- Rationale (verifiable): 1-DB + override đủ 3 connection = migrate 3 schema chạy (verify log). Context repo-root = hệ quả bắt buộc của D1-a (base ở cây khác). `check_port_connectivity` kiểm listener THẬT (mạnh hơn `ping` chỉ báo Erlang node up) → hết race Connection-refused.
+- Alternatives readiness: (a) thêm retry connect trong consumer (thuộc base platform/ — ngoài phạm vi P0 starhill; để lại resilience sau); (b) giữ `ping` (loại: race đã chứng minh gây crash).
+- Consequences: build Docker sản phẩm cần checkout cả platform/ + starhill/ (mono-repo — đã vậy). Broker restart lúc chạy vẫn có thể StopHost (resilience base — defer, mirror platform N-079).
+- Reversibility: Easy. Traceability: QR-AD-012 (context hệ quả D1-a); QR-AD-014 (1-DB); design §1.2.

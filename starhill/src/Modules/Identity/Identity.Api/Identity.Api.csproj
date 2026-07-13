@@ -10,6 +10,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Identity.Application\Identity.Application.csproj" />
-    <ProjectReference Include="..\..\..\Bedrock.Api\Bedrock.Api.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Api\Bedrock.Api.csproj" />
   </ItemGroup>
 </Project>

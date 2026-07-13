@@ -4,6 +4,6 @@
     KHÔNG EF/ASP.NET/module khác. Mã lỗi nghiệp vụ riêng khai ở module (design §4.4 — lõi không giữ).
   -->
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Bedrock.Domain\Bedrock.Domain.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Domain\Bedrock.Domain.csproj" />
   </ItemGroup>
 </Project>

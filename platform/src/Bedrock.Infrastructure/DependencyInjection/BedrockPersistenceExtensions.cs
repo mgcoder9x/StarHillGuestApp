@@ -18,7 +18,8 @@ namespace Bedrock.Infrastructure.DependencyInjection;
 /// <summary>
 /// Wire persistence nền TƯỜNG MINH (design §5.7/§9.6): DbContext dẫn xuất <typeparamref name="TContext"/>,
 /// snake_case, clock, dispatcher, repo/UoW scoped (cùng scope = cùng DbContext = một điểm ghi), và DB
-/// readiness check (tag <c>ready</c>, timeout 5s). App gọi trong <c>AddXxxModule(cfg)</c>/Host một dòng.
+/// readiness check (tag <c>ready</c>, timeout 5s). Outbox, Inbox và RefreshToken là capability opt-in riêng;
+/// module chỉ đăng ký capability tương ứng với bảng mà DbContext thực sự map.
 /// </summary>
 public static class BedrockPersistenceExtensions
 {
@@ -38,18 +39,10 @@ public static class BedrockPersistenceExtensions
 
         AddPersistenceFoundation<TContext>(services, configureDbContext);
 
-        // Outbox writer (use case chỉ thấy IOutboxWriter — CP11). Scoped: dùng chung PlatformDbContext/scope
-        // → EnqueueAsync ghi outbox CÙNG transaction với state. Bảng outbox chỉ tồn tại nếu module gọi
-        // modelBuilder.AddOutboxInbox() trong DbContext của nó (per-module opt-in — design §4.6).
-        services.TryAddScoped<IOutboxWriter, EfOutboxWriter>();
-
-        // Refresh-token store: cơ chế rotation nguyên tử ở lõi (AD-010), dùng chung PlatformDbContext/scope.
-        // Chỉ hoạt động nếu module đã map bảng qua modelBuilder.AddRefreshTokens(schema) — per-module opt-in.
-        services.TryAddScoped<IRefreshTokenStore, EfRefreshTokenStore>();
-
         // PlatformDbContext (base) resolve về CHÍNH instance TContext trong scope → repo/UoW dùng chung ChangeTracker.
         services.AddScoped<PlatformDbContext>(sp => sp.GetRequiredService<TContext>());
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.TryAddScoped<IUnitOfWorkResolver, ServiceProviderUnitOfWorkResolver>();
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
 
         AddDatabaseHealthCheck<TContext>(services);
@@ -80,21 +73,127 @@ public static class BedrockPersistenceExtensions
         services.AddKeyedScoped<IUnitOfWork>(
             moduleKey,
             (sp, _) => new EfUnitOfWork(sp.GetRequiredService<TContext>()));
-        services.AddKeyedScoped<IOutboxWriter>(
-            moduleKey,
-            (sp, _) => new EfOutboxWriter(sp.GetRequiredService<TContext>()));
-        services.AddKeyedScoped<IRefreshTokenStore>(
-            moduleKey,
-            (sp, _) => new EfRefreshTokenStore(
-                sp.GetRequiredService<TContext>(),
-                sp.GetRequiredService<IClock>()));
-        services.AddKeyedScoped<IInboxStore>(
-            moduleKey,
-            (sp, _) => new EfInboxStore(
-                sp.GetRequiredService<TContext>(),
-                sp.GetRequiredService<IClock>()));
-
+        services.TryAddScoped<IUnitOfWorkResolver, ServiceProviderUnitOfWorkResolver>();
         AddDatabaseHealthCheck<TContext>(services);
+        return services;
+    }
+
+    /// <summary>
+    /// Opt-in Outbox producer cho host một DbContext. DbContext phải map <c>AddOutboxInbox</c> và đã được
+    /// đăng ký bằng <see cref="AddBedrockPersistence{TContext}(IServiceCollection,Action{DbContextOptionsBuilder})"/>.
+    /// </summary>
+    public static IServiceCollection AddBedrockOutbox<TContext>(this IServiceCollection services)
+        where TContext : PlatformDbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        var registrations = GetOrCreatePersistenceRegistrations(services);
+        registrations.RequireUnkeyed(typeof(TContext));
+        if (registrations.TryAddCapability(null, typeof(TContext), PersistenceCapability.Outbox))
+        {
+            services.TryAddScoped<IOutboxWriter>(sp => new EfOutboxWriter(sp.GetRequiredService<TContext>()));
+        }
+
+        return services;
+    }
+
+    /// <summary>Opt-in Outbox producer cho một module keyed.</summary>
+    public static IServiceCollection AddBedrockOutbox<TContext>(
+        this IServiceCollection services,
+        string moduleKey)
+        where TContext : PlatformDbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentException.ThrowIfNullOrWhiteSpace(moduleKey);
+        var registrations = GetOrCreatePersistenceRegistrations(services);
+        registrations.RequireKeyed(moduleKey, typeof(TContext));
+        if (registrations.TryAddCapability(moduleKey, typeof(TContext), PersistenceCapability.Outbox))
+        {
+            services.TryAddKeyedScoped<IOutboxWriter>(
+                moduleKey,
+                (sp, _) => new EfOutboxWriter(sp.GetRequiredService<TContext>()));
+        }
+
+        return services;
+    }
+
+    /// <summary>
+    /// Opt-in Inbox store cho host một DbContext. Dùng cùng scope/DbContext với consumer handler để inbox mark và
+    /// business state commit nguyên tử.
+    /// </summary>
+    public static IServiceCollection AddBedrockInbox<TContext>(this IServiceCollection services)
+        where TContext : PlatformDbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        var registrations = GetOrCreatePersistenceRegistrations(services);
+        registrations.RequireUnkeyed(typeof(TContext));
+        if (registrations.TryAddCapability(null, typeof(TContext), PersistenceCapability.Inbox))
+        {
+            services.TryAddScoped<IInboxStore>(sp => new EfInboxStore(
+                sp.GetRequiredService<TContext>(),
+                sp.GetRequiredService<IClock>()));
+        }
+
+        return services;
+    }
+
+    /// <summary>Opt-in Inbox store cho một module keyed.</summary>
+    public static IServiceCollection AddBedrockInbox<TContext>(
+        this IServiceCollection services,
+        string moduleKey)
+        where TContext : PlatformDbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentException.ThrowIfNullOrWhiteSpace(moduleKey);
+        var registrations = GetOrCreatePersistenceRegistrations(services);
+        registrations.RequireKeyed(moduleKey, typeof(TContext));
+        if (registrations.TryAddCapability(moduleKey, typeof(TContext), PersistenceCapability.Inbox))
+        {
+            services.TryAddKeyedScoped<IInboxStore>(
+                moduleKey,
+                (sp, _) => new EfInboxStore(
+                    sp.GetRequiredService<TContext>(),
+                    sp.GetRequiredService<IClock>()));
+        }
+
+        return services;
+    }
+
+    /// <summary>Opt-in RefreshToken store cho host một DbContext đã map <c>AddRefreshTokens</c>.</summary>
+    public static IServiceCollection AddBedrockRefreshTokens<TContext>(this IServiceCollection services)
+        where TContext : PlatformDbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        var registrations = GetOrCreatePersistenceRegistrations(services);
+        registrations.RequireUnkeyed(typeof(TContext));
+        if (registrations.TryAddCapability(null, typeof(TContext), PersistenceCapability.RefreshTokens))
+        {
+            services.TryAddScoped<IRefreshTokenStore>(sp => new EfRefreshTokenStore(
+                sp.GetRequiredService<TContext>(),
+                sp.GetRequiredService<IClock>()));
+        }
+
+        return services;
+    }
+
+    /// <summary>Opt-in RefreshToken store cho một module keyed.</summary>
+    public static IServiceCollection AddBedrockRefreshTokens<TContext>(
+        this IServiceCollection services,
+        string moduleKey)
+        where TContext : PlatformDbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentException.ThrowIfNullOrWhiteSpace(moduleKey);
+        var registrations = GetOrCreatePersistenceRegistrations(services);
+        registrations.RequireKeyed(moduleKey, typeof(TContext));
+        if (registrations.TryAddCapability(moduleKey, typeof(TContext), PersistenceCapability.RefreshTokens))
+        {
+            services.TryAddKeyedScoped<IRefreshTokenStore>(
+                moduleKey,
+                (sp, _) => new EfRefreshTokenStore(
+                    sp.GetRequiredService<TContext>(),
+                    sp.GetRequiredService<IClock>()));
+        }
+
         return services;
     }
 
@@ -172,6 +271,7 @@ public static class BedrockPersistenceExtensions
     {
         private Type? _unkeyedContext;
         private readonly Dictionary<string, Type> _keyedContexts = new(StringComparer.Ordinal);
+        private readonly HashSet<(string? Key, Type Context, PersistenceCapability Capability)> _capabilities = [];
 
         public void AddUnkeyed(Type contextType)
         {
@@ -197,5 +297,39 @@ public static class BedrockPersistenceExtensions
 
             _keyedContexts.Add(moduleKey, contextType);
         }
+
+        public void RequireUnkeyed(Type contextType)
+        {
+            if (_unkeyedContext != contextType)
+            {
+                throw new InvalidOperationException(
+                    $"Capability cho '{contextType.FullName}' yêu cầu gọi AddBedrockPersistence<{contextType.Name}> "
+                    + "trước, bằng overload không module key.");
+            }
+        }
+
+        public void RequireKeyed(string moduleKey, Type contextType)
+        {
+            if (!_keyedContexts.TryGetValue(moduleKey, out var registeredContext) || registeredContext != contextType)
+            {
+                var actual = registeredContext?.FullName ?? "chưa đăng ký";
+                throw new InvalidOperationException(
+                    $"Capability module '{moduleKey}' yêu cầu persistence '{contextType.FullName}', nhưng key này "
+                    + $"đang trỏ tới '{actual}'. Gọi AddBedrockPersistence với đúng key/context trước.");
+            }
+        }
+
+        public bool TryAddCapability(
+            string? moduleKey,
+            Type contextType,
+            PersistenceCapability capability) =>
+            _capabilities.Add((moduleKey, contextType, capability));
+    }
+
+    private enum PersistenceCapability
+    {
+        Outbox,
+        Inbox,
+        RefreshTokens,
     }
 }

@@ -27,6 +27,7 @@ public sealed class RefreshTokenRotationRaceTests(PostgresFixture fixture)
         services.AddSingleton<IClock>(clock);
         services.AddSingleton<ICurrentUser>(new TestCurrentUser { UserId = Guid.CreateVersion7() });
         services.AddBedrockPersistence<PgOutboxDbContext>(o => o.UseNpgsql(fixture.Container.GetConnectionString()));
+        services.AddBedrockRefreshTokens<PgOutboxDbContext>();
 
         var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
         await using (var scope = provider.CreateAsyncScope())

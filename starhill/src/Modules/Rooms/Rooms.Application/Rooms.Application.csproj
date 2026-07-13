@@ -8,7 +8,7 @@
     <ProjectReference Include="..\Rooms.Domain\Rooms.Domain.csproj" />
     <ProjectReference Include="..\Rooms.Contracts\Rooms.Contracts.csproj" />
     <ProjectReference Include="..\..\ResortConfig\ResortConfig.Contracts\ResortConfig.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\Bedrock.Application\Bedrock.Application.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Application\Bedrock.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

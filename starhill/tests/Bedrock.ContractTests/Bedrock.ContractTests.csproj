@@ -16,8 +16,8 @@
     vô ý; task 20 mở rộng thêm snapshot Error.Code registry. Ref các assembly *.Contracts (public DTO/event).
   -->
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Bedrock.Domain\Bedrock.Domain.csproj" />
-    <ProjectReference Include="..\..\src\Bedrock.Messaging.Contracts\Bedrock.Messaging.Contracts.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Domain\Bedrock.Domain.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Messaging.Contracts\Bedrock.Messaging.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\Identity\Identity.Contracts\Identity.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\Identity\Identity.Domain\Identity.Domain.csproj" />
   </ItemGroup>

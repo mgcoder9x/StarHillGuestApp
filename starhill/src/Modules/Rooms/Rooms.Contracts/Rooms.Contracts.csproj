@@ -4,6 +4,6 @@
     (cho GuestAccess.resolve + Housekeeping.complete-by-token) + DTO thuần. KHÔNG marker DI (đăng ký thủ công ở Infra).
   -->
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Bedrock.Messaging.Contracts\Bedrock.Messaging.Contracts.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Messaging.Contracts\Bedrock.Messaging.Contracts.csproj" />
   </ItemGroup>
 </Project>

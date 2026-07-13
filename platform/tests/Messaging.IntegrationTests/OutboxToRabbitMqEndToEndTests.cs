@@ -88,6 +88,7 @@ public sealed class OutboxToRabbitMqEndToEndTests : IAsyncLifetime
         var services = new ServiceCollection();
         services.AddSingleton<ICurrentUser>(new StubCurrentUser());
         services.AddBedrockPersistence<MsgTestDbContext>(o => o.UseNpgsql(_postgres.GetConnectionString()));
+        services.AddBedrockOutbox<MsgTestDbContext>();
         services.AddRabbitMqMessaging(configuration);       // override default → publish RabbitMQ thật.
         services.AddOutboxDispatcher<MsgTestDbContext>();    // dispatcher dùng chính IEventBusPublisher trên.
         await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });

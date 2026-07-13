@@ -1,6 +1,8 @@
 using Bedrock.Application.Events;
 using Bedrock.Application.Messaging;
 using Bedrock.Application.Messaging.Dispatch;
+using Bedrock.Application.Ports.Security;
+using Bedrock.Application.Ports.Persistence;
 using Bedrock.Application.Ports.Time;
 using Bedrock.Application.Ports.Users;
 using Bedrock.Infrastructure.DependencyInjection;
@@ -51,6 +53,8 @@ public sealed class MultiModulePersistenceTests
         services.AddSingleton<ICurrentUser>(new TestCurrentUser());
         services.AddBedrockPersistence<TestDbContext>("module-1", o => o.UseSqlite("DataSource=m1;Mode=Memory"));
         services.AddBedrockPersistence<SecondaryDbContext>("module-2", o => o.UseSqlite("DataSource=m2;Mode=Memory"));
+        services.AddBedrockOutbox<TestDbContext>("module-1");
+        services.AddBedrockOutbox<SecondaryDbContext>("module-2");
 
         await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
 
@@ -90,5 +94,49 @@ public sealed class MultiModulePersistenceTests
             services.AddBedrockPersistence<SecondaryDbContext>(o => o.UseSqlite("DataSource=m2;Mode=Memory")));
 
         Assert.Contains("moduleKey", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Foundation_does_not_register_schema_dependent_capabilities()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<ICurrentUser>(new TestCurrentUser());
+        services.AddBedrockPersistence<TestDbContext>(o => o.UseSqlite("DataSource=:memory:"));
+
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        await using var scope = provider.CreateAsyncScope();
+
+        Assert.Null(scope.ServiceProvider.GetService<IOutboxWriter>());
+        Assert.Null(scope.ServiceProvider.GetService<IInboxStore>());
+        Assert.Null(scope.ServiceProvider.GetService<IRefreshTokenStore>());
+    }
+
+    [Fact]
+    public void Capability_fails_fast_when_module_key_points_to_another_context()
+    {
+        var services = new ServiceCollection();
+        services.AddBedrockPersistence<TestDbContext>("module-1", o => o.UseSqlite("DataSource=:memory:"));
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            services.AddBedrockInbox<SecondaryDbContext>("module-1"));
+
+        Assert.Contains(typeof(SecondaryDbContext).FullName!, error.Message, StringComparison.Ordinal);
+        Assert.Contains(typeof(TestDbContext).FullName!, error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Unit_of_work_resolver_rejects_whitespace_key_instead_of_falling_back_to_unkeyed()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<ICurrentUser>(new TestCurrentUser());
+        services.AddBedrockPersistence<TestDbContext>("module-1", o => o.UseSqlite("DataSource=:memory:"));
+
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        await using var scope = provider.CreateAsyncScope();
+        var resolver = scope.ServiceProvider.GetRequiredService<IUnitOfWorkResolver>();
+
+        Assert.Throws<ArgumentException>(() => resolver.Resolve("  "));
     }
 }

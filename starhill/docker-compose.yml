@@ -10,9 +10,11 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: starhill_identity
+      # MỘT database vật lý cho CẢ 3 module (schema-per-module — design §1.2/§4.6). Migration per-module tạo
+      # schema identity/resort_config/rooms bên trong database này lúc Host start (ApplyMigrationsOnStartup).
+      POSTGRES_DB: starhill
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d starhill_identity"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d starhill"]
       interval: 3s
       timeout: 3s
       retries: 20
@@ -26,15 +28,19 @@ services:
       RABBITMQ_DEFAULT_USER: bedrock
       RABBITMQ_DEFAULT_PASS: bedrock
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      # check_port_connectivity xác nhận LISTENER (gồm AMQP 5672) THẬT SỰ nhận kết nối — mạnh hơn 'ping' (chỉ báo
+      # Erlang node up). Tránh race: consumer/worker Host kết nối lúc AMQP chưa mở → Connection refused → StopHost.
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
       interval: 5s
       timeout: 5s
       retries: 20
+      start_period: 30s
 
   host:
     build:
-      context: .
-      dockerfile: src/Host/StarHill.Api/Dockerfile
+      # D1-a: context = REPO ROOT (cha của starhill/) để Docker thấy CẢ platform/ (base) lẫn starhill/ (sản phẩm).
+      context: ..
+      dockerfile: starhill/src/Host/StarHill.Api/Dockerfile
     depends_on:
       postgres:
         condition: service_healthy
@@ -42,8 +48,11 @@ services:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      # Connection string trỏ service `postgres` trong mạng compose.
-      ConnectionStrings__Identity: "Host=postgres;Port=5432;Database=starhill_identity;Username=postgres;Password=postgres"
+      # Connection string trỏ service `postgres` trong mạng compose. CẢ 3 module CÙNG database `starhill`
+      # (schema-per-module), override từng key để không rơi về placeholder localhost trong appsettings.
+      ConnectionStrings__Identity: "Host=postgres;Port=5432;Database=starhill;Username=postgres;Password=postgres"
+      ConnectionStrings__ResortConfig: "Host=postgres;Port=5432;Database=starhill;Username=postgres;Password=postgres"
+      ConnectionStrings__Rooms: "Host=postgres;Port=5432;Database=starhill;Username=postgres;Password=postgres"
       # DEV placeholder secret (base64 ≥32B). Prod nạp qua secret store (F35).
       Jwt__Keys__0__Secret: "ZGV2LXBsYWNlaG9sZGVyLWp3dC1zaWduaW5nLWtleS0wMTIzNDU2Nzg5YWJjZGVm"
       # CHỈ dev/compose single-instance: Host tự áp migration lúc start. Prod đa-instance KHÔNG bật (AD-050).

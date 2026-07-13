@@ -5,27 +5,33 @@ using Bedrock.Domain.Results;
 namespace Bedrock.Application.Behaviors;
 
 /// <summary>
-/// Behavior Transaction (§8) — behavior TRONG CÙNG trước use case, CHỈ áp cho <see cref="ICommandUseCase{TInput}"/>
-/// (họ ghi thuần, AD-040): bọc thân trong <see cref="IUnitOfWork.ExecuteInTransactionAsync"/> để state + Outbox
-/// commit all-or-nothing. Use case value-returning (<see cref="IUseCase{TInput,TOutput}"/>) — gồm cả query đọc và
-/// command-trả-giá-trị — TỰ quản transaction tường minh khi cần (reentrancy R7.4 đảm bảo lời gọi lồng không xung đột),
-/// tránh mở transaction thừa cho query chỉ đọc.
+/// Behavior Transaction (§8) cho command không trả payload. Module keyed khai báo <see cref="ITransactionalUseCase"/>
+/// để resolver chọn đúng Unit of Work; command legacy không marker dùng registration unkeyed. State và Outbox được
+/// commit all-or-nothing trong transaction ngoài cùng của pipeline.
 /// </summary>
 public sealed class TransactionCommandUseCaseDecorator<TInput> : ICommandUseCase<TInput>
 {
     private readonly ICommandUseCase<TInput> _inner;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUnitOfWorkResolver _unitOfWorkResolver;
 
-    public TransactionCommandUseCaseDecorator(ICommandUseCase<TInput> inner, IUnitOfWork unitOfWork)
+    public TransactionCommandUseCaseDecorator(
+        ICommandUseCase<TInput> inner,
+        IUnitOfWorkResolver unitOfWorkResolver)
     {
         ArgumentNullException.ThrowIfNull(inner);
-        ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(unitOfWorkResolver);
         _inner = inner;
-        _unitOfWork = unitOfWork;
+        _unitOfWorkResolver = unitOfWorkResolver;
     }
 
-    public Task<Result> ExecuteAsync(TInput input, CancellationToken ct = default) =>
-        _unitOfWork.ExecuteInTransactionAsync(
+    public Task<Result> ExecuteAsync(TInput input, CancellationToken ct = default)
+    {
+        // PersistenceKey compile-enforced trên ICommandUseCase<TInput> (không còn cast tuỳ chọn) → module keyed
+        // luôn resolve đúng Unit of Work; null = host một DbContext legacy (tường minh).
+        return _unitOfWorkResolver.Resolve(_inner.PersistenceKey).ExecuteInTransactionAsync(
             token => _inner.ExecuteAsync(input, token),
             ct);
+    }
+
+    public string? PersistenceKey => _inner.PersistenceKey;
 }

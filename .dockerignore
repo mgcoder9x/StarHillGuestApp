@@ -1,0 +1,8 @@
+# D1-a: build context của Host = REPO ROOT (chứa platform/ + starhill/). Loại artifact build/local khỏi context
+# (nhanh + không lẫn output cũ vào image). Dockerfile chỉ COPY platform/ và starhill/ nên các cây khác không vào.
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/*.user
+**/.git/

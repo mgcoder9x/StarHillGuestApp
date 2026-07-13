@@ -1455,3 +1455,32 @@
 - Consequences: `outbox.last_error` giờ đã redact + bound. Redaction best-effort (mẫu mới lạ có thể lọt) → chấp nhận, ghi rõ. Không đổi schema (cột không đổi) → không cần migration.
 - Reversibility: High (helper thuần, đổi luật redaction dễ; không đụng schema).
 - Traceability: re-audit P1-07; refine AD-087 (A-28 last_error); F25/F33.
+---
+
+### AD-098 — [Wave 1] `ICommandUseCase<TInput>` (void) kế thừa `ITransactionalUseCase` → COMPILE-ENFORCE PersistenceKey (đóng gap review P1)
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — đóng finding P1 của review deep (gap command void), user chốt "triển khai đi".
+- Provenance/Evidence: đọc `IUseCase.cs` — `ICommandUseCase<in TInput>` cũ CHỈ `: IUseCase` (không `ITransactionalUseCase`), nên `TransactionCommandUseCaseDecorator` phải `(_inner as ITransactionalUseCase)?.PersistenceKey` (cast tuỳ chọn); command void trong host keyed-only quên marker → key null → `IUnitOfWorkResolver.Resolve(null)` → `GetRequiredService<IUnitOfWork>()` ném LÚC EXECUTE (không có unkeyed trong host keyed). Đã sửa: `ICommandUseCase<in TInput> : IUseCase, ITransactionalUseCase`; decorator đọc thẳng `_inner.PersistenceKey`; 5 command-decorator (Logging/Authorization/Validation/Idempotency/Transaction) delegate `PersistenceKey => _inner.PersistenceKey`. Compile bắt ĐÚNG 5 test-double thiếu member (chứng minh enforcement) → đã thêm `PersistenceKey => null`. Guard mới `Bedrock.Infrastructure.Tests/KeyedCommandPipelineTests` (full-DI qua `AddBedrockCore` + resolver THẬT `ServiceProviderUnitOfWorkResolver` + `ValidateOnBuild=true`): (1) command void keyed → mở transaction ĐÚNG UoW module (module khác 0 lần); (2) key=null → UoW unkeyed (legacy). Toàn suite 0-warning + 0-fail (Docker skip), format sạch.
+- Context: review deep chỉ ra bất đối xứng — bản value-returning `ICommandUseCase<in TInput,TOutput>` ĐÃ `: ITransactionalUseCase` (compile-enforce key), nhưng bản void thì KHÔNG → footgun trước module thứ hai (command void keyed thiếu marker = lỗi runtime).
+- Decision/Change: nâng `ICommandUseCase<TInput>` void kế thừa `ITransactionalUseCase`; mọi implementer void giờ BẮT BUỘC khai `string? PersistenceKey` (module keyed trả key; host một DbContext legacy trả `null` TƯỜNG MINH).
+- Rationale (verifiable): **Root cause:** thiếu compile-enforcement cho nhánh void → chỉ lỗi runtime. Nâng interface = compiler chặn tại chỗ khai báo (fail sớm nhất có thể). Nhờ đó KHÔNG cần architecture test riêng để bắt marker (review đề xuất arch-test là phương án B yếu hơn — compiler mạnh hơn). Decorator hết cast tuỳ chọn → ý định rõ ràng.
+- Alternatives: (a) arch-test "mọi ICommandUseCase<TInput> keyed implement ITransactionalUseCase" (loại: yếu hơn compile-enforce, chạy muộn hơn, dễ có lỗ hổng phủ); (b) giữ nguyên + tài liệu hoá (loại: footgun thật trước module #2 — review xếp P1 blocker); (c) resolver mặc định unkeyed im lặng (loại: che lỗi cấu hình).
+- Consequences: command void tương lai phải khai key (đúng chủ đích). 5 command-decorator + test-double thêm một property delegate/`=> null`. Khi đồng bộ base sang `starhill/`, command void của Rooms/ResortConfig sẽ compile-buộc khai key (đúng — chặn lỗi "dùng nhầm context" ngay compile).
+- Reversibility: Medium (hạ interface lại được nhưng mất compile-safety — không nên).
+- Traceability: review deep P1 (gap ICommandUseCase<TInput>); đối xứng `ICommandUseCase<,>`; design §8 Transaction behavior; AD (keyed persistence/resolver) của Gate 0.
+
+---
+
+### AD-099 — [Wave 1→A-11 partial] Discovery guard mở rộng: cấm PackageReference/FrameworkReference công nghệ ở adapter + mọi module/adapter phải có trong Platform.slnx
+- Status: Confirmed
+- Date: 2026-07-12
+- Decider: AI(Kiro) — theo ưu tiên #3 của review ("mở rộng discovery guard sang PackageReference và kiểm project có mặt trong slnx").
+- Provenance/Evidence: `DiscoveredProjectBoundaryTests` cũ CHỈ đọc `ProjectReference`. Đã thêm 2 fact: (1) `Every_discovered_adapter_forbids_technology_package_and_framework_references` — quét `PackageReference`/`FrameworkReference` mọi `src/Adapters/**.csproj`, cấm `Microsoft.EntityFrameworkCore*`/`Npgsql*`/`Microsoft.AspNetCore*` + mọi FrameworkReference (bắt EF/Npgsql/ASP.NET ở tầng MANIFEST, phủ adapter MỚI trước phân tích assembly); (2) `Every_discovered_module_and_adapter_project_is_registered_in_solution` — parse `Platform.slnx` (`<Project Path=…/>`) + đối chiếu mọi project dưới `src/Modules` + `src/Adapters` phải có mặt (chống "xanh giả" khi quên thêm project mới vào solution/CI). ArchitectureTests 38/38 pass (RabbitMq adapter qua guard package-ban; mọi project hiện có mặt trong slnx).
+- Context: review P1 — auto-discovery cũ chỉ phủ ProjectReference graph; chưa bắt (a) adapter mới kéo EF/Npgsql/ASP.NET qua PackageReference, (b) module/adapter mới bị quên khỏi slnx (không build/không CI).
+- Decision/Change: bổ sung 2 guard project-graph nêu trên. KHÔNG thay thế NetArchTest assembly-level (CP3) — bổ trợ ở tầng manifest, phủ được project MỚI mà không cần thêm reference cứng.
+- Rationale (verifiable): **Root cause A-11 (một phần):** guard assembly-level (CoreAssemblies) vẫn hardcode Identity/RabbitMQ → adapter/module mới chỉ được phủ khi có người thêm reference. Guard project-graph (đọc .csproj + slnx từ đĩa) tự phủ project mới. Manifest-level package-ban bắt lỗi sớm + không cần build assembly. GHI RÕ: đây là A-11 PARTIAL — dependency thực-tế-trong-assembly của module mới + NetArchTest sâu vẫn cần mở rộng (Wave 3, chưa làm) → không overclaim "auto-discovery đầy đủ".
+- Alternatives: (a) chỉ dựa NetArchTest assembly (loại: cần reference cứng, không phủ project mới tự động); (b) chờ Wave 3 làm trọn A-11 (loại: 2 guard này rẻ + đóng ngay 2 lỗ P1 review nêu).
+- Consequences: adapter mới bị chặn nếu kéo EF/Npgsql/ASP.NET qua package; project mới bị chặn nếu quên thêm vào slnx. Nếu tương lai có adapter hợp lệ cần một package tiền tố `Microsoft.AspNetCore.*` (hiếm) thì phải nới guard có chủ đích.
+- Reversibility: High (guard test cộng thêm).
+- Traceability: review P1 ("mở rộng discovery guard"); A-11 (auto-discover — PARTIAL); CP3/F29/I2/§17.

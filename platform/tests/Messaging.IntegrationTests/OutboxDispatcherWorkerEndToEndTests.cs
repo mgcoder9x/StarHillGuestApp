@@ -88,6 +88,7 @@ public sealed class OutboxDispatcherWorkerEndToEndTests : IAsyncLifetime
         services.AddLogging();
         services.AddSingleton<ICurrentUser>(new StubCurrentUser());
         services.AddBedrockPersistence<MsgTestDbContext>(o => o.UseNpgsql(_postgres.GetConnectionString()));
+        services.AddBedrockOutbox<MsgTestDbContext>();
         services.AddRabbitMqMessaging(configuration);
         services.AddOutboxDispatcher<MsgTestDbContext>();
         // Đăng ký worker qua đường THẬT (opt-in) + poll nhanh để test không chờ lâu.

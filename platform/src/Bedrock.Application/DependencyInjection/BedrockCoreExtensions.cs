@@ -17,8 +17,8 @@ namespace Bedrock.Application.DependencyInjection;
 /// </para>
 /// <para>
 /// <b>Nesting:</b> lời gọi <c>TryDecorate</c> ĐẦU tạo lớp TRONG CÙNG, lời gọi CUỐI tạo lớp NGOÀI CÙNG → phải
-/// đăng ký từ trong (Transaction) ra ngoài (Logging). Transaction chỉ áp cho <see cref="ICommandUseCase{TInput}"/>
-/// (AD-040); họ value-returning không có Transaction (query đọc không mở transaction thừa).
+/// đăng ký từ trong (Transaction) ra ngoài (Logging). Mọi <see cref="ICommandUseCase{TInput}"/> đều transactional;
+/// họ value-returning chỉ mở transaction khi implementation đánh dấu <see cref="ITransactionalUseCase"/>.
 /// </para>
 /// <para>
 /// <b>IDEMPOTENCY (A-12/AD-085):</b> chỉ gọi MỘT lần ở composition root. Gọi lần 2 → NÉM (fail-loud) vì sẽ bọc
@@ -91,11 +91,12 @@ public static class BedrockCoreExtensions
 
     /// <summary>
     /// Bọc pipeline behaviors. TryDecorate (Scrutor) — không ném nếu chưa có use case nào đăng ký.
-    /// Thứ tự trong→ngoài: Transaction (command) → Idempotency → Validation → Authorization → Logging.
+    /// Thứ tự trong→ngoài: Transaction → Idempotency → Validation → Authorization → Logging.
     /// </summary>
     private static void DecoratePipeline(IServiceCollection services)
     {
-        // --- Họ value-returning IUseCase<,> (query + command-trả-giá-trị): KHÔNG Transaction (AD-040) ---
+        // TransactionUseCaseDecorator tự pass-through query; command trả giá trị implement ITransactionalUseCase.
+        services.TryDecorate(typeof(IUseCase<,>), typeof(TransactionUseCaseDecorator<,>));
         services.TryDecorate(typeof(IUseCase<,>), typeof(IdempotencyUseCaseDecorator<,>));
         services.TryDecorate(typeof(IUseCase<,>), typeof(ValidationUseCaseDecorator<,>));
         services.TryDecorate(typeof(IUseCase<,>), typeof(AuthorizationUseCaseDecorator<,>));

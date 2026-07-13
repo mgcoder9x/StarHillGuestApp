@@ -84,8 +84,9 @@ public sealed class IdentityMigrationTests : IAsyncLifetime
         Assert.False(await db.Set<OutboxMessage>().AnyAsync());
 
         // (3) Round-trip refresh_token qua store (ux_refresh_hash + cột snake_case hoạt động thật).
-        var store = scope.ServiceProvider.GetRequiredService<IRefreshTokenStore>();
-        var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        // KEYED (P0-1): port persistence Identity đăng ký theo module key → resolve keyed đúng module.
+        var store = scope.ServiceProvider.GetRequiredKeyedService<IRefreshTokenStore>(IdentityInfrastructureExtensions.PersistenceKey);
+        var uow = scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(IdentityInfrastructureExtensions.PersistenceKey);
         var snapshot = new RefreshTokenSnapshot(
             Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
             "hash-migrate", DateTimeOffset.UtcNow.AddDays(30), null);

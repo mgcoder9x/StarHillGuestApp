@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Xunit;
@@ -115,5 +116,21 @@ public sealed class AuthMechanismTests
         var response = await client.GetAsync(new Uri("/protected", UriKind.Relative));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Verify_only_host_with_empty_key_ring_fails_during_startup()
+    {
+        var builder = new HostBuilder().ConfigureWebHost(webHost =>
+        {
+            webHost.UseTestServer();
+            webHost.ConfigureServices(services =>
+                services.AddBedrockAuthCore(new ConfigurationBuilder().Build()));
+            webHost.Configure(_ => { });
+        });
+
+        var error = await Assert.ThrowsAsync<OptionsValidationException>(() => builder.StartAsync());
+
+        Assert.Contains("Keys rỗng", error.Message, StringComparison.Ordinal);
     }
 }

@@ -8,18 +8,21 @@ using Bedrock.Application.Ports.Time;
 using Bedrock.Application.UseCases;
 using Bedrock.Domain.Results;
 using Identity.Contracts.Events;
+using Identity.Contracts;
 using Identity.Domain;
 
 namespace Identity.Application.RefreshToken;
 
 /// <summary>
-/// Rotation refresh-token NGUYÊN TỬ (design §7.4, F5/F10). Value-returning use case → TỰ mở transaction tường minh
-/// (không do Transaction behavior bọc — AD-040; reentrancy R7.4 an toàn nếu về sau có lớp bọc). Toàn bộ get →
-/// reuse-detect → consume-if-not-revoked → insert token mới nằm trong MỘT <see cref="IUnitOfWork.ExecuteInTransactionAsync"/>
-/// = all-or-nothing (fix F5). Consume dùng UPDATE nguyên tử ở DB (row-lock) → 2 request đồng thời chỉ 1 thắng.
+/// Rotation refresh-token NGUYÊN TỬ (design §7.4, F5/F10). <see cref="ITransactionalUseCase"/> gắn module key để
+/// pipeline mở transaction bằng đúng Identity DbContext. Toàn bộ get → reuse-detect → consume-if-not-revoked →
+/// insert token mới → outbox → SaveChanges nằm trong transaction đó. Consume dùng UPDATE nguyên tử ở DB nên hai
+/// request đồng thời chỉ một request thắng.
 /// </summary>
-public sealed class RefreshAccessTokenUseCase : IUseCase<RefreshTokenCommand, RefreshTokenResult>
+public sealed class RefreshAccessTokenUseCase : ICommandUseCase<RefreshTokenCommand, RefreshTokenResult>
 {
+    public string PersistenceKey => IdentityModule.PersistenceKey;
+
     /// <summary>
     /// TTL refresh token mới. Design không chốt con số → chọn 14 ngày (cân bằng UX "đăng nhập lại" vs cửa sổ
     /// rủi ro nếu token rò) — AD-041. Có thể nâng thành Options per-app sau (backward-compat).
@@ -61,7 +64,7 @@ public sealed class RefreshAccessTokenUseCase : IUseCase<RefreshTokenCommand, Re
     {
         ArgumentNullException.ThrowIfNull(input);
 
-        return _unitOfWork.ExecuteInTransactionAsync(RotateAsync, ct);
+        return RotateAsync(ct);
 
         async Task<Result<RefreshTokenResult>> RotateAsync(CancellationToken token)
         {

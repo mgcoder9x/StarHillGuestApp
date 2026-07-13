@@ -30,6 +30,14 @@ namespace Identity.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("ClaimId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("claim_id");
+
+                    b.Property<DateTimeOffset?>("ClaimedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("claimed_until");
+
                     b.Property<string>("CorrelationId")
                         .HasColumnType("text")
                         .HasColumnName("correlation_id");
@@ -46,6 +54,15 @@ namespace Identity.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("event_type");
+
+                    b.Property<DateTimeOffset?>("LastAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_attempt_at");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("last_error");
 
                     b.Property<DateTimeOffset?>("NextAttemptAt")
                         .HasColumnType("timestamp with time zone")
@@ -73,6 +90,10 @@ namespace Identity.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OccurredAt")
                         .HasDatabaseName("ix_outbox_pending")
+                        .HasFilter("processed_at IS NULL AND dead_lettered_at IS NULL");
+
+                    b.HasIndex("ClaimedUntil", "NextAttemptAt", "OccurredAt")
+                        .HasDatabaseName("ix_outbox_claimable")
                         .HasFilter("processed_at IS NULL AND dead_lettered_at IS NULL");
 
                     b.ToTable("outbox_message", "identity");

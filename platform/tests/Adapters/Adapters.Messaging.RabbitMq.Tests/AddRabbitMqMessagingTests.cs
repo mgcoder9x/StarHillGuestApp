@@ -4,6 +4,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Adapters.Messaging.RabbitMq.Tests;
@@ -62,5 +65,31 @@ public sealed class AddRabbitMqMessagingTests
 
         var rabbit = Assert.Single(registrations, r => r.Name == "rabbitmq");
         Assert.Contains("ready", rabbit.Tags);
+    }
+
+    [Fact]
+    public void Consumer_registration_adds_queue_specific_readiness_and_rejects_duplicate_queue()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+        services.AddRabbitMqMessaging(Config());
+        services.AddRabbitMqConsumer(options =>
+        {
+            options.QueueName = "identity.queue";
+            options.RoutingKeys.Add("identity.#");
+        });
+
+        using var provider = services.BuildServiceProvider();
+        Assert.Single(provider.GetServices<IHostedService>().OfType<RabbitMqConsumer>());
+        var registrations = provider.GetRequiredService<IOptions<HealthCheckServiceOptions>>().Value.Registrations;
+        var consumerHealth = Assert.Single(registrations, r => r.Name == "rabbitmq-consumer:identity.queue");
+        Assert.Contains("ready", consumerHealth.Tags);
+
+        var error = Assert.Throws<InvalidOperationException>(() => services.AddRabbitMqConsumer(options =>
+        {
+            options.QueueName = "identity.queue";
+            options.RoutingKeys.Add("identity.changed.#");
+        }));
+        Assert.Contains("đã được đăng ký", error.Message, StringComparison.Ordinal);
     }
 }

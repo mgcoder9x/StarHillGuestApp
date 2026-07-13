@@ -40,4 +40,6 @@ public sealed class LoggingCommandUseCaseDecorator<TInput> : ICommandUseCase<TIn
 
         return result;
     }
+
+    public string? PersistenceKey => _inner.PersistenceKey;
 }

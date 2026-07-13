@@ -1,6 +1,7 @@
 using Bedrock.Application.Ports.Persistence;
 using Bedrock.Application.UseCases;
 using Bedrock.Domain.Results;
+using Rooms.Contracts;
 using Rooms.Domain;
 
 namespace Rooms.Application;
@@ -12,6 +13,9 @@ namespace Rooms.Application;
 /// </summary>
 public sealed class DeleteRoomUseCase : ICommandUseCase<Guid>
 {
+    // KEYED (P0-1): khai module key → resolve đúng Unit of Work Rooms (chống last-registration-wins).
+    public string PersistenceKey => RoomsModule.PersistenceKey;
+
     private readonly IRepository<Room> _rooms;
     private readonly IUnitOfWork _unitOfWork;
 

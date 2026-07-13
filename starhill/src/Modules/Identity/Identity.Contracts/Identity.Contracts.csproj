@@ -5,6 +5,6 @@
     của Bedrock hay module khác. Module khác chỉ được chạm Identity qua assembly này (F30).
   -->
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Bedrock.Messaging.Contracts\Bedrock.Messaging.Contracts.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Messaging.Contracts\Bedrock.Messaging.Contracts.csproj" />
   </ItemGroup>
 </Project>

@@ -11,7 +11,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using RabbitMQ.Client;
 using Testcontainers.PostgreSql;
 using Testcontainers.RabbitMq;
 using Xunit;
@@ -131,6 +130,7 @@ public sealed class RabbitMqConsumeEndToEndTests : IAsyncLifetime
         services.AddLogging();
         services.AddSingleton<ICurrentUser>(new StubCurrentUser());
         services.AddBedrockPersistence<MsgTestDbContext>(o => o.UseNpgsql(_postgres.GetConnectionString()));
+        services.AddBedrockInbox<MsgTestDbContext>();
         services.AddRabbitMqMessaging(configuration);                 // publisher (để bơm message test) + kết nối.
         services.AddIntegrationEventRegistry(typeof(MsgConsumeEvent).Assembly);
         services.AddIntegrationEventConsumer();                        // core dispatch agnostic.
@@ -148,37 +148,31 @@ public sealed class RabbitMqConsumeEndToEndTests : IAsyncLifetime
             await scope.ServiceProvider.GetRequiredService<MsgTestDbContext>().Database.EnsureCreatedAsync();
         }
 
-        // Pre-declare exchange + queue + binding (khớp CHÍNH XÁC tham số subscriber → idempotent) TRƯỚC khi publish
-        // → message được route vào queue chờ sẵn; subscriber start sau sẽ drain (tất định, không đua timing binding).
-        await using (var connection = await new ConnectionFactory { Uri = rabbitUri }.CreateConnectionAsync())
-        await using (var channel = await connection.CreateChannelAsync())
-        {
-            await channel.ExchangeDeclareAsync(ExchangeName, ExchangeType.Topic, durable: true, autoDelete: false);
-            await channel.QueueDeclareAsync(QueueName, durable: true, exclusive: false, autoDelete: false);
-            await channel.QueueBindAsync(QueueName, ExchangeName, "msg.#");
-        }
-
-        // Publish qua đường THẬT (IEventBusPublisher = RabbitMqEventBusPublisher): set MessageId + header event-type.
-        var messageId = Guid.CreateVersion7();
-        var payload = JsonSerializer.Serialize(
-            new MsgConsumeEvent(messageId, DateTimeOffset.UtcNow, "hello"), PayloadOptions);
-        var publisher = provider.GetRequiredService<IEventBusPublisher>();
-        await publisher.PublishAsync(new OutgoingIntegrationMessage
-        {
-            Id = messageId,
-            EventType = EventType,
-            SchemaVersion = 1,
-            Payload = payload,
-            OccurredAt = DateTimeOffset.UtcNow,
-        });
-
-        // Start subscriber (BackgroundService) → drain queue → dispatch → handler + inbox.
+        // Start subscriber TRƯỚC → nó TỰ provision toàn bộ topology (main exchange + queue có arg
+        // x-dead-letter-exchange + DLX + retry) và bind. KHÔNG pre-declare ở test: queue của consumer mang arg
+        // x-dead-letter-exchange nên pre-declare không-arg sẽ 406 PRECONDITION_FAILED → consumer channel chết.
         var subscriber = provider.GetServices<IHostedService>().OfType<RabbitMqConsumer>().Single();
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
         await subscriber.StartAsync(cts.Token);
         try
         {
-            for (var attempt = 0; attempt < 100 && recorder.Handled.IsEmpty; attempt++)
+            await Task.Delay(1000); // chờ subscriber provision xong topology + binding rồi mới publish (không đua timing).
+
+            // Publish qua đường THẬT (IEventBusPublisher = RabbitMqEventBusPublisher): set MessageId + header event-type.
+            var messageId = Guid.CreateVersion7();
+            var payload = JsonSerializer.Serialize(
+                new MsgConsumeEvent(messageId, DateTimeOffset.UtcNow, "hello"), PayloadOptions);
+            var publisher = provider.GetRequiredService<IEventBusPublisher>();
+            await publisher.PublishAsync(new OutgoingIntegrationMessage
+            {
+                Id = messageId,
+                EventType = EventType,
+                SchemaVersion = 1,
+                Payload = payload,
+                OccurredAt = DateTimeOffset.UtcNow,
+            });
+
+            for (var attempt = 0; attempt < 300 && recorder.Handled.IsEmpty; attempt++)
             {
                 await Task.Delay(100);
             }
@@ -223,6 +217,7 @@ public sealed class RabbitMqConsumeEndToEndTests : IAsyncLifetime
         services.AddLogging();
         services.AddSingleton<ICurrentUser>(new StubCurrentUser());
         services.AddBedrockPersistence<MsgTestDbContext>(o => o.UseNpgsql(_postgres.GetConnectionString()));
+        services.AddBedrockInbox<MsgTestDbContext>();
         services.AddRabbitMqMessaging(configuration);
         services.AddIntegrationEventRegistry(typeof(MsgConsumeEvent).Assembly);
         services.AddIntegrationEventConsumer();

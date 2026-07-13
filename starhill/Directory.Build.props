@@ -3,6 +3,16 @@
     Thuộc tính chung mọi project của platform-base (lõi Bedrock.* + Adapters + Modules + Host + tests).
     Bất biến I10/R31: TreatWarningsAsErrors=true → mỗi lát build phải 0 warning.
   -->
+  <!--
+    D1-a (QR-AD): starhill KHÔNG còn bản-copy base. Mọi module/Host/test nghiệp vụ ProjectReference thẳng vào
+    base chuẩn ở platform/src qua $(PlatformSrc) → MỘT nguồn base duy nhất → drift bất khả thi (fix tận gốc).
+    $(MSBuildThisFileDirectory) = thư mục starhill/ (nơi đặt props này) → path tuyệt đối, đồng nhất mọi độ sâu csproj.
+    Project base được tham chiếu tự dùng Directory.Build.props/Packages.props của platform/ (MSBuild đi LÊN từ
+    vị trí .csproj) nên KHÔNG lẫn version/thuộc tính giữa hai cây.
+  -->
+  <PropertyGroup>
+    <PlatformSrc>$(MSBuildThisFileDirectory)..\platform\src</PlatformSrc>
+  </PropertyGroup>
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <LangVersion>latest</LangVersion>

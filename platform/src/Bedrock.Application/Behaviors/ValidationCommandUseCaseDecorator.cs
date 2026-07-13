@@ -47,4 +47,6 @@ public sealed class ValidationCommandUseCaseDecorator<TInput> : ICommandUseCase<
 
         return await _inner.ExecuteAsync(input, ct).ConfigureAwait(false);
     }
+
+    public string? PersistenceKey => _inner.PersistenceKey;
 }

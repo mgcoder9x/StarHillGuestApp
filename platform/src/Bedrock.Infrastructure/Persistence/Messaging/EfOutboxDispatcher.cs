@@ -1,6 +1,8 @@
 using Bedrock.Application.Messaging.Dispatch;
 using Bedrock.Application.Ports.Time;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Bedrock.Infrastructure.Persistence.Messaging;
@@ -22,13 +24,16 @@ namespace Bedrock.Infrastructure.Persistence.Messaging;
 /// provider-agnostic (đúng single-instance; đa-instance vẫn an toàn nghiệp vụ nhờ Inbox).
 /// </para>
 /// </summary>
-public sealed class EfOutboxDispatcher<TContext>(
+public sealed partial class EfOutboxDispatcher<TContext>(
     TContext context,
     IEventBusPublisher publisher,
     IClock clock,
-    IOptionsMonitor<OutboxDispatcherOptions> optionsMonitor) : IOutboxDispatcher
+    IOptionsMonitor<OutboxDispatcherOptions> optionsMonitor,
+    ILogger<EfOutboxDispatcher<TContext>>? logger = null) : IOutboxDispatcher
     where TContext : PlatformDbContext
 {
+    private readonly ILogger _logger = logger ?? NullLogger<EfOutboxDispatcher<TContext>>.Instance;
+
     public async Task DispatchPendingAsync(CancellationToken ct = default)
     {
         var options = optionsMonitor.Get(OutboxDispatcherOptions.KeyFor<TContext>());
@@ -148,6 +153,14 @@ public sealed class EfOutboxDispatcher<TContext>(
 #pragma warning disable CA1031 // Publish tới bus ngoài có thể ném BẤT KỲ (network/serialize/adapter). Phải bắt rộng để backoff/dead-letter và cách ly poison — không rethrow để message khác trong batch vẫn xử lý (design §7.2).
         try
         {
+            // Batch được claim cùng lúc nhưng publish tuần tự. Gia hạn ngay trước từng message để ClaimLease chỉ cần
+            // bao phủ một broker call, không phải worst-case của toàn batch.
+            if (await TryRenewLeaseAsync(message.Id, claimId, options.ClaimLease, ct).ConfigureAwait(false) != 1)
+            {
+                RecordLeaseLost(message.Id, claimId, "renew");
+                return;
+            }
+
             // A-20: map record persistence → envelope BẤT BIẾN hướng transport (adapter không thấy cột retry/lease).
             await publisher.PublishAsync(ToOutgoing(message), ct).ConfigureAwait(false);
             var processedAt = clock.UtcNow;
@@ -163,6 +176,10 @@ public sealed class EfOutboxDispatcher<TContext>(
             if (affected == 1)
             {
                 OutboxMetrics.RecordPublished(processedAt - message.OccurredAt);
+            }
+            else
+            {
+                RecordLeaseLost(message.Id, claimId, "published-finalize");
             }
         }
         catch (Exception ex) when (!ct.IsCancellationRequested)
@@ -188,6 +205,10 @@ public sealed class EfOutboxDispatcher<TContext>(
                 {
                     OutboxMetrics.RecordDeadLettered();
                 }
+                else
+                {
+                    RecordLeaseLost(message.Id, claimId, "dead-letter-finalize");
+                }
             }
             else
             {
@@ -197,7 +218,7 @@ public sealed class EfOutboxDispatcher<TContext>(
                 var jitterSeed = message.Id.GetHashCode() & int.MaxValue; // & MaxValue: tránh Math.Abs(int.MinValue) overflow.
                 var jitterFraction = (jitterSeed % 1000) / 1000.0 * 0.2;
                 var nextAttemptAt = failedAt + backoff + (backoff * jitterFraction);
-                await context.Set<OutboxMessage>()
+                var affected = await context.Set<OutboxMessage>()
                     .Where(candidate => candidate.Id == message.Id && candidate.ClaimId == claimId)
                     .ExecuteUpdateAsync(
                         setters => setters
@@ -207,10 +228,42 @@ public sealed class EfOutboxDispatcher<TContext>(
                             .SetProperty(candidate => candidate.LastAttemptAt, failedAt)
                             .SetProperty(candidate => candidate.ClaimId, (Guid?)null)
                             .SetProperty(candidate => candidate.ClaimedUntil, (DateTimeOffset?)null),
-                        ct)
+                    ct)
                     .ConfigureAwait(false);
+                if (affected == 0)
+                {
+                    RecordLeaseLost(message.Id, claimId, "retry-finalize");
+                }
             }
         }
 #pragma warning restore CA1031
+    }
+
+    private Task<int> TryRenewLeaseAsync(
+        Guid messageId,
+        Guid claimId,
+        TimeSpan claimLease,
+        CancellationToken ct) =>
+        context.Set<OutboxMessage>()
+            .Where(candidate => candidate.Id == messageId && candidate.ClaimId == claimId)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(
+                    candidate => candidate.ClaimedUntil,
+                    clock.UtcNow + claimLease),
+                ct);
+
+    private void RecordLeaseLost(Guid messageId, Guid claimId, string phase)
+    {
+        OutboxMetrics.RecordLeaseLost();
+        Log.LeaseLost(_logger, messageId, claimId, phase);
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(
+            EventId = 1,
+            Level = LogLevel.Warning,
+            Message = "Outbox lease ownership lost (messageId={MessageId}, claimId={ClaimId}, phase={Phase}).")]
+        public static partial void LeaseLost(ILogger logger, Guid messageId, Guid claimId, string phase);
     }
 }

@@ -48,8 +48,7 @@ public static class BedrockSecurityExtensions
             services.AddSingleton(sp => sp.GetRequiredService<IOptions<JwtKeyRingOptions>>().Value);
         }
 
-        // Validate-on-start + validator là trách nhiệm SIGN side (Security) — luôn bật (idempotent: ValidateOnStart
-        // đánh dấu options đã cấu hình; validator qua TryAddEnumerable). Sai key-ring → chặn boot mọi môi trường.
+        // Sign và verify dùng cùng validator từ Application; TryAddEnumerable tránh đăng ký hai lần khi Host gọi cả hai.
         services.AddOptions<JwtKeyRingOptions>().ValidateOnStart();
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IValidateOptions<JwtKeyRingOptions>, JwtKeyRingOptionsValidator>());

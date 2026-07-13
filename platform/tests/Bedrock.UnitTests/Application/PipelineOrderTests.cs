@@ -33,7 +33,7 @@ public sealed class PipelineOrderTests
         public PipelineInputValidator() => RuleFor(x => x.Name).NotEmpty();
     }
 
-    private sealed class QueryUseCase : IUseCase<PipelineInput, string>
+    private sealed class QueryUseCase : IQueryUseCase<PipelineInput, string>
     {
         public Task<Result<string>> ExecuteAsync(PipelineInput input, CancellationToken ct = default) =>
             Task.FromResult(Result<string>.Success("ran"));
@@ -41,6 +41,8 @@ public sealed class PipelineOrderTests
 
     private sealed class CommandUseCase : ICommandUseCase<PipelineInput>
     {
+        public string? PersistenceKey => null;
+
         public Task<Result> ExecuteAsync(PipelineInput input, CancellationToken ct = default) =>
             Task.FromResult(Result.Success());
     }
@@ -54,7 +56,9 @@ public sealed class PipelineOrderTests
         services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
         services.AddSingleton<ICurrentUser>(new FakeCurrentUser(permissions));
         services.AddSingleton(store ?? new FakeIdempotencyStore());
-        services.AddSingleton<IUnitOfWork>(uow ?? new FakeUnitOfWork());
+        var transactionUnitOfWork = uow ?? new FakeUnitOfWork();
+        services.AddSingleton<IUnitOfWork>(transactionUnitOfWork);
+        services.AddSingleton<IUnitOfWorkResolver>(new FakeUnitOfWorkResolver((null, transactionUnitOfWork)));
         services.AddTransient<IValidator<PipelineInput>, PipelineInputValidator>();
         services.AddTransient<IUseCase<PipelineInput, string>, QueryUseCase>();
         services.AddTransient<ICommandUseCase<PipelineInput>, CommandUseCase>();

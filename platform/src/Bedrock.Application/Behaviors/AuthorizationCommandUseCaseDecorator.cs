@@ -35,4 +35,6 @@ public sealed class AuthorizationCommandUseCaseDecorator<TInput> : ICommandUseCa
 
         return _inner.ExecuteAsync(input, ct);
     }
+
+    public string? PersistenceKey => _inner.PersistenceKey;
 }

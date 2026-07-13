@@ -166,6 +166,9 @@ public sealed class PersistenceHarness : IAsyncDisposable
         services.AddSingleton<IClock>(clock);
         services.AddSingleton<ICurrentUser>(user);
         services.AddBedrockPersistence<TestDbContext>(options => options.UseSqlite(connection));
+        services.AddBedrockOutbox<TestDbContext>();
+        services.AddBedrockInbox<TestDbContext>();
+        services.AddBedrockRefreshTokens<TestDbContext>();
         configure?.Invoke(services);
 
         var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });

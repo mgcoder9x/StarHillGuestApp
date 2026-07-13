@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   build-test:
-    name: build + test (0 warning + Testcontainers + journal QR & base)
+    name: build + test (0 warning + Testcontainers + journal QR)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -42,9 +42,9 @@ jobs:
         run: dotnet build Platform.slnx -c Release
         working-directory: starhill
 
-      # Toàn bộ suite: unit + architecture + contract + integration + Testcontainers (Docker có sẵn trên runner).
-      # Gồm CẢ JournalConsistencyTests (journal base) VÀ StarHillJournalConsistencyTests (journal QR, INV-1..5)
-      # → journal lệch (base hoặc QR) = fail CI. Đây là cổng anti-drift QR-AD-006 ở tầng CI.
+      # Toàn bộ suite NGHIỆP VỤ QR: unit + architecture + contract + integration + Testcontainers (Docker runner).
+      # D1-a: test BASE (gồm JournalConsistency base) chạy ở CI base (ci.yml, platform/). Suite này gồm
+      # StarHillJournalConsistencyTests (journal QR, INV-1..5) → journal QR lệch = fail CI (anti-drift QR-AD-006).
       - name: Test (full suite)
         run: dotnet test Platform.slnx -c Release --no-build
         working-directory: starhill
@@ -57,10 +57,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Kiểm chứng Dockerfile Host build được (multi-stage .NET 10). Không push registry ở job này.
+      # Kiểm chứng Dockerfile Host build được (multi-stage .NET 10). D1-a: context = REPO ROOT để chứa CẢ
+      # platform/ (base ProjectReference cross-tree) lẫn starhill/ (sản phẩm). Không push registry ở job này.
       - name: Build Host image
-        run: docker build -f src/Host/StarHill.Api/Dockerfile -t starhill-api:ci .
-        working-directory: starhill
+        run: docker build -f starhill/src/Host/StarHill.Api/Dockerfile -t starhill-api:ci .
 
   migration-bundle:
     # Sinh EF migration bundle SELF-CONTAINED (linux-x64) cho module Identity → artifact deploy áp migration

@@ -18,7 +18,7 @@ public sealed class OutboxDispatcherOptions
     /// <summary>Trần độ trễ giữa các lần retry (chống backoff phình vô hạn).</summary>
     public TimeSpan MaxDelay { get; set; } = TimeSpan.FromMinutes(30);
 
-    /// <summary>Thời gian giữ claim; phải dài hơn worst-case publish của một batch.</summary>
+    /// <summary>Thời gian giữ claim; dispatcher gia hạn trước mỗi message nên phải dài hơn worst-case một publish.</summary>
     public TimeSpan ClaimLease { get; set; } = TimeSpan.FromMinutes(5);
 
     /// <summary>Khóa named-options theo kiểu DbContext → mỗi module có cấu hình dispatcher độc lập.</summary>

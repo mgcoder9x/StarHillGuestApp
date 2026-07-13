@@ -7,6 +7,6 @@
   <ItemGroup>
     <ProjectReference Include="..\ResortConfig.Domain\ResortConfig.Domain.csproj" />
     <ProjectReference Include="..\ResortConfig.Contracts\ResortConfig.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\Bedrock.Application\Bedrock.Application.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Application\Bedrock.Application.csproj" />
   </ItemGroup>
 </Project>

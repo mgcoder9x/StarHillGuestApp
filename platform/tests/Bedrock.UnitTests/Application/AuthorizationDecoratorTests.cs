@@ -31,6 +31,8 @@ public sealed class AuthorizationDecoratorTests
 
     private sealed class RecordingCommand<TIn> : ICommandUseCase<TIn>
     {
+        public string? PersistenceKey => null;
+
         public bool Ran { get; private set; }
 
         public Task<Result> ExecuteAsync(TIn input, CancellationToken ct = default)

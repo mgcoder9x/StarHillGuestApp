@@ -10,8 +10,8 @@
     <UserSecretsId>starhill-api-dev-8f3c1e6a</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Bedrock.Api\Bedrock.Api.csproj" />
-    <ProjectReference Include="..\..\Bedrock.Infrastructure\Bedrock.Infrastructure.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Api\Bedrock.Api.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Infrastructure\Bedrock.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Identity\Identity.Infrastructure\Identity.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Identity\Identity.Api\Identity.Api.csproj" />
     <!-- Module ResortConfig: chỉ nửa-Infra (chưa có nửa-Api — slice B.3). Host là nơi DUY NHẤT ráp module. -->
@@ -20,7 +20,7 @@
     <ProjectReference Include="..\..\Modules\Rooms\Rooms.Infrastructure\Rooms.Infrastructure.csproj" />
     <!-- Adapter công nghệ: Host (composition root) là nơi DUY NHẤT được cắm adapter (F29/CP5). Bật/tắt qua config
          Bedrock:Messaging:Enabled — bỏ adapter = quay về default fail-loud, KHÔNG sửa lõi. -->
-    <ProjectReference Include="..\..\Adapters\Messaging.RabbitMq\Adapters.Messaging.RabbitMq.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Adapters\Messaging.RabbitMq\Adapters.Messaging.RabbitMq.csproj" />
   </ItemGroup>
 
   <ItemGroup>

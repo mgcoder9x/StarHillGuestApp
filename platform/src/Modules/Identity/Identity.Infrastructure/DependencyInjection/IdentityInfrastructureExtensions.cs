@@ -6,6 +6,7 @@ using Bedrock.Application.Ports.Time;
 using Bedrock.Infrastructure.DependencyInjection;
 using FluentValidation;
 using Identity.Application.RefreshToken;
+using Identity.Contracts;
 using Identity.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,13 +15,13 @@ namespace Identity.Infrastructure.DependencyInjection;
 
 /// <summary>
 /// Nửa-Infrastructure của composition module Identity (DV-013 — tách khỏi nửa-Api để giữ Api⊥Infra I7).
-/// Đăng ký: <see cref="IdentityDbContext"/> + persistence nền (repo/UoW/outbox/refresh-store/DB health) qua
-/// <c>AddBedrockPersistence</c>, use case rotation, và validator của module. Host gọi method này + <c>AddIdentityApi</c>
+/// Đăng ký: <see cref="IdentityDbContext"/> + persistence nền và capability schema (outbox/inbox/refresh-token),
+/// use case rotation, và validator của module. Host gọi method này + <c>AddIdentityApi</c>
 /// + <c>AddBedrockCore</c> (decorate pipeline sau khi use case đã đăng ký).
 /// </summary>
 public static class IdentityInfrastructureExtensions
 {
-    public const string PersistenceKey = "identity";
+    public const string PersistenceKey = IdentityModule.PersistenceKey;
 
     public static IServiceCollection AddIdentityInfrastructure(
         this IServiceCollection services,
@@ -29,8 +30,11 @@ public static class IdentityInfrastructureExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configureDbContext);
 
-        // DbContext + repo/UoW/outbox-writer/refresh-store + DB readiness check (schema "identity").
+        // Foundation và capability phải khớp IdentityDbContext.OnModelCreating (schema "identity").
         services.AddBedrockPersistence<IdentityDbContext>(PersistenceKey, configureDbContext);
+        services.AddBedrockOutbox<IdentityDbContext>(PersistenceKey);
+        services.AddBedrockInbox<IdentityDbContext>(PersistenceKey);
+        services.AddBedrockRefreshTokens<IdentityDbContext>(PersistenceKey);
 
         // Factory resolve toàn bộ persistence port bằng module key. Không có global PlatformDbContext alias nên
         // module thứ hai không thể làm Identity trỏ nhầm context theo registration order (A-01).

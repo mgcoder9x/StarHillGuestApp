@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Rooms.Domain (POCO nghiệp vụ phòng + token QR): reference CHỈ Bedrock.Domain (matrix §3.3). -->
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Bedrock.Domain\Bedrock.Domain.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Domain\Bedrock.Domain.csproj" />
   </ItemGroup>
 </Project>

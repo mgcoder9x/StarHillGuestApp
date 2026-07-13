@@ -23,6 +23,8 @@ public sealed class ValidationDecoratorTests
 
     private sealed class PassThroughCommand : ICommandUseCase<Input>
     {
+        public string? PersistenceKey => null;
+
         public Task<Result> ExecuteAsync(Input input, CancellationToken ct = default) =>
             Task.FromResult(Result.Success());
     }

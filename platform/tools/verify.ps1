@@ -6,7 +6,7 @@
 
   Scope:
     build    -> dotnet build Platform.slnx (cổng 0-warning; TreatWarningsAsErrors)
-    ci       -> python platform\tests\validate_ci.py (validate .github/workflows/ci.yml — AD-061)
+    ci       -> Python 3 platform\tests\validate_ci.py (tự chọn python hoặc Windows py -3)
     test     -> dotnet test Platform.slnx (test Docker SKIP mềm khi thiếu Docker — fixture lazy-build N-067)
     journal  -> JournalConsistencyTests (anti-drift INV-1..5)
     all      -> build + ci + test  (mặc định)
@@ -43,7 +43,28 @@ function Invoke-Step {
 }
 
 function Step-Build { dotnet build $Solution -clp:ErrorsOnly }
-function Step-Ci { python $ValidateCi }
+function Step-Ci {
+    $python = Get-Command python -ErrorAction SilentlyContinue
+    if ($null -ne $python) {
+        & python --version *> $null
+        if ($LASTEXITCODE -eq 0) {
+            & python $ValidateCi
+            return
+        }
+    }
+
+    $py = Get-Command py -ErrorAction SilentlyContinue
+    if ($null -ne $py) {
+        & py -3 --version *> $null
+        if ($LASTEXITCODE -eq 0) {
+            & py -3 $ValidateCi
+            return
+        }
+    }
+
+    Write-Error "Không tìm thấy Python 3 khả dụng qua 'python' hoặc 'py -3'."
+    $global:LASTEXITCODE = 127
+}
 function Step-TestFull { dotnet test $Solution --nologo }
 function Step-TestNoBuild { dotnet test $Solution --no-build --nologo }
 function Step-Journal { dotnet test $ArchProj --nologo --filter 'FullyQualifiedName~JournalConsistencyTests' }

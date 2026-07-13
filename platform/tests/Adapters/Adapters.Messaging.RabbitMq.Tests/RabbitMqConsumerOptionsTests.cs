@@ -55,11 +55,11 @@ public sealed class RabbitMqConsumerOptionsTests
     }
 
     [Fact]
-    public void Empty_dead_letter_exchange_fails()
+    public void Whitespace_dead_letter_exchange_fails()
     {
         // DLX rỗng = mất đường quarantine → NACK requeue=false sẽ DROP. Fail-fast chặn cấu hình nguy hiểm này (A-03).
         var options = Valid();
-        options.DeadLetterExchangeName = "";
+        options.DeadLetterExchangeName = "  ";
         Assert.Throws<InvalidOperationException>(() => RabbitMqConsumerOptions.Validate(options));
     }
 
@@ -84,9 +84,15 @@ public sealed class RabbitMqConsumerOptionsTests
     }
 
     [Fact]
-    public void Default_dead_letter_exchange_is_provisioned_name()
+    public void Default_dead_letter_exchange_is_derived_per_queue()
     {
-        Assert.Equal("bedrock.dead-letter", new RabbitMqConsumerOptions().DeadLetterExchangeName);
+        var identity = Valid();
+        var billing = new RabbitMqConsumerOptions { QueueName = "starhill.billing" };
+        billing.RoutingKeys.Add("billing.#");
+
+        Assert.Equal("starhill.identity.dead-letter", identity.EffectiveDeadLetterExchangeName);
+        Assert.Equal("starhill.billing.dead-letter", billing.EffectiveDeadLetterExchangeName);
+        Assert.NotEqual(identity.EffectiveDeadLetterExchangeName, billing.EffectiveDeadLetterExchangeName);
     }
 
     [Fact]
@@ -114,10 +120,10 @@ public sealed class RabbitMqConsumerOptionsTests
     }
 
     [Fact]
-    public void Empty_retry_exchange_fails()
+    public void Whitespace_retry_exchange_fails()
     {
         var options = Valid();
-        options.RetryExchangeName = "";
+        options.RetryExchangeName = "  ";
         Assert.Throws<InvalidOperationException>(() => RabbitMqConsumerOptions.Validate(options));
     }
 
@@ -134,10 +140,23 @@ public sealed class RabbitMqConsumerOptionsTests
     [Fact]
     public void Retry_defaults_are_sane()
     {
-        var options = new RabbitMqConsumerOptions();
+        var options = Valid();
         Assert.Equal(5, options.MaxDeliveryAttempts);
         Assert.Equal(TimeSpan.FromSeconds(5), options.RetryDelay);
-        Assert.Equal("bedrock.retry", options.RetryExchangeName);
+        Assert.Equal("starhill.identity.retry", options.EffectiveRetryExchangeName);
         Assert.Equal("x-bedrock-attempt", RabbitMqConsumerOptions.AttemptHeader);
+    }
+
+    [Fact]
+    public void Two_queues_get_isolated_retry_topology_by_default()
+    {
+        var identity = Valid();
+        var billing = new RabbitMqConsumerOptions { QueueName = "starhill.billing" };
+        billing.RoutingKeys.Add("billing.#");
+
+        Assert.NotEqual(identity.EffectiveRetryExchangeName, billing.EffectiveRetryExchangeName);
+        Assert.NotEqual(identity.EffectiveRetryQueueName, billing.EffectiveRetryQueueName);
+        Assert.NotEqual(identity.EffectiveDeadLetterExchangeName, billing.EffectiveDeadLetterExchangeName);
+        Assert.NotEqual(identity.EffectiveDeadLetterQueueName, billing.EffectiveDeadLetterQueueName);
     }
 }

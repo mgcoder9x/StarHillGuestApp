@@ -51,6 +51,7 @@ public sealed class PostgresIntegrationEventDispatcherTests(PostgresFixture fixt
         services.AddSingleton<IClock>(new TestClock());
         services.AddSingleton<ICurrentUser>(new TestCurrentUser { UserId = Guid.CreateVersion7() });
         services.AddBedrockPersistence<PgOutboxDbContext>(o => o.UseNpgsql(fixture.Container.GetConnectionString()));
+        services.AddBedrockInbox<PgOutboxDbContext>();
         services.AddIntegrationEventRegistry(typeof(ConsumeTestEvent).Assembly);
         services.AddIntegrationEventConsumer();
         var recorder = new Recorder();

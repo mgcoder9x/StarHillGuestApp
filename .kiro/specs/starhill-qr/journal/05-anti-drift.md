@@ -16,7 +16,8 @@
 
 ## Trạng thái hiện tại
 
-- Journal QR: QR-AD-001..006, QR-DV-001, QR-TO-001..003, QR-N-001..004. **Cổng tự động ĐÃ SỐNG** (QR-AD-006): `vp journal` chạy `StarHillJournalConsistencyTests` 5/5 (INV-1..5) — journal QR không còn dựa review thủ công. getDiagnostics vẫn dùng cho `design.md` (Kiro Spec Format).
+- Journal QR: QR-AD-001..015 (QR-AD-001 Superseded by QR-AD-012), QR-DV-001..004, QR-TO-001..004, QR-N-001..016. **Cổng tự động ĐÃ SỐNG** (QR-AD-006): `StarHillJournalConsistencyTests` 5/5 (INV-1..5) chạy trong `StarHill.ArchitectureTests` (13 test) — journal QR không còn dựa review thủ công. getDiagnostics vẫn dùng cho `design.md` (Kiro Spec Format).
+- **P0 REMEDIATION (2026-07-13) — anti-drift TẦNG CẤU TRÚC**: QR-AD-012 (D1-a) XÓA gốc rễ drift — starhill KHÔNG còn bản-copy base (chỉ MỘT base ở platform/) ⇒ drift base BẤT KHẢ THI (mạnh hơn mọi diff-guard). Đây là nâng cấp lớn nhất của cơ chế chống drift pha QR.
 
 ## Guard map — quyết định design (2026-07-11) → cơ chế chống drift
 
@@ -45,6 +46,10 @@
 | QR-DV-003 Rooms bỏ FK chéo-schema + đọc settings qua Contracts | ModuleBoundary (Rooms chỉ ref ResortConfig.Contracts) + review migration (không FK resort_config) | ✅ B-Rooms.2a: migration Rooms không FK chéo-schema (verify). B-Rooms.2b-ii: RenderQrPng đọc GuestWebBaseUrl qua `IResortSettingsQuery` (Contracts); `RoomsBoundaryTests` chặn Application chạm ResortConfig.{Domain,Application,Infrastructure} |
 | QR-DV-002 i18n ở Contracts + manual-register resolver | (design) `ModuleBoundaryTests` giữ Contracts chỉ ref Bedrock.Messaging.Contracts; CP5 unit resolver | ✅ B.1: CP5 `TranslationResolverTests` (ResortConfig.UnitTests, `vp all` 262/0-fail) |
 | QR-AD-009 migration = generated_code (miễn analyzer) | `.editorconfig [**/Persistence/Migrations/*.cs] generated_code=true` | ✅ (`vp build` 0-warning sau khi có migration composite index) |
+| QR-AD-012 D1-a: MỘT base (starhill ref `platform/src`, không bản-copy) → drift base bất khả thi | Không còn 2 bản base để lệch (structural); `starhill/Platform.slnx` chỉ project nghiệp vụ; build fail-fast nếu base lệch API | ✅ P0: `dotnet build Platform.slnx` 0-warning/0-error; 66 test 0-fail; Host boot ValidateOnBuild pass |
+| QR-AD-013 keyed persistence 3 module (P0-1 no last-registration-wins) | compile-enforce (base AD-098 `ICommandUseCase:ITransactionalUseCase`) + Host boot `WebApplicationFactory` (ValidateOnBuild=true) resolve keyed đúng | ✅ P0: StarHill.Api.Tests 3/3; Identity/Rooms/ResortConfig integration pass; void command khai `PersistenceKey` |
+| QR-AD-014 một DB nhiều schema (P0-2) + migration Identity khớp base | `PendingModelChangesWarning` test (Identity.IntegrationTests) chống migration-lệch-model; boot log `CREATE SCHEMA identity/resort_config/rooms` cùng DB `starhill` | ✅ P0: Identity.IntegrationTests 2/2; docker-compose migrate 3 schema verify |
+| QR-AD-015 compose boot end-to-end (P0-3): repo-root context + RabbitMQ readiness | `docker compose up` → `/health/ready`=200; `starhill-ci.yml` docker-image build context repo-root; healthcheck `check_port_connectivity` | ✅ P0: 3 container Up, health ready/live=200 (Docker thật) |
 
 - design.md pha QR: getDiagnostics **0** (Kiro Spec Format hợp lệ) — kiểm mỗi lần sửa.
 - QR-AD-003 (deploy) + QR-AD-004 (tên Concierge): không code-enforceable trực tiếp — enforce bằng review + naming khi tạo project.

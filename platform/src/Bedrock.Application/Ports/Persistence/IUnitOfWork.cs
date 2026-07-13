@@ -21,3 +21,12 @@ public interface IUnitOfWork
         Func<CancellationToken, Task<TResult>> action,
         CancellationToken ct = default);
 }
+
+/// <summary>
+/// Resolve Unit of Work theo module key cho pipeline transaction. Application chỉ biết port này; cơ chế keyed DI
+/// nằm ở Infrastructure nên command của module A không thể vô tình chạy bằng DbContext của module B.
+/// </summary>
+public interface IUnitOfWorkResolver
+{
+    IUnitOfWork Resolve(string? persistenceKey);
+}

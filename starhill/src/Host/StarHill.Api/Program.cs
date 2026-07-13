@@ -71,18 +71,22 @@ services.AddRoomsInfrastructure(options => options.UseNpgsql(roomsConnectionStri
 if (bool.TryParse(configuration["Bedrock:Messaging:Enabled"], out var messagingEnabled) && messagingEnabled)
 {
     services.AddRabbitMqMessaging(configuration);
-    services.AddOutboxDispatcher<IdentityDbContext>();
+    // KEYED (P0-1): dispatcher/consumer gắn IdentityDbContext theo module key Identity → outbox/inbox chạy đúng
+    // scope+DbContext module (không còn last-registration-wins). Mirror platform sample Host.
+    services.AddOutboxDispatcher<IdentityDbContext>(IdentityInfrastructureExtensions.PersistenceKey);
     services.AddOutboxDispatcherWorker<IdentityDbContext>();
     services.AddIntegrationEventRegistry(typeof(UserTokenRefreshedIntegrationEvent).Assembly);
 
     // CONSUME side (AD-059): dispatch core agnostic (Bedrock.Infrastructure) + handler demo + subscriber RabbitMQ.
     // Topology TỐI THIỂU cho sample (queue + binding) — quyết định app (N-063). Handler chạy trong transaction
     // consume (inbox + business nguyên tử, F30). Multi-module thật: mỗi module một consumer + scope riêng.
-    services.AddIntegrationEventConsumer();
-    services.AddScoped<IIntegrationEventHandler<UserTokenRefreshedIntegrationEvent>, UserTokenRefreshedLogHandler>();
+    services.AddIntegrationEventConsumer<IdentityDbContext>(IdentityInfrastructureExtensions.PersistenceKey);
+    services.AddKeyedScoped<IIntegrationEventHandler<UserTokenRefreshedIntegrationEvent>, UserTokenRefreshedLogHandler>(
+        IdentityInfrastructureExtensions.PersistenceKey);
     services.AddRabbitMqConsumer(o =>
     {
         o.QueueName = "starhill.identity";
+        o.DispatcherServiceKey = IdentityInfrastructureExtensions.PersistenceKey;
         o.RoutingKeys.Add("identity.#"); // nhận mọi event của module Identity (topic pattern).
     });
 }

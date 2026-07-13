@@ -8,7 +8,7 @@
     build    -> dotnet build Platform.slnx (cổng 0-warning; TreatWarningsAsErrors)
     ci       -> python platform\tests\validate_ci.py (validate .github/workflows/ci.yml — AD-061)
     test     -> dotnet test Platform.slnx (test Docker SKIP mềm khi thiếu Docker — fixture lazy-build N-067)
-    journal  -> JournalConsistencyTests (anti-drift INV-1..5) — CẢ journal base VÀ journal QR (starhill-qr)
+    journal  -> JournalConsistencyTests (anti-drift INV-1..5) — journal QR (starhill-qr); base do platform/ gác (D1-a)
     all      -> build + ci + test  (mặc định)
 
   Exit code: 0 = mọi bước OK; 1 = có bước fail.
@@ -24,7 +24,8 @@ $ErrorActionPreference = 'Continue'
 $Platform = Split-Path -Parent $PSScriptRoot
 $RepoRoot = Split-Path -Parent $Platform
 $Solution = Join-Path $Platform 'Platform.slnx'
-$ArchProj = Join-Path $Platform 'tests\Bedrock.ArchitectureTests\Bedrock.ArchitectureTests.csproj'
+# D1-a: base test (gồm Bedrock.ArchitectureTests + JournalConsistency base) sống DUY NHẤT ở platform/. starhill chỉ
+# giữ test NGHIỆP VỤ QR → journal-consistency ở đây chỉ gác journal starhill-qr (StarHill.ArchitectureTests).
 $QrArchProj = Join-Path $Platform 'tests\StarHill.ArchitectureTests\StarHill.ArchitectureTests.csproj'
 $ValidateCi = Join-Path $Platform 'tests\validate_ci.py'
 
@@ -48,13 +49,9 @@ function Step-Ci { python $ValidateCi }
 function Step-TestFull { dotnet test $Solution --nologo }
 function Step-TestNoBuild { dotnet test $Solution --no-build --nologo }
 function Step-Journal {
-    # BASE journal (platform-base) — Bedrock.ArchitectureTests.JournalConsistencyTests
-    dotnet test $ArchProj --nologo --filter 'FullyQualifiedName~JournalConsistencyTests'
-    $a = $LASTEXITCODE
-    # QR journal (starhill-qr) — StarHill.ArchitectureTests.StarHillJournalConsistencyTests
+    # D1-a: journal BASE (platform-base) do platform/ tự gác (Bedrock.ArchitectureTests ở platform/). starhill chỉ
+    # gác journal QR (starhill-qr) — StarHill.ArchitectureTests.StarHillJournalConsistencyTests.
     dotnet test $QrArchProj --nologo --filter 'FullyQualifiedName~JournalConsistencyTests'
-    $b = $LASTEXITCODE
-    if ($a -ne 0 -or $b -ne 0) { $global:LASTEXITCODE = 1 } else { $global:LASTEXITCODE = 0 }
 }
 
 switch ($Scope) {

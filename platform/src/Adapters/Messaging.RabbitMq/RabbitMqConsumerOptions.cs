@@ -43,8 +43,11 @@ public sealed class RabbitMqConsumerOptions
     /// <summary>Header mang số lần đã giao (app quản để đếm tin cậy, không phụ thuộc parse <c>x-death</c>).</summary>
     public const string AttemptHeader = "x-bedrock-attempt";
 
-    /// <summary>Retry exchange (durable) — nơi app publish message cần retry; route tới retry-queue.</summary>
-    public string RetryExchangeName { get; set; } = "bedrock.retry";
+    /// <summary>Retry exchange custom. Rỗng = <c>{QueueName}.retry</c>, tránh cross-route giữa các consumer.</summary>
+    public string RetryExchangeName { get; set; } = string.Empty;
+
+    internal string EffectiveRetryExchangeName =>
+        string.IsNullOrWhiteSpace(RetryExchangeName) ? QueueName + ".retry" : RetryExchangeName;
 
     /// <summary>Retry queue. Rỗng = <c>{QueueName}.retry</c>. Có <c>x-message-ttl</c>=RetryDelay + dead-letter về main exchange.</summary>
     public string RetryQueueName { get; set; } = string.Empty;
@@ -52,8 +55,11 @@ public sealed class RabbitMqConsumerOptions
     internal string EffectiveRetryQueueName =>
         string.IsNullOrWhiteSpace(RetryQueueName) ? QueueName + ".retry" : RetryQueueName;
 
-    /// <summary>Durable dead-letter exchange do consumer tự provision; mọi reject không-requeue đi vào đây.</summary>
-    public string DeadLetterExchangeName { get; set; } = "bedrock.dead-letter";
+    /// <summary>Dead-letter exchange custom. Rỗng = <c>{QueueName}.dead-letter</c>, cô lập quarantine per queue.</summary>
+    public string DeadLetterExchangeName { get; set; } = string.Empty;
+
+    internal string EffectiveDeadLetterExchangeName =>
+        string.IsNullOrWhiteSpace(DeadLetterExchangeName) ? QueueName + ".dead-letter" : DeadLetterExchangeName;
 
     /// <summary>Queue quarantine. Rỗng = tự dùng <c>{QueueName}.dead-letter</c>.</summary>
     public string DeadLetterQueueName { get; set; } = string.Empty;
@@ -106,14 +112,18 @@ public sealed class RabbitMqConsumerOptions
             throw new InvalidOperationException("RabbitMqConsumerOptions.RetryDelay phải > 0.");
         }
 
-        if (string.IsNullOrWhiteSpace(options.RetryExchangeName))
-        {
-            throw new InvalidOperationException("RabbitMqConsumerOptions.RetryExchangeName rỗng.");
-        }
+        ValidateOptionalName(options.RetryExchangeName, nameof(RetryExchangeName));
+        ValidateOptionalName(options.DeadLetterExchangeName, nameof(DeadLetterExchangeName));
+        ValidateOptionalName(options.RetryQueueName, nameof(RetryQueueName));
+        ValidateOptionalName(options.DeadLetterQueueName, nameof(DeadLetterQueueName));
+    }
 
-        if (string.IsNullOrWhiteSpace(options.DeadLetterExchangeName))
+    private static void ValidateOptionalName(string value, string propertyName)
+    {
+        // Empty means "derive from QueueName"; whitespace is almost always an accidental bad configuration value.
+        if (value.Length > 0 && string.IsNullOrWhiteSpace(value))
         {
-            throw new InvalidOperationException("RabbitMqConsumerOptions.DeadLetterExchangeName rỗng.");
+            throw new InvalidOperationException($"RabbitMqConsumerOptions.{propertyName} chỉ chứa khoảng trắng.");
         }
     }
 }

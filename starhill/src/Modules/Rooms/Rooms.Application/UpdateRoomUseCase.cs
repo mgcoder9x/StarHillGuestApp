@@ -2,6 +2,7 @@ using Bedrock.Application.Ports.Persistence;
 using Bedrock.Application.UseCases;
 using Bedrock.Domain.Results;
 using FluentValidation;
+using Rooms.Contracts;
 using Rooms.Domain;
 
 namespace Rooms.Application;
@@ -12,6 +13,10 @@ namespace Rooms.Application;
 /// </summary>
 public sealed class UpdateRoomUseCase : ICommandUseCase<UpdateRoomInput>
 {
+    // KEYED (P0-1): use case ghi khai module key → TransactionCommandUseCaseDecorator resolve ĐÚNG Unit of Work
+    // của Rooms (không còn last-registration-wins). Cùng key/scope với IUnitOfWork inject bên dưới → nhất quán.
+    public string PersistenceKey => RoomsModule.PersistenceKey;
+
     private readonly IRepository<Room> _rooms;
     private readonly IUnitOfWork _unitOfWork;
 

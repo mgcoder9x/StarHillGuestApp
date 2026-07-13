@@ -55,6 +55,32 @@ public sealed class OutboxMetricsTests
         Assert.Equal(0, capture.Counter("bedrock.outbox.published"));
     }
 
+    [Fact]
+    public async Task Ownership_changed_during_publish_records_lease_lost_instead_of_published()
+    {
+        using var capture = new OutboxMetricCapture();
+        var publisher = new CallbackPublisher();
+        await using var harness = await CreateHarnessAsync(publisher);
+        await SeedAsync(harness, occurredOffset: TimeSpan.Zero);
+
+        publisher.OnPublish = async messageId =>
+        {
+            await using var competingScope = harness.CreateScope();
+            var competingDb = competingScope.ServiceProvider.GetRequiredService<TestDbContext>();
+            await competingDb.Set<OutboxMessage>()
+                .Where(message => message.Id == messageId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(message => message.ClaimId, Guid.CreateVersion7())
+                    .SetProperty(message => message.ClaimedUntil, harness.Clock.UtcNow.AddMinutes(5)));
+        };
+
+        await RunDispatcherAsync(harness);
+
+        Assert.Equal(1, publisher.PublishCalls);
+        Assert.Equal(1, capture.Counter("bedrock.outbox.lease_lost"));
+        Assert.Equal(0, capture.Counter("bedrock.outbox.published"));
+    }
+
     private static async Task<PersistenceHarness> CreateHarnessAsync(
         IEventBusPublisher publisher, Action<OutboxDispatcherOptions>? configure = null) =>
         await PersistenceHarness.CreateAsync(services =>
@@ -81,6 +107,21 @@ public sealed class OutboxMetricsTests
         await using var scope = harness.CreateScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IOutboxDispatcher>();
         await dispatcher.DispatchPendingAsync();
+    }
+}
+
+internal sealed class CallbackPublisher : IEventBusPublisher
+{
+    public Func<Guid, Task>? OnPublish { get; set; }
+    public int PublishCalls { get; private set; }
+
+    public async Task PublishAsync(OutgoingIntegrationMessage message, CancellationToken ct = default)
+    {
+        PublishCalls++;
+        if (OnPublish is not null)
+        {
+            await OnPublish(message.Id);
+        }
     }
 }
 

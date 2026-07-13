@@ -35,6 +35,11 @@ public static class BedrockAuthExtensions
             services.AddSingleton(sp => sp.GetRequiredService<IOptions<JwtKeyRingOptions>>().Value);
         }
 
+        // Verify-only hosts must fail at startup too; invalid key material must never wait for first request.
+        services.AddOptions<JwtKeyRingOptions>().ValidateOnStart();
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IValidateOptions<JwtKeyRingOptions>, JwtKeyRingOptionsValidator>());
+
         services.AddHttpContextAccessor();
         services.TryAddScoped<ICurrentUser, HttpContextCurrentUser>();
 

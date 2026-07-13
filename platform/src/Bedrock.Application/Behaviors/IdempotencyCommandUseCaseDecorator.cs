@@ -98,4 +98,6 @@ public sealed class IdempotencyCommandUseCaseDecorator<TInput> : ICommandUseCase
 
         return await _inner.ExecuteAsync(input, ct).ConfigureAwait(false);
     }
+
+    public string? PersistenceKey => _inner.PersistenceKey;
 }

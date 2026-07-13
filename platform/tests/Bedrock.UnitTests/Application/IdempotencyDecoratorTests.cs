@@ -50,6 +50,8 @@ public sealed class IdempotencyDecoratorTests
 
     private sealed class CountingCommand<TIn> : ICommandUseCase<TIn>
     {
+        public string? PersistenceKey => null;
+
         public int Runs { get; private set; }
 
         public Task<Result> ExecuteAsync(TIn input, CancellationToken ct = default)

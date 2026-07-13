@@ -14,7 +14,7 @@ namespace Bedrock.Infrastructure.DependencyInjection;
 public static class OutboxDispatcherExtensions
 {
     /// <summary>
-    /// Đăng ký dispatcher outbox cho DbContext <typeparamref name="TContext"/> (per-module) + inbox store.
+    /// Đăng ký dispatcher outbox cho DbContext <typeparamref name="TContext"/> (per-module).
     /// Yêu cầu <see cref="IEventBusPublisher"/> đã đăng ký (adapter, vd RabbitMQ) — nếu không, resolve sẽ
     /// fail-fast khi worker chạy. Named-options theo context cho phép mỗi module tinh chỉnh riêng.
     /// </summary>
@@ -32,7 +32,6 @@ public static class OutboxDispatcherExtensions
 
         services.AddScoped<EfOutboxDispatcher<TContext>>();
         services.AddScoped<IOutboxDispatcher>(sp => sp.GetRequiredService<EfOutboxDispatcher<TContext>>());
-        services.TryAddScoped<IInboxStore, EfInboxStore>();
         return services;
     }
 
@@ -117,14 +116,14 @@ public static class OutboxDispatcherExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.TryAddScoped<IInboxStore, EfInboxStore>();
         services.TryAddScoped<IIntegrationEventDispatcher, EfIntegrationEventDispatcher>();
         return services;
     }
 
     /// <summary>
     /// Wire consumer theo module key để UoW/Inbox/handler của module không resolve nhầm DbContext hoặc handler
-    /// của module khác. Các dependency keyed phải được đăng ký bởi AddBedrockPersistence(moduleKey, ...).
+    /// của module khác. Các dependency keyed phải được đăng ký bởi AddBedrockPersistence(moduleKey, ...) và
+    /// AddBedrockInbox(moduleKey).
     /// </summary>
     public static IServiceCollection AddIntegrationEventConsumer<TContext>(
         this IServiceCollection services,

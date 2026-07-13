@@ -16,7 +16,7 @@ namespace Adapters.Messaging.RabbitMq;
 /// <see cref="IIntegrationEventDispatcher"/> (impl agnostic ở Infrastructure — adapter KHÔNG ref Infra, giữ CP3) →
 /// dispatch → ACK/NACK theo kết quả.
 /// <para>
-/// <b>Topology (consumer tự provision):</b> exchange topic (durable) + DLX topic (durable, <see cref="RabbitMqConsumerOptions.DeadLetterExchangeName"/>)
+/// <b>Topology (consumer tự provision):</b> exchange topic (durable) + DLX topic (durable, effective dead-letter exchange)
 /// + DLQ (durable, <see cref="RabbitMqConsumerOptions.EffectiveDeadLetterQueueName"/> bind "#") + queue chính có
 /// <c>x-dead-letter-exchange</c> trỏ DLX. Nhờ vậy MỌI <c>BasicNack(requeue=false)</c> ĐI VÀO DLX (quarantine), KHÔNG drop.
 /// </para>
@@ -51,11 +51,16 @@ namespace Adapters.Messaging.RabbitMq;
 public sealed partial class RabbitMqConsumer(
     RabbitMqOptions options,
     RabbitMqConsumerOptions consumerOptions,
+    RabbitMqConsumerState state,
     IServiceScopeFactory scopeFactory,
     ILogger<RabbitMqConsumer> logger) : BackgroundService
 {
     private IConnection? _connection;
     private IChannel? _channel;
+    private string? _consumerTag;
+    private readonly Lock _inFlightLock = new();
+    private int _inFlight;
+    private TaskCompletionSource _drained = CompletedDrain();
 
     // P0-02: channel RIÊNG cho retry-publish, bật publisher-confirms để await broker-ack trước khi ACK bản gốc
     // (bảo toàn at-least-once). Tách khỏi _channel (consume/ack) để không xen chuỗi delivery. Publish serialize qua gate
@@ -65,165 +70,193 @@ public sealed partial class RabbitMqConsumer(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        state.TransitionTo(RabbitMqConsumerStatus.Connecting);
         var factory = RabbitMqConnectionFactory.Create(options);
-
-        _connection = await factory.CreateConnectionAsync(stoppingToken).ConfigureAwait(false);
-        _channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken).ConfigureAwait(false);
-
-        await _channel.ExchangeDeclareAsync(
-            exchange: options.ExchangeName, type: ExchangeType.Topic, durable: true, autoDelete: false,
-            cancellationToken: stoppingToken).ConfigureAwait(false);
-
-        await _channel.ExchangeDeclareAsync(
-            exchange: consumerOptions.DeadLetterExchangeName,
-            type: ExchangeType.Topic,
-            durable: true,
-            autoDelete: false,
-            cancellationToken: stoppingToken).ConfigureAwait(false);
-        await _channel.QueueDeclareAsync(
-            queue: consumerOptions.EffectiveDeadLetterQueueName,
-            durable: true,
-            exclusive: false,
-            autoDelete: false,
-            cancellationToken: stoppingToken).ConfigureAwait(false);
-        await _channel.QueueBindAsync(
-            queue: consumerOptions.EffectiveDeadLetterQueueName,
-            exchange: consumerOptions.DeadLetterExchangeName,
-            routingKey: "#",
-            cancellationToken: stoppingToken).ConfigureAwait(false);
-
-        // P0-02 RETRY TOPOLOGY: retry exchange (topic, durable) + retry queue có x-message-ttl=RetryDelay và
-        // x-dead-letter-exchange = MAIN exchange → message chờ hết TTL rồi tự dead-letter QUAY LẠI main (giữ routing
-        // key gốc) → redeliver. App publish sang retry exchange (kèm attempt+1) cho lỗi transient còn lượt.
-        await _channel.ExchangeDeclareAsync(
-            exchange: consumerOptions.RetryExchangeName, type: ExchangeType.Topic, durable: true, autoDelete: false,
-            cancellationToken: stoppingToken).ConfigureAwait(false);
-        var retryArguments = new Dictionary<string, object?>(StringComparer.Ordinal)
-        {
-            ["x-message-ttl"] = (int)consumerOptions.RetryDelay.TotalMilliseconds,
-            ["x-dead-letter-exchange"] = options.ExchangeName, // hết TTL → quay lại main exchange.
-        };
-        await _channel.QueueDeclareAsync(
-            queue: consumerOptions.EffectiveRetryQueueName, durable: true, exclusive: false, autoDelete: false,
-            arguments: retryArguments,
-            cancellationToken: stoppingToken).ConfigureAwait(false);
-        await _channel.QueueBindAsync(
-            queue: consumerOptions.EffectiveRetryQueueName,
-            exchange: consumerOptions.RetryExchangeName,
-            routingKey: "#",
-            cancellationToken: stoppingToken).ConfigureAwait(false);
-
-        // Channel retry-publish riêng, BẬT publisher-confirms → BasicPublishAsync chờ broker-ack (bảo toàn khi retry).
-        _retryChannel = await _connection.CreateChannelAsync(
-            new CreateChannelOptions(publisherConfirmationsEnabled: true, publisherConfirmationTrackingEnabled: true),
-            cancellationToken: stoppingToken).ConfigureAwait(false);
-
-        var queueArguments = new Dictionary<string, object?>(consumerOptions.QueueArguments, StringComparer.Ordinal)
-        {
-            ["x-dead-letter-exchange"] = consumerOptions.DeadLetterExchangeName,
-        };
-
-        await _channel.QueueDeclareAsync(
-            queue: consumerOptions.QueueName, durable: true, exclusive: false, autoDelete: false,
-            arguments: queueArguments,
-            cancellationToken: stoppingToken).ConfigureAwait(false);
-
-        foreach (var routingKey in consumerOptions.RoutingKeys)
-        {
-            await _channel.QueueBindAsync(
-                queue: consumerOptions.QueueName, exchange: options.ExchangeName, routingKey: routingKey,
-                cancellationToken: stoppingToken).ConfigureAwait(false);
-        }
-
-        await _channel.BasicQosAsync(
-            prefetchSize: 0, prefetchCount: consumerOptions.PrefetchCount, global: false,
-            cancellationToken: stoppingToken).ConfigureAwait(false);
-
-        var consumer = new AsyncEventingBasicConsumer(_channel);
-        consumer.ReceivedAsync += OnReceivedAsync;
-
-        await _channel.BasicConsumeAsync(
-            queue: consumerOptions.QueueName, autoAck: false, consumer: consumer,
-            cancellationToken: stoppingToken).ConfigureAwait(false);
-
-        Log.ConsumerStarted(logger, consumerOptions.QueueName, consumerOptions.EffectiveConsumerName);
-
         try
         {
-            await Task.Delay(Timeout.Infinite, stoppingToken).ConfigureAwait(false);
+            _connection = await factory.CreateConnectionAsync(stoppingToken).ConfigureAwait(false);
+            _connection.ConnectionShutdownAsync += OnConnectionShutdownAsync;
+            _connection.RecoverySucceededAsync += OnRecoverySucceededAsync;
+            _channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken).ConfigureAwait(false);
+
+            await _channel.ExchangeDeclareAsync(
+                exchange: options.ExchangeName, type: ExchangeType.Topic, durable: true, autoDelete: false,
+                cancellationToken: stoppingToken).ConfigureAwait(false);
+
+            await _channel.ExchangeDeclareAsync(
+                exchange: consumerOptions.EffectiveDeadLetterExchangeName,
+                type: ExchangeType.Topic,
+                durable: true,
+                autoDelete: false,
+                cancellationToken: stoppingToken).ConfigureAwait(false);
+            await _channel.QueueDeclareAsync(
+                queue: consumerOptions.EffectiveDeadLetterQueueName,
+                durable: true,
+                exclusive: false,
+                autoDelete: false,
+                cancellationToken: stoppingToken).ConfigureAwait(false);
+            await _channel.QueueBindAsync(
+                queue: consumerOptions.EffectiveDeadLetterQueueName,
+                exchange: consumerOptions.EffectiveDeadLetterExchangeName,
+                routingKey: "#",
+                cancellationToken: stoppingToken).ConfigureAwait(false);
+
+            // P0-02 RETRY TOPOLOGY: retry exchange (topic, durable) + retry queue có x-message-ttl=RetryDelay và
+            // x-dead-letter-exchange = MAIN exchange → message chờ hết TTL rồi tự dead-letter QUAY LẠI main (giữ routing
+            // key gốc) → redeliver. App publish sang retry exchange (kèm attempt+1) cho lỗi transient còn lượt.
+            await _channel.ExchangeDeclareAsync(
+                exchange: consumerOptions.EffectiveRetryExchangeName, type: ExchangeType.Topic, durable: true, autoDelete: false,
+                cancellationToken: stoppingToken).ConfigureAwait(false);
+            var retryArguments = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["x-message-ttl"] = (int)consumerOptions.RetryDelay.TotalMilliseconds,
+                ["x-dead-letter-exchange"] = options.ExchangeName, // hết TTL → quay lại main exchange.
+            };
+            await _channel.QueueDeclareAsync(
+                queue: consumerOptions.EffectiveRetryQueueName, durable: true, exclusive: false, autoDelete: false,
+                arguments: retryArguments,
+                cancellationToken: stoppingToken).ConfigureAwait(false);
+            await _channel.QueueBindAsync(
+                queue: consumerOptions.EffectiveRetryQueueName,
+                exchange: consumerOptions.EffectiveRetryExchangeName,
+                routingKey: "#",
+                cancellationToken: stoppingToken).ConfigureAwait(false);
+
+            // Channel retry-publish riêng, BẬT publisher-confirms → BasicPublishAsync chờ broker-ack (bảo toàn khi retry).
+            _retryChannel = await _connection.CreateChannelAsync(
+                new CreateChannelOptions(publisherConfirmationsEnabled: true, publisherConfirmationTrackingEnabled: true),
+                cancellationToken: stoppingToken).ConfigureAwait(false);
+
+            var queueArguments = new Dictionary<string, object?>(consumerOptions.QueueArguments, StringComparer.Ordinal)
+            {
+                ["x-dead-letter-exchange"] = consumerOptions.EffectiveDeadLetterExchangeName,
+            };
+
+            await _channel.QueueDeclareAsync(
+                queue: consumerOptions.QueueName, durable: true, exclusive: false, autoDelete: false,
+                arguments: queueArguments,
+                cancellationToken: stoppingToken).ConfigureAwait(false);
+
+            foreach (var routingKey in consumerOptions.RoutingKeys)
+            {
+                await _channel.QueueBindAsync(
+                    queue: consumerOptions.QueueName, exchange: options.ExchangeName, routingKey: routingKey,
+                    cancellationToken: stoppingToken).ConfigureAwait(false);
+            }
+
+            await _channel.BasicQosAsync(
+                prefetchSize: 0, prefetchCount: consumerOptions.PrefetchCount, global: false,
+                cancellationToken: stoppingToken).ConfigureAwait(false);
+
+            state.TransitionTo(RabbitMqConsumerStatus.TopologyReady);
+
+            var consumer = new AsyncEventingBasicConsumer(_channel);
+            consumer.ReceivedAsync += OnReceivedAsync;
+            consumer.RegisteredAsync += OnConsumerRegisteredAsync;
+            consumer.UnregisteredAsync += OnConsumerUnregisteredAsync;
+            consumer.ShutdownAsync += OnConsumerShutdownAsync;
+
+            _consumerTag = await _channel.BasicConsumeAsync(
+                queue: consumerOptions.QueueName, autoAck: false, consumer: consumer,
+                cancellationToken: stoppingToken).ConfigureAwait(false);
+
+            state.TransitionTo(RabbitMqConsumerStatus.Consuming, _consumerTag);
+            Log.ConsumerStarted(logger, consumerOptions.QueueName, consumerOptions.EffectiveConsumerName);
+
+            try
+            {
+                await Task.Delay(Timeout.Infinite, stoppingToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // Shutdown êm.
+            }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
-            // Shutdown êm.
+            // Host shutdown while connecting/provisioning.
+        }
+        catch
+        {
+            state.TransitionTo(RabbitMqConsumerStatus.Faulted);
+            throw;
         }
     }
 
     private async Task OnReceivedAsync(object sender, BasicDeliverEventArgs ea)
     {
-        var channel = _channel!;
-        var deliveryTag = ea.DeliveryTag;
-
-        // Envelope: MessageId (= IntegrationEvent.Id) + header event-type. Thiếu/hỏng → NACK requeue=false → DLX (quarantine).
-        if (!Guid.TryParse(ea.BasicProperties.MessageId, out var messageId))
-        {
-            Log.MalformedEnvelope(logger, "MessageId", ea.BasicProperties.MessageId ?? "(null)");
-            await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false).ConfigureAwait(false);
-            return;
-        }
-
-        var eventType = DecodeHeader(ea.BasicProperties.Headers, RabbitMqMessageMapper.EventTypeHeader);
-        if (string.IsNullOrEmpty(eventType))
-        {
-            Log.MalformedEnvelope(logger, RabbitMqMessageMapper.EventTypeHeader, "(null)");
-            await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false).ConfigureAwait(false);
-            return;
-        }
-
-        var incoming = new IncomingIntegrationMessage(
-            messageId, consumerOptions.EffectiveConsumerName, eventType, ea.Body.ToArray())
-        {
-            // A-10: KHÔNG vứt metadata envelope — mang content-type (dispatcher validate == JSON) + schema-version.
-            ContentType = ea.BasicProperties.ContentType,
-            SchemaVersion = DecodeSchemaVersion(ea.BasicProperties.Headers),
-            // A-29: mang W3C trace context (producer lưu Activity.Id vào CorrelationId) → dispatcher tạo child span.
-            CorrelationId = ea.BasicProperties.CorrelationId,
-        };
-
-        // P0-02: số lần đã giao TRƯỚC lần này (0 nếu lần đầu từ main). Dùng để giới hạn retry transient.
-        var priorAttempts = DecodeAttempt(ea.BasicProperties.Headers);
-
-#pragma warning disable CA1031 // Bắt rộng CÓ CHỦ ĐÍCH: lỗi handler/hạ tầng khi dispatch → phân loại transient/permanent (retry hoặc DLX), KHÔNG để ném ra dispatch loop của client (sẽ hạ consumer).
-        DeliveryAction action;
+        BeginDelivery();
         try
         {
-            await using var scope = scopeFactory.CreateAsyncScope();
-            var dispatcher = string.IsNullOrWhiteSpace(consumerOptions.DispatcherServiceKey)
-                ? scope.ServiceProvider.GetRequiredService<IIntegrationEventDispatcher>()
-                : scope.ServiceProvider.GetRequiredKeyedService<IIntegrationEventDispatcher>(
-                    consumerOptions.DispatcherServiceKey);
-            var outcome = await dispatcher.DispatchAsync(incoming).ConfigureAwait(false);
-            action = RabbitMqDeliveryPolicy.ForOutcome(outcome);
+            var channel = _channel!;
+            var deliveryTag = ea.DeliveryTag;
 
-            if (action == DeliveryAction.DeadLetter)
+            // Envelope: MessageId (= IntegrationEvent.Id) + header event-type. Thiếu/hỏng → NACK requeue=false → DLX (quarantine).
+            if (!Guid.TryParse(ea.BasicProperties.MessageId, out var messageId))
             {
-                Log.DeadLettered(logger, eventType, messageId);
+                Log.MalformedEnvelope(logger, "MessageId", ea.BasicProperties.MessageId ?? "(null)");
+                await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false).ConfigureAwait(false);
+                return;
             }
-        }
-        catch (Exception ex)
-        {
-            action = RabbitMqDeliveryPolicy.ForException(ex, priorAttempts, consumerOptions.MaxDeliveryAttempts);
-            if (action == DeliveryAction.Retry)
+
+            var eventType = DecodeHeader(ea.BasicProperties.Headers, RabbitMqMessageMapper.EventTypeHeader);
+            if (string.IsNullOrEmpty(eventType))
             {
-                Log.RetryScheduled(logger, eventType, messageId, priorAttempts + 1, consumerOptions.MaxDeliveryAttempts, ex);
+                Log.MalformedEnvelope(logger, RabbitMqMessageMapper.EventTypeHeader, "(null)");
+                await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false).ConfigureAwait(false);
+                return;
             }
-            else
+
+            var incoming = new IncomingIntegrationMessage(
+                messageId, consumerOptions.EffectiveConsumerName, eventType, ea.Body.ToArray())
             {
-                Log.DispatchFailed(logger, eventType, messageId, priorAttempts + 1, ex);
+                // A-10: KHÔNG vứt metadata envelope — mang content-type (dispatcher validate == JSON) + schema-version.
+                ContentType = ea.BasicProperties.ContentType,
+                SchemaVersion = DecodeSchemaVersion(ea.BasicProperties.Headers),
+                // A-29: mang W3C trace context (producer lưu Activity.Id vào CorrelationId) → dispatcher tạo child span.
+                CorrelationId = ea.BasicProperties.CorrelationId,
+            };
+
+            // P0-02: số lần đã giao TRƯỚC lần này (0 nếu lần đầu từ main). Dùng để giới hạn retry transient.
+            var priorAttempts = DecodeAttempt(ea.BasicProperties.Headers);
+
+#pragma warning disable CA1031 // Bắt rộng CÓ CHỦ ĐÍCH: lỗi handler/hạ tầng khi dispatch → phân loại transient/permanent (retry hoặc DLX), KHÔNG để ném ra dispatch loop của client (sẽ hạ consumer).
+            DeliveryAction action;
+            try
+            {
+                await using var scope = scopeFactory.CreateAsyncScope();
+                var dispatcher = string.IsNullOrWhiteSpace(consumerOptions.DispatcherServiceKey)
+                    ? scope.ServiceProvider.GetRequiredService<IIntegrationEventDispatcher>()
+                    : scope.ServiceProvider.GetRequiredKeyedService<IIntegrationEventDispatcher>(
+                        consumerOptions.DispatcherServiceKey);
+                var outcome = await dispatcher.DispatchAsync(incoming).ConfigureAwait(false);
+                action = RabbitMqDeliveryPolicy.ForOutcome(outcome);
+
+                if (action == DeliveryAction.DeadLetter)
+                {
+                    Log.DeadLettered(logger, eventType, messageId);
+                }
             }
-        }
+            catch (Exception ex)
+            {
+                action = RabbitMqDeliveryPolicy.ForException(ex, priorAttempts, consumerOptions.MaxDeliveryAttempts);
+                if (action == DeliveryAction.Retry)
+                {
+                    Log.RetryScheduled(logger, eventType, messageId, priorAttempts + 1, consumerOptions.MaxDeliveryAttempts, ex);
+                }
+                else
+                {
+                    Log.DispatchFailed(logger, eventType, messageId, priorAttempts + 1, ex);
+                }
+            }
 #pragma warning restore CA1031
 
-        await ApplyDeliveryActionAsync(channel, ea, deliveryTag, action, priorAttempts).ConfigureAwait(false);
+            await ApplyDeliveryActionAsync(channel, ea, deliveryTag, action, priorAttempts).ConfigureAwait(false);
+        }
+        finally
+        {
+            EndDelivery();
+        }
     }
 
     /// <summary>
@@ -261,7 +294,7 @@ public sealed partial class RabbitMqConsumer(
     }
 
     /// <summary>
-    /// Publish bản retry sang <see cref="RabbitMqConsumerOptions.RetryExchangeName"/> (giữ routing key gốc), gắn header
+    /// Publish bản retry sang effective retry exchange (giữ routing key gốc), gắn header
     /// <c>x-bedrock-attempt</c> = <paramref name="attempt"/> và BẢO TOÀN envelope (MessageId/ContentType/event-type/
     /// schema-version/CorrelationId/Persistent). Channel bật confirms → await broker-ack. Trả <c>true</c> nếu broker
     /// xác nhận; <c>false</c> (nuốt exception có log) nếu publish lỗi để caller đẩy về DLX final (bảo toàn message).
@@ -294,7 +327,7 @@ public sealed partial class RabbitMqConsumer(
         try
         {
             await _retryChannel!.BasicPublishAsync(
-                exchange: consumerOptions.RetryExchangeName,
+                exchange: consumerOptions.EffectiveRetryExchangeName,
                 routingKey: ea.RoutingKey, // = event-type gốc → retry-queue bind "#" nhận, dead-letter về main giữ key.
                 mandatory: true,
                 basicProperties: properties,
@@ -389,26 +422,154 @@ public sealed partial class RabbitMqConsumer(
         return decoded < 0 ? 0 : decoded;
     }
 
+    private Task OnConnectionShutdownAsync(object sender, ShutdownEventArgs args)
+    {
+        var status = state.Snapshot().Status;
+        if (status is not RabbitMqConsumerStatus.Stopping and not RabbitMqConsumerStatus.Stopped)
+        {
+            state.TransitionTo(RabbitMqConsumerStatus.Recovering);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnRecoverySucceededAsync(object sender, AsyncEventArgs args)
+    {
+        var status = state.Snapshot().Status;
+        if (status is not RabbitMqConsumerStatus.Stopping and not RabbitMqConsumerStatus.Stopped)
+        {
+            state.TransitionTo(RabbitMqConsumerStatus.Consuming, _consumerTag);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnConsumerRegisteredAsync(object sender, ConsumerEventArgs args)
+    {
+        var status = state.Snapshot().Status;
+        if (status is not RabbitMqConsumerStatus.Stopping and not RabbitMqConsumerStatus.Stopped)
+        {
+            _consumerTag = args.ConsumerTags.FirstOrDefault() ?? _consumerTag;
+            state.TransitionTo(RabbitMqConsumerStatus.Consuming, _consumerTag);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnConsumerUnregisteredAsync(object sender, ConsumerEventArgs args)
+    {
+        MarkRecoveringUnlessStopping();
+        return Task.CompletedTask;
+    }
+
+    private Task OnConsumerShutdownAsync(object sender, ShutdownEventArgs args)
+    {
+        MarkRecoveringUnlessStopping();
+        return Task.CompletedTask;
+    }
+
+    private void MarkRecoveringUnlessStopping()
+    {
+        var status = state.Snapshot().Status;
+        if (status is not RabbitMqConsumerStatus.Stopping and not RabbitMqConsumerStatus.Stopped)
+        {
+            state.TransitionTo(RabbitMqConsumerStatus.Recovering);
+        }
+    }
+
+    private void BeginDelivery()
+    {
+        lock (_inFlightLock)
+        {
+            if (_inFlight == 0)
+            {
+                _drained = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+
+            _inFlight++;
+        }
+    }
+
+    private void EndDelivery()
+    {
+        lock (_inFlightLock)
+        {
+            _inFlight--;
+            if (_inFlight == 0)
+            {
+                _drained.TrySetResult();
+            }
+        }
+    }
+
+    private Task WaitForDeliveriesAsync(CancellationToken cancellationToken)
+    {
+        lock (_inFlightLock)
+        {
+            return _drained.Task.WaitAsync(cancellationToken);
+        }
+    }
+
+    private static TaskCompletionSource CompletedDrain()
+    {
+        var source = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        source.SetResult();
+        return source;
+    }
+
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        await base.StopAsync(cancellationToken).ConfigureAwait(false);
-
-        if (_retryChannel is not null)
+        state.TransitionTo(RabbitMqConsumerStatus.Stopping);
+        try
         {
-            await _retryChannel.DisposeAsync().ConfigureAwait(false);
-        }
+            try
+            {
+                if (_channel?.IsOpen == true && !string.IsNullOrWhiteSpace(_consumerTag))
+                {
+                    await _channel.BasicCancelAsync(
+                        _consumerTag,
+                        noWait: false,
+                        cancellationToken: cancellationToken).ConfigureAwait(false);
+                }
 
-        if (_channel is not null)
+                await WaitForDeliveriesAsync(cancellationToken).ConfigureAwait(false);
+            }
+#pragma warning disable CA1031 // Broker may disconnect during cancel; execution loop still must be stopped below.
+            catch (Exception ex)
+#pragma warning restore CA1031
+            {
+                Log.ShutdownFailed(logger, consumerOptions.QueueName, ex);
+            }
+
+            // Always signal BackgroundService, even when broker-side cancel/drain failed.
+            await base.StopAsync(cancellationToken).ConfigureAwait(false);
+        }
+#pragma warning disable CA1031 // Shutdown must still dispose channels when broker cancellation races with disconnect.
+        catch (Exception ex)
+#pragma warning restore CA1031
         {
-            await _channel.DisposeAsync().ConfigureAwait(false);
+            Log.ShutdownFailed(logger, consumerOptions.QueueName, ex);
         }
-
-        if (_connection is not null)
+        finally
         {
-            await _connection.DisposeAsync().ConfigureAwait(false);
-        }
+            if (_retryChannel is not null)
+            {
+                await _retryChannel.DisposeAsync().ConfigureAwait(false);
+            }
 
-        _retryPublishGate.Dispose();
+            if (_channel is not null)
+            {
+                await _channel.DisposeAsync().ConfigureAwait(false);
+            }
+
+            if (_connection is not null)
+            {
+                await _connection.DisposeAsync().ConfigureAwait(false);
+            }
+
+            _retryPublishGate.Dispose();
+            state.TransitionTo(RabbitMqConsumerStatus.Stopped);
+        }
     }
 
     private static partial class Log
@@ -436,5 +597,9 @@ public sealed partial class RabbitMqConsumer(
         [LoggerMessage(EventId = 6, Level = LogLevel.Error,
             Message = "Retry publish failed (routingKey={RoutingKey}, messageId={MessageId}); NACK requeue=false → DLX (no loss).")]
         public static partial void RetryPublishFailed(ILogger logger, string routingKey, string messageId, Exception exception);
+
+        [LoggerMessage(EventId = 7, Level = LogLevel.Warning,
+            Message = "RabbitMQ consumer shutdown encountered an error (queue={Queue}); resources will still be disposed.")]
+        public static partial void ShutdownFailed(ILogger logger, string queue, Exception exception);
     }
 }

@@ -30,3 +30,13 @@
 - Phía module riêng bỏ: "gói gọn" dashboard nhưng buộc ref chéo domain (phá ModuleBoundary) hoặc trùng lặp read-model.
 - Chi phí chấp nhận: Host phình một ít (endpoint dashboard + tổng hợp). Nếu dashboard phức tạp lên (report nặng) → cân nhắc read-model/CQRS riêng sau.
 - Reversibility: Medium. Ref: QR-AD-002; design.md §6.
+
+### QR-TO-004 — D1-a cross-tree ProjectReference vs vendored-copy (QR-TO-001) vs NuGet — ĐẢO chọn QR-TO-001
+- Chosen: **D1-a cross-tree ProjectReference** (QR-AD-012) — starhill xóa bản-copy base, ref thẳng `platform/src`. ĐẢO NGƯỢC lựa chọn vendored-copy ở QR-TO-001.
+- Provenance/Evidence: drift đo thật same=86/differ=50/only-platform=7/only-starhill=2 → vendored-copy đã phân kỳ 50 file (thiếu keyed persistence → P0-1 catastrophic). user duyệt D1-a phiên 2026-07-13.
+- Phía D1-a (chọn): MỘT base vật lý → drift BẤT KHẢ THI (fix tận gốc). 0 công re-vendor. Base tiến hóa → sản phẩm nhận lúc compile (fail-fast). Đúng "một nguồn sự thật".
+- Phía vendored-copy (QR-TO-001, bỏ): sản phẩm tự-chứa không cần platform/ cạnh nó + tự do sửa base-copy. NHƯNG chính "tự do sửa + không sync" = gốc drift đã xảy ra thực tế (50 file). Chi phí "phải sync thủ công" mà QR-TO-001 chấp nhận đã KHÔNG được trả → hỏng.
+- Phía NuGet (D1-b, để dành): version-isolation thật (mỗi sản phẩm ghim version base) — chỉ cần khi sản phẩm TÁCH REPO/nhịp release riêng. Trong monorepo hiện tại là premature; vendored-copy KHÔNG cho isolation đó mà vẫn gánh chi phí sync.
+- Chi phí chấp nhận: starhill build lệ thuộc platform/ hiện diện cạnh (cùng repo — chấp nhận); Docker build context = repo root (QR-AD-015). Không còn version-isolation giữa base↔sản phẩm (đánh đổi lấy zero-drift; khi cần isolation → D1-b).
+- Điều kiện xem xét lại: sản phẩm tách sang repo riêng → chuyển D1-b (NuGet nội bộ versioned).
+- Reversibility: Medium (git). Ref: QR-AD-012; SUPERSEDES lựa chọn QR-TO-001/QR-AD-001.
