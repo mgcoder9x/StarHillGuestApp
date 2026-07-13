@@ -9,6 +9,7 @@ using Identity.Contracts.Events;
 using Identity.Infrastructure.DependencyInjection;
 using Identity.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using ResortConfig.Api.DependencyInjection;
 using ResortConfig.Infrastructure.DependencyInjection;
 using ResortConfig.Infrastructure.Persistence;
 using Rooms.Api.DependencyInjection;
@@ -65,11 +66,12 @@ services.AddIdentityInfrastructure(options => options.UseNpgsql(identityConnecti
 services.AddIdentityApi();
 
 // Module ResortConfig (nền cấu hình + i18n). Connection string riêng (cùng PostgreSQL, schema resort_config).
-// Chưa có nửa-Api (endpoint admin settings) — slice B.3 (cần Identity auth). B.2: chỉ persistence + resolver + seeder.
+// Nửa-Infra (persistence + resolver + seeder + query) + nửa-Api (admin xem/sửa settings — B-Config.3, RequireAdmin).
 var resortConfigConnectionString = configuration.GetConnectionString("ResortConfig")
     ?? throw new InvalidOperationException(
         "Thiếu ConnectionStrings:ResortConfig — fail-fast (F35). Cấu hình connection string cho module ResortConfig.");
 services.AddResortConfigInfrastructure(options => options.UseNpgsql(resortConfigConnectionString));
+services.AddResortConfigApi();
 
 // Module Rooms (phòng + token QR). Nửa-Infra (persistence) + nửa-Api (admin CRUD/QR endpoint — B-Rooms.3,
 // role Admin/Staff qua StarHillPolicies).

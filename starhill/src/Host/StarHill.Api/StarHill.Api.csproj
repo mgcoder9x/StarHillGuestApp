@@ -14,8 +14,9 @@
     <ProjectReference Include="$(PlatformSrc)\Bedrock.Infrastructure\Bedrock.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Identity\Identity.Infrastructure\Identity.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Identity\Identity.Api\Identity.Api.csproj" />
-    <!-- Module ResortConfig: chỉ nửa-Infra (chưa có nửa-Api — slice B.3). Host là nơi DUY NHẤT ráp module. -->
+    <!-- Module ResortConfig: nửa-Infra + nửa-Api (B-Config.3 — admin settings). Host là nơi DUY NHẤT ráp module. -->
     <ProjectReference Include="..\..\Modules\ResortConfig\ResortConfig.Infrastructure\ResortConfig.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\ResortConfig\ResortConfig.Api\ResortConfig.Api.csproj" />
     <!-- Module Rooms: nửa-Infra + nửa-Api (B-Rooms.3 — admin CRUD/QR endpoint). -->
     <ProjectReference Include="..\..\Modules\Rooms\Rooms.Infrastructure\Rooms.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Rooms\Rooms.Api\Rooms.Api.csproj" />

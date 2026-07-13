@@ -1,10 +1,15 @@
+using Bedrock.Application.Ports.Persistence;
+using Bedrock.Application.UseCases;
 using Bedrock.Infrastructure.DependencyInjection;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using ResortConfig.Application;
 using ResortConfig.Application.Localization;
 using ResortConfig.Contracts;
 using ResortConfig.Contracts.Localization;
 using ResortConfig.Contracts.Queries;
+using ResortConfig.Domain;
 using ResortConfig.Infrastructure.Persistence;
 
 namespace ResortConfig.Infrastructure.DependencyInjection;
@@ -40,6 +45,17 @@ public static class ResortConfigInfrastructureExtensions
 
         // Query kiểm tồn tại resort (Contracts) — Rooms.CreateRoom thẩm định ResortId trước khi tạo phòng (P1(a)).
         services.AddScoped<IResortExistenceQuery, EfResortExistenceQuery>();
+
+        // WRITE-PATH (B-Config.3): admin sửa settings. Repository ResortSettings KEYED theo ResortConfigDbContext
+        // (write-path đầu tiên của module cần abstraction ghi — trước đây chỉ read inject DbContext). Use case dùng
+        // factory resolve repo/UoW bằng module key (mirror Rooms) → giữ Application ⊥ Infrastructure.
+        services.AddBedrockRepository<ResortConfigDbContext, ResortSettings>(ResortConfigModule.PersistenceKey);
+
+        services.AddScoped<ICommandUseCase<UpdateResortSettingsInput>>(sp => new UpdateResortSettingsUseCase(
+            sp.GetRequiredKeyedService<IRepository<ResortSettings>>(ResortConfigModule.PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(ResortConfigModule.PersistenceKey)));
+
+        services.AddTransient<IValidator<UpdateResortSettingsInput>, UpdateResortSettingsValidator>();
 
         return services;
     }

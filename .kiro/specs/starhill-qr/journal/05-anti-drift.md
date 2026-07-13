@@ -16,7 +16,7 @@
 
 ## Trạng thái hiện tại
 
-- Journal QR: QR-AD-001..022 (QR-AD-001 Superseded by QR-AD-012), QR-DV-001..004, QR-TO-001..004, QR-N-001..021. **Cổng tự động ĐÃ SỐNG** (QR-AD-006): `StarHillJournalConsistencyTests` 5/5 (INV-1..5) chạy trong `StarHill.ArchitectureTests` (13 test) — journal QR không còn dựa review thủ công. getDiagnostics vẫn dùng cho `design.md` (Kiro Spec Format).
+- Journal QR: QR-AD-001..023 (QR-AD-001 Superseded by QR-AD-012), QR-DV-001..004, QR-TO-001..004, QR-N-001..022. **Cổng tự động ĐÃ SỐNG** (QR-AD-006): `StarHillJournalConsistencyTests` 5/5 (INV-1..5) chạy trong `StarHill.ArchitectureTests` (13 test) — journal QR không còn dựa review thủ công. getDiagnostics vẫn dùng cho `design.md` (Kiro Spec Format).
 - **P0 REMEDIATION (2026-07-13) — anti-drift TẦNG CẤU TRÚC**: QR-AD-012 (D1-a) XÓA gốc rễ drift — starhill KHÔNG còn bản-copy base (chỉ MỘT base ở platform/) ⇒ drift base BẤT KHẢ THI (mạnh hơn mọi diff-guard). Đây là nâng cấp lớn nhất của cơ chế chống drift pha QR.
 
 ## Guard map — quyết định design (2026-07-11) → cơ chế chống drift
@@ -57,6 +57,7 @@
 | QR-AD-020 `StarHill.Authorization` policy Admin/Staff superset dùng chung | `StarHillAuthorizationPolicyTests` (6, stub endpoint) — ngữ nghĩa superset một chỗ | ✅ B-Rooms.3 (xem hàng QR-AD-005) |
 | QR-AD-021 JSON HTTP string-enum (JsonStringEnumConverter toàn cục Host) | `RoomsEndpointAuthTests` PATCH `/status` body `{"status":"Inactive"}`→204 (string→enum bind); Host+test host cùng cấu hình | ✅ B-Rooms.3 (trước khi thêm: PATCH 400) |
 | QR-AD-022 Rooms query slice (read-model list/detail nội-module ở Application + phân trang chuẩn + role Staff — Req 7.6) | `RoomQueriesTests` (3, SQLite KHÔNG Docker: preview token Active/loại soft-delete/filter status/phân trang page2/GetById null) + `RoomsEndpointAuthTests` +4 (Staff+Admin list/detail=200; unknown=404; no-token=401) | ✅ B-Rooms.4: `vp all` StarHill.Api.Tests 19/19 + Rooms.IntegrationTests 25 pass/2 skip(Docker) |
+| QR-AD-023 ResortConfig write-path đầu tiên (settings Api, role Admin Req 9.3, keyed repo + pipeline mirror Rooms, CommonErrors tái dùng) | `ResortConfigEndpointAuthTests` (3: Admin GET 200/PUT 204; Staff 403; no-token 401) + `ResortConfigSettingsUseCaseTests` (7: update đổi field; settings-null→not_found; validator https/absolute/range) — KHÔNG Docker | ✅ B-Config.3: `vp all` StarHill.Api.Tests 22/22 + ResortConfig.IntegrationTests 9 pass/3 skip(Docker) |
 
 - design.md pha QR: getDiagnostics **0** (Kiro Spec Format hợp lệ) — kiểm mỗi lần sửa.
 - QR-AD-003 (deploy) + QR-AD-004 (tên Concierge): không code-enforceable trực tiếp — enforce bằng review + naming khi tạo project.

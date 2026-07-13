@@ -173,3 +173,9 @@
 - Date: 2026-07-13
 - Hoàn tất Req 7.6 "Staff xem danh sách/thông tin phòng". `IRoomQueries`+`RoomListItem` (Rooms.Application) + `EfRoomQueries` (Infra, 2-query map in-memory) + GET `/v1/rooms` (list, phân trang PagedRequest/PagedResult + lọc status) & GET `/v1/rooms/{id}` (detail 404) — RequireStaff (Admin superset). Guard KHÔNG Docker: `RoomQueriesTests` (3, SQLite: preview token Active/loại soft-delete/filter status/phân trang/GetById null) + `RoomsEndpointAuthTests` +4 (Staff+Admin xem list/detail=200, unknown=404, no-token=401). `vp all` xanh: StarHill.Api.Tests 19/19, Rooms.IntegrationTests 25 pass/2 skip(Docker). Journal QR-AD-022.
 - CÒN LẠI Rooms: token history endpoint (nếu cần), bulk QR in hàng loạt. Module kế: GuestAccess (dùng IRoomTokenResolver).
+
+
+### QR-N-022 — B-Config.3 XONG: ResortConfig settings Api (admin xem/sửa cấu hình)
+- Date: 2026-07-13
+- Thiết lập write-path ĐẦU TIÊN cho ResortConfig. `UpdateResortSettingsUseCase`+validator (Application, mirror Rooms keyed repo+pipeline) + `Ef/AddBedrockRepository<ResortSettings>` + `ResortConfig.Api` (GET+PUT `/v1/resort/settings`, RequireAdmin). Đóng mắt xích: admin nay cấu hình được `GuestWebBaseUrl` mà qr.png cần. Guard KHÔNG Docker: `ResortConfigEndpointAuthTests` (3: Admin 200/204, Staff 403, no-token 401) + `ResortConfigSettingsUseCaseTests` (7: update đổi field/not-found + validator https/range). `vp all` xanh: StarHill.Api.Tests 22/22, ResortConfig.IntegrationTests 9 pass/3 skip(Docker). Journal QR-AD-023.
+- Module admin còn lại: Faq/Rules/Concierge/Housekeeping (mirror khuôn write-path). Module guest-flow: GuestAccess (dùng IRoomTokenResolver).

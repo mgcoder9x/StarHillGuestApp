@@ -9,4 +9,9 @@
     <ProjectReference Include="..\ResortConfig.Contracts\ResortConfig.Contracts.csproj" />
     <ProjectReference Include="$(PlatformSrc)\Bedrock.Application\Bedrock.Application.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- B-Config.3: validator settings update (ValidationCommandUseCaseDecorator nhận IValidator<TInput>). -->
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
 </Project>

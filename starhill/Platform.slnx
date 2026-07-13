@@ -17,6 +17,7 @@
     <Project Path="src/Modules/ResortConfig/ResortConfig.Domain/ResortConfig.Domain.csproj" />
     <Project Path="src/Modules/ResortConfig/ResortConfig.Application/ResortConfig.Application.csproj" />
     <Project Path="src/Modules/ResortConfig/ResortConfig.Infrastructure/ResortConfig.Infrastructure.csproj" />
+    <Project Path="src/Modules/ResortConfig/ResortConfig.Api/ResortConfig.Api.csproj" />
   </Folder>
   <Folder Name="/src/Modules/Rooms/">
     <Project Path="src/Modules/Rooms/Rooms.Contracts/Rooms.Contracts.csproj" />

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    ResortConfig.Api (nửa-Api — matrix §3.3): reference ResortConfig.Application (use case sửa settings) +
+    ResortConfig.Contracts (IResortSettingsQuery + ResortSettingsSnapshot cho GET) + StarHill.Authorization (policy
+    Admin) + Bedrock.Api (cơ chế HTTP). KHÔNG ref Infrastructure (Api⊥Infra I7). FrameworkReference ASP.NET.
+  -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ResortConfig.Application\ResortConfig.Application.csproj" />
+    <ProjectReference Include="..\ResortConfig.Contracts\ResortConfig.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\StarHill.Authorization\StarHill.Authorization.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Api\Bedrock.Api.csproj" />
+  </ItemGroup>
+</Project>

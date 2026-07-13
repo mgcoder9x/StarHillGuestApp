@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using Bedrock.Application.UseCases;
 using Bedrock.Domain.Results;
+using ResortConfig.Application;
 using ResortConfig.Contracts.Queries;
 using Rooms.Application;
 using Rooms.Domain;
@@ -71,6 +72,14 @@ internal sealed class FakeRoomQueries : IRoomQueries
 
     public Task<RoomListItem?> GetByIdAsync(Guid roomId, CancellationToken ct = default) =>
         Task.FromResult<RoomListItem?>(roomId == KnownRoomId ? Item(roomId) : null);
+}
+
+internal sealed class FakeUpdateResortSettings : ICommandUseCase<UpdateResortSettingsInput>
+{
+    public string? PersistenceKey => null;
+
+    public Task<Result> ExecuteAsync(UpdateResortSettingsInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success());
 }
 
 internal sealed class FakeResortSettingsQuery : IResortSettingsQuery
