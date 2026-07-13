@@ -11,7 +11,10 @@ namespace Adapters.Messaging.RabbitMq.Tests;
 /// </summary>
 public sealed class RabbitMqMessageMapperTests
 {
-    private static OutgoingIntegrationMessage Message(string? correlationId = "corr-1") => new()
+    private static OutgoingIntegrationMessage Message(
+        string? correlationId = "corr-1",
+        string? traceParent = null,
+        string? traceState = null) => new()
     {
         Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
         EventType = "identity.user_token_refreshed",
@@ -19,6 +22,8 @@ public sealed class RabbitMqMessageMapperTests
         Payload = "{\"userId\":\"x\"}",
         OccurredAt = DateTimeOffset.UnixEpoch,
         CorrelationId = correlationId,
+        TraceParent = traceParent,
+        TraceState = traceState,
     };
 
     [Fact]
@@ -53,5 +58,29 @@ public sealed class RabbitMqMessageMapperTests
     {
         var properties = RabbitMqMessageMapper.PropertiesOf(Message(correlationId: null));
         Assert.Null(properties.CorrelationId);
+    }
+
+    // ---- P1-14: W3C trace context đi ở header traceparent/tracestate CHUẨN (không nhét vào CorrelationId) ----
+
+    [Fact]
+    public void Trace_context_maps_to_standard_w3c_headers()
+    {
+        const string traceParent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01";
+        const string traceState = "vendorx=abc";
+        var properties = RabbitMqMessageMapper.PropertiesOf(
+            Message(correlationId: "biz-1", traceParent: traceParent, traceState: traceState));
+
+        Assert.Equal(traceParent, properties.Headers![RabbitMqMessageMapper.TraceParentHeader]);
+        Assert.Equal(traceState, properties.Headers[RabbitMqMessageMapper.TraceStateHeader]);
+        // Business correlation tách riêng ở BasicProperties.CorrelationId (KHÔNG phải traceparent).
+        Assert.Equal("biz-1", properties.CorrelationId);
+    }
+
+    [Fact]
+    public void Trace_headers_absent_when_no_trace_context()
+    {
+        var properties = RabbitMqMessageMapper.PropertiesOf(Message(traceParent: null, traceState: null));
+        Assert.False(properties.Headers!.ContainsKey(RabbitMqMessageMapper.TraceParentHeader));
+        Assert.False(properties.Headers.ContainsKey(RabbitMqMessageMapper.TraceStateHeader));
     }
 }

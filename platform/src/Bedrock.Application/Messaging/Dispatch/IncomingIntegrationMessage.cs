@@ -31,8 +31,17 @@ public sealed record IncomingIntegrationMessage(
     public int SchemaVersion { get; init; } = 1;
 
     /// <summary>
-    /// W3C trace context (traceparent) của trace GỐC lúc enqueue (producer lưu <c>Activity.Current.Id</c>). Dispatcher
-    /// parse → tạo consumer span là CON của trace gốc (trace xuyên bus — A-29/F34/F21). Null = không có context.
+    /// P1-14: W3C <c>traceparent</c> của trace GỐC lúc enqueue (adapter đọc từ header <c>traceparent</c>). Dispatcher
+    /// dùng cùng <see cref="TraceState"/> dựng consumer span CON của trace gốc (trace xuyên bus — A-29/F34/F21). Null = không có.
+    /// </summary>
+    public string? TraceParent { get; init; }
+
+    /// <summary>P1-14: W3C <c>tracestate</c> (vendor sampling/state) — giữ nguyên xuyên bus (không mất). Null = không có.</summary>
+    public string? TraceState { get; init; }
+
+    /// <summary>
+    /// P1-14: BUSINESS correlation id (đối soát nghiệp vụ), ĐỘC LẬP trace. Adapter đọc từ <c>BasicProperties.CorrelationId</c>.
+    /// Null = không có. KHÔNG phải traceparent (đã tách — trace đi ở <see cref="TraceParent"/>/<see cref="TraceState"/>).
     /// </summary>
     public string? CorrelationId { get; init; }
 }

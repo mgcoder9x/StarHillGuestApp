@@ -117,3 +117,19 @@
 - Vì sao chấp nhận: publish-lag phủ phần lớn nhu cầu quan sát trễ; dead-letter count + error_count đã báo hiệu kẹt. "Dispatcher chết hoàn toàn" thì health-check/liveness + thiếu metric published (rate=0) cũng lộ.
 - Điều kiện xem xét lại: nếu vận hành cần cảnh báo tồn đọng khi dispatcher NGƯNG hẳn (publish-lag không phát vì không publish) → thêm oldest-pending-age gauge (thiết kế cẩn thận: background poller cập nhật giá trị + gauge đọc cache, per-context).
 - Reversibility: High (thêm gauge là cộng thêm). Ref: AD-065, R24.3/§7.2.
+
+
+---
+
+### TO-012 — Persistence trace context: ADDITIVE 2 cột vs RENAME correlation_id (P1-14/AD-102)
+- Bối cảnh: OutboxMessage đang lưu traceparent trong cột `correlation_id`. Tách trace/business cần chỗ chứa traceparent + tracestate riêng.
+- Phương án: (A) rename `correlation_id`→`trace_parent` + thêm `trace_state`; (B) GIỮ `correlation_id` (business), THÊM `trace_parent`+`trace_state`.
+- **Chọn B (additive).** Lý do: rename = data-migration rủi ro (giá trị cũ là traceparent, không phải business → không map sạch sang business; máy không Docker không verify được data-migration). Additive chỉ ADD COLUMN nullable → không đụng data cũ, đảo được (Down drop). Đánh đổi: cột `correlation_id` tạm null (business-correlation chưa có nguồn) — chấp nhận, sẽ dùng khi có business-correlation port.
+
+### TO-013 — Business CorrelationId: null now vs derive từ TraceId (P1-14/AD-102, user chốt Q1)
+- Phương án: (A) `CorrelationId=null` (chưa có nguồn business) + business-correlation port là follow-up; (B) `CorrelationId=TraceId.ToString()` (có giá trị correlation ngay trong log).
+- **Chọn A (null).** User duyệt Q1. Lý do: TraceId là THÀNH PHẦN của trace → dùng làm business correlation = tái-trộn hai khái niệm vừa tách (đi ngược mục tiêu P1-14). Business correlation đúng nghĩa phải đến từ nguồn nghiệp vụ (vd header `X-Correlation-ID` request qua một `ICorrelationContext` port) — là feature riêng. Đánh đổi: tạm thời log không có business-correlation id (nhưng trace-id vẫn đủ để đối soát kỹ thuật qua distributed tracing).
+
+### TO-014 — Producer publish span: DEFER (P1-14/AD-102, user chốt Q3)
+- Phương án: (A) tạo `ActivityKind.Producer` span lúc dispatch (publish) link enqueue-trace→publish→consume; (B) defer — consume span link thẳng về trace enqueue qua traceparent.
+- **Chọn B (defer).** User duyệt Q3. Lý do: consume span ĐÃ là con của trace gốc (đủ để thấy luồng xuyên bus); publish span là enhancement (thấy thêm bước publish như một span riêng) — thêm khi cần observability sâu hơn về publish latency/lỗi. Đánh đổi: bước publish chưa thành span riêng (publish lag đã có metric `bedrock.outbox.publish.lag` bù phần đo lường).

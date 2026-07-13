@@ -44,16 +44,21 @@ public sealed class EfIntegrationEventDispatcher(
     {
         ArgumentNullException.ThrowIfNull(message);
 
-        // A-29: tạo consumer span là CON của trace GỐC (traceparent do producer lưu vào CorrelationId). Parse được →
-        // parent tường minh (xuyên bus); không parse được → dùng Activity.Current (ambient) như bình thường. StartActivity
-        // trả null nếu KHÔNG có listener (không OTel) → mọi truy cập qua ?. an toàn, zero-overhead khi tắt telemetry.
-        using var activity = ActivityContext.TryParse(message.CorrelationId, null, out var parentContext)
+        // A-29/P1-14: tạo consumer span là CON của trace GỐC (W3C traceparent + tracestate do producer lưu). Parse
+        // 2-THAM-SỐ (traceParent, traceState) → GIỮ tracestate (vendor sampling) — trước đây TryParse 1 string mất
+        // tracestate. Parse được → parent tường minh (xuyên bus); không → Activity.Current (ambient). StartActivity trả
+        // null nếu KHÔNG có listener (không OTel) → mọi truy cập qua ?. an toàn, zero-overhead khi tắt telemetry.
+        using var activity = ActivityContext.TryParse(message.TraceParent, message.TraceState, out var parentContext)
             ? BedrockTelemetry.ActivitySource.StartActivity($"consume {message.EventType}", ActivityKind.Consumer, parentContext)
             : BedrockTelemetry.ActivitySource.StartActivity($"consume {message.EventType}", ActivityKind.Consumer);
         activity?.SetTag("messaging.system", "bedrock");
         activity?.SetTag("messaging.operation", "process");
         activity?.SetTag("messaging.destination.name", message.EventType);
         activity?.SetTag("messaging.message.id", message.MessageId.ToString());
+        if (!string.IsNullOrEmpty(message.CorrelationId))
+        {
+            activity?.SetTag("bedrock.correlation_id", message.CorrelationId); // business correlation (tách trace).
+        }
 
         var startTimestamp = Stopwatch.GetTimestamp();
         var outcomeTag = InboxMetrics.OutcomeFailed; // handler NÉM trước khi set → ghi "failed" (R24.3 consumer failure).

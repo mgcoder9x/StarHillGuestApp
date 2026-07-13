@@ -850,4 +850,4 @@
 - **Quyết định thiết kế chốt trong doc (chưa code):** D2 additive 2 cột `trace_parent`/`trace_state` (không rename correlation_id — an toàn data); D4 `CorrelationId=null` (business-correlation port là follow-up, không suy diễn từ TraceId); D7 dùng `ActivityContext.Parse(traceParent, traceState)` (giữ tracestate); D8 defer producer publish span.
 - **CHỜ user chốt Q1/Q2/Q3 (mục §8 doc)** trước khi triển khai — vì đụng schema migration cross-tree (platform + starhill Identity) không Docker-verify đầy đủ được → design-first đúng process user.
 - Khi triển khai: theo §9 (6 increment), thêm AD mới (số kế tiếp) + guard-map + TO entries.
-- KHÔNG code gì phiên này cho P1-14 — chỉ design (đúng "chuẩn bị thiết kế rõ → valid → mới triển khai").
+- (Cập nhật) User đã DUYỆT cả Q1/Q2/Q3 → **ĐÃ TRIỂN KHAI: AD-102** (6 increment, migration cross-tree, guard tracestate). Design doc giữ làm hồ sơ.

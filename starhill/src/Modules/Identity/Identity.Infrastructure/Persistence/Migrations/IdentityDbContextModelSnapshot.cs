@@ -85,6 +85,16 @@ namespace Identity.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("schema_version");
 
+                    b.Property<string>("TraceParent")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("trace_parent");
+
+                    b.Property<string>("TraceState")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("trace_state");
+
                     b.HasKey("Id")
                         .HasName("pk_outbox_message");
 

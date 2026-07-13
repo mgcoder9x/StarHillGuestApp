@@ -14,7 +14,8 @@ namespace Bedrock.Infrastructure.Persistence.Messaging;
 /// Serialize payload theo KIỂU THỰC của event (không phải base <see cref="IntegrationEvent"/>) để không mất
 /// property của record dẫn xuất; options cố định (AD-015). <c>OutboxMessage.Id = IntegrationEvent.Id</c> để id
 /// event chảy xuyên suốt outbox → bus → inbox (idempotency phía consumer khoá trên id này — AD-029).
-/// <c>CorrelationId</c> lấy từ <see cref="Activity.Current"/> (W3C traceparent — F34/F21).
+/// P1-14: <c>TraceParent</c>+<c>TraceState</c> lấy từ <see cref="Activity.Current"/> (W3C, GIỮ tracestate);
+/// business <c>CorrelationId</c> tách riêng, hiện null (F34/F21).
 /// </para>
 /// </summary>
 public sealed class EfOutboxWriter(PlatformDbContext context) : IOutboxWriter
@@ -33,7 +34,11 @@ public sealed class EfOutboxWriter(PlatformDbContext context) : IOutboxWriter
             SchemaVersion = integrationEvent.SchemaVersion,
             Payload = payload,
             OccurredAt = integrationEvent.OccurredAt,
-            CorrelationId = Activity.Current?.Id,
+            // P1-14: capture W3C trace context ĐẦY ĐỦ — traceparent + tracestate (TRƯỚC ĐÂY chỉ Id, mất tracestate).
+            TraceParent = Activity.Current?.Id,
+            TraceState = Activity.Current?.TraceStateString,
+            // Business correlation: chưa có nguồn (business-correlation port là follow-up) → null. KHÔNG suy từ trace.
+            CorrelationId = null,
         };
 
         context.Set<OutboxMessage>().Add(message);

@@ -17,6 +17,12 @@ internal static class RabbitMqMessageMapper
 
     public const string SchemaVersionHeader = "schema-version";
 
+    /// <summary>P1-14: header W3C traceparent chuẩn (distributed tracing xuyên bus).</summary>
+    public const string TraceParentHeader = "traceparent";
+
+    /// <summary>P1-14: header W3C tracestate chuẩn (vendor sampling/state).</summary>
+    public const string TraceStateHeader = "tracestate";
+
     /// <summary>Routing key = EventType → consumer bind theo pattern topic (vd <c>identity.*</c>).</summary>
     public static string RoutingKeyOf(OutgoingIntegrationMessage message)
     {
@@ -34,21 +40,35 @@ internal static class RabbitMqMessageMapper
     {
         ArgumentNullException.ThrowIfNull(message);
 
+        var headers = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            [EventTypeHeader] = message.EventType,
+            [SchemaVersionHeader] = message.SchemaVersion,
+        };
+
+        // P1-14: W3C trace context đi ở header CHUẨN traceparent/tracestate (không nhét vào BasicProperties.CorrelationId).
+        if (!string.IsNullOrEmpty(message.TraceParent))
+        {
+            headers[TraceParentHeader] = message.TraceParent;
+        }
+
+        if (!string.IsNullOrEmpty(message.TraceState))
+        {
+            headers[TraceStateHeader] = message.TraceState;
+        }
+
         var properties = new BasicProperties
         {
             MessageId = message.Id.ToString(),
             ContentType = ContentType,
             Persistent = true, // message bền (survive broker restart) — khớp đảm bảo at-least-once của Outbox.
-            Headers = new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                [EventTypeHeader] = message.EventType,
-                [SchemaVersionHeader] = message.SchemaVersion,
-            },
+            Headers = headers,
         };
 
+        // P1-14: BasicProperties.CorrelationId CHỈ mang BUSINESS correlation (đúng quy ước AMQP), KHÔNG mang trace.
         if (!string.IsNullOrEmpty(message.CorrelationId))
         {
-            properties.CorrelationId = message.CorrelationId; // W3C trace đối soát xuyên bus (F34/F21).
+            properties.CorrelationId = message.CorrelationId;
         }
 
         return properties;

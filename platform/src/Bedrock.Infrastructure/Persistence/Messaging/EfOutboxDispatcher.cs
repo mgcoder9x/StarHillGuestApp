@@ -141,6 +141,8 @@ public sealed partial class EfOutboxDispatcher<TContext>(
         SchemaVersion = message.SchemaVersion,
         Payload = message.Payload,
         OccurredAt = message.OccurredAt,
+        TraceParent = message.TraceParent, // P1-14: W3C trace context tách khỏi business correlation.
+        TraceState = message.TraceState,
         CorrelationId = message.CorrelationId,
     };
 

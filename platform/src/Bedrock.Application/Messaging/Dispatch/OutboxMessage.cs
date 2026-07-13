@@ -46,9 +46,24 @@ public sealed class OutboxMessage
     /// <summary>Thời điểm lần thử publish THẤT BẠI gần nhất (đi kèm <see cref="LastError"/>). Null = chưa lỗi.</summary>
     public DateTimeOffset? LastAttemptAt { get; set; }
 
-    /// <summary>Correlation/trace để đối soát xuyên suốt (F34/F21).</summary>
+    /// <summary>
+    /// P1-14: BUSINESS correlation id (đối soát nghiệp vụ, độc lập trace). Null nếu chưa có nguồn (hiện tại —
+    /// business-correlation port là follow-up). KHÔNG còn chứa traceparent (đã tách sang <see cref="TraceParent"/>).
+    /// </summary>
     public string? CorrelationId { get; init; }
+
+    /// <summary>P1-14: W3C <c>traceparent</c> của trace gốc lúc enqueue (distributed tracing xuyên bus). Null = không có.</summary>
+    public string? TraceParent { get; init; }
+
+    /// <summary>P1-14: W3C <c>tracestate</c> (vendor sampling/state) — giữ để không mất khi propagate. Null = không có.</summary>
+    public string? TraceState { get; init; }
 
     /// <summary>Trần độ dài <see cref="LastError"/> (bound chống text vô hạn + giới hạn rò rỉ — A-28).</summary>
     public const int MaxLastErrorLength = 1024;
+
+    /// <summary>Trần độ dài <see cref="TraceParent"/> (W3C traceparent ~55 ký tự; để 512 an toàn).</summary>
+    public const int MaxTraceParentLength = 512;
+
+    /// <summary>Trần độ dài <see cref="TraceState"/> (W3C tracestate có thể dài — bound 1024).</summary>
+    public const int MaxTraceStateLength = 1024;
 }

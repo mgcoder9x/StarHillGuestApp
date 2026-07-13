@@ -80,16 +80,19 @@ public sealed class IntegrationEventTracePropagationTests
         using var root = new Activity("producer-root");
         root.SetIdFormat(ActivityIdFormat.W3C);
         root.Start();
+        root.TraceStateString = "bedrockvendor=p1-14"; // P1-14: tracestate (vendor sampling) — TRƯỚC ĐÂY BỊ VỨT.
         var traceParent = root.Id!;
+        var traceState = root.TraceStateString;
         var rootTraceId = root.TraceId;
         var rootSpanId = root.SpanId;
-        root.Stop(); // Activity.Current = null → linkage CHỈ có thể đến từ CorrelationId propagated (chứng minh chặt).
+        root.Stop(); // Activity.Current = null → linkage CHỈ có thể đến từ trace context propagated (chứng minh chặt).
 
         var id = Guid.CreateVersion7();
         var message = new IncomingIntegrationMessage(id, "test-consumer", "test.thing_happened", PayloadFor(id))
         {
             ContentType = "application/json",
-            CorrelationId = traceParent,
+            TraceParent = traceParent,
+            TraceState = traceState,
         };
 
         var outcome = await DispatchAsync(harness, message);
@@ -101,7 +104,8 @@ public sealed class IntegrationEventTracePropagationTests
         var consume = Assert.Single(captured, a => a.ParentSpanId == rootSpanId);
         Assert.Equal("consume test.thing_happened", consume.OperationName);
         Assert.Equal(ActivityKind.Consumer, consume.Kind);
-        Assert.Equal(rootTraceId, consume.TraceId); // cùng trace (xuyên bus).
+        Assert.Equal(rootTraceId, consume.TraceId);          // cùng trace (xuyên bus).
+        Assert.Equal(traceState, consume.TraceStateString);  // P1-14: tracestate GIỮ NGUYÊN (không mất vendor state).
     }
 
     [Fact]
@@ -123,7 +127,7 @@ public sealed class IntegrationEventTracePropagationTests
         var message = new IncomingIntegrationMessage(id, "test-consumer", "test.thing_happened", PayloadFor(id))
         {
             ContentType = "application/json",
-            // CorrelationId = null → không có context propagated → fallback ambient (graceful, không ném).
+            // TraceParent = null → không có context propagated → fallback ambient (graceful, không ném).
         };
 
         var outcome = await DispatchAsync(harness, message);

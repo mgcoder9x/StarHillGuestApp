@@ -107,13 +107,19 @@ public sealed class OutboxWriterTests
     }
 
     [Fact]
-    public async Task Enqueue_captures_correlation_id_from_current_activity()
+    public async Task Enqueue_captures_w3c_trace_context_from_current_activity()
     {
+        // P1-14: writer capture traceparent + tracestate (W3C) vào TraceParent/TraceState — KHÔNG nhét vào CorrelationId
+        // (business). Trước đây chỉ lưu Activity.Id vào CorrelationId + MẤT tracestate.
         await using var harness = await PersistenceHarness.CreateAsync();
 
-        using var activity = new Activity("test-op").Start();
-        var expected = activity.Id;
-        Assert.NotNull(expected); // Start() luôn sinh Id (W3C)
+        using var activity = new Activity("test-op");
+        activity.SetIdFormat(ActivityIdFormat.W3C);
+        activity.Start();
+        activity.TraceStateString = "vendorx=abc";
+        var expectedTraceParent = activity.Id;
+        var expectedTraceState = activity.TraceStateString;
+        Assert.NotNull(expectedTraceParent); // Start() luôn sinh Id (W3C)
 
         await using (var scope = harness.CreateScope())
         {
@@ -127,7 +133,9 @@ public sealed class OutboxWriterTests
         {
             var db = scope.ServiceProvider.GetRequiredService<TestDbContext>();
             var message = await db.Set<OutboxMessage>().SingleAsync();
-            Assert.Equal(expected, message.CorrelationId);
+            Assert.Equal(expectedTraceParent, message.TraceParent);
+            Assert.Equal(expectedTraceState, message.TraceState); // tracestate GIỮ (không mất).
+            Assert.Null(message.CorrelationId); // business correlation tách riêng, chưa có nguồn → null.
         }
     }
 
@@ -144,6 +152,8 @@ public sealed class OutboxWriterTests
         Assert.Contains("next_attempt_at", outboxColumns);
         Assert.Contains("dead_lettered_at", outboxColumns);
         Assert.Contains("correlation_id", outboxColumns);
+        Assert.Contains("trace_parent", outboxColumns); // P1-14
+        Assert.Contains("trace_state", outboxColumns);  // P1-14
 
         var inboxColumns = await GetColumnsAsync(db, "inbox_message");
         Assert.Contains("message_id", inboxColumns);

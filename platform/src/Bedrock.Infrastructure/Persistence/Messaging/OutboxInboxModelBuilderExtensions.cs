@@ -27,6 +27,8 @@ public static class OutboxInboxModelBuilderExtensions
             entity.Property(m => m.EventType).IsRequired();
             entity.Property(m => m.Payload).IsRequired();
             entity.Property(m => m.LastError).HasMaxLength(OutboxMessage.MaxLastErrorLength); // A-28: bound diagnostic text.
+            entity.Property(m => m.TraceParent).HasMaxLength(OutboxMessage.MaxTraceParentLength);  // P1-14: W3C traceparent.
+            entity.Property(m => m.TraceState).HasMaxLength(OutboxMessage.MaxTraceStateLength);    // P1-14: W3C tracestate.
             if (isNpgsql)
             {
                 // jsonb: query/index được trên Postgres; provider khác giữ text (SQLite không có jsonb).

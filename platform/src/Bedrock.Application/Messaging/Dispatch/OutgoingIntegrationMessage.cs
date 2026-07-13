@@ -27,6 +27,18 @@ public sealed record OutgoingIntegrationMessage
     /// <summary>Thời điểm event xảy ra (envelope metadata, đo latency publish).</summary>
     public required DateTimeOffset OccurredAt { get; init; }
 
-    /// <summary>Correlation/trace đối soát xuyên bus (F34/F21). Null = không có.</summary>
+    /// <summary>
+    /// P1-14: W3C <c>traceparent</c> của trace GỐC lúc enqueue (distributed tracing — F34/F21). Đi qua header
+    /// <c>traceparent</c> trên bus; consumer dựng span con. Null = không có trace lúc enqueue.
+    /// </summary>
+    public string? TraceParent { get; init; }
+
+    /// <summary>P1-14: W3C <c>tracestate</c> (vendor sampling/state) đi kèm traceparent — TRƯỚC ĐÂY BỊ VỨT. Null = không có.</summary>
+    public string? TraceState { get; init; }
+
+    /// <summary>
+    /// P1-14: BUSINESS correlation id (đối soát nghiệp vụ xuyên log/service), ĐỘC LẬP với trace context. Null nếu
+    /// chưa có nguồn business-correlation (hiện tại — business-correlation port là follow-up). KHÔNG chứa traceparent.
+    /// </summary>
     public string? CorrelationId { get; init; }
 }

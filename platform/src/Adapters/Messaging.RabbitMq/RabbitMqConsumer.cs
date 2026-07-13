@@ -213,7 +213,10 @@ public sealed partial class RabbitMqConsumer(
                 // A-10: KHÔNG vứt metadata envelope — mang content-type (dispatcher validate == JSON) + schema-version.
                 ContentType = ea.BasicProperties.ContentType,
                 SchemaVersion = DecodeSchemaVersion(ea.BasicProperties.Headers),
-                // A-29: mang W3C trace context (producer lưu Activity.Id vào CorrelationId) → dispatcher tạo child span.
+                // P1-14: W3C trace context từ header CHUẨN traceparent/tracestate (giữ tracestate) → dispatcher dựng child span.
+                TraceParent = DecodeHeader(ea.BasicProperties.Headers, RabbitMqMessageMapper.TraceParentHeader),
+                TraceState = DecodeHeader(ea.BasicProperties.Headers, RabbitMqMessageMapper.TraceStateHeader),
+                // Business correlation (tách trace) từ BasicProperties.CorrelationId theo đúng quy ước AMQP.
                 CorrelationId = ea.BasicProperties.CorrelationId,
             };
 
@@ -307,9 +310,11 @@ public sealed partial class RabbitMqConsumer(
             [RabbitMqConsumerOptions.AttemptHeader] = attempt,
         };
 
-        // Bảo toàn event-type + schema-version (dispatcher cần) — copy nguyên từ header gốc nếu có.
+        // Bảo toàn event-type + schema-version (dispatcher cần) + P1-14 trace context (traceparent/tracestate) — copy nguyên từ header gốc nếu có.
         CopyHeader(source.Headers, headers, RabbitMqMessageMapper.EventTypeHeader);
         CopyHeader(source.Headers, headers, RabbitMqMessageMapper.SchemaVersionHeader);
+        CopyHeader(source.Headers, headers, RabbitMqMessageMapper.TraceParentHeader);
+        CopyHeader(source.Headers, headers, RabbitMqMessageMapper.TraceStateHeader);
 
         var properties = new BasicProperties
         {
