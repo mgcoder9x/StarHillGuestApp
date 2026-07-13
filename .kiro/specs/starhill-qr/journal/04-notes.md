@@ -162,3 +162,8 @@
 - **Verify EMPIRICAL (không cần Docker — bundle chỉ compile+publish, connection dummy):** chạy chính lệnh C:
   `dotnet ef migrations bundle --project ... Rooms.Infrastructure --self-contained -r linux-x64 -o efbundle-rooms-verify --force` → "Build succeeded. Building bundle... Done." (exit 0). Artifact tạo được (đã xoá; `efbundle*` gitignored). `vp ci` validate-ci vẫn OK sau sửa yaml.
 - KHÔNG phải quyết định thiết kế mới (chỉ hoàn tất pattern đã dự liệu) → ghi N, không AD. Deploy runbook: chạy 3 bundle (identity/resortconfig/rooms) TRƯỚC rollout Host.
+
+### QR-N-020 — B-Rooms.3 XONG: Rooms.Api slice + StarHill.Authorization + string-enum JSON
+- Date: 2026-07-13
+- Slice B-Rooms.3 hoàn tất (design-first: `design-B-Rooms.3-rooms-api.md` → user duyệt 4 Open Question → code). Tạo `Rooms.Api` (6 endpoint `/v1/rooms`, role Req 7.6) + `StarHill.Authorization` (policy Admin/Staff superset) + bật `JsonStringEnumConverter` toàn cục ở Host. Guard KHÔNG Docker: `StarHillAuthorizationPolicyTests` (6, CP8 superset) + `RoomsEndpointAuthTests` (6, route+policy+qr.png content-type qua fake use case). `vp all` = build 0-warning + validate-ci OK + StarHill.Api.Tests 15/15, toàn suite 0-fail (skip = Docker-only). Journal: QR-AD-019/020/021 + guard map cập nhật (QR-AD-005 Role→policy CP8 và QR-DV-001 route `/v1/<group>` chuyển ⏳→✅).
+- CÒN LẠI cho Rooms: GET list/detail phòng (cần read-model `RoomListItem` — slice query sau, I10); bulk QR (cần list trước).

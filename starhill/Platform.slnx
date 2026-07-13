@@ -23,6 +23,10 @@
     <Project Path="src/Modules/Rooms/Rooms.Domain/Rooms.Domain.csproj" />
     <Project Path="src/Modules/Rooms/Rooms.Application/Rooms.Application.csproj" />
     <Project Path="src/Modules/Rooms/Rooms.Infrastructure/Rooms.Infrastructure.csproj" />
+    <Project Path="src/Modules/Rooms/Rooms.Api/Rooms.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/StarHill.Authorization/StarHill.Authorization.csproj" />
   </Folder>
   <Folder Name="/src/Host/">
     <Project Path="src/Host/StarHill.Api/StarHill.Api.csproj" />

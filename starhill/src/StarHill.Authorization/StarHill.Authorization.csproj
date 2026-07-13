@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    StarHill.Authorization (D-C, QR-AD-020): policy authorization DÙNG CHUNG của SẢN PHẨM StarHill — mô hình
+    2-vai Admin/Staff (Req 11/Req 7.6). Base Bedrock cố ý KHÔNG khai Admin/Staff (BedrockAuthExtensions:
+    "Role/permission cụ thể do module Identity/Host khai") để giữ base domain-agnostic. Đặt policy sản phẩm ở
+    project riêng (không base, không Host) để MỌI module Api admin (Rooms giờ; GuestAccess/Rules/Faq/Housekeeping/
+    Concierge sau) tham chiếu CÙNG hằng tên policy + CÙNG ngữ nghĩa superset → chống drift (một nguồn định nghĩa).
+    FrameworkReference ASP.NET để dùng AddAuthorizationBuilder/RequireRole mà không kéo package runtime.
+  -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Adapters.Messaging.RabbitMq;
 using Bedrock.Api;
 using Bedrock.Application.DependencyInjection;
@@ -10,9 +11,11 @@ using Identity.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using ResortConfig.Infrastructure.DependencyInjection;
 using ResortConfig.Infrastructure.Persistence;
+using Rooms.Api.DependencyInjection;
 using Rooms.Infrastructure.DependencyInjection;
 using Rooms.Infrastructure.Persistence;
 using StarHill.Api;
+using StarHill.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +34,17 @@ var configuration = builder.Configuration;
 services.AddBedrockApi(configuration);
 services.AddBedrockSecurity(configuration);
 services.AddBedrockStartupValidation();
+
+// Policy authorization SẢN PHẨM (QR-AD-020): Admin/Staff superset (Req 7.6/11.3). Base cố ý KHÔNG khai role sản
+// phẩm — Host khai qua project dùng chung. AddBedrockAuthCore đã gọi AddAuthorization() nên thêm named policy là
+// additive. Mọi module Api admin (Rooms giờ; GuestAccess/Rules/... sau) tham chiếu StarHillPolicies.
+services.AddStarHillAuthorization();
+
+// Chính sách JSON HTTP sản phẩm (QR-AD-021): enum (de)serialize dạng STRING (vd RoomStatus "Active"/"Inactive"/
+// "Maintenance") thay vì số nguyên — API đọc được + ổn định + không phụ thuộc thứ tự khai enum. Áp toàn cục cho
+// minimal API (mọi module) để nhất quán. Base KHÔNG áp (giữ domain-agnostic) → là quyết định style của sản phẩm.
+services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 // Posture DEFAULT AN TOÀN cho MỌI extension port (design §5.5/§6.1/§13 — "AddXxxCore luôn gọi"): mỗi port có
 // default degrade (NullAppCache) hoặc fail-loud (Throwing*). BẮT BUỘC vì pipeline behaviors (§8) phụ thuộc port
@@ -57,11 +71,13 @@ var resortConfigConnectionString = configuration.GetConnectionString("ResortConf
         "Thiếu ConnectionStrings:ResortConfig — fail-fast (F35). Cấu hình connection string cho module ResortConfig.");
 services.AddResortConfigInfrastructure(options => options.UseNpgsql(resortConfigConnectionString));
 
-// Module Rooms (phòng + token QR). Nửa-Api (admin CRUD/QR endpoint) ở slice B-Rooms.3 (cần Identity auth).
+// Module Rooms (phòng + token QR). Nửa-Infra (persistence) + nửa-Api (admin CRUD/QR endpoint — B-Rooms.3,
+// role Admin/Staff qua StarHillPolicies).
 var roomsConnectionString = configuration.GetConnectionString("Rooms")
     ?? throw new InvalidOperationException(
         "Thiếu ConnectionStrings:Rooms — fail-fast (F35). Cấu hình connection string cho module Rooms.");
 services.AddRoomsInfrastructure(options => options.UseNpgsql(roomsConnectionString));
+services.AddRoomsApi();
 
 // (2b) OPT-IN messaging event-driven — mặc định TẮT (mirror opt-in migrate AD-053). Bật qua config
 //      Bedrock:Messaging:Enabled=true (docker-compose đặt cờ). Khi bật: cắm adapter RabbitMQ (OVERRIDE default

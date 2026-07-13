@@ -16,7 +16,7 @@
 
 ## Trạng thái hiện tại
 
-- Journal QR: QR-AD-001..015 (QR-AD-001 Superseded by QR-AD-012), QR-DV-001..004, QR-TO-001..004, QR-N-001..016. **Cổng tự động ĐÃ SỐNG** (QR-AD-006): `StarHillJournalConsistencyTests` 5/5 (INV-1..5) chạy trong `StarHill.ArchitectureTests` (13 test) — journal QR không còn dựa review thủ công. getDiagnostics vẫn dùng cho `design.md` (Kiro Spec Format).
+- Journal QR: QR-AD-001..021 (QR-AD-001 Superseded by QR-AD-012), QR-DV-001..004, QR-TO-001..004, QR-N-001..020. **Cổng tự động ĐÃ SỐNG** (QR-AD-006): `StarHillJournalConsistencyTests` 5/5 (INV-1..5) chạy trong `StarHill.ArchitectureTests` (13 test) — journal QR không còn dựa review thủ công. getDiagnostics vẫn dùng cho `design.md` (Kiro Spec Format).
 - **P0 REMEDIATION (2026-07-13) — anti-drift TẦNG CẤU TRÚC**: QR-AD-012 (D1-a) XÓA gốc rễ drift — starhill KHÔNG còn bản-copy base (chỉ MỘT base ở platform/) ⇒ drift base BẤT KHẢ THI (mạnh hơn mọi diff-guard). Đây là nâng cấp lớn nhất của cơ chế chống drift pha QR.
 
 ## Guard map — quyết định design (2026-07-11) → cơ chế chống drift
@@ -28,8 +28,8 @@
 | QR-AD-002 cross-module chỉ qua `<M>.Contracts` (không ref Infra module khác) | ModuleBoundaryTests (copy từ base) + bổ sung assertion cho module QR | ⏳ khi build module |
 | QR-AD-002 per-module schema (không chia bảng) | mỗi module DbContext `HasDefaultSchema` + migration riêng (khuôn IdentityDbContext) | ⏳ |
 | QR-AD-002 cascade đồng bộ (CP9: visit kết thúc → đóng hội thoại + huỷ ticket) | guard test CP9 (GuestAccess integration) | ⏳ |
-| QR-AD-005 Role→policy (Admin superset Staff) | guard test CP8 (Staff→Admin endpoint = 403; Admin→Staff endpoint = OK) | ⏳ |
-| QR-DV-001 route `/v1/<group>/...` | HTTP integration test theo path thật | ⏳ |
+| QR-AD-005 Role→policy (Admin superset Staff) | guard test CP8 (Staff→Admin endpoint = 403; Admin→Staff endpoint = OK) | ✅ B-Rooms.3 (QR-AD-020): `StarHillAuthorizationPolicyTests` 6/6 (admin→admin OK; admin→staff OK superset; staff→staff OK; staff→admin 403; no-role 403; no-token 401) + role thật qua `RoomsEndpointAuthTests`. KHÔNG Docker |
+| QR-DV-001 route `/v1/<group>/...` | HTTP integration test theo path thật | ✅ B-Rooms.3: `RoomsEndpointAuthTests` gọi path thật `/v1/rooms...` (TestServer) + Location `/v1/rooms/{id}` khi create |
 | CP1 no-business-in-core (Bedrock.* trong starhill/) | NoBusinessInCore*Tests (copy từ base) — chỉ quét assembly Bedrock.* | ✅ copy theo base |
 | Journal QR nhất quán (INV-1..5) | JournalConsistencyTests bản QR (trỏ `.kiro/specs/starhill-qr/journal/`) | ✅ QR-AD-006 (StarHill.ArchitectureTests 5/5; `vp journal`) |
 | CI sản phẩm nhắm starhill/ (không trỏ nhầm base) | `validate_ci.py` bản copy: `CI_PATH=starhill-ci.yml` + `REQUIRED_TARGET_TOKENS` (raw check) | ✅ QR-AD-007 (`vp ci` OK; `vp all` xanh) |
@@ -53,6 +53,9 @@
 | QR-AD-016 CreateRoom thẩm định tồn tại Resort qua `IResortExistenceQuery` (P1(a) — thay FK chéo-schema, chống phòng mồ côi) | `Rooms.UnitTests/CreateRoomUseCaseTests` (2, fake port, KHÔNG Docker): resort vắng→ResortNotFound+không ghi; resort có→tạo phòng+token | ✅ P1(a): 2/2 pass; check TRƯỚC token-gen; giữ Rooms.Application ⊥ ResortConfig.{Domain,Infra} (RoomsBoundaryTests) |
 | QR-AD-017 default-language "đúng-một + enabled" do MIỀN giữ (`ResortLanguagePolicy`) + set-default nguyên tử + seeder fail-fast (P1(b)) | `ResortLanguagePolicyTests` (10, KHÔNG Docker): 0/1/2-default, default-disabled, switch-atomic, case-insensitive, idempotent, unknown/disabled→false | ✅ P1(b): 10/10 pass; seeder ném nếu template≠1-default; Npgsql set-default ordering defer QR-N-018 |
 | QR-AD-018 error-code snapshot phủ MỌI catalog module (Rooms) + thu static property (P1-11) — chống drift mã lỗi client-facing | `ErrorCodeSnapshotTests.Error_code_registry_matches_snapshot` (thêm assembly Rooms.Application + collector thu field/property/method) | ✅ P1-11: RoomsErrors (qr_generation_failed/resort_not_found/invalid_configuration) nay được gác; mirror collector sang platform (snapshot base không đổi) |
+| QR-AD-019 Rooms.Api role/endpoint (Req 7.6: mutation+QR=Admin, xem=Staff) + response không token thô + resortId ở Api | `RoomsEndpointAuthTests` (6, KHÔNG Docker, fake use case): Staff→403 mọi mutation; Admin→201/204/200; qr.png Staff+Admin→200 image/png; no-token→401 | ✅ B-Rooms.3: `vp all` StarHill.Api.Tests 15/15 |
+| QR-AD-020 `StarHill.Authorization` policy Admin/Staff superset dùng chung | `StarHillAuthorizationPolicyTests` (6, stub endpoint) — ngữ nghĩa superset một chỗ | ✅ B-Rooms.3 (xem hàng QR-AD-005) |
+| QR-AD-021 JSON HTTP string-enum (JsonStringEnumConverter toàn cục Host) | `RoomsEndpointAuthTests` PATCH `/status` body `{"status":"Inactive"}`→204 (string→enum bind); Host+test host cùng cấu hình | ✅ B-Rooms.3 (trước khi thêm: PATCH 400) |
 
 - design.md pha QR: getDiagnostics **0** (Kiro Spec Format hợp lệ) — kiểm mỗi lần sửa.
 - QR-AD-003 (deploy) + QR-AD-004 (tên Concierge): không code-enforceable trực tiếp — enforce bằng review + naming khi tạo project.

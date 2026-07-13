@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Rooms.Api (nửa-Api của composition — matrix §3.3): reference Rooms.Application + Bedrock.Api (cơ chế HTTP) +
+    StarHill.Authorization (policy Admin/Staff) + ResortConfig.Contracts (phân giải resortId single-resort qua
+    IResortSettingsQuery — QR-DV-004; cross-module qua Contracts hợp lệ QR-AD-002). KHÔNG ref Infrastructure của
+    BẤT KỲ module nào (giữ Api⊥Infra I7). FrameworkReference ASP.NET cho minimal API.
+  -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Rooms.Application\Rooms.Application.csproj" />
+    <ProjectReference Include="..\..\ResortConfig\ResortConfig.Contracts\ResortConfig.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\StarHill.Authorization\StarHill.Authorization.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Api\Bedrock.Api.csproj" />
+  </ItemGroup>
+</Project>
