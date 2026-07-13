@@ -20,5 +20,8 @@
     <ProjectReference Include="$(PlatformSrc)\Bedrock.Messaging.Contracts\Bedrock.Messaging.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\Identity\Identity.Contracts\Identity.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\Identity\Identity.Domain\Identity.Domain.csproj" />
+    <!-- P1-11: gác luôn error catalog của module Rooms (RoomsErrors ở tầng Application — nghiệp vụ QR). Thêm module
+         mới có error catalog riêng → thêm ProjectReference tương ứng ở đây (snapshot phủ mọi mã lỗi client-facing). -->
+    <ProjectReference Include="..\..\src\Modules\Rooms\Rooms.Application\Rooms.Application.csproj" />
   </ItemGroup>
 </Project>

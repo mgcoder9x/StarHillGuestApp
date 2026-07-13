@@ -1,6 +1,7 @@
 using System.Reflection;
 using Bedrock.Domain.Results;
 using Identity.Domain;
+using Rooms.Application;
 
 namespace Bedrock.ContractTests;
 
@@ -21,8 +22,11 @@ public sealed class ErrorCodeSnapshotTests
         "conflict",
         "forbidden",
         "identity.invalid_refresh_token",
+        "invalid_configuration",         // Rooms (P1-11: nay được gác)
         "not_found",
+        "qr_generation_failed",          // Rooms (P1-11)
         "rate_limited",
+        "resort_not_found",              // Rooms (P1-11)
         "unauthorized",
         "unexpected",
         "validation_error",
@@ -33,8 +37,9 @@ public sealed class ErrorCodeSnapshotTests
     {
         Assembly[] catalogAssemblies =
         [
-            typeof(Error).Assembly,        // Bedrock.Domain (CommonErrors + Error)
-            typeof(AuthErrors).Assembly,   // Identity.Domain (module error catalog)
+            typeof(Error).Assembly,          // Bedrock.Domain (CommonErrors + Error)
+            typeof(AuthErrors).Assembly,     // Identity.Domain (module error catalog)
+            typeof(RoomsErrors).Assembly,    // Rooms.Application (P1-11: error catalog module QR — trước đây KHÔNG gác)
         ];
 
         var actual = CollectStableErrorCodes(catalogAssemblies);
@@ -43,9 +48,10 @@ public sealed class ErrorCodeSnapshotTests
     }
 
     /// <summary>
-    /// Thu MỌI code ổn định: static field kiểu <see cref="Error"/> + static method trả <see cref="Error"/> mà
-    /// TẤT CẢ tham số có default (invoke bằng default → code cố định). Bỏ code rỗng (<see cref="Error.None"/>).
-    /// Trả danh sách sắp Ordinal, distinct.
+    /// Thu MỌI code ổn định: static <see cref="Error"/> qua (a) FIELD, (b) PROPERTY get-only (P1-11 — catalog kiểu
+    /// property như <c>RoomsErrors</c> trước đây LỌT lưới), (c) METHOD với MỌI tham số optional (invoke bằng default →
+    /// code cố định). Bỏ code rỗng (<see cref="Error.None"/>). Trả danh sách sắp Ordinal, distinct. Code template
+    /// (method cần tham số, vd <c>{entity}.not_found</c>) KHÔNG tính (không phải hằng ổn định).
     /// </summary>
     private static string[] CollectStableErrorCodes(params Assembly[] assemblies)
     {
@@ -63,9 +69,27 @@ public sealed class ErrorCodeSnapshotTests
                     }
                 }
 
+                // P1-11: catalog dạng static get-only PROPERTY trả Error (RoomsErrors) — hằng ổn định, KHÔNG tham số.
+                foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Static))
+                {
+                    if (property.PropertyType == typeof(Error)
+                        && property.GetMethod is not null
+                        && property.GetValue(null) is Error propertyError
+                        && propertyError.Code.Length > 0)
+                    {
+                        codes.Add(propertyError.Code);
+                    }
+                }
+
                 foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Static))
                 {
                     if (method.ReturnType != typeof(Error))
+                    {
+                        continue;
+                    }
+
+                    // Bỏ getter của property (đã xử lý ở trên) — GetMethods trả cả accessor get_X.
+                    if (method.IsSpecialName)
                     {
                         continue;
                     }
