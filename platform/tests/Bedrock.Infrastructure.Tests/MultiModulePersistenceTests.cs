@@ -113,6 +113,45 @@ public sealed class MultiModulePersistenceTests
     }
 
     [Fact]
+    public void Same_context_under_two_keys_fails_fast_bijection()
+    {
+        // P1-10: cùng DbContext dưới HAI key → AddDbContext<TContext> gọi trùng → options last-wins. Fail-fast.
+        var services = new ServiceCollection();
+        services.AddBedrockPersistence<TestDbContext>("module-1", o => o.UseSqlite("DataSource=:memory:"));
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            services.AddBedrockPersistence<TestDbContext>("module-2", o => o.UseSqlite("DataSource=:memory:")));
+
+        Assert.Contains("bijection", error.Message, StringComparison.Ordinal);
+        Assert.Contains(typeof(TestDbContext).FullName!, error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Context_registered_keyed_then_unkeyed_fails_fast_bijection()
+    {
+        // P1-10: cùng DbContext vừa keyed vừa unkeyed → AddDbContext trùng. Fail-fast.
+        var services = new ServiceCollection();
+        services.AddBedrockPersistence<TestDbContext>("module-1", o => o.UseSqlite("DataSource=:memory:"));
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            services.AddBedrockPersistence<TestDbContext>(o => o.UseSqlite("DataSource=:memory:")));
+
+        Assert.Contains("bijection", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Context_registered_unkeyed_then_keyed_fails_fast_bijection()
+    {
+        var services = new ServiceCollection();
+        services.AddBedrockPersistence<TestDbContext>(o => o.UseSqlite("DataSource=:memory:"));
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            services.AddBedrockPersistence<TestDbContext>("module-1", o => o.UseSqlite("DataSource=:memory:")));
+
+        Assert.Contains("bijection", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Capability_fails_fast_when_module_key_points_to_another_context()
     {
         var services = new ServiceCollection();

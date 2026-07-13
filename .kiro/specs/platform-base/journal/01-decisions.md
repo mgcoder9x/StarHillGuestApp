@@ -1500,3 +1500,18 @@
 - Consequences: MỌI Host dùng outbox producer PHẢI hoặc bật messaging (drainer) hoặc khai `Bedrock:Messaging:AllowOutboxWithoutDispatcher=true`. Smoke test 2 cây đã khai. Production (compose bật messaging) → drainer có → pass. Chạy production quên messaging → boot nổ (bắt misconfig — đúng ý đồ). Guard chỉ chạy khi Host gọi `AddBedrockStartupValidation()` (cả 2 Host đều gọi).
 - Reversibility: Medium (gỡ check + cờ; nhưng tái mở lỗ tích lũy im lặng).
 - Traceability: re-audit P1-15; mở rộng AD-011 (StartupValidationOptions/RequiredPortsValidator), liên quan AD-056/047 (Host lên lịch worker); F7/I9/CP9; user-confirmed.
+
+
+---
+
+### AD-101 — [Wave 1] Keyed persistence enforce BIJECTION context↔registration (re-audit P1-10)
+- Status: Confirmed
+- Date: 2026-07-13
+- Decider: AI(Kiro) — xử lý Wave-1 finding P1-10 (phần bijection còn ngỏ).
+- Provenance/Evidence: đọc `PersistenceRegistrationRegistry` + `MultiModulePersistenceTests`. Xác nhận PHẦN ĐÃ GIẢI: capability (outbox/inbox/refresh) là opt-in RIÊNG, `AddBedrockPersistence` KHÔNG tự đăng ký (test `Foundation_does_not_register_schema_dependent_capabilities`) → re-audit P1-10 điểm "capability coupling" nay stale. PHẦN CÒN NGỎ (đã fix): registry chỉ chặn per-key (`AddKeyed` trùng key) + một-unkeyed, NHƯNG KHÔNG chặn cùng `TContext` đăng ký dưới NHIỀU key, hoặc vừa keyed vừa unkeyed → `AddDbContext<TContext>` gọi TRÙNG với configure delegate khác nhau → options phụ thuộc THỨ TỰ (last-wins). Đã sửa: thêm `_registeredContexts` + `EnsureContextNotAlreadyRegistered` gọi trong CẢ `AddUnkeyed` lẫn `AddKeyed` → mỗi DbContext đăng ký ĐÚNG một lần. Guard: `MultiModulePersistenceTests.{Same_context_under_two_keys_fails_fast_bijection, Context_registered_keyed_then_unkeyed_fails_fast_bijection, Context_registered_unkeyed_then_keyed_fails_fast_bijection}`. 8/8 pass (5 cũ giữ nguyên).
+- Context: re-audit P1-10 — keyed persistence còn khe hở multi-module; cùng concrete context nhiều key tạo cảm giác isolation nhưng options last-wins (cùng lớp rủi ro P0-1 last-registration-wins mà QR remediation vừa fix ở tầng khác).
+- Decision/Change: registry enforce BIJECTION — mỗi `TContext` ↔ đúng một registration (một key HOẶC unkeyed, không cả hai, không nhiều key). Vi phạm → fail-fast lúc compose với thông điệp rõ (gợi ý tách DbContext nếu cần dữ liệu chung).
+- Rationale (verifiable): **Root cause:** `AddPersistenceFoundation<TContext>` gọi `AddDbContext<TContext>` mỗi lần registry chấp nhận; đăng ký cùng context nhiều lần = nhiều `AddDbContext<TContext>` với options khác nhau → last-wins (bug tinh vi: module A tưởng dùng DB của mình nhưng nhận options module B). Fix bản chất = chặn ở registry (nguồn quyết định), không vá ở call-site. Không có use case chính đáng cho cùng context nhiều key (re-audit ghi "trừ khi thiết kế rõ" — chưa có).
+- Alternatives: (a) cho phép nhưng cảnh báo (loại: last-wins vẫn xảy ra âm thầm — chính rủi ro); (b) idempotent-merge options (loại: ngữ nghĩa mơ hồ, che giấu misconfig); (c) chỉ chặn khác-configure (loại: không phát hiện được delegate khác nhau một cách tin cậy). Fail-fast tuyệt đối rõ ràng nhất.
+- Consequences: MỌI DbContext trong một Host phải đăng ký persistence đúng một lần (đúng thực tế: 1 module = 1 context = 1 key). starhill (3 context/3 key) + platform sample (1 context) không đụng. Nếu tương lai có nhu cầu thật cùng context nhiều key, phải thiết kế lại tường minh (bỏ guard có chủ đích + AD mới).
+- Reversibility: Easy (gỡ `_registeredContexts` check). Traceability: re-audit P1-10; refine A-01 (module-scoped keyed persistence), liên quan QR-AD-013 (keyed P0-1 fix); F5/F31/CP2.

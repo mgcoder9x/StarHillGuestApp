@@ -276,13 +276,18 @@ public static class BedrockPersistenceExtensions
     {
         private Type? _unkeyedContext;
         private readonly Dictionary<string, Type> _keyedContexts = new(StringComparer.Ordinal);
+        private readonly HashSet<Type> _registeredContexts = [];
         private readonly HashSet<(string? Key, Type Context, PersistenceCapability Capability)> _capabilities = [];
 
         public void AddUnkeyed(Type contextType)
         {
+            // P1-10 (bijection): mỗi DbContext đăng ký ĐÚNG một lần — chặn TRƯỚC (cùng context vừa keyed vừa unkeyed).
+            EnsureContextNotAlreadyRegistered(contextType);
+
             if (_unkeyedContext is null)
             {
                 _unkeyedContext = contextType;
+                _registeredContexts.Add(contextType);
                 return;
             }
 
@@ -300,7 +305,29 @@ public static class BedrockPersistenceExtensions
                     + $"'{contextType.FullName}'. Module key phải duy nhất và ổn định.");
             }
 
+            // P1-10 (bijection): cùng DbContext KHÔNG được đăng ký dưới nhiều key (gây AddDbContext trùng → options last-wins).
+            EnsureContextNotAlreadyRegistered(contextType);
+
             _keyedContexts.Add(moduleKey, contextType);
+            _registeredContexts.Add(contextType);
+        }
+
+        /// <summary>
+        /// P1-10: enforce BIJECTION context↔registration. Cùng một <see cref="Microsoft.EntityFrameworkCore.DbContext"/>
+        /// type đăng ký persistence NHIỀU LẦN (nhiều key, hoặc vừa keyed vừa unkeyed) → <c>AddDbContext&lt;TContext&gt;</c>
+        /// bị gọi trùng với các configure delegate khác nhau → options phụ thuộc THỨ TỰ (last-wins) = cùng lớp rủi ro
+        /// last-registration-wins (P0-1). Fail-fast: mỗi context một registration. Cần chia sẻ dữ liệu → tách DbContext.
+        /// </summary>
+        private void EnsureContextNotAlreadyRegistered(Type contextType)
+        {
+            if (_registeredContexts.Contains(contextType))
+            {
+                throw new InvalidOperationException(
+                    $"DbContext '{contextType.FullName}' đã được đăng ký persistence trước đó. Mỗi DbContext PHẢI ánh "
+                    + "xạ ĐÚNG một module key (bijection) — đăng ký cùng context dưới nhiều key hoặc vừa keyed vừa "
+                    + "unkeyed sẽ gọi AddDbContext trùng (options last-wins). Nếu nhiều module cần dữ liệu chung, tách "
+                    + "DbContext riêng cho từng module.");
+            }
         }
 
         public void RequireUnkeyed(Type contextType)
