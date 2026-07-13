@@ -77,6 +77,17 @@ public sealed class RoomsEndpointModule : IEndpointModule
             .RequireAuthorization(StarHillPolicies.RequireStaff)
             .MapToApiVersion(BedrockApiVersioning.V1)
             .WithName("RoomsRenderQrPng");
+
+        // --- Staff+Admin (Req 7.6 "Staff xem danh sách/thông tin phòng"): đọc danh sách + chi tiết (B-Rooms.4) ---
+        group.MapGet("/", ListRoomsAsync)
+            .RequireAuthorization(StarHillPolicies.RequireStaff)
+            .MapToApiVersion(BedrockApiVersioning.V1)
+            .WithName("RoomsList");
+
+        group.MapGet("/{roomId:guid}", GetRoomAsync)
+            .RequireAuthorization(StarHillPolicies.RequireStaff)
+            .MapToApiVersion(BedrockApiVersioning.V1)
+            .WithName("RoomsGet");
     }
 
     private static async Task<IResult> CreateRoomAsync(
@@ -174,6 +185,30 @@ public sealed class RoomsEndpointModule : IEndpointModule
         return result.IsSuccess
             ? Results.File(result.Value.Png, "image/png")
             : Problem(result.Error, http);
+    }
+
+    private static async Task<IResult> ListRoomsAsync(
+        IRoomQueries queries,
+        CancellationToken ct,
+        RoomStatus? status = null,
+        int page = 1,
+        int pageSize = 20)
+    {
+        var result = await queries
+            .ListAsync(status, new PagedRequest(page, pageSize), ct)
+            .ConfigureAwait(false);
+
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> GetRoomAsync(
+        Guid roomId,
+        IRoomQueries queries,
+        HttpContext http,
+        CancellationToken ct)
+    {
+        var room = await queries.GetByIdAsync(roomId, ct).ConfigureAwait(false);
+        return room is null ? Problem(RoomsErrors.RoomNotFound, http) : Results.Ok(room);
     }
 
     private static IResult Problem(Error error, HttpContext http) =>

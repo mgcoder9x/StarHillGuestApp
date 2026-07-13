@@ -26,4 +26,4 @@ public sealed record RenderRoomQrPngInput(Guid RoomId);
 
 public sealed record RenderRoomQrPngResult(byte[] Png);
 
-// NOTE: RoomListItem (read-model) → slice query sau (I10).
+// NOTE: RoomListItem (read-model) + IRoomQueries → B-Rooms.4 (IRoomQueries.cs).

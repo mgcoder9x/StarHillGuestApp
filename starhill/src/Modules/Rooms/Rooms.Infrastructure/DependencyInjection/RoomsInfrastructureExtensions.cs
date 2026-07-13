@@ -47,6 +47,9 @@ public static class RoomsInfrastructureExtensions
         // Resolver token (read-only) inject RoomsDbContext cụ thể → auto-wire, không cần key.
         services.AddScoped<IRoomTokenResolver, EfRoomTokenResolver>();
 
+        // Read admin nội-module (B-Rooms.4): list/detail phòng. Read-only → inject RoomsDbContext cụ thể (không keyed).
+        services.AddScoped<IRoomQueries, EfRoomQueries>();
+
         // QR render service (QRCoder) — thuần managed, stateless → singleton (thủ công, không auto-scan).
         services.AddSingleton<IQrService, QrCoderQrService>();
 

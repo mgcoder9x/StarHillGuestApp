@@ -1,10 +1,12 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Bedrock.Application.UseCases;
 using Bedrock.Domain.Results;
 using ResortConfig.Contracts.Queries;
 using Rooms.Application;
+using Rooms.Domain;
 
 namespace StarHill.Api.Tests.Authorization;
 
@@ -55,6 +57,20 @@ internal sealed class FakeDeleteRoom : ICommandUseCase<Guid>
 
     public Task<Result> ExecuteAsync(Guid input, CancellationToken ct = default) =>
         Task.FromResult(Result.Success());
+}
+
+internal sealed class FakeRoomQueries : IRoomQueries
+{
+    public static readonly Guid KnownRoomId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+
+    private static RoomListItem Item(Guid id) =>
+        new(id, "A-101", "A", 1, RoomStatus.Active, "abc12…", 1, DateTimeOffset.UnixEpoch);
+
+    public Task<PagedResult<RoomListItem>> ListAsync(RoomStatus? status, PagedRequest paging, CancellationToken ct = default) =>
+        Task.FromResult(new PagedResult<RoomListItem>(new List<RoomListItem> { Item(KnownRoomId) }, paging.SafePage, paging.SafePageSize, 1));
+
+    public Task<RoomListItem?> GetByIdAsync(Guid roomId, CancellationToken ct = default) =>
+        Task.FromResult<RoomListItem?>(roomId == KnownRoomId ? Item(roomId) : null);
 }
 
 internal sealed class FakeResortSettingsQuery : IResortSettingsQuery

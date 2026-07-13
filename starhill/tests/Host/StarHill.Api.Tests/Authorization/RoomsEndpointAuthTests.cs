@@ -53,6 +53,7 @@ public sealed class RoomsEndpointAuthTests
                 services.AddScoped<ICommandUseCase<ChangeRoomStatusInput>, FakeChangeStatus>();
                 services.AddScoped<ICommandUseCase<Guid>, FakeDeleteRoom>();
                 services.AddScoped<IResortSettingsQuery, FakeResortSettingsQuery>();
+                services.AddScoped<IRoomQueries, FakeRoomQueries>();
             });
             webHost.Configure(app =>
             {
@@ -151,5 +152,38 @@ public sealed class RoomsEndpointAuthTests
             (await client.PostAsync(Rel("/v1/rooms"), JsonContent.Create(new { roomNumber = "101" }))).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized,
             (await client.GetAsync(Rel($"/v1/rooms/{RoomId}/qr.png"))).StatusCode);
+    }
+
+    // ─────────────────────── B-Rooms.4: GET list/detail (RequireStaff) ───────────────────────
+    [Theory]
+    [InlineData(StarHillPolicies.RoleStaff)]
+    [InlineData(StarHillPolicies.RoleAdmin)]
+    public async Task List_and_detail_viewable_by_staff_and_admin(string role)
+    {
+        using var host = await StartAsync();
+        var client = Client(host, role);
+
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync(Rel("/v1/rooms"))).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync(Rel($"/v1/rooms/{FakeRoomQueries.KnownRoomId}"))).StatusCode);
+    }
+
+    [Fact]
+    public async Task Detail_unknown_room_returns_404()
+    {
+        using var host = await StartAsync();
+        var client = Client(host, StarHillPolicies.RoleStaff);
+
+        var response = await client.GetAsync(Rel($"/v1/rooms/{Guid.NewGuid()}"));
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task List_requires_authentication()
+    {
+        using var host = await StartAsync();
+        var client = Client(host, role: null);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync(Rel("/v1/rooms"))).StatusCode);
     }
 }

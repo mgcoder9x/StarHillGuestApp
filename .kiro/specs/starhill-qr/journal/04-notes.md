@@ -167,3 +167,9 @@
 - Date: 2026-07-13
 - Slice B-Rooms.3 hoàn tất (design-first: `design-B-Rooms.3-rooms-api.md` → user duyệt 4 Open Question → code). Tạo `Rooms.Api` (6 endpoint `/v1/rooms`, role Req 7.6) + `StarHill.Authorization` (policy Admin/Staff superset) + bật `JsonStringEnumConverter` toàn cục ở Host. Guard KHÔNG Docker: `StarHillAuthorizationPolicyTests` (6, CP8 superset) + `RoomsEndpointAuthTests` (6, route+policy+qr.png content-type qua fake use case). `vp all` = build 0-warning + validate-ci OK + StarHill.Api.Tests 15/15, toàn suite 0-fail (skip = Docker-only). Journal: QR-AD-019/020/021 + guard map cập nhật (QR-AD-005 Role→policy CP8 và QR-DV-001 route `/v1/<group>` chuyển ⏳→✅).
 - CÒN LẠI cho Rooms: GET list/detail phòng (cần read-model `RoomListItem` — slice query sau, I10); bulk QR (cần list trước).
+
+
+### QR-N-021 — B-Rooms.4 XONG: Rooms query slice (GET list + detail)
+- Date: 2026-07-13
+- Hoàn tất Req 7.6 "Staff xem danh sách/thông tin phòng". `IRoomQueries`+`RoomListItem` (Rooms.Application) + `EfRoomQueries` (Infra, 2-query map in-memory) + GET `/v1/rooms` (list, phân trang PagedRequest/PagedResult + lọc status) & GET `/v1/rooms/{id}` (detail 404) — RequireStaff (Admin superset). Guard KHÔNG Docker: `RoomQueriesTests` (3, SQLite: preview token Active/loại soft-delete/filter status/phân trang/GetById null) + `RoomsEndpointAuthTests` +4 (Staff+Admin xem list/detail=200, unknown=404, no-token=401). `vp all` xanh: StarHill.Api.Tests 19/19, Rooms.IntegrationTests 25 pass/2 skip(Docker). Journal QR-AD-022.
+- CÒN LẠI Rooms: token history endpoint (nếu cần), bulk QR in hàng loạt. Module kế: GuestAccess (dùng IRoomTokenResolver).
