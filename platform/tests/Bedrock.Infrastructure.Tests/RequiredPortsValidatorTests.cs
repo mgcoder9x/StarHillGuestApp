@@ -1,6 +1,7 @@
 using Bedrock.Application.DependencyInjection;
 using Bedrock.Application.Ports.Security;
 using Bedrock.Infrastructure.Startup;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Bedrock.Infrastructure.Tests;
@@ -23,7 +24,8 @@ public sealed class RequiredPortsValidatorTests
         services.AddScoped<IScannedThing, ScannedScopedThing>();
 
         await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
-        var validator = new RequiredPortsValidator(provider.GetRequiredService<IServiceScopeFactory>(), registry);
+        var validator = new RequiredPortsValidator(
+            provider.GetRequiredService<IServiceScopeFactory>(), registry, new ConfigurationBuilder().Build());
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => validator.StartAsync(CancellationToken.None));
         Assert.Contains("IPasswordHasher", exception.Message, StringComparison.Ordinal);
@@ -40,7 +42,8 @@ public sealed class RequiredPortsValidatorTests
         services.AddScoped<IScannedThing, ScannedScopedThing>();
 
         await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
-        var validator = new RequiredPortsValidator(provider.GetRequiredService<IServiceScopeFactory>(), registry);
+        var validator = new RequiredPortsValidator(
+            provider.GetRequiredService<IServiceScopeFactory>(), registry, new ConfigurationBuilder().Build());
 
         // Scope-aware: nếu validator resolve port scoped từ ROOT (ValidateScopes=true) sẽ ném → thành công = đã tạo scope.
         await validator.StartAsync(CancellationToken.None);

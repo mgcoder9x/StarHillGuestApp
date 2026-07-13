@@ -27,23 +27,31 @@ namespace Messaging.IntegrationTests;
 [Collection(MessagingIntegrationDefinition.Name)]
 public sealed class RabbitMqResilienceTests : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:16-alpine").Build();
-    private readonly RabbitMqContainer _rabbit = new RabbitMqBuilder("rabbitmq:3.13").Build();
+    private PostgreSqlContainer _postgres = null!;
+    private RabbitMqContainer _rabbit = null!;
     private bool _available;
 
     private static readonly JsonSerializerOptions PayloadOptions =
         new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
+    private static bool IsContinuousIntegration() =>
+        string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase);
+
     public async Task InitializeAsync()
     {
         try
         {
+            // Build() validate Docker và NÉM nếu thiếu → phải nằm TRONG try để catch → skip (N-012/N-067).
+            // (Bản cũ để .Build() ở field-initializer/constructor → ném NGOÀI try → test FAIL thay vì skip khi
+            // máy không Docker. Đây là fix mirror RabbitMqConsumeEndToEndTests.)
+            _postgres = new PostgreSqlBuilder("postgres:16-alpine").Build();
+            _rabbit = new RabbitMqBuilder("rabbitmq:3.13").Build();
             await _postgres.StartAsync().ConfigureAwait(false);
             await _rabbit.StartAsync().ConfigureAwait(false);
             _available = true;
         }
-#pragma warning disable CA1031 // CỐ Ý: thiếu Docker ⇒ skip.
-        catch (Exception)
+#pragma warning disable CA1031 // CỐ Ý: thiếu Docker ⇒ skip (nhưng CI có Docker → KHÔNG nuốt, fail-closed A-07/N-012).
+        catch (Exception) when (!IsContinuousIntegration())
 #pragma warning restore CA1031
         {
             _available = false;

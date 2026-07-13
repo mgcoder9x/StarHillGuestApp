@@ -152,6 +152,7 @@
 | AD-097 | [Wave 1] Outbox last_error REDACT thật (URI-creds/kv nhạy cảm/Bearer) + classification + bound, không chỉ truncate — re-audit P1-07 | `OutboxErrorFormatterTests` (13: creds/kv/bearer/bound/null/no-op) | ✅ ENFORCED (refine AD-087/A-28; F25/F33) |
 | AD-098 | [Wave 1] `ICommandUseCase<TInput>` void kế thừa `ITransactionalUseCase` → COMPILE-ENFORCE PersistenceKey (đóng gap review P1; command void keyed không còn resolve nhầm UoW unkeyed lúc runtime) | COMPILE-GATE (build fail nếu command void thiếu `PersistenceKey`) + `KeyedCommandPipelineTests` (full-DI: keyed void→UoW đúng module; null→unkeyed legacy) | ✅ ENFORCED (compile + full-DI; §8 Transaction) |
 | AD-099 | [Wave 1/A-11 partial] Discovery guard: adapter cấm PackageReference/FrameworkReference tech (EF/Npgsql/ASP.NET) + mọi module/adapter phải có trong Platform.slnx | `DiscoveredProjectBoundaryTests.{Every_discovered_adapter_forbids_technology_package_and_framework_references, Every_discovered_module_and_adapter_project_is_registered_in_solution}` | ✅ ENFORCED (project-graph; bổ trợ CP3; A-11 PARTIAL) |
+| AD-100 | [Wave 1] Startup fail-fast: outbox producer PHẢI có dispatcher worker (hoặc allow-offline tường minh) — chống tích lũy event im lặng khi messaging tắt — re-audit P1-15 | `MessagingStartupGuardTests` (4: producer-không-drainer→chặn boot; có drainer→ok; allow-offline→ok; không producer→ok) | ✅ ENFORCED (mở rộng AD-011; F7/I9/CP9; user-confirmed) |
 
 ## Cổng journal-consistency (INV-1..INV-5) — L4 tự động (AD-030)
 

@@ -72,6 +72,11 @@ if (bool.TryParse(configuration["Bedrock:Messaging:Enabled"], out var messagingE
     });
 }
 
+// P1-15: khi messaging TẮT, module Identity vẫn ghi outbox event (producer) nhưng KHÔNG có dispatcher worker →
+// RequiredPortsValidator CHẶN boot (chống event tích lũy IM LẶNG), TRỪ KHI khai offline tường minh qua config
+// Bedrock:Messaging:AllowOutboxWithoutDispatcher=true (validator đọc lúc StartAsync). Production quên messaging =
+// fail-fast; dev/smoke offline = đặt cờ CÓ Ý THỨC.
+
 // (3) Bọc pipeline behaviors SAU khi use case đã đăng ký (AD-037 — Scrutor chỉ decorate service đã có mặt).
 services.AddBedrockCore();
 

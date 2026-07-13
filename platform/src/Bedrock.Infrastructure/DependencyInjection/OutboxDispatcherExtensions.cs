@@ -1,4 +1,5 @@
 using System.Reflection;
+using Bedrock.Application.DependencyInjection;
 using Bedrock.Application.Messaging.Dispatch;
 using Bedrock.Infrastructure.Persistence;
 using Bedrock.Infrastructure.Persistence.Messaging;
@@ -80,6 +81,9 @@ public static class OutboxDispatcherExtensions
             .ValidateOnStart();
 
         services.AddHostedService<OutboxDispatcherHostedService<TContext>>();
+
+        // P1-15: có DRAINER cho context này → thoả startup guard (producer AddBedrockOutbox<TContext> được drain).
+        services.BedrockStartupValidation().RegisterOutboxDrainer(typeof(TContext));
         return services;
     }
 

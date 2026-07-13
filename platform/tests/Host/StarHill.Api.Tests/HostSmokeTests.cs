@@ -24,6 +24,9 @@ public sealed class SecretInjectingHostFactory : WebApplicationFactory<Program>
             ["Jwt:Keys:0:Secret"] = Convert.ToBase64String(new byte[32]),
             // Connection string đầy đủ (kèm password) — cấp lúc test; smoke test không chạm DB thật.
             ["ConnectionStrings:Identity"] = "Host=localhost;Port=5432;Database=starhill_identity_test;Username=postgres;Password=test",
+            // P1-15: smoke test boot OFFLINE (messaging tắt) → khai TƯỜNG MINH chấp nhận outbox không drainer,
+            // nếu không startup guard sẽ chặn boot (đúng ý đồ fail-fast production). Đây là dev/smoke có ý thức.
+            ["Bedrock:Messaging:AllowOutboxWithoutDispatcher"] = "true",
         }));
     }
 }

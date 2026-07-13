@@ -1,3 +1,4 @@
+using Bedrock.Application.DependencyInjection;
 using Bedrock.Application.Events;
 using Bedrock.Application.Messaging;
 using Bedrock.Application.Messaging.Dispatch;
@@ -93,6 +94,8 @@ public static class BedrockPersistenceExtensions
             services.TryAddScoped<IOutboxWriter>(sp => new EfOutboxWriter(sp.GetRequiredService<TContext>()));
         }
 
+        // P1-15: đánh dấu context này CÓ outbox producer → startup guard đòi phải có dispatcher worker (hoặc offline tường minh).
+        services.BedrockStartupValidation().RegisterOutboxProducer(typeof(TContext));
         return services;
     }
 
@@ -113,6 +116,8 @@ public static class BedrockPersistenceExtensions
                 (sp, _) => new EfOutboxWriter(sp.GetRequiredService<TContext>()));
         }
 
+        // P1-15: producer keyed cũng đánh dấu theo context (drainer AddOutboxDispatcherWorker<TContext> khớp theo context).
+        services.BedrockStartupValidation().RegisterOutboxProducer(typeof(TContext));
         return services;
     }
 
