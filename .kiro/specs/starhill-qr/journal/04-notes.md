@@ -179,3 +179,94 @@
 - Date: 2026-07-13
 - Thiết lập write-path ĐẦU TIÊN cho ResortConfig. `UpdateResortSettingsUseCase`+validator (Application, mirror Rooms keyed repo+pipeline) + `Ef/AddBedrockRepository<ResortSettings>` + `ResortConfig.Api` (GET+PUT `/v1/resort/settings`, RequireAdmin). Đóng mắt xích: admin nay cấu hình được `GuestWebBaseUrl` mà qr.png cần. Guard KHÔNG Docker: `ResortConfigEndpointAuthTests` (3: Admin 200/204, Staff 403, no-token 401) + `ResortConfigSettingsUseCaseTests` (7: update đổi field/not-found + validator https/range). `vp all` xanh: StarHill.Api.Tests 22/22, ResortConfig.IntegrationTests 9 pass/3 skip(Docker). Journal QR-AD-023.
 - Module admin còn lại: Faq/Rules/Concierge/Housekeeping (mirror khuôn write-path). Module guest-flow: GuestAccess (dùng IRoomTokenResolver).
+
+
+### QR-N-023 — C-GA.0 đối soát + design GuestAccess hoàn tất, chưa code
+- Date: 2026-07-14
+- Source active đã kiểm: `starhill/src/Modules` chỉ Identity/ResortConfig/Rooms; GuestAccess chưa tồn tại. Source port hợp lệ là root `resort-qr/` commit `c7622a5`; nested stale copy tuyệt đối không dùng.
+- Task 5 `[x]/[~]` ở `docs/resort-qr-portal/tasks.md` khớp legacy ResolveTokenUseCase/tests, không phải trạng thái active Bedrock port (QR-DV-005).
+- Đã đọc contract thật: `IRoomTokenResolver` gộp unknown/revoked thành null nhưng giữ inactive bool; `IResortSettingsQuery` thiếu presentation/language. Đã đọc `TransactionUseCaseDecorator`, `EfUnitOfWork`, `IUnitOfWork`: PostgreSQL 23505 trong explicit transaction không cho phép legacy catch-query cùng context.
+- Design mới: `design-modules/03-guestaccess.md`; chốt module/schema/key, guest config query, SHA-256 cookie hash, `__Host-` cookie, POST-body resolve, session row lock, portal check-before-touch, PostgreSQL race guards, sweeper và outbox cascade deferred.
+- Không sửa C#. Validation C-GA.0: diagnostics các spec/journal = 0; `StarHillJournalConsistencyTests` INV-1..5 = **5/5 pass, 0 fail/skip** (targeted `dotnet test`, build thành công). Docker engine chưa được dùng; C-GA.1/2 phải có Docker Server trước bằng chứng PostgreSQL cuối.
+- NEXT sau review: C-GA.1 Domain/Contracts/Persistence; không dispatch từ legacy tasks.md vì `.kiro/specs/starhill-qr/tasks.md` không tồn tại.
+
+
+### QR-N-024 — C-GA.1 XONG: GuestAccess persistence nền (Domain/Contracts/Infrastructure + migration + Postgres constraint)
+- Date: 2026-07-14
+- Đã build + verify (Docker THẬT, máy này Docker Server 29.5.2):
+  - 3 project mới: `GuestAccess.{Domain,Contracts,Infrastructure}` (mirror khuôn Rooms/ResortConfig). Domain: `GuestSession`/`GuestVisit`/`GuestVisitStatus` (Entity base; ResortId/RoomId Guid trần — không FK chéo-schema). Contracts: `GuestAccessModule.PersistenceKey = "guest_access"`.
+  - Infrastructure: `GuestAccessDbContext` (schema `guest_access`, không outbox) + Factory design-time + `GuestAccessConfigurations` (ux_guest_session_key_hash; ux_guest_visit_active partial `status='Active'`; ix_guest_visit_active_expiry partial; 2 check `ck_guest_visit_expiry_after_seen`/`ck_guest_visit_closed_at`; FK guest_session_id→guest_session Restrict) + `AddGuestAccessInfrastructure` (CHỈ keyed persistence — resolve/hasher/repo ở C-GA.2).
+  - Migration `20260714031018_InitialCreate` (verify Up: EnsureSchema + 2 bảng + đúng index/filter/check/FK). `.editorconfig generated_code` che analyzer cho composite index (QR-AD-009).
+  - Test `GuestAccessPostgresConstraintTests` (Testcontainers, 4 test): unique hash; 1 Active/(session,room) + tái dùng sau close; check expiry<last_seen bị chặn; check Active+closed_at bị chặn. `GuestAccessBoundaryTests` (StarHill.ArchitectureTests, 3): Contracts thuần; Domain⊥Infra; negative control.
+  - `Platform.slnx` +3 project src +1 test; StarHill.ArchitectureTests +3 ref GuestAccess.
+- Gate: `dotnet build Platform.slnx` = **0 warning/0 error**; `dotnet test Platform.slnx` = **114 test, 0 fail, 0 skip** (Docker) — trong đó GuestAccess.IntegrationTests 4/4 chạy THẬT (không skip), StarHill.ArchitectureTests 16/16 (gồm journal INV-1..5 + 3 boundary GuestAccess).
+- Tuân thủ slice boundary design (C-GA.1 chỉ persistence): CHƯA Host wiring/connection string/compose (C-GA.3), CHƯA resolve/hasher/Application (C-GA.2). Đúng fidelity design↔code = chống drift.
+- NEXT — C-GA.2: `GuestAccess.Application` (resolve use case transactional keyed) + `IResortGuestConfigQuery` (ResortConfig.Contracts + Infra) + `IGuestSessionKeyHasher`/SHA-256 + session-row-lock store (FOR UPDATE) + unit + Postgres race test (nhiều request cùng cookie+room → một Active/cùng VisitId).
+
+
+### QR-N-025 — C-GA.2a XONG: `IResortGuestConfigQuery` (ResortConfig) — read-surface guest-facing cho GuestAccess.resolve
+- Date: 2026-07-14
+- Đã build + verify (build 0-warning; ResortConfig.IntegrationTests **15 test, 0 fail, 0 skip** — +3 test mới, SQLite local không Docker):
+  - `ResortConfig.Contracts/Queries/IResortGuestConfigQuery.cs` + record `ResortGuestConfig` (ResortId/Name/LogoUrl + EnabledLanguageCodes[SortOrder] + DefaultLanguageCode + 6 flags + PortalWindowMinutes/VisitIdleExpiryHours). DTO thuần, KHÔNG marker DI (mirror IResortSettingsQuery/QR-DV-002).
+  - `EfResortGuestConfigQuery` (Infra, AsNoTracking): gộp Resort+ResortSettings+ResortLanguage(enabled). **FAIL-CLOSED (QR-AD-024)**: thiếu resort / thiếu settings / không có default-language hợp lệ → `null` (consumer map `configuration_unavailable`, KHÔNG đoán default). Đăng ký scoped ở `AddResortConfigInfrastructure`.
+  - Test `ResortGuestConfigQueryTests` (SQLite local): null khi chưa seed; config đúng sau seed (en default, en/vi/ko/zh enabled, flags, 30/24); null khi resortId mismatch (không "khớp ngầm" resort đơn — mở đường multi-resort + cho resolve kiểm ResortId khớp phòng).
+- Lý do tách query riêng (không mở rộng `IResortSettingsQuery`): settings query đang phục vụ Rooms.qr (chỉ settings vận hành); guest config cần thêm tên/logo/ngôn ngữ — gộp vào một DTO đa-trách-nhiệm sẽ bẩn surface. Query theo resortId (không single-resort ngầm) để đúng lâu dài + cho phép kiểm khớp `room.ResortId`.
+- Bằng chứng cho C-GA.2b (đã đọc mã, không suy đoán): row-lock dùng `FromSqlRaw("... FOR UPDATE", ...)` — base có precedent `EfOutboxDispatcher` (FOR UPDATE SKIP LOCKED) + `EfInboxStore` (ExecuteSqlRawAsync). Resolve = `ICommandUseCase<In,Out>` (transactional keyed) → decorator mở một transaction; lock trong transaction đó.
+- NEXT — C-GA.2b: GuestAccess.Application (hasher SHA-256 + GuestAccessErrors {qr_invalid, room_inactive, configuration_unavailable} + ResolveTokenUseCase + IGuestSessionStore) + Infra (store FOR UPDATE, hasher, factory) + unit SQLite + Postgres race. LƯU Ý: thêm GuestAccessErrors → phải cập nhật ErrorCodeSnapshot (đọc ErrorCodeSnapshotTests trước khi code, tránh vỡ snapshot QR-AD-018).
+
+
+### QR-N-026 — C-GA.2b XONG: resolve core (row-lock FOR UPDATE, fail-closed, race verify Docker thật)
+- Date: 2026-07-14
+- Đã build + verify (Docker THẬT): build 0-warning; `dotnet test Platform.slnx` = **124 test, 0 fail, 0 skip** (GuestAccess.IntegrationTests 11 = 4 constraint + 6 logic resolve + 1 race; Bedrock.ContractTests 2 gồm ErrorCodeSnapshot khớp 3 code mới; StarHill.ArchitectureTests 16).
+  - `GuestAccess.Application`: `GuestAccessErrors` {qr_invalid=NotFound(404), room_inactive=Conflict(409), configuration_unavailable=Failure(500)}; `IGuestSessionKeyHasher`; `IGuestSessionStore` (row-lock port); `ResolveTokenContracts` (ResolveTokenInput/Result); `ResolveTokenUseCase` (`IUseCase<,>` thường — tự quản transaction hẹp).
+  - `GuestAccess.Infrastructure`: `EfGuestSessionStore` (Npgsql `SELECT ... LIMIT 1 FOR UPDATE` qua FromSqlRaw+ToListAsync, tên bảng lấy từ model — mirror EfOutboxDispatcher; SQLite fallback FirstOrDefault không lock) + `Sha256GuestSessionKeyHasher` (hex 64) + factory DI resolve keyed IUnitOfWork + cross-module Contracts. csproj đổi ref Domain+Contracts→Application (mirror Rooms).
+  - **Transaction/race (QR-AD-026 verify):** resolve đọc token/config cross-module NGOÀI transaction, rồi bọc critical-section (lock session + visit) trong `IUnitOfWork.ExecuteInTransactionAsync` tường minh. Race test 8 request đồng thời cùng cookie đua TẠO visit cho phòng-2 (chưa có visit) → FOR UPDATE serialize → 8/8 cùng VisitId, đúng 1 Active row, 0 lỗi. Chứng minh row-lock hội tụ, KHÔNG cần "catch 23505 requery".
+  - **Fail-closed:** config null → configuration_unavailable, KHÔNG ghi session/visit (verify test). qr_invalid/room_inactive không lộ metadata.
+  - **ErrorCodeSnapshot (QR-AD-018):** Bedrock.ContractTests +ref GuestAccess.Application + 3 code vào ExpectedCodes + assembly vào collector → catalog GuestAccess được gác (không vỡ snapshot).
+- Chọn `IUseCase<,>` thường + transaction tường minh (không ICommandUseCase decorator): (a) lock FOR UPDATE chỉ giữ trong critical-section (tối thiểu contention endpoint public); (b) test được KHÔNG cần AddBedrockCore; (c) đúng precedent CreateRoom. Đã verify AddBedrockCore decorate `IUseCase<,>` bằng TransactionUseCaseDecorator (chỉ mở tx khi ITransactionalUseCase) — resolve không phải ITransactionalUseCase nên decorator pass-through, không mở tx thừa.
+- NEXT — C-GA.3: `GuestAccess.Api` (`POST /v1/guest/resolve` AllowAnonymous + cookie `__Host-` + no-store + rate-limit + no-secret-log) + Host wiring (connection string guest_access + migrate gated) + compose/CI bundle + HTTP TestServer tests + log-capture guard. Cần đọc endpoint module mẫu (RoomsEndpointModule) + GuestOptions + rate-limit policy trước khi code.
+
+
+### QR-N-027 — C-GA.3 XONG: public API resolve + Host wiring + deploy (verify Docker thật)
+- Date: 2026-07-14
+- Đã build + verify (Docker THẬT): build 0-warning; `dotnet test Platform.slnx` = **128 test, 0 fail, 0 skip** (StarHill.Api.Tests 26 = +4 GuestAccessResolveEndpointTests; smoke Host boot ValidateOnBuild wiring GuestAccess PASS; fail-fast HS256 test vẫn đạt nhờ appsettings có placeholder GuestAccess).
+  - `GuestAccess.Api`: `GuestAccessEndpointModule` `POST /v1/guest/resolve` (AllowAnonymous — Req 11.2), token trong BODY (QR-DV-006), set cookie `__Host-starhill_guest` (HttpOnly/Secure/SameSite=Lax/Path=/, Expires theo `IClock`) CHỈ khi phát session mới, `Cache-Control: no-store`, Result→ProblemDetails. `GuestAccessOptions` (CookieName/SessionCookieDays) + `AddGuestAccessApi` bind + ValidateOnStart (name `__Host-`, days [30,90]).
+  - Host: StarHill.Api.csproj +ref GuestAccess.Infrastructure/Api; Program.cs +AddGuestAccessInfrastructure/Api + migrate guest_access; appsettings + smoke factory + docker-compose +connection string GuestAccess; starhill-ci.yml +migration bundle GuestAccess. Platform.slnx +GuestAccess.Api.
+  - Test HTTP (TestServer, KHÔNG Docker): anonymous POST 200; Set-Cookie `__Host-` đủ thuộc tính; no-store; **NON-DISCLOSURE** raw session key CHỈ ở Set-Cookie KHÔNG trong body JSON; reconnect (IssuedSessionKey null) → KHÔNG Set-Cookie; failure qr_invalid → 404 + KHÔNG cookie + ProblemDetails; GET → 405/404.
+- **Rate-limit (Req 11.5):** KHÔNG dựng mới — Bedrock.Api đã có global rate limiter (F16, `UseBedrockApi` #9, partition theo IP thật resolve sau ForwardedHeaders) áp cho MỌI endpoint gồm resolve anonymous → baseline DoS protection đạt sẵn. Named policy chặt hơn cho resolve = tùy chọn hardening sau (chưa cần).
+- **Log-safety (Req 11.6) đạt BẰNG THIẾT KẾ:** token ở BODY (không path/query) → request-path logging không bao giờ thấy token; endpoint KHÔNG log token/cookie; response không echo key. (Log-capture assertion tầng pipeline để dành nếu cần hardening thêm.)
+- **Bảo mật endpoint công khai (flag):** endpoint AllowAnonymous CÓ CHỦ ĐÍCH (guest không đăng nhập — Req 11.2); bù lại: non-disclosure lỗi (CP1), rate-limit biên (F16), cookie `__Host-` HttpOnly/Secure, no-store, token không vào URL/log. Cách ly mạng nội bộ là trách nhiệm hạ tầng (design gốc), app không tự enforce.
+- CÒN của module GuestAccess (defer có chủ đích): C-GA.4 (current-guest-context DTO/port + sweeper idle→Expired) khi consumer đầu (Rules) cần; C-GA.5 (staff close + outbox cascade GuestVisitEnded) khi Concierge/Housekeeping tồn tại. Resolve slice đã đủ dùng độc lập.
+- Compose end-to-end (guest_access migrate + /health/ready) mirror y hệt 3 module đã boot ở QR-N-016 (P0) — khuyến nghị chạy `docker compose up` khi kiểm tra deploy; wiring đã verify qua smoke ValidateOnBuild + migration thật (constraint tests).
+
+
+### QR-N-028 — C-GA.3a XONG: reconciliation design↔code + input/log/ledger hardening (verify Docker + Compose thật)
+- Date: 2026-07-14
+- Bối cảnh: rà soát sau C-GA.3 phát hiện DRIFT (không phải bug runtime) giữa design và code + một coupling deploy ngầm. Xử lý tận gốc theo design-first: cập nhật design/journal (QR-AD-024..026 Proposed→Accepted, thêm QR-AD-028, QR-TO-007/008) TRƯỚC, rồi mới sửa code + guard.
+- Nội dung đã sửa (bản chất, không phải ngọn):
+  1. **Transaction reconcile:** design §6 từng ghi resolve là `ICommandUseCase`/`ITransactionalUseCase` + transaction decorator; code thực (C-GA.2b) là `IUseCase<,>` tự mở transaction hẹp SAU read cross-module. Đã sửa design về đúng implementation (giữ transaction hẹp — ít giữ lock hơn, không giả-atomic xuyên DbContext). Không đổi code (code đã đúng).
+  2. **Canonical input guard (QR-AD-025):** thêm `GuestCredentialFormat.IsCanonical` (43 ký tự base64url = đúng output `ITokenGenerator.NewToken()` mặc định). Token không canonical → `qr_invalid` TRƯỚC resolver/DB; cookie không canonical (whitespace/quá dài/ký tự lạ) → coi như thiết bị mới, KHÔNG hash/lookup (trước đây cookie whitespace ném từ hasher, cookie quá dài vẫn bị hash — nay chặn tận gốc trước SHA-256/DB).
+  3. **HTTP contract (QR-AD-025):** `ResolveResponse` đổi từ phẳng sang NESTED (room/resort/languages/defaultLanguage/visit/features) đúng design §7; thêm snapshot test khoá shape (chống drift âm thầm vì trước đó không test shape).
+  4. **Request body limit:** khai `RequestSizeLimitAttribute(1024)` cho endpoint resolve; **Kestrel enforce THẬT** — Compose smoke body 4108 byte → HTTP 413. Guard test khoá giá trị 1 KiB (metadata).
+  5. **Log-redaction (Req 11.6) từ "by design" → GUARD:** thêm `GuestAccessResolveLogRedactionTests` chạy PIPELINE THẬT (`UseBedrockApi` + `RequestLoggingMiddleware` + `LoggingUseCaseDecorator`) — khẳng định raw token/raw cookie/raw issued key KHÔNG vào bất kỳ dòng log nào (cả success lẫn failure), issued key CHỈ ra qua Set-Cookie.
+  6. **Migration history per-schema (QR-AD-028):** phát hiện DB thật chỉ có `public.__EFMigrationsHistory` chứa cả 5 migration của 4 module (coupling ngầm, trái schema-ownership). Cấu hình `MigrationsHistoryTable("__EFMigrationsHistory", <schema>)` ở CẢ Host runtime + 4 design-time factory + 5 integration setup (đồng nhất → bundle không lệch Host). Thêm transition SQL idempotent `deploy/migrations/20260714-split-ef-history.sql`.
+- Verify (Docker Server thật + Compose):
+  - `dotnet build Platform.slnx -c Release` = **0 warning/0 error**.
+  - `dotnet test Platform.slnx -c Release` = **PASS toàn bộ, 0 fail, 0 skip** (GuestAccess.IntegrationTests 25 gồm 14 guard input mới + race Postgres; StarHill.Api.Tests 30 gồm nested-contract + body-limit + 2 log-redaction; ResortConfig 15; Rooms 27; Identity 2; ArchitectureTests 16 gồm JournalConsistency 5/5).
+  - **Transition SQL trên DB thật (mô phỏng upgrade):** chạy trên DB đang mang ledger public → tạo 4 ledger per-schema đúng (identity 2, resort_config 1, rooms 1, guest_access 1 = 5, khớp public); guard "unmapped migration" hoạt động (bắt lỗi precedence EXCEPT/UNION của chính script → đã sửa); **idempotent** (chạy lần 2 không đổi).
+  - **Upgrade path đầu-cuối:** rebuild image binary mới (history per-schema) trên volume ĐÃ transition → log `SELECT ... FROM <schema>."__EFMigrationsHistory"` + "No migrations were applied. The database is already up to date." cho cả 4 module → "Application started" (KHÔNG re-apply, KHÔNG xung đột).
+  - **Compose smoke:** `/health/ready`=200, `/health/live`=200; `POST /v1/guest/resolve` token invalid → 404 + `Cache-Control: no-store` + KHÔNG Set-Cookie + ProblemDetails `code:qr_invalid`; body 4108 byte → 413.
+  - Diagnostics spec = 0; JournalConsistency INV-1..5 = 5/5.
+- Defer có chủ đích (ghi trade-off, không giả completion): named resolve limiter (QR-TO-007 — chờ SLO/shared-NAT budget); drop ledger public (QR-TO-008 — giữ cho rollback, rollout riêng); C-GA.4/C-GA.5 (chờ consumer Rules/Concierge/Housekeeping).
+- NEXT: chờ user duyệt commit; kế tiếp design-first module Rules (consumer đầu của GuestAccess current-context).
+
+
+### QR-N-029 — Anti-drift tầng traceability (INV-6) + guard per-schema history (biến claim thành test)
+- Date: 2026-07-14
+- Bối cảnh: phiên C-GA.3a lộ ra lớp drift design↔code mà cổng journal INV-1..5 KHÔNG bắt (chỉ kiểm nội bộ journal). Fix tận gốc = thêm ràng buộc code-enforced nối "quyết định đã xong" với "guard test có thật".
+- Đã làm:
+  1. **INV-6 (QR-AD-029)** trong `StarHillJournalConsistencyTests`: (a) mọi QR-AD `Status` chứa "Implemented" phải có dòng `- Guard-Tests:` ≥1 test class; (b) mọi test class được liệt kê phải tồn tại `class <Name>` trong `starhill/tests/**/*.cs` (quét source, ancestor-walk như RequireJournalDir; FAIL nếu không tìm thấy thư mục tests — không tự tắt). Đã thêm dòng `Guard-Tests` cho QR-AD-024/025/026/028/029.
+  2. **Guard per-schema history (QR-AD-028)**: thêm `ModuleMigrationHistorySchemaTests` (StarHill.Api.Tests, Docker-free) — boot Host thật qua `SecretInjectingHostFactory`, resolve 4 DbContext, đọc `RelationalOptionsExtension.MigrationsHistoryTableSchema` và khẳng định đúng schema module (identity/resort_config/rooms/guest_access). Biến QR-AD-028 từ "chỉ Compose-verify" thành có guard tự động → đủ điều kiện Status Implemented dưới INV-6.
+- Lý do (bản chất): INV-1..5 đảm bảo journal tự-nhất-quán nhưng không nối journal↔code; một AD có thể ghi "xong" trong khi test tương ứng bị xóa/đổi tên/chưa từng có. INV-6 khóa vòng đó bằng build. Chọn structured field + source-scan thay reflection để robust và cùng triết lý parse-file của cổng (QR-TO-009).
+- Verify: build 0-warning; `StarHillJournalConsistencyTests` (giờ 6 INV) + `ModuleMigrationHistorySchemaTests` xanh; diagnostics spec 0. (Chi tiết lệnh trong lần chạy phiên này.)
+- NEXT: giữ kỷ luật — mọi AD tương lai chuyển Implemented phải kèm Guard-Tests hợp lệ; cân nhắc nâng cấp attribute `[Traces]` nếu cần kiểm NỘI DUNG test (không chỉ tồn tại). Module kế tiếp: design-first Rules.

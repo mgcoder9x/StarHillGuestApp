@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    GuestAccess.Contracts (PUBLIC surface — matrix §3.3): CHỈ reference Bedrock.Messaging.Contracts. Hiện lộ
+    GuestAccessModule (PersistenceKey). Current-guest-context DTO/port thêm khi consumer đầu tiên (Rules) tồn tại
+    (QR-AD-024 — không khóa sớm interface chưa có consumer). KHÔNG marker DI.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Messaging.Contracts\Bedrock.Messaging.Contracts.csproj" />
+  </ItemGroup>
+</Project>

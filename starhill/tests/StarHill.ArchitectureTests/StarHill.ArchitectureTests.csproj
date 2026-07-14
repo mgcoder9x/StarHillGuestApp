@@ -28,5 +28,8 @@
     <ProjectReference Include="..\..\src\Modules\Rooms\Rooms.Domain\Rooms.Domain.csproj" />
     <ProjectReference Include="..\..\src\Modules\Rooms\Rooms.Application\Rooms.Application.csproj" />
     <ProjectReference Include="..\..\src\Modules\Rooms\Rooms.Infrastructure\Rooms.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\GuestAccess\GuestAccess.Contracts\GuestAccess.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\GuestAccess\GuestAccess.Domain\GuestAccess.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\GuestAccess\GuestAccess.Infrastructure\GuestAccess.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

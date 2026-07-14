@@ -1,5 +1,6 @@
 using System.Reflection;
 using Bedrock.Domain.Results;
+using GuestAccess.Application;
 using Identity.Domain;
 using Rooms.Application;
 
@@ -19,14 +20,17 @@ public sealed class ErrorCodeSnapshotTests
     private static readonly string[] ExpectedCodes =
     [
         "concurrency_conflict",
+        "configuration_unavailable",     // GuestAccess (C-GA.2b)
         "conflict",
         "forbidden",
         "identity.invalid_refresh_token",
         "invalid_configuration",         // Rooms (P1-11: nay được gác)
         "not_found",
         "qr_generation_failed",          // Rooms (P1-11)
+        "qr_invalid",                    // GuestAccess (C-GA.2b)
         "rate_limited",
         "resort_not_found",              // Rooms (P1-11)
+        "room_inactive",                 // GuestAccess (C-GA.2b)
         "unauthorized",
         "unexpected",
         "validation_error",
@@ -37,9 +41,10 @@ public sealed class ErrorCodeSnapshotTests
     {
         Assembly[] catalogAssemblies =
         [
-            typeof(Error).Assembly,          // Bedrock.Domain (CommonErrors + Error)
-            typeof(AuthErrors).Assembly,     // Identity.Domain (module error catalog)
-            typeof(RoomsErrors).Assembly,    // Rooms.Application (P1-11: error catalog module QR — trước đây KHÔNG gác)
+            typeof(Error).Assembly,              // Bedrock.Domain (CommonErrors + Error)
+            typeof(AuthErrors).Assembly,         // Identity.Domain (module error catalog)
+            typeof(RoomsErrors).Assembly,        // Rooms.Application (P1-11: error catalog module QR — trước đây KHÔNG gác)
+            typeof(GuestAccessErrors).Assembly,  // GuestAccess.Application (C-GA.2b: qr_invalid/room_inactive/configuration_unavailable)
         ];
 
         var actual = CollectStableErrorCodes(catalogAssemblies);

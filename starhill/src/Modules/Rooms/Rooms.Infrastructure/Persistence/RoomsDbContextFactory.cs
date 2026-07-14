@@ -17,7 +17,9 @@ public sealed class RoomsDbContextFactory : IDesignTimeDbContextFactory<RoomsDbC
     public RoomsDbContext CreateDbContext(string[] args)
     {
         var options = new DbContextOptionsBuilder<RoomsDbContext>()
-            .UseNpgsql("Host=localhost;Database=rooms_design_time;Username=postgres;Password=postgres")
+            .UseNpgsql(
+                "Host=localhost;Database=rooms_design_time;Username=postgres;Password=postgres",
+                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "rooms"))
             .UseSnakeCaseNamingConvention()
             .Options;
 

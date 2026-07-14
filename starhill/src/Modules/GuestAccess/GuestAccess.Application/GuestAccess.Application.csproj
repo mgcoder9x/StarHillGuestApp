@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    GuestAccess.Application (use case resolve + port) — matrix §3.3: reference Domain + Contracts + Bedrock.Application.
+    Cross-module CHỈ qua Contracts (QR-AD-002): Rooms.Contracts (IRoomTokenResolver) + ResortConfig.Contracts
+    (IResortGuestConfigQuery). KHÔNG ref Infrastructure/Domain module khác.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\GuestAccess.Domain\GuestAccess.Domain.csproj" />
+    <ProjectReference Include="..\GuestAccess.Contracts\GuestAccess.Contracts.csproj" />
+    <ProjectReference Include="..\..\Rooms\Rooms.Contracts\Rooms.Contracts.csproj" />
+    <ProjectReference Include="..\..\ResortConfig\ResortConfig.Contracts\ResortConfig.Contracts.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Application\Bedrock.Application.csproj" />
+  </ItemGroup>
+</Project>

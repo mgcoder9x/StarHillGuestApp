@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- GuestAccess.Domain (POCO GuestSession/GuestVisit): reference CHỈ Bedrock.Domain (matrix §3.3). -->
+  <ItemGroup>
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Domain\Bedrock.Domain.csproj" />
+  </ItemGroup>
+</Project>

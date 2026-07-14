@@ -46,6 +46,10 @@ public static class ResortConfigInfrastructureExtensions
         // Query kiểm tồn tại resort (Contracts) — Rooms.CreateRoom thẩm định ResortId trước khi tạo phòng (P1(a)).
         services.AddScoped<IResortExistenceQuery, EfResortExistenceQuery>();
 
+        // Query cấu hình guest-facing (Contracts) — consumer: GuestAccess.resolve (tên/logo + ngôn ngữ + flags +
+        // portal/idle). FAIL-CLOSED khi thiếu resort/settings/default-language (QR-AD-024).
+        services.AddScoped<IResortGuestConfigQuery, EfResortGuestConfigQuery>();
+
         // WRITE-PATH (B-Config.3): admin sửa settings. Repository ResortSettings KEYED theo ResortConfigDbContext
         // (write-path đầu tiên của module cần abstraction ghi — trước đây chỉ read inject DbContext). Use case dùng
         // factory resolve repo/UoW bằng module key (mirror Rooms) → giữ Application ⊥ Infrastructure.

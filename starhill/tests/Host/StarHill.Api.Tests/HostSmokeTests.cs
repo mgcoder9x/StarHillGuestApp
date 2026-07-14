@@ -26,6 +26,7 @@ public sealed class SecretInjectingHostFactory : WebApplicationFactory<Program>
             ["ConnectionStrings:Identity"] = "Host=localhost;Port=5432;Database=starhill_identity_test;Username=postgres;Password=test",
             ["ConnectionStrings:ResortConfig"] = "Host=localhost;Port=5432;Database=starhill_resort_config_test;Username=postgres;Password=test",
             ["ConnectionStrings:Rooms"] = "Host=localhost;Port=5432;Database=starhill_rooms_test;Username=postgres;Password=test",
+            ["ConnectionStrings:GuestAccess"] = "Host=localhost;Port=5432;Database=starhill_guest_access_test;Username=postgres;Password=test",
             // P1-15: smoke test boot OFFLINE (messaging tắt) → khai TƯỜNG MINH chấp nhận outbox không drainer,
             // nếu không startup guard sẽ chặn boot (đúng ý đồ fail-fast production). Đây là dev/smoke có ý thức.
             ["Bedrock:Messaging:AllowOutboxWithoutDispatcher"] = "true",

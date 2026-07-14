@@ -18,7 +18,9 @@ public sealed class ResortConfigDbContextFactory : IDesignTimeDbContextFactory<R
     public ResortConfigDbContext CreateDbContext(string[] args)
     {
         var options = new DbContextOptionsBuilder<ResortConfigDbContext>()
-            .UseNpgsql("Host=localhost;Database=resort_config_design_time;Username=postgres;Password=postgres")
+            .UseNpgsql(
+                "Host=localhost;Database=resort_config_design_time;Username=postgres;Password=postgres",
+                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "resort_config"))
             .UseSnakeCaseNamingConvention()
             .Options;
 

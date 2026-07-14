@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    GuestAccess.Api (nửa-Api — matrix §3.3): reference GuestAccess.Application + Bedrock.Api (cơ chế HTTP). Endpoint
+    resolve là AllowAnonymous (guest — Req 11.2) → KHÔNG ref StarHill.Authorization. KHÔNG ref Infrastructure module
+    nào (Api⊥Infra I7). FrameworkReference ASP.NET cho minimal API + cookie.
+  -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GuestAccess.Application\GuestAccess.Application.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Api\Bedrock.Api.csproj" />
+  </ItemGroup>
+</Project>

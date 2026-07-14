@@ -123,3 +123,17 @@ jobs:
         with:
           name: starhill-efbundle-rooms
           path: starhill/efbundle-rooms
+
+      - name: Build GuestAccess migration bundle (linux-x64, self-contained)
+        run: >
+          dotnet ef migrations bundle
+          --project src/Modules/GuestAccess/GuestAccess.Infrastructure
+          --startup-project src/Modules/GuestAccess/GuestAccess.Infrastructure
+          --self-contained -r linux-x64 -o efbundle-guestaccess --force
+        working-directory: starhill
+
+      - name: Upload GuestAccess bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: starhill-efbundle-guestaccess
+          path: starhill/efbundle-guestaccess

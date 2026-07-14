@@ -23,5 +23,7 @@
     <!-- P1-11: gác luôn error catalog của module Rooms (RoomsErrors ở tầng Application — nghiệp vụ QR). Thêm module
          mới có error catalog riêng → thêm ProjectReference tương ứng ở đây (snapshot phủ mọi mã lỗi client-facing). -->
     <ProjectReference Include="..\..\src\Modules\Rooms\Rooms.Application\Rooms.Application.csproj" />
+    <!-- C-GA.2b: error catalog GuestAccess (GuestAccessErrors — qr_invalid/room_inactive/configuration_unavailable). -->
+    <ProjectReference Include="..\..\src\Modules\GuestAccess\GuestAccess.Application\GuestAccess.Application.csproj" />
   </ItemGroup>
 </Project>

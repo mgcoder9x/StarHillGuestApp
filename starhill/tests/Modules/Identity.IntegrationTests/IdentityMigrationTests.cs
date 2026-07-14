@@ -67,7 +67,9 @@ public sealed class IdentityMigrationTests : IAsyncLifetime
 
         var services = new ServiceCollection();
         services.AddSingleton<ICurrentUser>(new StubCurrentUser());
-        services.AddIdentityInfrastructure(o => o.UseNpgsql(_container.GetConnectionString()));
+        services.AddIdentityInfrastructure(o => o.UseNpgsql(
+            _container.GetConnectionString(),
+            npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "identity")));
         await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
 
         await using var scope = provider.CreateAsyncScope();

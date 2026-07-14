@@ -1,9 +1,9 @@
 # Design — StarHill QR trên nền Bedrock (`starhill/`)
 
 > **Vai trò tài liệu**: đây là **HOW-on-Bedrock** — bản đồ đưa sản phẩm Resort QR Portal (WHAT ở
-> `docs/resort-qr-portal/requirements.md` + design/tasks/CP) lên nền module hoá Bedrock (đã copy vào `starhill/`).
-> Đây là **artifact design-first** để review TRƯỚC khi build module. Không viết lại nghiệp vụ — chỉ ánh xạ
-> nghiệp vụ → cấu trúc Bedrock + kế hoạch port từ bản cũ `resort-qr/`.
+> `docs/resort-qr-portal/requirements.md` + design/tasks/CP) lên nền Bedrock vật lý duy nhất tại `platform/src/`,
+> được product tree `starhill/` tham chiếu trực tiếp theo D1-a (QR-AD-012). Đây là artifact design-first;
+> `resort-qr/` chỉ là nguồn legacy để port có chọn lọc, không phải runtime tree hiện hành.
 >
 > **Đọc kèm**: `README.md` (authority map), `journal/01-decisions.md` (QR-AD), `journal/03-tradeoffs.md` (QR-TO).
 > Mọi quyết định tự-ra trong tài liệu này được ghi song song vào journal với Provenance/Evidence.
@@ -12,13 +12,14 @@
 
 ## Overview
 
-StarHill QR đưa sản phẩm Resort QR Portal (WHAT ở `docs/resort-qr-portal/`) lên nền modular-monolith Bedrock đã vendored vào `starhill/`. Nghiệp vụ được phân rã thành **8 module 5-project** (khuôn `Modules/Identity`) + Dashboard ghép ở Host, mỗi module một schema Postgres, chỉ dùng port Bedrock (không tự cuộn hạ tầng). Phần Identity/ResortConfig/Rooms/GuestAccess **port** từ bản cũ `resort-qr/`; Rules/Faq/Concierge/Housekeeping **dựng mới** (bản cũ chưa có). Chi tiết mục §0–§12 bên dưới.
+StarHill QR đưa sản phẩm Resort QR Portal (WHAT ở `docs/resort-qr-portal/`) lên modular-monolith Bedrock. Bedrock chỉ có **một nguồn vật lý** tại `platform/src`; `starhill/` chỉ chứa Host/module/test nghiệp vụ và ProjectReference trực tiếp base qua `$(PlatformSrc)` (QR-AD-012). Nghiệp vụ phân rã thành **8 module 5-project** + Dashboard ghép ở Host, mỗi module một schema Postgres và keyed persistence. Identity/ResortConfig/Rooms đã được port; GuestAccess là module kế tiếp; Rules/Faq/Concierge/Housekeeping dựng mới.
 
 ## 0. Trạng thái nguồn (đã verify trên đĩa, KHÔNG suy đoán)
 
 | Nguồn | Thực trạng đã kiểm | Ý nghĩa cho pha này |
 |---|---|---|
-| `starhill/` (base copy) | Bedrock đầy đủ: `Bedrock.{Domain,Application,Infrastructure,Api,Messaging.Contracts}` + `Adapters/Messaging.RabbitMq` + `Host/StarHill.Api` + `Modules/Identity` (5-project mẫu). Build 0-warning độc lập. | Nền để dựng module QR. Host đã tên `StarHill.Api`. |
+| `platform/src/` | Bedrock domain-agnostic, nguồn vật lý duy nhất; base test ở `platform/tests`. | Sửa năng lực nền ở đây; không nhồi nghiệp vụ StarHill. |
+| `starhill/` | Product tree hiện hành: Host + module `{Identity,ResortConfig,Rooms}` + test nghiệp vụ; ProjectReference trực tiếp `platform/src` theo D1-a. | GuestAccess chưa tồn tại và phải port theo design module riêng. |
 | `resort-qr/` (bản cũ) | Monolith trên `ResortQr.SharedKernel`. **Đã làm tới wave 4**: Domain `{Identity, Resorts, Rooms, GuestAccess}`; Application `{Identity(login/refresh/logout), Rooms(CRUD+token+QR PNG), GuestAccess(resolve), Localization}`; Infra `{AppDbContext đơn, QrCoderQrService, Argon2/JWT/HtmlSanitizer/Sha256 hashers, ResortSeeder, migration InitialCreate}`. **CHƯA có** Rules/Faq/Messaging/Housekeeping/Dashboard (task 6–19 còn `[ ]`). | Port được: Identity, Resorts, Rooms, GuestAccess, Localization, QR render, các adapter security. Phần còn lại **dựng mới** trên Bedrock (bản cũ chưa có). |
 | Bedrock ports sẵn có | `IClock`(Time), `ICurrentUser`(Users), `IRepository`/`IUnitOfWork`(Persistence), `IJwtTokenService`/`IPasswordHasher`/`IRefreshTokenStore`/`ITokenGenerator`(Security), `IHtmlSanitizer`(Html), Caching(`IIdempotencyStore`/`IAppCache`), Email/Search/Storage/ExternalAuth. | QR **dùng lại port**, không tự tạo hạ tầng trùng (token gen, Argon2, JWT, refresh-store, sanitize, idempotency đã có ở base). |
 
@@ -90,13 +91,9 @@ Nhiều entity QR tham chiếu chéo domain: `GuestVisit(RoomId)`, `RuleAcknowle
 | 1 publication IsCurrent/resort | `rules` | partial unique `RulePublication(ResortId) WHERE IsCurrent` |
 | unique translation (entity+lang) | schema của entity | unique composite |
 
-**Cascade khi kết thúc GuestVisit** (Req 10.8 — đóng hội thoại Open + huỷ ticket mở của visit): visit ở module GuestAccess, hội thoại ở Concierge, ticket ở Housekeeping → **ba module khác nhau**. Hai lựa chọn:
-- **(A) Đồng bộ trong Host**: use case `CloseGuestVisit` (GuestAccess) gọi tuần tự query/command port của Concierge + Housekeeping trong **một transaction/scope**. Đơn giản, nhất quán mạnh, hợp modular monolith một-process.
-- **(B) Event-driven**: GuestVisit phát `GuestVisitEndedIntegrationEvent` (outbox) → Concierge + Housekeeping consume (inbox) đóng/huỷ. Nới lỏng ghép, nhưng **eventual consistency** + cần bật RabbitMQ.
+**Cascade khi kết thúc GuestVisit** (Req 10.8) span ba owner/schema. Thiết kế cũ QR-AD-002 chọn gọi đồng bộ trong Host với giả định “một transaction/scope”; giả định đó không đúng với cấu hình hiện tại: mỗi module có DbContext/key riêng và một DI scope không tạo shared transaction.
 
-**Chọn (A) cho MVP** (QR-AD-002): một resort, một process, nhất quán tức thời quan trọng hơn nới ghép; base đã cho outbox nên (B) để dành khi tách tải. Ghi tradeoff QR-TO-002.
-
-> Lưu ý: gọi chéo-module ở (A) đi qua **port công khai trong `<M>.Contracts`** (interface query/command), **không** ref trực tiếp `<M>.Infrastructure`/DbContext của module khác → giữ ranh giới. Guard: ModuleBoundaryTests (copy theo base) + bổ sung kiểm QR (§7).
+**Quyết định cập nhật (QR-AD-027, supersede chỉ phần cascade QR-AD-002):** transaction GuestAccess chuyển visit Closed/Expired và ghi `GuestVisitEndedIntegrationEvent` vào outbox cùng commit. Concierge/Housekeeping consume qua inbox/idempotent handler để đóng conversation/huỷ ticket. Delivery là **at-least-once**, cleanup eventual; guest write vẫn bị chặn tức thời bằng authoritative GuestVisit status. Initial GuestAccess resolve chưa map outbox cho tới khi consumer thật tồn tại. Xem `design-modules/03-guestaccess.md` §9 và QR-TO-006.
 
 ---
 
@@ -126,12 +123,18 @@ Ký hiệu: **[P]** = port từ `resort-qr/` (sửa SharedKernel→Bedrock); **[
 - **Contracts lộ ra**: `IRoomQuery` (resolve token→room cho GuestAccess & Housekeeping complete-by-token; verify RoomId tồn tại/Active).
 - **Endpoint**: admin `/v1/rooms` (GET Staff+Admin; CUD + qr.png + qr-labels.pdf + revoke-token Admin-only).
 
-### 4.4 GuestAccess (`guest_access`)
-- **Entity [P]**: GuestSession (SessionKey hash, thiết bị, dài hạn), GuestVisit (Active/Closed/Expired, LastSeenAt, ExpiresAt).
-- **Use case [P]**: ResolveToken (nối lại visit/tạo mới/sliding window/lazy idle-expiry). **[N]**: EnforcePortalWindow (kiểm `now-LastSeenAt>PortalWindow` TRƯỚC khi xử lý — dùng chung ở Rules/Faq/Concierge/Housekeeping), CloseGuestVisit (thủ công) + **cascade §3(A)**, background sweeper idle→Expired (BackgroundService trong Host).
-- **Ports**: **`ITokenGenerator`**/`IGuestSessionKeyHasher` (SHA-256 — resort-qr có, cân nhắc dùng chung hasher), **`IClock`**, **`ICurrentUser`**.
-- **Contracts lộ ra**: `IGuestVisitContext` (module khác lấy visit hiện tại + trạng thái portal-window để enforce), `ICloseVisitCascade` (Concierge/Housekeeping đăng ký handler đóng/huỷ khi visit kết thúc — hoặc Host orchestrate).
-- **Endpoint**: guest `/v1/guest/resolve/{token}` (set cookie GuestSession SameSite=Lax; token lỗi KHÔNG lộ phòng).
+### 4.4 GuestAccess (`guest_access`) — C-GA.1..3 ĐÃ TRIỂN KHAI
+- Thiết kế chi tiết/có hiệu lực: **`design-modules/03-guestaccess.md`** (baseline + C-GA.3a reconciliation).
+- **Entity**: GuestSession (hash cookie thiết bị, không fingerprint), GuestVisit (Active/Closed/Expired;
+  portal/idle tách ngữ nghĩa); không FK chéo schema.
+- **Resolve**: cross-module qua `IRoomTokenResolver` + `IResortGuestConfigQuery`; `IUseCase` tự mở transaction
+  `guest_access` hẹp chỉ quanh session/visit; session `FOR UPDATE` loại race; lazy idle-expiry.
+- **API**: POST-body public + `__Host-` cookie; canonical token/cookie guard trước resolver/hash; body 1 KiB;
+  no-store/no-secret-log; Bedrock global IP limiter. Named limiter defer tới khi có SLO/shared-NAT budget (QR-TO-007).
+- **Persistence deploy**: schema/key/history ledger per-module; Host/compose/CI migration bundle đã wiring (QR-AD-028).
+- **Sau resolve [N]**: current guest context check-before-touch, sweeper `SKIP LOCKED`, staff close. Cascade chỉ thêm
+  khi Concierge/Housekeeping tồn tại: outbox/inbox at-least-once (QR-AD-027), không synchronous multi-DbContext giả-atomic.
+- Physical Guest Web route vẫn `/r/{token}`; frontend scrub URL rồi gọi `POST /v1/guest/resolve`.
 
 ### 4.5 Rules (`rules`) — DỰNG MỚI
 - **Entity [N]**: RuleSet (Draft, RowVersion), RuleSection(+Translation) (Draft, concurrency), RulePublication (snapshot bất biến, IsCurrent) + RulePublicationSection(+Translation), RuleAcknowledgement (gắn GuestVisit).
@@ -165,9 +168,9 @@ Ký hiệu: **[P]** = port từ `resort-qr/` (sửa SharedKernel→Bedrock); **[
 
 Data model nghiệp vụ (entity/field/enum/quan hệ) là **nguồn sản phẩm** ở `docs/resort-qr-portal/design.md` §Data Models — TÁI DÙNG nguyên, không viết lại. Phần on-Bedrock chỉ quyết **nơi đặt** (schema/module) + **ràng buộc DB**: xem bảng §3 (partial/unique index theo schema module) và §4 (entity per-module, [P]=port / [N]=dựng mới). Nguyên tắc: entity thuộc module sở hữu; tham chiếu chéo-module bằng Id trần (Guid), không FK chéo schema.
 
-## 5. Reconcile route: product `/api/...` ↔ Bedrock `/v1/<group>/...` (QR-DV-001)
+## 5. Reconcile route: product `/api/...` ↔ Bedrock `/v1/...` (QR-DV-001/006)
 
-Product spec dùng `/api/guest/resolve/{token}`, `/api/admin/rooms`. Bedrock versioning cho `/v{n}/<group>/...`. **Quyết định**: theo **convention Bedrock** — group `"/guest"`, `"/rooms"`, `"/rules"`, `"/faq"`, `"/concierge"`, `"/housekeeping"`, `"/auth"` → route thật `/v1/guest/resolve/{token}`, v.v. Frontend (guest-web/admin-web) chỉnh base path (thay `/api/...`→`/v1/...`). Lý do: giữ versioning nền (F32) + health/observability/error-shape thống nhất; đây là **đổi so với path gốc** (ghi QR-DV-001), không đổi nghiệp vụ. Reverse proxy có thể alias `/api/*`→`/v1/*` nếu cần tương thích QR đã in (QR chỉ chứa `GuestWebBaseUrl` + `/r/{token}` phía web tĩnh, không phải path API — nên không ảnh hưởng QR vật lý).
+Mọi API dùng Bedrock URL versioning `/v1/<group>/...`. Riêng resolve đổi thêm method/credential placement: physical QR vẫn mở Guest Web `/r/{token}`, nhưng SPA gọi **`POST /v1/guest/resolve`** với token trong body (QR-DV-006), không `GET .../{token}`. Resolve tạo/touch session+visit nên POST đúng semantics và tránh capability token trong API request-target/access log. Frontend phải scrub URL; reverse proxy redact `/r/*`. Các endpoint khác giữ group versioned như `/v1/rooms`, `/v1/resort/settings`, `/v1/rules`... Reverse-proxy alias `/api/*` chỉ thêm khi có consumer compatibility thật.
 
 ---
 
@@ -255,13 +258,13 @@ Hai người sửa cùng nội dung → người sau nhận 409. **Guard**: Rule
 
 ## Error Handling
 
-Chuẩn lỗi kế thừa Bedrock: mọi `Result.Error` → HTTP **chỉ** qua `ProblemDetailsBuilder` (shape lỗi duy nhất). Các mã lỗi ổn định của guest (`qr_invalid`, `qr_revoked`, `room_inactive`, `rule_ack_required`, `rate_limited`, `message_too_long`, `session_expired`, `language_not_supported`) map từ `ErrorType`/`Error` domain → `code` trong ProblemDetails (chi tiết ngữ nghĩa xem `docs/resort-qr-portal/design.md` §Error Handling). Concurrency (xmin) → 409 (CP15). Auth 401→refresh, 403→sai role (CP8).
+Chuẩn lỗi kế thừa Bedrock: mọi `Result.Error` → HTTP **chỉ** qua `ProblemDetailsBuilder`. GuestAccess active map unknown/revoked/soft-deleted cùng `qr_invalid` vì `IRoomTokenResolver` cố ý không phân biệt; room resolve được nhưng inactive dùng `room_inactive`, không metadata. Các module sau thêm `rule_ack_required`, `rate_limited`, `message_too_long`, `session_expired`, `language_not_supported`. Không tạo `qr_revoked` ở GuestAccess nếu Rooms contract chưa/không lộ reason; tuyệt đối không bypass contract để phân biệt.
 
 ## Testing Strategy
 
 - **Keystone**: mỗi CP code-được-kiểm có guard test trong solution `starhill/` (bản đồ §7). Chiến lược test theo tầng (unit/integration/SignalR/frontend/E2E) tái dùng `docs/resort-qr-portal/design.md` §Testing Strategy.
-- **PostgreSQL thật (Testcontainers) bắt buộc** cho partial unique index + concurrency `xmin` (CP2/CP10/CP14/CP15) — SQLite/InMemory không mô phỏng đúng. Máy này chưa có Docker → SKIP (không fail), khớp pattern base.
-- **JournalConsistencyTests cho journal QR** thêm ở Wave A (hiện review thủ công + getDiagnostics). Package/version resolve qua `dotnet add`/reuse — không bịa (§8).
+- **PostgreSQL thật (Testcontainers) bắt buộc** cho partial unique index, concurrency `xmin` và GuestAccess row-lock/race. SQLite/InMemory chỉ dùng cho logic provider-agnostic; bằng chứng cuối race/index không được là skip mềm. Trước khi chạy cần `docker version` có Server version.
+- **JournalConsistency QR đã hoạt động** qua `StarHill.ArchitectureTests` INV-1..5; mọi AD mới phải map `05-anti-drift.md`. Diagnostics chạy cho design spec mỗi lần sửa.
 
 ## 8. Phụ thuộc & version package (không bịa — resolve qua `dotnet add`/reuse)
 
@@ -279,7 +282,7 @@ Chuẩn lỗi kế thừa Bedrock: mọi `Result.Error` → HTTP **chỉ** qua `
 |---|---|---|---|
 | Cùng-origin vs subdomain | **Cùng-origin** `https://portal.starhill.local` (`/`→guest, `/admin`→admin, `/v1`→API, `/hubs`→SignalR) | Design QR khuyến nghị MVP cùng-origin (đơn giản cookie/CORS; guest cookie SameSite=Lax đủ). Tách subdomain để dành khi cần. | QR-AD-003 |
 | Nguồn cert HTTPS | **Internal CA** (root cài vào thiết bị) trên **DNS nội bộ thật** | Secure-context bắt buộc cho camera StaffScan (getUserMedia). Internal CA kiểm soát được, tránh self-signed lẻ (điện thoại chặn). Cert công khai qua DNS nội bộ là phương án thay thế nếu resort có domain thật. | QR-AD-003 |
-| Cascade đóng visit | **Đồng bộ trong Host (A)** | Một process/một resort, nhất quán tức thời > nới ghép; event-driven để dành. | QR-AD-002/QR-TO-002 |
+| Cascade đóng visit | **Outbox/inbox at-least-once khi consumer tồn tại** | Multi-DbContext không có shared transaction mặc định; local visit+outbox atomic, consumer idempotent, guest bị chặn ngay theo visit status. | QR-AD-027/QR-TO-006 |
 | Tên module messaging | **Concierge** | Tránh đụng `Bedrock.Messaging.Contracts`. | QR-AD-004 |
 
 ---
@@ -288,9 +291,9 @@ Chuẩn lỗi kế thừa Bedrock: mọi `Result.Error` → HTTP **chỉ** qua `
 
 Bám dependency graph của tasks.md, quy về module Bedrock:
 
-- **Wave A — nền + config**: ResortConfig (Resort/Settings/Language + i18n) → là nền feature-flags/ngôn ngữ mọi module dùng. Solution `starhill/` thêm test project sản phẩm + **JournalConsistencyTests cho journal QR** (QR-N-003 loose-end) + CI nhắm `starhill/`.
-- **Wave B**: Identity (port login/logout + role→policy) ‖ Rooms (port CRUD/token/QR PNG).
-- **Wave C**: GuestAccess (port resolve + portal-window + sweeper) — phụ thuộc Rooms + ResortConfig.
+- **Wave A — nền + config (đã xong)**: ResortConfig + journal/CI sản phẩm.
+- **Wave B — Identity + Rooms (đã xong các slice hiện hành)**: auth/policy, Rooms CRUD/token/QR/admin/query và ResortConfig settings API.
+- **Wave C — GuestAccess (đang ở C-GA.0 design)**: `design-modules/03-guestaccess.md`; resolve phụ thuộc Rooms + ResortConfig, sau đó portal context/sweeper.
 - **Wave D**: Rules (rule-gate là contract dùng chung) → rồi Faq ‖ Concierge ‖ Housekeeping (đều gọi `IRuleGate`).
 - **Wave E**: Dashboard (Host) + cascade CloseGuestVisit + SignalR hub hoàn chỉnh.
 - **Wave F**: Frontend guest-web + admin-web (port từ `resort-qr/frontend`, chỉnh base path §5) + PDF nhãn (QuestPDF) + rà soát bảo mật + integration test end-to-end.
@@ -301,13 +304,13 @@ Mỗi wave: một increment verify (`starhill\scripts\vp.cmd build` 0-warning + 
 
 ## 11. Ranh giới sạch & anti-drift (nhắc lại — bắt buộc)
 
-- `platform/` (base gốc) **ĐÓNG BĂNG**. Mọi thứ QR ở `starhill/`. Nếu base thiếu **năng lực nền** (không phải nghiệp vụ) → cân nhắc bổ sung ở `platform/` rồi copy, KHÔNG nhồi nghiệp vụ QR vào base.
-- Entity/nghiệp vụ QR chỉ ở `starhill/src/Modules/<M>` — KHÔNG lọt `Bedrock.*` (CP1).
+- `platform/src/` là **nguồn Bedrock vật lý duy nhất**; `starhill/` reference trực tiếp qua `$(PlatformSrc)` (QR-AD-012). Năng lực nền domain-agnostic sửa ở platform và được product nhận lúc compile; không re-copy/vendoring.
+- Entity/nghiệp vụ QR chỉ ở `starhill/src/Modules/<M>` — KHÔNG lọt `platform/src/Bedrock.*` (CP1).
 - Cross-module chỉ qua `<M>.Contracts` — KHÔNG ref `<M>.Infrastructure`/DbContext module khác (ModuleBoundaryTests).
 - Mỗi CP code-được-kiểm phải có guard test trong solution `starhill/` (keystone).
 
 ---
 
-## 12. Cần user xác nhận trước khi build Wave A
+## 12. Cổng hiện tại trước implementation GuestAccess
 
-Thiết kế này (đặc biệt: **8 module + Dashboard-ở-Host**, **cross-module Id-trần không FK + cascade đồng bộ**, **route `/v1/...`**, **mặc định cùng-origin + internal CA**, **tên Concierge**) là các quyết định kiến trúc lớn. Đề nghị review §2/§3/§5/§9. Nếu đồng ý (hoặc không phản hồi → theo mặc định đã nêu), bắt đầu **Wave A: ResortConfig + test/CI sản phẩm**.
+Identity/ResortConfig/Rooms và các API slice đã hoàn tất. Bước hiện tại là review/validate `design-modules/03-guestaccess.md` (C-GA.0). Chỉ bắt đầu C-GA.1 sau khi diagnostics + JournalConsistency INV-1..5 xanh và quyết định POST-body/row-lock/outbox cascade được chấp nhận. Mỗi slice GuestAccess phải theo cổng dừng §12 của design module; PostgreSQL race/index cần Docker Server thật.

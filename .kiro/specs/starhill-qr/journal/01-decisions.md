@@ -20,7 +20,7 @@
 ---
 
 ### QR-AD-002 — Phân rã 8 module 5-project + Dashboard-ở-Host; cross-module Id-trần (không FK chéo schema) + cascade đồng bộ
-- Status: Proposed (chờ user duyệt design; mặc định áp dụng nếu không phản hồi)
+- Status: Partially superseded by QR-AD-027 (2026-07-14) — phân rã/cross-module Id-trần còn hiệu lực; chỉ lựa chọn cascade đồng bộ bị thay bằng outbox/inbox at-least-once vì DI scope không tạo transaction chung cho nhiều DbContext.
 - Date: 2026-07-11
 - Decider: AI (spec QR không nói cách map sang module Bedrock).
 - Provenance/Evidence: đọc mã `starhill/`: `PlatformDbContext` (per-module DbContext, schema riêng, xmin chỉ Npgsql, dispatch domain-event cùng transaction), `IdentityDbContext` (`HasDefaultSchema("identity")` + `AddOutboxInbox` + `AddRefreshTokens` per-schema), `Program.cs` Host (`AddIdentityInfrastructure(UseNpgsql(cs))` + `AddIdentityApi`, mỗi module một connection string). Đọc `docs/resort-qr-portal/design.md` §Data Models + §DB constraints (partial unique index, cross-entity refs). Đọc `resort-qr/src` (bản cũ monolith 1 DbContext — nguồn port).
@@ -278,3 +278,74 @@
 - Alternatives: (a) inject DbContext trực tiếp trong Application command (loại: phá Application ⊥ Infra — DbContext chỉ ở Infra); (b) tạo ResortConfigErrors catalog cho settings-not-found (loại: phình snapshot; CommonErrors đủ); (c) GET=Staff (loại: settings không phải nhu cầu vận hành Staff — Req 9.3 Admin); (d) bắt concurrency tường minh (defer — rủi ro thấp, middleware base map).
 - Consequences: module admin khác (Faq/Rules...) sẽ mirror khuôn write-path này (keyed repo + use case + validator + Api RequireAdmin). ResortSettings giờ có repository ghi.
 - Reversibility: Easy (thêm mới). Traceability: `design-B-Config.3-settings-api.md`; Req 9.3/15.6/14; QR-AD-019/020/021/022; base CommonErrors/Paged*; Rooms (mẫu write-path).
+
+
+### QR-AD-024 — GuestAccess dùng bounded context riêng, purpose-built guest config query và fail-closed khi config thiếu
+- Status: Accepted/Implemented (C-GA.1 + C-GA.2a; verify QR-N-024/025)
+- Date: 2026-07-14
+- Decider: AI (chi tiết port GuestAccess không được spec Bedrock hóa sẵn).
+- Provenance/Evidence: product tree `starhill/src/Modules` hiện chỉ có Identity/ResortConfig/Rooms; legacy GuestAccess ở `resort-qr/` commit `c7622a5`. `IRoomTokenResolver` trả RoomResolution/null; `IResortSettingsQuery` thiếu resort presentation/languages và là global single-resort. QR-AD-002 cấm DbContext/FK chéo schema.
+- Decision/Change: tạo module 5-project/schema/key `guest_access`; GuestSession/GuestVisit thuộc module này; Rooms/ResortConfig chỉ được đọc qua Contracts. Thêm `IResortGuestConfigQuery.GetAsync(Guid resortId)` purpose-built trả resort name/logo, enabled languages/default, flags, portal/idle; null/mismatch fail `configuration_unavailable` trước khi ghi session/visit. Không silently bật feature khi config nền mất.
+- Rationale (verifiable): resolve cần một snapshot guest-facing cohesive mà settings query hiện tại không có; query theo Room.ResortId tránh implicit global match và mở đường multi-resort. Fail-closed tránh phát hành portal context từ dữ liệu cấu hình không toàn vẹn.
+- Alternatives: mở rộng `IResortSettingsQuery` (loại: phình DTO đang phục vụ Rooms); đọc ResortConfigDbContext từ GuestAccess (loại: phá boundary); trả defaults true (loại: mở feature khi config lỗi).
+- Consequences: ResortConfig thêm Contracts query + Infra implementation trong slice C-GA.2; response Rules được defer tới khi Rules tồn tại.
+- Reversibility: Medium. Traceability: `design-modules/03-guestaccess.md` §2/§5; Req 1/10/14.2.
+- Guard-Tests: `GuestAccessBoundaryTests`, `GuestAccessPostgresConstraintTests`, `ResortGuestConfigQueryTests`, `ResolveTokenUseCaseTests`
+
+### QR-AD-025 — Resolve là POST-body public command; cookie `__Host-`, no-store và không log capability
+- Status: Accepted/Implemented (C-GA.3; C-GA.3a bổ sung input/log guards)
+- Date: 2026-07-14
+- Decider: AI (hardening endpoint/cookie public).
+- Provenance/Evidence: legacy `GET /api/guest/resolve/{token}` vừa tạo/touch session+visit vừa đặt cookie; token path có thể vào access log/proxy/APM. Legacy cookie `shq_guest`, 60 ngày, HttpOnly/Secure/SameSite=Lax. Req 11.6 cấm log full token; deploy bắt HTTPS/cùng-origin.
+- Decision/Change: API thật `POST /v1/guest/resolve` body `{token}`, AllowAnonymous, `Cache-Control:no-store`; không GET alias. Cookie mặc định `__Host-starhill_guest`, 60 ngày, HttpOnly+Secure+SameSite=Lax+Path=/, không Domain, ValidateOnStart 30–90 ngày. Token QR và session key phải canonical 43-char base64url trước resolver/hash; malformed cookie coi như session mới; endpoint body limit 1 KiB. Raw session key chỉ set-cookie sau commit; token/key không vào response/log/trace. Bedrock global IP limiter là baseline; named resolve policy defer theo QR-TO-007.
+- Rationale (verifiable): operation mutate nên POST đúng HTTP semantics; body không nằm trong request-target/access-log mặc định. `__Host-` chống subdomain overwrite bằng browser-enforced constraints. QR vật lý vẫn `/r/{token}` nên API đổi không làm hỏng QR; Guest Web phải scrub browser URL và proxy redact `/r/*`.
+- Alternatives: giữ GET path + log middleware redaction (loại: secret vẫn đi qua nhiều tầng trước middleware); cookie thường (bỏ: yếu hơn không có lợi ích).
+- Consequences: frontend phải POST và scrub URL; ghi deviation QR-DV-006; HTTP/log guard bắt buộc.
+- Reversibility: Medium. Traceability: `design-modules/03-guestaccess.md` §4/§7; QR-DV-001/006; Req 11.2/11.5/11.6.
+- Guard-Tests: `GuestAccessResolveEndpointTests`, `GuestAccessResolveLogRedactionTests`, `ResolveTokenUseCaseTests`
+
+### QR-AD-026 — Serialize resolve bằng GuestSession row lock; không catch-query sau PostgreSQL 23505
+- Status: Accepted/Implemented (C-GA.2b; verify QR-N-026)
+- Date: 2026-07-14
+- Decider: AI (sửa root race semantics của legacy).
+- Provenance/Evidence: legacy `ResolveTokenUseCase` insert visit rồi catch `UniqueConstraintViolationException` và query lại cùng UoW. Base `TransactionUseCaseDecorator` bọc `ITransactionalUseCase`; `EfUnitOfWork` mở explicit transaction và rollback khi action ném. PostgreSQL unique violation abort transaction đến rollback; DbContext còn entity Added. Vì vậy query trong catch trên transaction/context đó không đáng tin.
+- Decision/Change: resolve là `IUseCase<,>` thường, resolve keyed GuestAccess UoW và tự mở transaction hẹp **sau** Rooms/Config read. Session tồn tại được đọc `FOR UPDATE` trước khi đọc/tạo visit. Dưới lock: active-hợp-lệ touch; active-expired update+Save trước rồi mới insert mới; absent insert. Partial unique vẫn defense cuối nhưng không dùng như control flow; nếu nổ thì rollback, không query trên context hỏng.
+- Rationale (verifiable): khóa hàng loại TOCTOU trước constraint, giữ Application provider-agnostic qua store port và cho mọi request cùng cookie hội tụ VisitId. Save expire trước insert loại phụ thuộc command-order EF với partial unique.
+- Alternatives: catch rồi query (loại: aborted transaction); pre-check không lock (loại: race); serializable/retry toàn use case (khả thi nhưng base không expose isolation/fresh-scope retry; rộng hơn cần thiết); advisory lock (không cần vì session row có thật).
+- Consequences: Infra có custom store `FOR UPDATE`; resolve cùng device serialize; PostgreSQL concurrency test là gate bắt buộc.
+- Reversibility: Medium. Traceability: `design-modules/03-guestaccess.md` §6; CP9; base EfUnitOfWork/TransactionUseCaseDecorator.
+- Guard-Tests: `GuestAccessResolveRaceTests`, `ResolveTokenUseCaseTests`
+
+### QR-AD-027 — Cascade GuestVisitEnded dùng outbox/inbox at-least-once; supersede cascade đồng bộ của QR-AD-002
+- Status: Proposed (design; triển khai C-GA.5 khi consumer tồn tại)
+- Date: 2026-07-14
+- Decider: AI (sửa giả định atomicity sai trong design cũ).
+- Provenance/Evidence: QR-AD-002/QR-TO-002 nói gọi 3 module trong “một transaction/scope”, nhưng mỗi module có DbContext/key riêng; cùng DI scope không tạo shared transaction. Base có outbox/inbox keyed và startup guard, RabbitMQ semantics at-least-once. Req 10.8 span GuestAccess/Concierge/Housekeeping.
+- Decision/Change: local GuestAccess transaction kết thúc visit + ghi `GuestVisitEndedIntegrationEvent` outbox; Concierge/Housekeeping consume bằng inbox/idempotent handler để close/cancel. Guest write bị chặn ngay bởi trạng thái visit; cleanup chéo module eventual. Không map outbox ở initial resolve, chỉ thêm cùng consumer thật.
+- Rationale (verifiable): đảm bảo local atomicity + durable retry mà không giả vờ distributed transaction; handler idempotent chịu duplicate delivery. Đây là at-least-once, không exactly-once.
+- Alternatives: sequential sync calls (loại: partial failure không recover); TransactionScope nhiều connection (loại: coupling/operational complexity); dual sync+event (loại: hai nguồn side effect).
+- Consequences: cleanup có độ trễ ngắn khi broker/downstream chậm; outbox giữ sự kiện khi broker lỗi. Supersedes **chỉ phần cascade** của QR-AD-002; phân rã/boundary còn hiệu lực.
+- Reversibility: Medium. Traceability: `design-modules/03-guestaccess.md` §9; QR-TO-006; Req 10.8.
+### QR-AD-028 — EF migration history thuộc schema module, runtime và design-time phải đồng nhất
+- Status: Accepted/Implemented (C-GA.3a; QR-N-028 verify Compose + upgrade path)
+- Date: 2026-07-14
+- Decider: AI (phát hiện drift bằng Compose PostgreSQL thật; spec nói schema-per-module nhưng chưa chốt history ledger).
+- Provenance/Evidence: query catalog DB `starhill` sau compose boot cho thấy bốn schema nghiệp vụ nhưng chỉ `public.__EFMigrationsHistory`, chứa 5 MigrationId của Identity/ResortConfig/Rooms/GuestAccess. Mỗi module có DbContext/migration bundle riêng.
+- Decision/Change: cấu hình `MigrationsHistoryTable("__EFMigrationsHistory", <module_schema>)` ở mọi Npgsql call site runtime, integration và design-time factory. Thêm transition SQL idempotent copy đúng MigrationId từ public ledger sang từng schema trước binary mới; không drop public ledger trong rollout.
+- Rationale (verifiable): history ledger là deployment state của migration chain; để chung tạo shared mutable state, collision namespace và coupling bundle trái ownership schema. Runtime/factory lệch sẽ khiến bundle và Host đánh giá applied migration khác nhau.
+- Alternatives: giữ public chung (bỏ: đang chạy nhưng coupling ngầm); đổi chỉ Host (loại: bundle/test lệch); drop ledger public rồi migrate lại (loại: phá upgrade/rollback).
+- Consequences: upgrade DB cũ cần transition step bắt buộc; fresh DB tự tạo bốn ledger. Test phải chứng minh migration rows đúng schema và không có pending model drift.
+- Reversibility: Medium. Traceability: `design-modules/03-guestaccess.md` §10/§11; QR-TO-008.
+- Guard-Tests: `ModuleMigrationHistorySchemaTests`
+
+### QR-AD-029 — Traceability gate INV-6: quyết định "Implemented" phải khai Guard-Tests tồn tại thật trong source
+- Status: Accepted/Implemented (2026-07-14; guard tự-gác trong StarHillJournalConsistencyTests)
+- Date: 2026-07-14
+- Decider: AI (đóng lỗ hổng anti-drift phát hiện ở phiên C-GA.3a review).
+- Provenance/Evidence: rà soát C-GA.3a phát hiện drift design↔code (design ghi `ITransactionalUseCase` trong khi code là `IUseCase`; response phẳng vs nested; "no-secret-log by design" không có test) mà cổng INV-1..5 KHÔNG bắt được — vì INV-1..5 chỉ kiểm nội bộ journal (ID liên tục, AD xuất hiện trong anti-drift map, không dangling, có Status/Provenance, CP 1..15). INV-2 keystone chỉ khớp CHUỖI "AD xuất hiện", không chứng minh guard test tồn tại. Đọc `StarHillJournalConsistencyTests.cs` xác nhận không có kiểm tra guard-existence.
+- Decision/Change: thêm INV-6 vào `StarHillJournalConsistencyTests`. Mọi QR-AD có dòng `- Status:` chứa "Implemented" PHẢI có dòng `- Guard-Tests:` liệt kê ≥1 test class; và MỌI tên test class được liệt kê (ở bất kỳ QR-AD nào) PHẢI tồn tại thật dưới dạng `class <Name>` trong `starhill/tests/**/*.cs` (quét source, đi lên tổ tiên như RequireJournalDir). Lệch = FAIL BUILD.
+- Rationale (verifiable): biến "quyết định đã xong" thành ràng buộc code-enforced tới guard test có thật — nếu ai xóa/đổi tên guard test hoặc tuyên bố Implemented mà không có test, build đỏ. Đây là traceability matrix cưỡng chế bằng build, đóng đúng lớp drift design↔code mà INV-1..5 bỏ sót. Dùng field cấu trúc `Guard-Tests:` + quét source (KHÔNG reflection cross-assembly mong manh, KHÔNG parse prose nhập nhằng).
+- Alternatives: reflection nạp mọi test assembly rồi match tên (loại: fragile, cần ref chéo test project + phân biệt tên test/không-test trong prose); attribute `[Traces("QR-AD-###")]` trên test (mạnh nhưng tốn annotate rộng + reflection cross-assembly — để dành nếu cần bidirectional chặt hơn); giữ nguyên INV-1..5 (loại: đã chứng minh bỏ sót drift thật).
+- Consequences: mỗi AD chuyển sang Implemented phải kèm Guard-Tests hợp lệ; tên test đổi phải cập nhật journal → journal luôn trỏ guard sống. Chi phí duy trì nhỏ, thẳng vào bản chất chống drift.
+- Reversibility: High (chỉ là test governance). Traceability: `journal/05-anti-drift.md` INV-6; QR-TO-009; QR-N-029.
+- Guard-Tests: `StarHillJournalConsistencyTests`

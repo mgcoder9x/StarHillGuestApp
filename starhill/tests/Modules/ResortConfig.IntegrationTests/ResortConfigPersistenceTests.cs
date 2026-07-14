@@ -60,7 +60,9 @@ public sealed class ResortConfigPersistenceTests : IAsyncLifetime
     {
         var services = new ServiceCollection();
         services.AddSingleton<ICurrentUser>(new StubCurrentUser());
-        services.AddResortConfigInfrastructure(o => o.UseNpgsql(_container.GetConnectionString()));
+        services.AddResortConfigInfrastructure(o => o.UseNpgsql(
+            _container.GetConnectionString(),
+            npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "resort_config")));
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
     }
 

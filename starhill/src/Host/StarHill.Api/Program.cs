@@ -12,6 +12,9 @@ using Microsoft.EntityFrameworkCore;
 using ResortConfig.Api.DependencyInjection;
 using ResortConfig.Infrastructure.DependencyInjection;
 using ResortConfig.Infrastructure.Persistence;
+using GuestAccess.Api.DependencyInjection;
+using GuestAccess.Infrastructure.DependencyInjection;
+using GuestAccess.Infrastructure.Persistence;
 using Rooms.Api.DependencyInjection;
 using Rooms.Infrastructure.DependencyInjection;
 using Rooms.Infrastructure.Persistence;
@@ -62,7 +65,9 @@ services.AddExternalAuthCore();
 var identityConnectionString = configuration.GetConnectionString("Identity")
     ?? throw new InvalidOperationException(
         "Thiếu ConnectionStrings:Identity — fail-fast (F35). Cấu hình connection string cho module Identity.");
-services.AddIdentityInfrastructure(options => options.UseNpgsql(identityConnectionString));
+services.AddIdentityInfrastructure(options => options.UseNpgsql(
+    identityConnectionString,
+    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "identity")));
 services.AddIdentityApi();
 
 // Module ResortConfig (nền cấu hình + i18n). Connection string riêng (cùng PostgreSQL, schema resort_config).
@@ -70,7 +75,9 @@ services.AddIdentityApi();
 var resortConfigConnectionString = configuration.GetConnectionString("ResortConfig")
     ?? throw new InvalidOperationException(
         "Thiếu ConnectionStrings:ResortConfig — fail-fast (F35). Cấu hình connection string cho module ResortConfig.");
-services.AddResortConfigInfrastructure(options => options.UseNpgsql(resortConfigConnectionString));
+services.AddResortConfigInfrastructure(options => options.UseNpgsql(
+    resortConfigConnectionString,
+    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "resort_config")));
 services.AddResortConfigApi();
 
 // Module Rooms (phòng + token QR). Nửa-Infra (persistence) + nửa-Api (admin CRUD/QR endpoint — B-Rooms.3,
@@ -78,8 +85,21 @@ services.AddResortConfigApi();
 var roomsConnectionString = configuration.GetConnectionString("Rooms")
     ?? throw new InvalidOperationException(
         "Thiếu ConnectionStrings:Rooms — fail-fast (F35). Cấu hình connection string cho module Rooms.");
-services.AddRoomsInfrastructure(options => options.UseNpgsql(roomsConnectionString));
+services.AddRoomsInfrastructure(options => options.UseNpgsql(
+    roomsConnectionString,
+    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "rooms")));
 services.AddRoomsApi();
+
+// Module GuestAccess (phiên khách + resolve token QR). Nửa-Infra (persistence keyed + resolve use case + store
+// row-lock + hasher) + nửa-Api (endpoint công khai POST /v1/guest/resolve — AllowAnonymous, cookie __Host-).
+// Connection string riêng (cùng PostgreSQL, schema guest_access).
+var guestAccessConnectionString = configuration.GetConnectionString("GuestAccess")
+    ?? throw new InvalidOperationException(
+        "Thiếu ConnectionStrings:GuestAccess — fail-fast (F35). Cấu hình connection string cho module GuestAccess.");
+services.AddGuestAccessInfrastructure(options => options.UseNpgsql(
+    guestAccessConnectionString,
+    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "guest_access")));
+services.AddGuestAccessApi(configuration);
 
 // (2b) OPT-IN messaging event-driven — mặc định TẮT (mirror opt-in migrate AD-053). Bật qua config
 //      Bedrock:Messaging:Enabled=true (docker-compose đặt cờ). Khi bật: cắm adapter RabbitMQ (OVERRIDE default
@@ -140,6 +160,10 @@ if (bool.TryParse(configuration["Bedrock:ApplyMigrationsOnStartup"], out var app
     // Rooms: migrate schema rooms (chưa seed — phòng do admin tạo qua use case ở B-Rooms.2b/2.3).
     var roomsDb = migrationScope.ServiceProvider.GetRequiredService<RoomsDbContext>();
     await roomsDb.Database.MigrateAsync().ConfigureAwait(false);
+
+    // GuestAccess: migrate schema guest_access (chưa seed — session/visit tạo runtime khi guest resolve).
+    var guestAccessDb = migrationScope.ServiceProvider.GetRequiredService<GuestAccessDbContext>();
+    await guestAccessDb.Database.MigrateAsync().ConfigureAwait(false);
 }
 
 // Slot #4 (HSTS/HTTPS-redirect) = TRÁCH NHIỆM HOST (AD-035). Sample host này chạy sau reverse-proxy terminate TLS

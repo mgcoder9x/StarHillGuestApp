@@ -45,3 +45,22 @@
 - Lý do (bản chất): Resort không thuộc bounded-context Rooms; đọc nó qua repo cùng-context là artifact của monolith cũ (1 DbContext). Modular Bedrock: dependency chéo-module phải TƯỜNG MINH qua Contracts hoặc do caller phân giải. Đẩy resolve resortId lên Api giữ `Rooms.Application` KHÔNG phụ thuộc ResortConfig.Contracts ở 2b-i (I10 — chỉ thêm khi RenderQrPng ở 2b-ii thật sự cần GuestWebBaseUrl).
 - Consequences: `Rooms.Api` (slice sau) chịu trách nhiệm phân giải resortId (một lần, single-resort) trước khi gọi use case; input rộng hơn 1 field. Không mất tính đúng (validator chặn Guid rỗng).
 - Reversibility: Easy. Traceability: design-modules/02-rooms.md §4; QR-DV-003; DV-002 (base — IUnitOfWork không có Repository accessor).
+
+
+### QR-DV-005 — Checkbox Task 5 legacy không được dùng làm trạng thái hoàn thành GuestAccess trong `starhill/`
+- Status: Accepted (đối soát design 2026-07-14)
+- Date: 2026-07-14
+- Provenance/Evidence: `docs/resort-qr-portal/tasks.md` Task 5 có 5.1/5.3 `[x]`, 5.2 `[~]`; source tương ứng tồn tại ở root `resort-qr/` từ commit `c7622a5`. `starhill/src/Modules/` không có GuestAccess; handoff HEAD `16df850` ghi GuestAccess là bước kế tiếp. Không có bằng chứng active module từng tồn tại rồi bị xóa.
+- Deviation: với HOW-on-Bedrock, Task 5 được phân loại “legacy implemented/partially implemented, active port not started”; tiến độ active theo `design-modules/03-guestaccess.md` C-GA.0..5, không sửa checkbox legacy thành bằng chứng product hiện hành.
+- Lý do (bản chất): hai kế hoạch nhắm hai architecture khác nhau; trộn trạng thái sẽ tạo false-completion và bỏ qua keyed persistence/module boundary.
+- Consequences: legacy chỉ là input port; mọi completion StarHill cần code/test/journal trong `starhill/`.
+- Reversibility: Easy. Traceability: QR-N-023; `design-modules/03-guestaccess.md` §0.
+
+### QR-DV-006 — Resolve API đổi từ GET path-token sang POST body-token
+- Status: Proposed (design C-GA.0; chưa code)
+- Date: 2026-07-14
+- Provenance/Evidence: design gốc/legacy dùng `GET /api/guest/resolve/{token}`; Bedrock route mapping trước đây dự kiến `/v1/guest/resolve/{token}`. Resolve thực tế tạo/touch GuestSession/GuestVisit và set cookie; Req 11.6 cấm log full token.
+- Deviation: API active dùng `POST /v1/guest/resolve` với JSON body `{token}`; physical Guest Web URL vẫn `/r/{token}` theo Req 1.2. Không tạo GET alias nếu chưa có compatibility requirement.
+- Lý do (bản chất): GET phải safe nhưng operation này mutate; route token dễ bị ghi bởi proxy/access-log/APM. POST body giảm bề mặt rò capability và phản ánh command semantics.
+- Consequences: Guest Web phải POST, scrub URL bằng history API và reverse proxy redact `/r/*`; client legacy chưa tồn tại trong product tree nên chưa có breaking runtime consumer.
+- Reversibility: Medium. Traceability: QR-AD-025; QR-DV-001; `design-modules/03-guestaccess.md` §7.

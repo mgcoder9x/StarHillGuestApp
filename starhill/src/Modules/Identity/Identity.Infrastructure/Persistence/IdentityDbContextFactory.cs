@@ -22,7 +22,9 @@ public sealed class IdentityDbContextFactory : IDesignTimeDbContextFactory<Ident
     public IdentityDbContext CreateDbContext(string[] args)
     {
         var options = new DbContextOptionsBuilder<IdentityDbContext>()
-            .UseNpgsql("Host=localhost;Database=identity_design_time;Username=postgres;Password=postgres")
+            .UseNpgsql(
+                "Host=localhost;Database=identity_design_time;Username=postgres;Password=postgres",
+                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "identity"))
             .UseSnakeCaseNamingConvention()
             .Options;
 
