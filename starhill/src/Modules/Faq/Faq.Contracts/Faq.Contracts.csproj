@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Faq.Contracts (PUBLIC surface — matrix §3.3): CHỈ reference Bedrock.Messaging.Contracts (mirror Rules.Contracts).
+    Hiện lộ FaqModule (PersistenceKey). Faq CHƯA lộ port cross-module nào (Dashboard đọc count sau qua Contracts).
+    KHÔNG ref GuestAccess/ResortConfig/Rules Contracts (tránh coupling Contracts↔Contracts). KHÔNG marker DI.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Messaging.Contracts\Bedrock.Messaging.Contracts.csproj" />
+  </ItemGroup>
+</Project>

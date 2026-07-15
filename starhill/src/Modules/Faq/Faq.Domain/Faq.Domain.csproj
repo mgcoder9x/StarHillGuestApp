@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Faq.Domain (POCO FAQ cây: FaqCategory(+Translation), FaqItem[ParentId self](+Translation)): reference CHỈ
+       Bedrock.Domain (matrix §3.3, mirror Rules.Domain). ITranslation (đọc-path render tree) để dành E-Faq.4. -->
+  <ItemGroup>
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Domain\Bedrock.Domain.csproj" />
+  </ItemGroup>
+</Project>

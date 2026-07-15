@@ -216,9 +216,13 @@ Docker daemon phải có cho test Postgres; không "skip mềm" làm bằng ch�
 ## 10. Build slices và cổng dừng
 
 1. **E-Faq.0 — design/reconciliation (file này):** journal + diagnostics 0; chưa code.
-2. **E-Faq.1 — Domain/Contracts/Persistence:** 4 entity + `FaqModule.PersistenceKey` + `FaqDbContext` schema `faq` keyed
-   + migration `InitialCreate` (3 unique, FK Restrict nội-schema, xmin) + `FaqBoundaryTests` + `FaqPostgresConstraintTests`
-   (unique, Docker). Host wiring conn `Faq` + migrate. Build 0-warning; suite 0-fail.
+2. **E-Faq.1 — Domain/Contracts/Persistence:** ✅ XONG (QR-N-046/QR-AD-037): 4 entity `: Entity, IHasConcurrencyToken`
+   + `FaqModule.PersistenceKey="faq"` + `FaqDbContext` schema `faq` keyed + `FaqDbContextFactory` + `FaqConfigurations`
+   + `AddFaqInfrastructure` (persistence + 4 keyed repo) + migration `InitialCreate` (verify: 3 unique
+   `ux_faq_category_key`/`ux_faq_category_translation_lang`/`ux_faq_item_translation_lang`, FK Restrict item→category &
+   item→parent + Cascade translation→cha, xmin ×4) + `FaqBoundaryTests` (3) + `FaqPostgresConstraintTests` (4, Postgres/CI).
+   Host wiring + CI bundle `faq` DEFER sang E-Faq.4 (mirror Rules D-Rules.1 chưa wire Host). `vp all` 0-warning/0-fail;
+   `vp journal` INV-1..6 xanh.
 3. **E-Faq.2 — Admin CRUD category/item + translation (sanitize-on-save) + cycle-check:** use case + validator +
    `FaqSanitizeTests` (CP12) + `FaqItemParentValidationTests` (bất biến cây) + `FaqConcurrencyTests` (CP15, Postgres).
 4. **E-Faq.3 — Reorder:** `ReorderFaqUseCase` + `ReorderFaqUseCaseTests`.

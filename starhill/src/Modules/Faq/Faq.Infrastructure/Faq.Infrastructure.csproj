@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Faq.Infrastructure (persistence + composition nửa-Infra — matrix §3.3). E-Faq.1: ref Faq.Domain + Faq.Contracts
+    (persistence nền, chưa có use case). E-Faq.2 sẽ đổi ref sang Faq.Application (mirror Rules D-Rules.1→2b:
+    Infra→Application). KHÔNG ref Bedrock.Api/Faq.Api (Api⊥Infra I7).
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Faq.Domain\Faq.Domain.csproj" />
+    <ProjectReference Include="..\Faq.Contracts\Faq.Contracts.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Infrastructure\Bedrock.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

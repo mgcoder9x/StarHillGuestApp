@@ -40,6 +40,11 @@
     <Project Path="src/Modules/Rules/Rules.Infrastructure/Rules.Infrastructure.csproj" />
     <Project Path="src/Modules/Rules/Rules.Api/Rules.Api.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Faq/">
+    <Project Path="src/Modules/Faq/Faq.Contracts/Faq.Contracts.csproj" />
+    <Project Path="src/Modules/Faq/Faq.Domain/Faq.Domain.csproj" />
+    <Project Path="src/Modules/Faq/Faq.Infrastructure/Faq.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/StarHill.Authorization/StarHill.Authorization.csproj" />
     <Project Path="src/StarHill.Html/StarHill.Html.csproj" />
@@ -58,6 +63,7 @@
     <Project Path="tests/Modules/Rooms.IntegrationTests/Rooms.IntegrationTests.csproj" />
     <Project Path="tests/Modules/GuestAccess.IntegrationTests/GuestAccess.IntegrationTests.csproj" />
     <Project Path="tests/Modules/Rules.IntegrationTests/Rules.IntegrationTests.csproj" />
+    <Project Path="tests/Modules/Faq.IntegrationTests/Faq.IntegrationTests.csproj" />
     <Project Path="tests/StarHill.Html.Tests/StarHill.Html.Tests.csproj" />
     <Project Path="tests/Host/StarHill.Api.Tests/StarHill.Api.Tests.csproj" />
   </Folder>

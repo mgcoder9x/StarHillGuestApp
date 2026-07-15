@@ -34,5 +34,8 @@
     <ProjectReference Include="..\..\src\Modules\Rules\Rules.Contracts\Rules.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\Rules\Rules.Domain\Rules.Domain.csproj" />
     <ProjectReference Include="..\..\src\Modules\Rules\Rules.Infrastructure\Rules.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Faq\Faq.Contracts\Faq.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Faq\Faq.Domain\Faq.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Faq\Faq.Infrastructure\Faq.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

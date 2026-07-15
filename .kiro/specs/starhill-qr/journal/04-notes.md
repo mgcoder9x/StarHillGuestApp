@@ -511,3 +511,31 @@
   faq_invalid_parent/faq_category_not_empty/faq_item_has_children/faq_disabled) sẽ vào `ErrorCodeSnapshotTests` (QR-AD-018) khi code.
 - **NEXT**: chờ user duyệt design §1/§3/§5/§11. Nếu đồng ý/không phản hồi → slice **E-Faq.1** (Domain/Contracts/Persistence +
   migration + boundary + Postgres unique) rồi lần lượt E-Faq.2..4. Mỗi slice: `vp all` 0-warning/0-fail + `vp journal` INV-1..6 + journal.
+
+### QR-N-046 — Slice E-Faq.1 XONG: Faq persistence nền (Domain/Contracts/Infrastructure + migration + boundary + Postgres unique)
+- Date: 2026-07-16
+- Bối cảnh: bắt đầu hiện thực module Faq theo design QR-N-045 (đã duyệt ngầm — user "tiếp tục"). Mirror staging Rules
+  D-Rules.1 (persistence nền TRƯỚC, KHÔNG wire Host — Host wiring để slice có Api = E-Faq.4).
+- Đã làm:
+  1. `Faq.Domain` (4 entity `: Entity, IHasConcurrencyToken`): `FaqCategory(ResortId,Key,SortOrder,IsActive)`,
+     `FaqCategoryTranslation(FaqCategoryId,LanguageCode,Name)`, `FaqItem(ResortId,CategoryId,ParentId?,SortOrder,IsActive)`,
+     `FaqItemTranslation(FaqItemId,LanguageCode,Question,AnswerHtmlSanitized)`. ResortId Guid trần.
+  2. `Faq.Contracts` (`FaqModule.PersistenceKey="faq"`, chỉ ref Bedrock.Messaging.Contracts).
+  3. `Faq.Infrastructure`: `FaqDbContext:PlatformDbContext` schema `faq` keyed + `FaqDbContextFactory` (design-time,
+     MigrationsHistoryTable faq + snake_case) + `FaqConfigurations` (unique ux_faq_category_key/ux_faq_category_translation_lang/
+     ux_faq_item_translation_lang; FK Restrict item→category & item→parent, Cascade translation→cha; index resort/category/parent)
+     + `AddFaqInfrastructure` (AddBedrockPersistence + 4 keyed repository; use case ở E-Faq.2). Ref Domain+Contracts
+     (đổi sang Application ở E-Faq.2 — mirror Rules).
+  4. Migration `InitialCreate` sinh bằng `dotnet ef` (local tool 10.0.9, không cần DB). VERIFY grep: 4 CreateTable; `xid`
+     rowVersion cả 4 (CP15); 3 unique; 2 Cascade + 2 Restrict đúng thiết kế. `.editorconfig` glob `**/Persistence/Migrations/*.cs`
+     đã miễn analyzer (QR-AD-009) → build 0-warning.
+  5. Test: `FaqBoundaryTests` (StarHill.ArchitectureTests, 3: Contracts thuần / Domain⊥Infra / negative control) +
+     `FaqPostgresConstraintTests` (Faq.IntegrationTests, 4 SkippableFact Postgres: unique category-key / category-translation /
+     item-translation + FK-Restrict chặn xóa category còn item). `Platform.slnx` +3 project Faq +Faq.IntegrationTests;
+     arch-test csproj +3 ref Faq.
+- Bằng chứng: `vp all` build 0-warning + validate-ci OK + full suite 0-fail — StarHill.ArchitectureTests 24 (+3 Faq),
+  Faq.IntegrationTests 4 skip(Postgres không-Docker; chạy CI), không regression (StarHill.Api.Tests 52, Rules 27 pass/9 skip).
+  QR-AD-037 (Faq foundation) Status Implemented + Guard-Tests `FaqBoundaryTests`/`FaqPostgresConstraintTests` (tồn tại thật — INV-6).
+- **NEXT — slice E-Faq.2**: `Faq.Application` (CRUD category/item + translation sanitize-on-save CP12 + cycle-check bất biến cây)
+  + đổi Faq.Infrastructure ref→Application + validator + `FaqSanitizeTests`/`FaqItemParentValidationTests`/`FaqConcurrencyTests`.
+  Rồi E-Faq.3 (reorder), E-Faq.4 (guest tree + rule-gate + Api + Host wiring + CI bundle faq).
