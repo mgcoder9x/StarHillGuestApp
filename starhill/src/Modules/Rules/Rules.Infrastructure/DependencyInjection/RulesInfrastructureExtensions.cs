@@ -46,6 +46,8 @@ public static class RulesInfrastructureExtensions
         services.AddBedrockRepository<RulesDbContext, RulePublication>(PersistenceKey);
         services.AddBedrockRepository<RulesDbContext, RulePublicationSection>(PersistenceKey);
         services.AddBedrockRepository<RulesDbContext, RulePublicationSectionTranslation>(PersistenceKey);
+        // Acknowledge (D-Rules.4b): repo ghi RuleAcknowledgement (unique (visit,publication) — idempotent CP13).
+        services.AddBedrockRepository<RulesDbContext, RuleAcknowledgement>(PersistenceKey);
 
         // Read-model NỘI-MODULE cho Publish đọc Draft (CQRS-lite — F9 cấm IQueryable ở IRepository). DbContext cụ
         // thể (unkeyed, type riêng module) — mirror EfGuestSessionStore.
@@ -92,6 +94,16 @@ public static class RulesInfrastructureExtensions
             sp.GetRequiredService<IRulePublicationReader>(),
             sp.GetRequiredService<ResortConfig.Contracts.Queries.IResortGuestConfigQuery>(),
             sp.GetRequiredService<ResortConfig.Contracts.Localization.ITranslationResolver>()));
+
+        // Guest acknowledge (D-Rules.4b, CP13): value-returning write, MỘT insert (mirror CreateRoom — không
+        // ITransactionalUseCase). Server đọc IsCurrent + ghi ack idempotent (pre-check + unique backstop).
+        services.AddScoped<IUseCase<AcknowledgeRulesInput, AcknowledgeRulesResult>>(sp => new AcknowledgeRulesUseCase(
+            sp.GetRequiredService<IRulePublicationReader>(),
+            sp.GetRequiredService<ResortConfig.Contracts.Queries.IResortGuestConfigQuery>(),
+            sp.GetRequiredService<ResortConfig.Contracts.Localization.ITranslationResolver>(),
+            sp.GetRequiredKeyedService<IRepository<RuleAcknowledgement>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
+            sp.GetRequiredService<IClock>()));
 
         // Validator module (ValidationUseCaseDecorator nhận qua IEnumerable<IValidator<TInput>>).
         services.AddTransient<IValidator<CreateRuleSectionInput>, CreateRuleSectionValidator>();

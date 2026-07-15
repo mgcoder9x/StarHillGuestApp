@@ -249,8 +249,11 @@ Docker daemon phải có Server cho các test Postgres; không "skip mềm" làm
    - **D-Rules.4a** ✅ XONG (QR-N-038): `GetCurrentRulesUseCase` (publication IsCurrent + i18n fallback CP5) + read-model
      `IRulePublicationReader`/`EfRulePublicationReader` + `RulesUnavailable`/`ConfigurationUnavailable`. `ITranslation`
      trên read-DTO (QR-DV-007). Test `GetCurrentRulesTests` (SQLite + resolver thật, 7). Rules.IntegrationTests 19/19.
-   - **D-Rules.4b** ⏳: `AcknowledgeRulesUseCase` (server-authoritative CP13, unique (visit,publication) idempotent,
-     dùng `ICurrentGuestContextResolver` + touch sau thành công). Postgres.
+   - **D-Rules.4b** ✅ XONG (QR-N-039): `AcknowledgeRulesUseCase` (server-authoritative CP13 — server đọc IsCurrent,
+     KHÔNG tin client version; idempotent hai lớp: pre-check `AnyAsync` mọi provider + catch `UniqueConstraintViolationException`
+     backstop race). Use case NHẬN `CurrentGuestContext` qua input (resolve context + `Touch` là việc của endpoint 4c —
+     tách Resolve/Touch QR-AD-032). Test `AcknowledgeRulesTests` (SQLite, 6) + unique (visit,pub) ở
+     `RulesPostgresConstraintTests` (Postgres/CI). Rules.IntegrationTests 16 pass/9 skip(Postgres). QR-AD-030 vẫn Proposed.
    - **D-Rules.4c** ⏳: `IRuleGate` (CP3, cờ ResortSettings) + endpoints (admin publish/preview + guest read/ack) +
      Host wiring + CI bundle + RequirePort(IHtmlSanitizer) → QR-AD-030 (+031) chuyển Implemented + Guard-Tests.
 

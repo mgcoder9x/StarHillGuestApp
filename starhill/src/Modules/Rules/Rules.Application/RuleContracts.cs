@@ -79,3 +79,24 @@ public sealed record RenderedRuleSection(
     string ResolvedLanguage,
     bool IsFallback,
     bool IsMissing);
+
+// ---- Guest acknowledge (D-Rules.4b, CP13 — server-authoritative) ----
+
+/// <summary>
+/// Khách xác nhận đã đọc bản nội quy HIỆN HÀNH. Input mang ngữ cảnh khách ĐÃ được server phân giải (từ
+/// <c>GuestAccess.Contracts.ICurrentGuestContextResolver</c>), KHÔNG mang version/publicationId do client gửi — server
+/// TỰ đọc <c>RulePublication IsCurrent</c> để quyết định ack cho bản nào (CP13). <paramref name="RequestedLanguage"/>
+/// chỉ để GHI NHẬN ngôn ngữ khách đọc (chuẩn hóa về supported), không phải nguồn quyết định.
+/// </summary>
+public sealed record AcknowledgeRulesInput(
+    Guid ResortId,
+    Guid RoomId,
+    Guid GuestSessionId,
+    Guid GuestVisitId,
+    string? RequestedLanguage);
+
+/// <summary>
+/// Kết quả ack: bản publication (server-chọn) + version + <see cref="AlreadyAcknowledged"/> (true nếu visit đã ack
+/// đúng bản IsCurrent này từ trước — idempotent, không tạo trùng).
+/// </summary>
+public sealed record AcknowledgeRulesResult(Guid RulePublicationId, int Version, bool AlreadyAcknowledged);
