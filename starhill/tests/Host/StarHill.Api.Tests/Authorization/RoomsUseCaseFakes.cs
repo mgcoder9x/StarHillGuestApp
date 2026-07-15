@@ -216,3 +216,107 @@ internal sealed class FakeResortSettingsQuery : IResortSettingsQuery
             MessageRateLimitPerMinute: 10,
             HousekeepingRateLimitPerHour: 5));
 }
+
+// ---- Faq admin + guest use case fakes (E-Faq.4 endpoint auth guard, KHÔNG DB) ----
+
+internal sealed class FakeCreateFaqCategory : IUseCase<Faq.Application.CreateFaqCategoryInput, Faq.Application.CreateFaqCategoryResult>
+{
+    public static readonly Guid CategoryId = Guid.Parse("99999999-9999-9999-9999-999999999999");
+
+    public Task<Result<Faq.Application.CreateFaqCategoryResult>> ExecuteAsync(
+        Faq.Application.CreateFaqCategoryInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Faq.Application.CreateFaqCategoryResult(CategoryId)));
+}
+
+internal sealed class FakeUpdateFaqCategory : ICommandUseCase<Faq.Application.UpdateFaqCategoryInput>
+{
+    public string? PersistenceKey => null;
+
+    public Task<Result> ExecuteAsync(Faq.Application.UpdateFaqCategoryInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success());
+}
+
+internal sealed class FakeDeleteFaqCategory : ICommandUseCase<Faq.Application.DeleteFaqCategoryInput>
+{
+    public string? PersistenceKey => null;
+
+    public Task<Result> ExecuteAsync(Faq.Application.DeleteFaqCategoryInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success());
+}
+
+internal sealed class FakeUpsertFaqCategoryTranslation
+    : IUseCase<Faq.Application.UpsertFaqCategoryTranslationInput, Faq.Application.UpsertFaqCategoryTranslationResult>
+{
+    public static readonly Guid TranslationId = Guid.Parse("aaaaaaa1-9999-9999-9999-999999999999");
+
+    public Task<Result<Faq.Application.UpsertFaqCategoryTranslationResult>> ExecuteAsync(
+        Faq.Application.UpsertFaqCategoryTranslationInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Faq.Application.UpsertFaqCategoryTranslationResult(TranslationId)));
+}
+
+internal sealed class FakeCreateFaqItem : IUseCase<Faq.Application.CreateFaqItemInput, Faq.Application.CreateFaqItemResult>
+{
+    public static readonly Guid ItemId = Guid.Parse("bbbbbbb1-9999-9999-9999-999999999999");
+
+    public Task<Result<Faq.Application.CreateFaqItemResult>> ExecuteAsync(
+        Faq.Application.CreateFaqItemInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Faq.Application.CreateFaqItemResult(ItemId)));
+}
+
+internal sealed class FakeUpdateFaqItem : ICommandUseCase<Faq.Application.UpdateFaqItemInput>
+{
+    public string? PersistenceKey => null;
+
+    public Task<Result> ExecuteAsync(Faq.Application.UpdateFaqItemInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success());
+}
+
+internal sealed class FakeDeleteFaqItem : ICommandUseCase<Faq.Application.DeleteFaqItemInput>
+{
+    public string? PersistenceKey => null;
+
+    public Task<Result> ExecuteAsync(Faq.Application.DeleteFaqItemInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success());
+}
+
+internal sealed class FakeUpsertFaqItemTranslation
+    : IUseCase<Faq.Application.UpsertFaqItemTranslationInput, Faq.Application.UpsertFaqItemTranslationResult>
+{
+    public static readonly Guid TranslationId = Guid.Parse("ccccccc1-9999-9999-9999-999999999999");
+
+    public Task<Result<Faq.Application.UpsertFaqItemTranslationResult>> ExecuteAsync(
+        Faq.Application.UpsertFaqItemTranslationInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Faq.Application.UpsertFaqItemTranslationResult(TranslationId)));
+}
+
+internal sealed class FakeReorderFaqCategories : ICommandUseCase<Faq.Application.ReorderFaqCategoriesInput>
+{
+    public string? PersistenceKey => null;
+
+    public Task<Result> ExecuteAsync(Faq.Application.ReorderFaqCategoriesInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success());
+}
+
+internal sealed class FakeReorderFaqItems : ICommandUseCase<Faq.Application.ReorderFaqItemsInput>
+{
+    public string? PersistenceKey => null;
+
+    public Task<Result> ExecuteAsync(Faq.Application.ReorderFaqItemsInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success());
+}
+
+internal sealed class FakeGetGuestFaqTree : IUseCase<Faq.Application.GetGuestFaqTreeInput, Faq.Application.GetGuestFaqTreeResult>
+{
+    public Task<Result<Faq.Application.GetGuestFaqTreeResult>> ExecuteAsync(
+        Faq.Application.GetGuestFaqTreeInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Faq.Application.GetGuestFaqTreeResult(
+            "en",
+            new List<Faq.Application.RenderedFaqCategory>
+            {
+                new(FakeCreateFaqCategory.CategoryId, "arrival", 1, "Arrival", "en", false, false,
+                    new List<Faq.Application.RenderedFaqItem>
+                    {
+                        new(FakeCreateFaqItem.ItemId, 1, "Q", "<p>A</p>", "en", false, false, []),
+                    }),
+            })));
+}

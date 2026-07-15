@@ -27,6 +27,7 @@ public sealed class ErrorCodeSnapshotTests
         "faq_category_not_empty",        // Faq (E-Faq.2: chặn xóa category còn item)
         "faq_category_not_found",        // Faq (E-Faq.2)
         "faq_conflict",                  // Faq (E-Faq.2: unique key/translation race)
+        "faq_disabled",                  // Faq (E-Faq.4: FaqEnabled=false backend enforce — 403)
         "faq_invalid_parent",            // Faq (E-Faq.2: bất biến cây — self/khác-category/cycle)
         "faq_item_has_children",         // Faq (E-Faq.2: chặn xóa item còn con)
         "faq_item_not_found",            // Faq (E-Faq.2)

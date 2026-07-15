@@ -36,4 +36,14 @@ public static class FaqErrors
     /// <summary>Không thể xóa mục FAQ khi còn mục con tham chiếu (giữ toàn vẹn cây — phải xóa/chuyển con trước).</summary>
     public static Error ItemHasChildren =>
         Error.Conflict("faq_item_has_children", "Không thể xóa mục FAQ khi vẫn còn mục con.");
+
+    /// <summary>Tính năng FAQ bị TẮT cho resort (<c>FaqEnabled=false</c> — Req 14) — backend enforce, không dựa chỉ vào
+    /// việc frontend ẩn nút. <c>Forbidden</c> → HTTP 403.</summary>
+    public static Error Disabled =>
+        Error.Forbidden("faq_disabled", "Tính năng FAQ hiện đang tắt.");
+
+    /// <summary>Cấu hình resort nền thiếu (chưa seed settings/ngôn ngữ mặc định) — fail-closed khi guest đọc FAQ.
+    /// Dùng CHUNG mã <c>configuration_unavailable</c> với GuestAccess/Rules (ngữ nghĩa nền thiếu, hợp đồng client thống nhất).</summary>
+    public static Error ConfigurationUnavailable =>
+        Error.Unexpected("configuration_unavailable", "Cấu hình resort chưa sẵn sàng.");
 }

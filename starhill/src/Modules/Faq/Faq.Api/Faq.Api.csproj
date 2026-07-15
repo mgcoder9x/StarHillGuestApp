@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Faq.Api (nửa-Api — matrix §3.3, E-Faq.4): reference Faq.Application (use case CRUD/reorder/guest-read) +
+    ResortConfig.Contracts (phân giải resortId single-resort qua IResortSettingsQuery) + GuestAccess.Contracts
+    (guest endpoint phân giải ngữ cảnh khách qua ICurrentGuestContextResolver + hằng cookie) + StarHill.Authorization
+    (policy Staff) + Bedrock.Api (cơ chế HTTP). KHÔNG ref Infrastructure module nào (Api⊥Infra I7). Mirror Rules.Api.
+  -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Faq.Application\Faq.Application.csproj" />
+    <ProjectReference Include="..\..\ResortConfig\ResortConfig.Contracts\ResortConfig.Contracts.csproj" />
+    <ProjectReference Include="..\..\GuestAccess\GuestAccess.Contracts\GuestAccess.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\StarHill.Authorization\StarHill.Authorization.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Api\Bedrock.Api.csproj" />
+  </ItemGroup>
+</Project>

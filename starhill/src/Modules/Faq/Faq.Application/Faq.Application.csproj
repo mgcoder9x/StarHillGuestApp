@@ -8,6 +8,11 @@
   <ItemGroup>
     <ProjectReference Include="..\Faq.Domain\Faq.Domain.csproj" />
     <ProjectReference Include="..\Faq.Contracts\Faq.Contracts.csproj" />
+    <!-- E-Faq.4: cross-module CHỈ qua Contracts (QR-AD-002). ResortConfig.Contracts cho IResortGuestConfigQuery
+         (FaqEnabled + enabled langs + default) + ITranslationResolver/ITranslation (i18n fallback CP5). Rules.Contracts
+         cho IRuleGate (rule-gate backend CP3 — Faq là consumer đầu tiên; đặt gate TRONG use case = defense-in-depth). -->
+    <ProjectReference Include="..\..\ResortConfig\ResortConfig.Contracts\ResortConfig.Contracts.csproj" />
+    <ProjectReference Include="..\..\Rules\Rules.Contracts\Rules.Contracts.csproj" />
     <ProjectReference Include="$(PlatformSrc)\Bedrock.Application\Bedrock.Application.csproj" />
   </ItemGroup>
 

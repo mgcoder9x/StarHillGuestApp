@@ -21,5 +21,7 @@
          (sanitize-on-save) — đăng ký qua AddStarHillHtml, giống Host wiring. -->
     <ProjectReference Include="..\..\..\src\Modules\Faq\Faq.Infrastructure\Faq.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\src\StarHill.Html\StarHill.Html.csproj" />
+    <!-- E-Faq.4 (CP5): TranslationResolver THẬT (i18n fallback) để test GetGuestFaqTree đầu-cuối, không stub logic. -->
+    <ProjectReference Include="..\..\..\src\Modules\ResortConfig\ResortConfig.Application\ResortConfig.Application.csproj" />
   </ItemGroup>
 </Project>

@@ -61,3 +61,36 @@ public sealed record ReorderFaqCategoriesInput(Guid ResortId, IReadOnlyList<FaqR
 
 /// <summary>Sắp lại thứ tự các mục FAQ trong <paramref name="CategoryId"/> (drag-drop cấp item, cùng danh mục).</summary>
 public sealed record ReorderFaqItemsInput(Guid CategoryId, IReadOnlyList<FaqReorderEntry> Entries);
+
+// ---- Guest read cây FAQ (E-Faq.4, Req 4.2/4.3/4.4 + CP3 rule-gate + CP5 i18n) ----
+
+/// <summary>
+/// Khách đọc cây FAQ active theo ngôn ngữ. <paramref name="GuestVisitId"/> do server phân giải (từ
+/// <c>ICurrentGuestContextResolver</c>) — dùng cho rule-gate (CP3). KHÔNG tin client.
+/// </summary>
+public sealed record GetGuestFaqTreeInput(Guid ResortId, Guid GuestVisitId, string? RequestedLanguage);
+
+/// <summary>Cây FAQ đã render một ngôn ngữ — category (theo SortOrder) mỗi cái chứa item gốc + con đệ quy.</summary>
+public sealed record GetGuestFaqTreeResult(string Language, IReadOnlyList<RenderedFaqCategory> Categories);
+
+/// <summary>Category đã render: tên + trạng thái fallback/thiếu bản dịch (CP5) + item gốc.</summary>
+public sealed record RenderedFaqCategory(
+    Guid Id,
+    string Key,
+    int SortOrder,
+    string? Name,
+    string ResolvedLanguage,
+    bool IsFallback,
+    bool IsMissing,
+    IReadOnlyList<RenderedFaqItem> Items);
+
+/// <summary>Item đã render: câu hỏi/trả lời + fallback/thiếu + các mục con (flow cha-con, đệ quy).</summary>
+public sealed record RenderedFaqItem(
+    Guid Id,
+    int SortOrder,
+    string? Question,
+    string? AnswerHtmlSanitized,
+    string ResolvedLanguage,
+    bool IsFallback,
+    bool IsMissing,
+    IReadOnlyList<RenderedFaqItem> Children);

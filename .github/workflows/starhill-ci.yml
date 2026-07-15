@@ -151,3 +151,17 @@ jobs:
         with:
           name: starhill-efbundle-rules
           path: starhill/efbundle-rules
+
+      - name: Build Faq migration bundle (linux-x64, self-contained)
+        run: >
+          dotnet ef migrations bundle
+          --project src/Modules/Faq/Faq.Infrastructure
+          --startup-project src/Modules/Faq/Faq.Infrastructure
+          --self-contained -r linux-x64 -o efbundle-faq --force
+        working-directory: starhill
+
+      - name: Upload Faq bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: starhill-efbundle-faq
+          path: starhill/efbundle-faq

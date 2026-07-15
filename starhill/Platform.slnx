@@ -45,6 +45,7 @@
     <Project Path="src/Modules/Faq/Faq.Domain/Faq.Domain.csproj" />
     <Project Path="src/Modules/Faq/Faq.Application/Faq.Application.csproj" />
     <Project Path="src/Modules/Faq/Faq.Infrastructure/Faq.Infrastructure.csproj" />
+    <Project Path="src/Modules/Faq/Faq.Api/Faq.Api.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/StarHill.Authorization/StarHill.Authorization.csproj" />

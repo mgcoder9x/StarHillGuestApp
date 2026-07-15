@@ -26,6 +26,9 @@
     <!-- Module Rules: nửa-Infra (persistence + use case + IRuleGate) + nửa-Api admin (D-Rules.4c — nội quy Draft/Publish). -->
     <ProjectReference Include="..\..\Modules\Rules\Rules.Infrastructure\Rules.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Rules\Rules.Api\Rules.Api.csproj" />
+    <!-- Module Faq: nửa-Infra (persistence + CRUD/reorder + guest tree read) + nửa-Api (E-Faq.4 — admin CRUD + guest tree). -->
+    <ProjectReference Include="..\..\Modules\Faq\Faq.Infrastructure\Faq.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Faq\Faq.Api\Faq.Api.csproj" />
     <!-- Adapter bảo mật IHtmlSanitizer (Ganss) dùng chung — Rules/Faq sanitize-on-save; RequirePort ở Program.cs. -->
     <ProjectReference Include="..\..\StarHill.Html\StarHill.Html.csproj" />
     <!-- Policy authorization sản phẩm (Admin/Staff superset) — Host khai role, mọi module Api tham chiếu. -->

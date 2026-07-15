@@ -22,6 +22,9 @@ using Rooms.Infrastructure.Persistence;
 using Rules.Api.DependencyInjection;
 using Rules.Infrastructure.DependencyInjection;
 using Rules.Infrastructure.Persistence;
+using Faq.Api.DependencyInjection;
+using Faq.Infrastructure.DependencyInjection;
+using Faq.Infrastructure.Persistence;
 using StarHill.Api;
 using StarHill.Authorization;
 using StarHill.Html.DependencyInjection;
@@ -126,6 +129,18 @@ services.AddRulesInfrastructure(options => options.UseNpgsql(
     npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "rules")));
 services.AddRulesApi();
 
+// Module Faq (FAQ cây cha-con do lễ tân soạn + guest đọc + rule-gate). Nửa-Infra (persistence + CRUD/reorder + guest
+// tree read) + nửa-Api (E-Faq.4: admin CRUD/reorder RequireStaff + guest tree AllowAnonymous). Connection string riêng
+// (cùng PostgreSQL, schema faq). Faq tiêu thụ IRuleGate (Rules) + IResortGuestConfigQuery/ITranslationResolver (ResortConfig)
+// + IHtmlSanitizer (sanitize-on-save, RequirePort đã có từ Rules — không thêm trùng).
+var faqConnectionString = configuration.GetConnectionString("Faq")
+    ?? throw new InvalidOperationException(
+        "Thiếu ConnectionStrings:Faq — fail-fast (F35). Cấu hình connection string cho module Faq.");
+services.AddFaqInfrastructure(options => options.UseNpgsql(
+    faqConnectionString,
+    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "faq")));
+services.AddFaqApi();
+
 // IHtmlSanitizer (QR-AD-031): adapter Ganss dùng chung (Rules Draft sanitize-on-save; Faq sau). RequirePort → boot
 // FAIL-FAST nếu thiếu — port bảo mật KHÔNG default (thiếu = HTML script lọt vào nội dung khách). Host (composition
 // root) là nơi DUY NHẤT cắm adapter; UpsertRuleSectionTranslationUseCase inject IHtmlSanitizer → phải có mặt.
@@ -199,6 +214,10 @@ if (bool.TryParse(configuration["Bedrock:ApplyMigrationsOnStartup"], out var app
     // Rules: migrate schema rules (chưa seed — nội quy do Staff soạn/publish qua endpoint admin).
     var rulesDb = migrationScope.ServiceProvider.GetRequiredService<RulesDbContext>();
     await rulesDb.Database.MigrateAsync().ConfigureAwait(false);
+
+    // Faq: migrate schema faq (chưa seed — FAQ do Staff soạn qua endpoint admin).
+    var faqDb = migrationScope.ServiceProvider.GetRequiredService<FaqDbContext>();
+    await faqDb.Database.MigrateAsync().ConfigureAwait(false);
 }
 
 // Slot #4 (HSTS/HTTPS-redirect) = TRÁCH NHIỆM HOST (AD-035). Sample host này chạy sau reverse-proxy terminate TLS
