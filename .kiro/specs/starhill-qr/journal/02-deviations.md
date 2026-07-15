@@ -64,3 +64,12 @@
 - Lý do (bản chất): GET phải safe nhưng operation này mutate; route token dễ bị ghi bởi proxy/access-log/APM. POST body giảm bề mặt rò capability và phản ánh command semantics.
 - Consequences: Guest Web phải POST, scrub URL bằng history API và reverse proxy redact `/r/*`; client legacy chưa tồn tại trong product tree nên chưa có breaking runtime consumer.
 - Reversibility: Medium. Traceability: QR-AD-025; QR-DV-001; `design-modules/03-guestaccess.md` §7.
+
+### QR-DV-007 — `ITranslation` đặt trên read-DTO tầng Application (không phải entity Domain như design §8)
+- Status: Accepted (áp slice D-Rules.4a)
+- Date: 2026-07-15
+- Provenance/Evidence: `design-modules/04-rules.md` §3/§8 ghi "`RuleSectionTranslation`/`RulePublicationSectionTranslation` implement `ITranslation`". Nhưng `ITranslation` nằm ở `ResortConfig.Contracts.Localization` (đọc `ResortConfig.Contracts/Localization/ITranslation.cs`); nếu entity Domain implement nó thì `Rules.Domain` phải ref `ResortConfig.Contracts` (Domain phụ thuộc Contracts module khác). Đọc `design-modules/04-rules.md` §2: dependency graph khai `Rules.Application -> ... ResortConfig.Contracts`, KHÔNG khai `Rules.Domain -> ResortConfig.Contracts`. Đọc `RulesBoundaryTests` — Domain phải ⊥ Infra/Api và giữ tối thiểu.
+- Deviation: `ITranslation` được hiện thực trên **read-DTO** `PublishedTranslationSnapshot` (record ở `Rules.Application`, đã ref `ResortConfig.Contracts`) THAY VÌ entity Domain `RulePublicationSectionTranslation`/`RuleSectionTranslation`. Entity Domain giữ nguyên (LanguageCode/Title/BodyHtmlSanitized) KHÔNG implement `ITranslation`.
+- Lý do (bản chất): i18n-resolution (fallback/HasContent) là concern RENDERING/Application (render theo request khách), KHÔNG phải bất biến Domain. Đặt `ITranslation` trên entity leak concern rendering vào Domain + ép `Rules.Domain → ResortConfig.Contracts` (Domain nội-cùng không nên phụ thuộc Contracts module khác). DTO-implements-ITranslation ở đúng tầng resolve (Application) → giữ `Rules.Domain` thuần, đúng ranh giới.
+- Consequences: read-model reader map entity→DTO (đã làm ở `EfRulePublicationReader`); nếu sau này Faq cần i18n, cùng pattern (DTO implements ITranslation ở tầng Application của Faq). Không entity Domain nào implement ITranslation.
+- Reversibility: Easy. Traceability: `design-modules/04-rules.md` §3/§8; QR-DV-002 (i18n ở Contracts); QR-AD-030; QR-N-038.

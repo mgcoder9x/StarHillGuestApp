@@ -23,7 +23,11 @@
     <!-- P1-11: gác luôn error catalog của module Rooms (RoomsErrors ở tầng Application — nghiệp vụ QR). Thêm module
          mới có error catalog riêng → thêm ProjectReference tương ứng ở đây (snapshot phủ mọi mã lỗi client-facing). -->
     <ProjectReference Include="..\..\src\Modules\Rooms\Rooms.Application\Rooms.Application.csproj" />
-    <!-- C-GA.2b: error catalog GuestAccess (GuestAccessErrors — qr_invalid/room_inactive/configuration_unavailable). -->
+    <!-- C-GA.2b: error catalog GuestAccess (GuestAccessErrors — qr_invalid/room_inactive/configuration_unavailable;
+         C-GA.4: +session_expired/guest_context_missing). -->
     <ProjectReference Include="..\..\src\Modules\GuestAccess\GuestAccess.Application\GuestAccess.Application.csproj" />
+    <!-- D-Rules.2b/3: error catalog Rules (RulesErrors — rules_conflict + validation_error/not_found dùng chung).
+         Đóng gap QR-AD-018 (registry PHẢI phủ MỌI catalog module — trước đây thiếu Rules → rules_conflict không gác). -->
+    <ProjectReference Include="..\..\src\Modules\Rules\Rules.Application\Rules.Application.csproj" />
   </ItemGroup>
 </Project>

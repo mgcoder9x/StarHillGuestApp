@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Rules.Application (D-Rules.2b, vertical-by-feature): reference Rules.Domain + Rules.Contracts + Bedrock.Application
+    (ports/behaviors/use-case + port bảo mật IHtmlSanitizer cho sanitize-on-save). KHÔNG ref Infrastructure/EF/ASP.NET
+    (I7). ResortConfig.Contracts/GuestAccess.Contracts CHƯA thêm ở 2b (I10 — chỉ thêm khi rule-gate/guest-read tiêu thụ
+    ở D-Rules.3/4). FluentValidation cho validator (AD-018). Mirror khuôn Rooms.Application.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Rules.Domain\Rules.Domain.csproj" />
+    <ProjectReference Include="..\Rules.Contracts\Rules.Contracts.csproj" />
+    <!-- D-Rules.4a: cross-module CHỈ qua Contracts (QR-AD-002) — ResortConfig.Contracts cho IResortGuestConfigQuery
+         (enabled langs + default + cờ rule-gate) + ITranslationResolver/ITranslation (i18n fallback CP5). -->
+    <ProjectReference Include="..\..\ResortConfig\ResortConfig.Contracts\ResortConfig.Contracts.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Application\Bedrock.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+</Project>

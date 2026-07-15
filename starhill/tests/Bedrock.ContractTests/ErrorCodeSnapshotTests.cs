@@ -3,6 +3,7 @@ using Bedrock.Domain.Results;
 using GuestAccess.Application;
 using Identity.Domain;
 using Rooms.Application;
+using Rules.Application;
 
 namespace Bedrock.ContractTests;
 
@@ -23,6 +24,7 @@ public sealed class ErrorCodeSnapshotTests
         "configuration_unavailable",     // GuestAccess (C-GA.2b)
         "conflict",
         "forbidden",
+        "guest_context_missing",         // GuestAccess (C-GA.4: current-guest-context)
         "identity.invalid_refresh_token",
         "invalid_configuration",         // Rooms (P1-11: nay được gác)
         "not_found",
@@ -31,6 +33,9 @@ public sealed class ErrorCodeSnapshotTests
         "rate_limited",
         "resort_not_found",              // Rooms (P1-11)
         "room_inactive",                 // GuestAccess (C-GA.2b)
+        "rules_conflict",                // Rules (D-Rules.2b: DraftConflict — nay được gác, đóng gap QR-AD-018)
+        "rules_unavailable",             // Rules (D-Rules.4a: guest read chưa publish)
+        "session_expired",               // GuestAccess (C-GA.4: portal-window)
         "unauthorized",
         "unexpected",
         "validation_error",
@@ -44,7 +49,8 @@ public sealed class ErrorCodeSnapshotTests
             typeof(Error).Assembly,              // Bedrock.Domain (CommonErrors + Error)
             typeof(AuthErrors).Assembly,         // Identity.Domain (module error catalog)
             typeof(RoomsErrors).Assembly,        // Rooms.Application (P1-11: error catalog module QR — trước đây KHÔNG gác)
-            typeof(GuestAccessErrors).Assembly,  // GuestAccess.Application (C-GA.2b: qr_invalid/room_inactive/configuration_unavailable)
+            typeof(GuestAccessErrors).Assembly,  // GuestAccess.Application (C-GA.2b + C-GA.4)
+            typeof(RulesErrors).Assembly,        // Rules.Application (D-Rules.2b/3: rules_conflict — đóng gap QR-AD-018)
         ];
 
         var actual = CollectStableErrorCodes(catalogAssemblies);

@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Rules.Contracts (PUBLIC surface — matrix §3.3): CHỈ reference Bedrock.Messaging.Contracts. Hiện lộ
+    RulesModule (PersistenceKey). IRuleGate + DTO gate thêm ở D-Rules.4 (khi có consumer Faq/Concierge/Housekeeping).
+    KHÔNG ref GuestAccess/ResortConfig Contracts (tránh coupling Contracts↔Contracts — QR-TO-010). KHÔNG marker DI.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Messaging.Contracts\Bedrock.Messaging.Contracts.csproj" />
+  </ItemGroup>
+</Project>

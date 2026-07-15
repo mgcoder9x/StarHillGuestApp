@@ -84,3 +84,40 @@
 - Chi phí chấp nhận: quét source có thể match `class` trong comment (false-positive làm gate lỏng hơn, KHÔNG false-fail) — chấp nhận vì mục tiêu chính là bắt xóa/đổi tên/tuyên bố rỗng; không nhằm phân tích ngữ nghĩa test.
 - Điều kiện xem xét lại: cần bảo đảm "test THỰC SỰ assert đúng bất biến" (không chỉ tồn tại) → nâng lên attribute + reflection có kiểm nội dung.
 - Reversibility: High. Ref: QR-AD-029; `journal/05-anti-drift.md` INV-6.
+
+
+### QR-TO-010 — Rule-gate: truyền guestVisitId vs gate tự resolve GuestVisit
+- Chosen: `IRuleGate.EnsureAcknowledgedAsync(resortId, guestVisitId, feature)` nhận Id trần; consumer (Faq/Concierge/Housekeeping) tự resolve GuestVisit qua `ICurrentGuestContextResolver` (GuestAccess.Contracts) rồi truyền vào.
+- Provenance/Evidence: `Rules.Contracts` mirror các Contracts khác (thuần, chỉ ref Bedrock.Messaging.Contracts). Nếu gate tự resolve visit thì Rules.Contracts phải ref GuestAccess.Contracts → coupling Contracts↔Contracts.
+- Phía chọn: Rules.Contracts giữ thuần (không coupling module khác); mỗi guest endpoint đằng nào cũng phải resolve visit (để enforce portal-window) nên có sẵn guestVisitId — truyền vào rẻ và rõ.
+- Phía gate tự resolve (bỏ): tiện cho caller (một call) nhưng kéo GuestAccess.Contracts vào Rules.Contracts và nhân đôi logic resolve/window ở gate.
+- Chi phí: caller gọi 2 bước (resolve visit → gate). Chấp nhận vì đúng chuẩn boundary + tách trách nhiệm.
+- Reversibility: High. Ref: QR-AD-030/032; `design-modules/04-rules.md` §6.
+
+### QR-TO-011 — Sanitize-on-save authoritative vs sanitize cả hai chiều (save + read)
+- Chosen: sanitize-on-save là bất biến chuẩn (cột `BodyHtmlSanitized`); Publish copy nội dung ĐÃ sanitize; guest read trả field đã sanitize (KHÔNG double-sanitize khi trả).
+- Provenance/Evidence: Req 8.6 nói "trước khi lưu VÀ trước khi trả về". Data model đặt tên cột `BodyHtmlSanitized` (đã sanitize khi lưu). Guest chỉ đọc từ RulePublicationSectionTranslation (copy từ Draft đã sanitize).
+- Phía chọn: một điểm kiểm soát (lúc ghi) dễ guard (test: lưu ra không còn script — CP12); read an toàn by-construction vì mọi thứ khách đọc đều đã sanitize khi ghi/publish. Tránh chi phí sanitize lặp mỗi read.
+- Phía sanitize cả hai chiều (cân nhắc): defense-in-depth nếu dữ liệu bị sửa ngoài luồng use case (SQL trực tiếp). Nhưng trong kiến trúc này mọi ghi đi qua use case → nguồn tin cậy là lúc ghi.
+- Chi phí/điều kiện: nếu sau này có đường ghi nội dung KHÔNG qua sanitize (import, migration nội dung cũ) → bật thêm sanitize-on-read hoặc re-sanitize batch. Ghi rõ để không quên.
+- Reversibility: High. Ref: QR-AD-031; `design-modules/04-rules.md` §7; CP12/Req 8.6.
+
+
+### QR-TO-012 — OpenAPI: JSON native (không UI) vs thêm Swagger/Scalar UI
+- Chosen: chỉ phơi native OpenAPI JSON (`/openapi/v1.json`) ở Development; KHÔNG thêm UI (Swagger/Scalar) lúc này.
+- Provenance/Evidence: base `BedrockOpenApiExtensions` dùng native `Microsoft.AspNetCore.OpenApi` + ghi rõ DV-015 "không nhồi stack lớn"; "Swagger UI là tầng trình bày do Host chọn". Không có package UI pin ở `starhill/Directory.Packages.props`.
+- Phía chọn (JSON-only): 0 dependency mới, đúng DV-015; đủ để nhập vào Postman/Insomnia/VS Code REST/bất kỳ OpenAPI viewer → vẫn "test API qua web/công cụ". Bề mặt tối thiểu.
+- Phía thêm UI (hoãn): trình duyệt bấm-gọi trực quan hơn cho QA/demo, nhưng kéo thêm package (Scalar.AspNetCore/Swashbuckle) — mâu thuẫn DV-015; và vẫn cần auth+data để gọi endpoint admin. Chỉ thêm khi có nhu cầu demo rõ + chấp nhận dependency, và cũng nên dev-only.
+- Chi phí chấp nhận: dev không có trang bấm sẵn; dùng công cụ ngoài để nạp JSON. Chấp nhận để giữ base/product gọn.
+- Điều kiện xem xét lại: cần demo click-through cho stakeholder → thêm Scalar UI (nhẹ hơn Swashbuckle) gated Development.
+- Reversibility: High. Ref: QR-AD-033; DV-015.
+
+
+### QR-TO-013 — StarHill default compose: tối giản (không RabbitMQ) vs always-on messaging demo
+- Chosen: default tối giản (postgres+host, messaging off); RabbitMQ qua overlay explicit (QR-AD-034).
+- Provenance/Evidence: messaging opt-in sẵn (`Bedrock:Messaging:Enabled`); chỉ Identity produce outbox; cascade QR-AD-027 defer; user yêu cầu sạch–đơn giản cho 60 phòng.
+- Phía chọn (default tối giản): giảm phức tạp/tài nguyên vận hành thực; đúng nhu cầu 60 phòng; vẫn bật được khi cần. Đường e2e messaging KHÔNG mất: overlay `docker-compose.messaging.yml` + Testcontainers (`RabbitMq*Tests` platform) + platform compose vẫn chứng minh.
+- Phía always-on (bỏ): default luôn chứng minh Outbox→RabbitMQ trên artifact thật; nhưng ép broker thường trực cho sản phẩm nhỏ = phức tạp thừa, trái "sạch đơn giản".
+- Chi phí chấp nhận: muốn test event-driven phải nhớ thêm `-f docker-compose.messaging.yml`; off-mode có outbox event Identity tích lũy nhẹ (đến khi làm emission opt-in ở base).
+- Điều kiện xem xét lại: khi cascade GuestVisitEnded (Concierge/Housekeeping) vào production → cân nhắc bật messaging mặc định HOẶC dùng in-process dispatch cho single-instance nhỏ (đánh giá broker-vs-in-process lúc đó, QR-AD-027).
+- Reversibility: High. Ref: QR-AD-034; QR-AD-015; QR-AD-027.

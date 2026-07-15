@@ -21,4 +21,13 @@ public static class GuestAccessErrors
     /// <summary>Cấu hình resort nền thiếu/không hợp lệ (chưa seed settings/ngôn ngữ mặc định) — fail-closed (QR-AD-024).</summary>
     public static Error ConfigurationUnavailable =>
         Error.Unexpected("configuration_unavailable", "Cấu hình resort chưa sẵn sàng.");
+
+    /// <summary>Phiên portal của khách đã hết hạn (quá portal-window hoặc visit không còn Active) — C-GA.4/QR-AD-032.
+    /// Khách cần quét lại QR để mở phiên mới. 401 (Unauthorized) — không lộ chi tiết.</summary>
+    public static Error SessionExpired =>
+        Error.Unauthorized("session_expired", "Phiên đã hết hạn, vui lòng quét lại mã QR.");
+
+    /// <summary>Không phân giải được thiết bị khách (cookie rỗng/không khớp phiên nào) — C-GA.4/QR-AD-032. 401.</summary>
+    public static Error GuestContextMissing =>
+        Error.Unauthorized("guest_context_missing", "Không xác định được phiên khách, vui lòng quét lại mã QR.");
 }

@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Adapters.Messaging.RabbitMq;
 using Bedrock.Api;
+using Bedrock.Api.OpenApi;
 using Bedrock.Application.DependencyInjection;
 using Bedrock.Application.Messaging;
 using Bedrock.Infrastructure.DependencyInjection;
@@ -38,6 +39,15 @@ var configuration = builder.Configuration;
 services.AddBedrockApi(configuration);
 services.AddBedrockSecurity(configuration);
 services.AddBedrockStartupValidation();
+
+// OpenAPI doc-gen (native /openapi/v1.json) — CHỈ bật ở Development (QR-AD-033). Prod GIỮ TẮT để không phơi bề mặt
+// API ra ngoài (posture nội-mạng; opt-in DV-015/AD-068 của base). Compose mặc định chạy Production → tắt; muốn test
+// qua trình duyệt local: `docker compose -f docker-compose.yml -f docker-compose.dev.yml up` (đặt ASPNETCORE_ENVIRONMENT
+// = Development). KHÔNG thêm Swagger/Scalar UI (giữ DV-015 "không nhồi stack lớn" — QR-TO-012); browser xem/nhập JSON.
+if (builder.Environment.IsDevelopment())
+{
+    services.AddBedrockOpenApi();
+}
 
 // Policy authorization SẢN PHẨM (QR-AD-020): Admin/Staff superset (Req 7.6/11.3). Base cố ý KHÔNG khai role sản
 // phẩm — Host khai qua project dùng chung. AddBedrockAuthCore đã gọi AddAuthorization() nên thêm named policy là

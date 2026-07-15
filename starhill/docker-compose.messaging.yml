@@ -1,0 +1,32 @@
+# Overlay EXPLICIT bật event-driven (RabbitMQ) — chỉ dùng khi cần test/chạy đường Outbox→worker→RabbitMQ (vd khi
+# cascade GuestVisitEnded có consumer Concierge/Housekeeping — QR-AD-027). KHÔNG tự áp:
+#   docker compose -f docker-compose.yml -f docker-compose.messaging.yml up -d --build
+# Base compose (docker-compose.yml) GIỮ TỐI GIẢN (không RabbitMQ) — QR-AD-034.
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13
+    environment:
+      # User RIÊNG (không 'guest' — 'guest' chỉ loopback → container `host` non-loopback bị từ chối). Dev placeholder (F35).
+      RABBITMQ_DEFAULT_USER: bedrock
+      RABBITMQ_DEFAULT_PASS: bedrock
+    healthcheck:
+      # check_port_connectivity xác nhận LISTENER AMQP 5672 THẬT nhận kết nối (mạnh hơn 'ping') → tránh race consumer.
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  host:
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      # BẬT event-driven (opt-in, AD-056): cắm RabbitMQ + dispatcher + LÊN LỊCH worker phát tự động. Có dispatcher
+      # nên P1-15 không còn cảnh báo outbox-không-drainer.
+      Bedrock__Messaging__Enabled: "true"
+      RabbitMq__HostName: "rabbitmq"
+      RabbitMq__Port: "5672"
+      RabbitMq__UserName: "bedrock"
+      RabbitMq__Password: "bedrock"

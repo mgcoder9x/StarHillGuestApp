@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Rules.Domain (POCO nội quy: Draft RuleSet/Section(+Translation) + snapshot RulePublication(+Section+Translation)
+       + RuleAcknowledgement): reference CHỈ Bedrock.Domain (matrix §3.3). ITranslation (đọc-path) để dành D-Rules.4. -->
+  <ItemGroup>
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Domain\Bedrock.Domain.csproj" />
+  </ItemGroup>
+</Project>

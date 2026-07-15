@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    StarHill.Html (QR-AD-031): adapter DÙNG CHUNG của SẢN PHẨM cho port bảo mật base <c>IHtmlSanitizer</c>
+    (Bedrock.Application.Ports.Html). Đặt ở project shared cấp starhill (mirror StarHill.Authorization) — KHÔNG nhét
+    base (giữ base sạch — D1-a) và KHÔNG nhét Rules.Infrastructure (để Faq/Concierge/Housekeeping tái dùng mà không
+    ref chéo module). Reference Bedrock.Application (nơi có port) + package Ganss.Xss (HtmlSanitizer). Không ref module QR.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Application\Bedrock.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HtmlSanitizer" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+</Project>

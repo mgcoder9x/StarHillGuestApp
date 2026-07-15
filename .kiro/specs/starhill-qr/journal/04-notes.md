@@ -270,3 +270,140 @@
 - Lý do (bản chất): INV-1..5 đảm bảo journal tự-nhất-quán nhưng không nối journal↔code; một AD có thể ghi "xong" trong khi test tương ứng bị xóa/đổi tên/chưa từng có. INV-6 khóa vòng đó bằng build. Chọn structured field + source-scan thay reflection để robust và cùng triết lý parse-file của cổng (QR-TO-009).
 - Verify: build 0-warning; `StarHillJournalConsistencyTests` (giờ 6 INV) + `ModuleMigrationHistorySchemaTests` xanh; diagnostics spec 0. (Chi tiết lệnh trong lần chạy phiên này.)
 - NEXT: giữ kỷ luật — mọi AD tương lai chuyển Implemented phải kèm Guard-Tests hợp lệ; cân nhắc nâng cấp attribute `[Traces]` nếu cần kiểm NỘI DUNG test (không chỉ tồn tại). Module kế tiếp: design-first Rules.
+
+
+### QR-N-030 — D-Rules.0 design-first XONG: thiết kế module Rules + kích hoạt C-GA.4 (chưa code)
+- Date: 2026-07-14
+- Đã tạo `design-modules/04-rules.md` (design-first, chưa code) — grounded vào file thật, không suy đoán:
+  - Data model lấy từ product `docs/resort-qr-portal/design.md` §Data Models (Rules): RuleSet/RuleSection(+Translation)/RulePublication(+Section+Translation)/RuleAcknowledgement; unique `RulePublication(ResortId) WHERE IsCurrent`, unique `RuleAcknowledgement(GuestVisitId, RulePublicationId)`, unique `(section, lang)`.
+  - Quyết định: QR-AD-030 (snapshot publish + ack server-authoritative + rule-gate backend), QR-AD-031 (IHtmlSanitizer adapter Ganss ở shared starhill project + RequirePort + sanitize-on-save), QR-AD-032 (GuestAccess.Contracts.ICurrentGuestContextResolver = C-GA.4 + portal-window check-before-touch, tách Resolve/Touch). Trade-off QR-TO-010/011.
+  - Đối soát Contracts THẬT: `IResortSettingsQuery.ResortSettingsSnapshot` có đủ 3 cờ RequireRuleAckFor*; `ITranslationResolver`/`Translated<T>` sẵn cho CP5; `GuestAccess.Contracts` mới chỉ có `GuestAccessModule` (đúng như .csproj hẹn C-GA.4); `IHtmlSanitizer` là port bắt buộc CHƯA có adapter/package/RequirePort → Rules đóng mắt xích; xmin auto-map khi entity `IHasConcurrencyToken` (PlatformDbContext đã đọc).
+  - Build slices D-Rules.0..4 + chèn C-GA.4 làm dependency của guest rules/gate; mỗi CP (CP3/4/5/12/13/15 + ack-unique + window) map guard test + nơi chạy; unique/concurrency/window là gate Postgres thật.
+- INV-6: QR-AD-030/031/032 Status=Proposed (chưa Implemented) → KHÔNG cần Guard-Tests; sẽ thêm khi từng slice code xong và chuyển Implemented.
+- Verify phiên này (design-only): diagnostics 5 file spec/journal = 0; JournalConsistency INV-1..6 xanh (AD-030/031/032 đã map anti-drift, ID liên tục, không dangling). KHÔNG build/test code (chưa có code Rules).
+- NEXT: chờ user review `04-rules.md`; khi duyệt → D-Rules.1 (Domain/Contracts/Persistence + migration + Postgres constraint) trước, rồi D-Rules.2 (sanitize) → D-Rules.3 (publish) → C-GA.4 → D-Rules.4 (guest read/ack/gate).
+
+
+### QR-N-031 — D-Rules.1 XONG: Rules persistence nền (Domain/Contracts/Infrastructure + migration + Postgres constraint)
+- Date: 2026-07-15
+- Đã build + verify (Docker Server 29.5.2 thật — phải KHỞI ĐỘNG Docker Desktop trong phiên vì daemon ban đầu chưa chạy):
+  - 3 project src mới: `Rules.{Domain,Contracts,Infrastructure}` (mirror khuôn GuestAccess/Rooms). Domain: 7 entity —
+    Draft (`RuleSet`/`RuleSection`/`RuleSectionTranslation` implement `IHasConcurrencyToken` → xmin CP15) + snapshot bất
+    biến (`RulePublication`/`RulePublicationSection`/`RulePublicationSectionTranslation`, KHÔNG concurrency) +
+    `RuleAcknowledgement` (Guid trần RoomId/GuestSessionId/GuestVisitId — không FK chéo schema). Contracts:
+    `RulesModule.PersistenceKey="rules"` (thuần, KHÔNG coupling GuestAccess/ResortConfig Contracts — QR-TO-010).
+  - Infrastructure: `RulesDbContext` (schema `rules`, keyed, KHÔNG outbox) + `RulesConfigurations` (7 config) + Factory
+    design-time (MigrationsHistoryTable `rules` — QR-AD-028) + `AddRulesInfrastructure` (CHỈ keyed persistence — use case
+    ở D-Rules.2..4). Migration `20260715014025_InitialCreate` verify: EnsureSchema `rules`; partial unique
+    `ux_rule_publication_current` filter `is_current`; unique `ux_rule_ack_visit_publication`,
+    `ux_rule_section_translation_lang`, `ux_rule_pub_section_translation_lang`; FK toàn bộ `principalSchema:"rules"`
+    (KHÔNG chéo schema). `.editorconfig generated_code` che analyzer (QR-AD-009) → build 0-warning.
+  - Test: `RulesBoundaryTests` (StarHill.ArchitectureTests, 3: Contracts thuần + không coupling GuestAccess/ResortConfig
+    Contracts; Domain⊥Infra; negative control) + `RulesPostgresConstraintTests` (Testcontainers, 3: một IsCurrent/resort
+    + tái dùng sau demote = flip-before-insert QR-AD-030; ack unique/visit,pub; translation unique/section,lang).
+  - `Platform.slnx` +3 project src +1 test (`Rules.IntegrationTests`); `StarHill.ArchitectureTests.csproj` +3 ref Rules.
+- Gate: `dotnet build Platform.slnx -c Release` = **0 warning/0 error**; `dotnet test Platform.slnx -c Release` = **0 fail,
+  0 skip** với Docker (Rules.IntegrationTests 3/3 chạy THẬT; StarHill.ArchitectureTests 20 gồm INV-1..6 + RulesBoundary 3;
+  GuestAccess 25; Rooms 27; ResortConfig 15; Identity 2; Api 31; unit/contract). Diagnostics spec 0.
+- INV-6: chưa AD nào của Rules chuyển "Implemented" (AD-030/031/032 vẫn Proposed — publish/sanitize/gate ở slice sau) →
+  D-Rules.1 KHÔNG kích hoạt ràng buộc Guard-Tests. Persistence này DE-RISK phần snapshot-unique của AD-030 (đã chứng minh
+  partial-unique + flip-before-insert bằng Postgres thật) nhưng AD-030 chỉ Implemented khi có PublishRulesUseCase.
+- NEXT — D-Rules.2: `Rules.Application` (CRUD Draft section/translation) + `IHtmlSanitizer` adapter Ganss (shared starhill)
+  + pin package + RequirePort (QR-AD-031) + CP12 sanitize test + CP15 concurrency test. Đổi Rules.Infrastructure ref
+  Domain+Contracts → Rules.Application (mirror Rooms/GuestAccess). Khi D-Rules.2 xong + AD-031 Implemented → thêm Guard-Tests.
+
+
+### QR-N-032 — Web-testability Phase 1 XONG: OpenAPI dev-only (prod tắt) + overlay compose dev
+- Date: 2026-07-15
+- Bối cảnh: user hỏi "đã test trên web được chưa". Probe compose thật: `live=200 ready=200 openapi=404 swagger=404 rooms(noauth)=401 resolve=404 guestrules=404` → API chạy nhưng chưa browser-testable (không OpenAPI, không frontend, chưa seed admin/room, Rules chưa wiring). Phase 1 mở khám phá API qua trình duyệt (dev), giữ prod an toàn.
+- Đã làm (QR-AD-033): Host gọi `AddBedrockOpenApi()` CHỈ khi `builder.Environment.IsDevelopment()`; `docker-compose.dev.yml` overlay EXPLICIT đặt `ASPNETCORE_ENVIRONMENT=Development` (compose mặc định vẫn Production → OpenAPI tắt). KHÔNG thêm UI (giữ DV-015 — QR-TO-012).
+- Guard `OpenApiExposureTests` (StarHill.Api.Tests, WebApplicationFactory, KHÔNG Docker): Development → `/openapi/v1.json` = 200 (thân tài liệu chứa "openapi"); Production → 404. Env-gating verify thật.
+- Verify: build 0-warning; StarHill.Api.Tests + OpenApiExposureTests xanh; JournalConsistency INV-1..6 (AD-033 map anti-drift + Guard-Tests hợp lệ); diagnostics 0. (Smoke compose dev: `docker compose -f docker-compose.yml -f docker-compose.dev.yml up` → `/openapi/v1.json`=200.)
+- CÒN để browser test ĐẦU-CUỐI luồng guest (đã nêu, chưa làm — chờ user chọn): (Phase 2) dev-only bootstrap admin + phòng/token demo để login + resolve ra dữ liệu thật; (Phase 3) D-Rules.2..4 đưa `/v1/guest/rules` lên Host; (Phase 4/Wave F) frontend SPA. UI OpenAPI click-through = QR-TO-012 (hoãn).
+- NEXT (mặc định nếu user không chỉ khác): tiếp D-Rules.2 (Application CRUD Draft + IHtmlSanitizer adapter QR-AD-031) HOẶC Phase 2 dev bootstrap tùy user.
+
+
+### QR-N-033 — D-Rules.2a XONG: adapter IHtmlSanitizer (Ganss, shared StarHill.Html) — đóng mắt xích port bắt buộc
+- Date: 2026-07-15
+- Đã build + verify (KHÔNG cần Docker):
+  - Pin `HtmlSanitizer` (Ganss.Xss) **9.0.892** ở `starhill/Directory.Packages.props` — tái dùng version legacy resort-qr (verify build restore sạch, KHÔNG lỗi NuGetAudit/CVE trên .NET 10).
+  - Project shared mới `starhill/src/StarHill.Html` (mirror precedent `StarHill.Authorization` — QR-AD-031): `GanssHtmlSanitizerAdapter : IHtmlSanitizer` (allowlist mặc định Ganss + bỏ `img`; null/rỗng→"") + `AddStarHillHtml` DI. Reference Bedrock.Application (port) + package Ganss; KHÔNG ref module QR (Faq/Rules tái dùng không coupling chéo).
+  - **Thread-safety (bản chất, không fix ngọn):** legacy dùng sanitizer singleton, nhưng `Ganss.Xss.HtmlSanitizer` không đảm bảo thread-safe cho `Sanitize` đồng thời qua mọi version (không kiểm chứng được offline) → adapter đăng ký singleton nhưng KHỞI TẠO sanitizer MỚI mỗi call. Đường admin ghi nội dung tần suất thấp → chi phí không đáng kể; loại nghi ngờ concurrency tận gốc.
+  - Test `StarHill.Html.Tests/GanssHtmlSanitizerAdapterTests` (6, KHÔNG Docker): loại script/event-handler/javascript-uri/img; giữ `<b>`/`<em>`; rỗng→"". Verify tích hợp Ganss 9.0.892 chạy đúng .NET 10 (khử rủi ro package/version).
+  - `Platform.slnx` +1 project src (StarHill.Html) +1 test (StarHill.Html.Tests). Sửa CA1859 (field test dùng kiểu concrete).
+- Gate: `dotnet build Platform.slnx -c Release` = **0 warning/0 error**; `StarHill.Html.Tests` 6/6 pass.
+- QR-AD-031 VẪN Proposed (chưa Implemented): 2a mới làm adapter+package+placement; CÒN sanitize-on-save trong use case (D-Rules.2b) + RequirePort(IHtmlSanitizer) ở Host (D-Rules.4). Khi đủ 3 phần → chuyển Implemented + Guard-Tests (INV-6). Vì vậy chưa kích hoạt ràng buộc INV-6.
+- NEXT — D-Rules.2b: `Rules.Application` use case CRUD Draft section/translation (Title/Body đi qua `IHtmlSanitizer.Sanitize` TRƯỚC khi lưu → cột BodyHtmlSanitized) + validator + đổi Rules.Infrastructure ref sang Application + `AddBedrockRepository<RulesDbContext, RuleSet/RuleSection/RuleSectionTranslation>(key)` + use case factory keyed. Test: CP12 (use case lưu ra không còn script — inject adapter thật) + CP15 (hai update cùng section → 409 xmin, Postgres).
+
+
+### QR-N-034 — StarHill compose tách tối giản (không RabbitMQ) + xác nhận cơ chế bật/tắt tính năng (base + product)
+- Date: 2026-07-15
+- Bối cảnh: user hỏi RabbitMQ có bật/tắt được không (giữ StarHill sạch–đơn giản, 60 phòng) và base có config bật/tắt tính năng không.
+- XÁC MINH (code thật, không suy đoán):
+  - Messaging/RabbitMQ ĐÃ opt-in: `Program.cs` chỉ cắm khi `Bedrock:Messaging:Enabled=true`; mặc định TẮT → `ThrowingEventBusPublisher`. `HostSmokeTests` boot Host OFF-mode và pass ⇒ chạy không cần RabbitMQ đã kiểm chứng.
+  - Base feature-toggle ĐÃ CÓ: hạ tầng (`Bedrock:Messaging:Enabled`, `Bedrock:ApplyMigrationsOnStartup`, OpenAPI IsDevelopment QR-AD-033, port posture AddXxxCore+override); tính năng SẢN PHẨM per-resort trong `ResortSettings` (FaqEnabled/ChatEnabled/HousekeepingEnabled/RequireRuleAckFor*) — admin bật/tắt, KHÔNG cần dựng thêm.
+  - P1-15: chỉ Identity produce outbox (`AddBedrockOutbox`); off-mode cần `AllowOutboxWithoutDispatcher=true` (guard chống event tích lũy im lặng).
+- ĐÃ LÀM (QR-AD-034/QR-TO-013): `docker-compose.yml` → tối giản (postgres+host, messaging off, AllowOutboxWithoutDispatcher true); thêm `docker-compose.messaging.yml` overlay explicit (rabbitmq + Messaging__Enabled). Default `docker compose up` = 2 service.
+- Verify (THỰC ĐO phiên 2026-07-15, Docker Desktop 29.5.2): (1) `docker compose config --services` default = `postgres`, `host` (KHÔNG rabbitmq); (2) `docker compose -f docker-compose.yml -f docker-compose.messaging.yml config --services` = `postgres`, `rabbitmq`, `host` (overlay bật đúng); (3) `docker compose down --remove-orphans` dọn rabbitmq phiên trước → `docker compose up -d --build` default → `docker compose ps` chỉ `starhill-host-1` + `starhill-postgres-1` (KHÔNG rabbitmq); (4) `/health/ready`=200 Healthy + `/health/live`=200 Healthy; (5) log host: `CREATE SCHEMA identity` + áp 5 migration (Identity InitialCreate+AddOutboxTraceContext, ResortConfig, Rooms, GuestAccess InitialCreate) + `Now listening on http://[::]:8080`, và grep `rabbit|amqp|BrokerUnreachable|SocketException` = 0 dòng (boot off-mode sạch, không thử kết nối broker). INV-1..6 (`StarHillJournalConsistencyTests`) = 6/6 pass sau khi thêm AD-034/TO-013.
+- ĐỀ XUẤT (chưa làm, cần user duyệt vì đụng base/QR-AD-027): (a) làm integration-event emission opt-in ở base Identity → off-mode KHÔNG ghi outbox thừa (sạch tuyệt đối); (b) khi cascade GuestVisitEnded cần: cân nhắc in-process dispatch cho single-instance 60 phòng thay vì bắt buộc broker (đánh giá lại QR-AD-027 ở quy mô nhỏ).
+- NEXT: theo mạch build vẫn là D-Rules.2b; hoặc xử lý đề xuất (a)/(b) nếu user muốn tối giản triệt để messaging.
+
+### QR-N-035 — Slice D-Rules.2b XONG: Rules.Application Draft CRUD + sanitize-on-save (CP12) + concurrency (CP15) + đúng-một-RuleSet (QR-AD-035)
+- Date: 2026-07-15
+- Bối cảnh: tiếp mạch build Rules sau D-Rules.1 (persistence nền) + D-Rules.2a (adapter IHtmlSanitizer). D-Rules.2b = tầng Application ghi Draft + đóng bất biến lưu-trữ.
+- ĐÃ CÓ SẴN trên đĩa (verify lúc vào phiên — KHÔNG tin summary): `Rules.Application` (CreateRuleSectionUseCase find-or-create + UpsertRuleSectionTranslationUseCase sanitize-on-save + Update/DeleteRuleSectionUseCase + 3 validator + RuleContracts + RulesErrors), `Rules.Infrastructure` đã đổi ref → Application + keyed repo (RuleSet/RuleSection/RuleSectionTranslation) + factory use case + validator (mirror Rooms), EF `RuleSetConfiguration` unique `ux_rule_set_resort`, migration `20260715045457_AddRuleSetResortUnique`, test csproj đã ref `StarHill.Html`+Sqlite. Build 0-warning/0-error.
+- **DRIFT phát hiện + fix tận gốc**: code (RuleSetConfiguration/RuleContracts/CreateRuleSectionUseCase/migration) tham chiếu "QR-AD-035" NHƯNG journal CHƯA có entry → đúng loại drift design↔journal. Fix: bổ sung QR-AD-035 (01-decisions) đầy đủ Provenance/Rationale/Alternatives + Guard-Tests; thêm row anti-drift map (05).
+- **ĐÃ BỔ SUNG phiên này** (phần còn thiếu của 2b):
+  1. **CP12 sanitize (no Docker)** `RuleSanitizeTests` (SQLite + adapter Ganss THẬT qua `AddStarHillHtml`, 3 test): HTML độc (`<script>`/`onerror`/`javascript:`) KHÔNG lọt vào `BodyHtmlSanitized` đã lưu, markup an toàn (`<p>`/`<strong>`) được GIỮ, Title cũng sanitize; blank→null chuẩn hóa; upsert idempotent (một bản ghi/section+lang).
+  2. **CP15 concurrency (Postgres Testcontainers)** `RuleConcurrencyTests`: hai scope sửa cùng `RuleSection` → người sau `DbUpdateConcurrencyException` (xmin active trên RuleSection — mirror ResortConfig CP15).
+  3. **QR-AD-035 guard (Postgres)** thêm `Only_one_rule_set_per_resort` vào `RulesPostgresConstraintTests`: hai RuleSet cùng ResortId → vi phạm `ux_rule_set_resort`.
+  4. **I7 boundary** thêm `RulesBoundaryTests.Application_should_not_depend_on_infrastructure_or_api` (Application ⊥ Bedrock.Infrastructure/Api/Rules.Infrastructure/EFCore/AspNetCore) + ref Rules.Application.
+- Gate (THỰC ĐO): `dotnet build Platform.slnx -c Release` = **0 warning/0 error**; `Rules.IntegrationTests` = **8/8 pass, 0 skip** (Docker thật: 4 constraint + 1 concurrency + 3 sanitize); `RulesBoundaryTests` = **4/4 pass** (gồm I7 mới).
+- QR-AD-031 (sanitize adapter + RequirePort + sanitize-on-save) VẪN **Proposed**: sanitize-on-save nay ĐÃ code+test (RuleSanitizeTests) nhưng còn **RequirePort(IHtmlSanitizer)** ở Host (D-Rules.4) → chưa đủ 3 phần để chuyển Implemented. Vì Proposed nên INV-6 chưa ràng buộc Guard-Tests (đúng). QR-AD-030 (snapshot-publish/ack/gate) vẫn Proposed (Publish=D-Rules.3, gate/ack=D-Rules.4).
+- NEXT — **D-Rules.3**: `PublishRulesUseCase` (flip-before-insert: hạ IsCurrent cũ + SaveChanges TRƯỚC → insert publication mới Version++ → copy đông cứng section/translation đã sanitize) + preview/history + CP4 test (Postgres partial-unique `ux_rule_publication_current`).
+
+### QR-N-036 — Slice D-Rules.3a XONG: PublishRulesUseCase (snapshot flip-before-insert, CP4)
+- Date: 2026-07-15
+- Bối cảnh: tiếp mạch Rules sau D-Rules.2b. D-Rules.3a = phần lõi + rủi ro cao nhất của Publish (snapshot bất biến + partial-unique atomic). Preview/history tách D-Rules.3b (read đơn giản, gộp cùng đường guest-read D-Rules.4).
+- Đã đọc/valid TRƯỚC code (không suy đoán): `IRepository` cấm IQueryable (F9) → cần read-model; `IUnitOfWork.ExecuteInTransactionAsync` reentrancy-safe; `Entity` sinh UUIDv7 trong ctor (Id sẵn cho FK copy trước SaveChanges); precedent `ResolveTokenUseCase` (QR-AD-026, flush-trước-insert cho partial-unique); `RulePublicationConfiguration` partial-unique `ux_rule_publication_current` filter `is_current`.
+- Đã làm (QR-AD-036):
+  1. `Rules.Application/IRuleDraftReader` (+ DTO RuleDraftSnapshot/Section/Translation) — read-model nội-module đọc Draft ordered.
+  2. `Rules.Infrastructure/Persistence/EfRuleDraftReader` (no-tracking, 3 truy vấn set→sections ordered→translations, ghép bộ nhớ).
+  3. `Rules.Application/PublishRulesUseCase` (IUseCase tự-quản transaction; flip-before-insert; version=current+1; copy đông cứng section/translation đã sanitize) + `PublishRulesValidator` + `PublishRulesInput/Result` (RuleContracts) + `RulesErrors.NoPublishableContent`.
+  4. Wiring `RulesInfrastructureExtensions`: +3 repo publication keyed (`RulePublication`/`RulePublicationSection`/`RulePublicationSectionTranslation`) + `IRuleDraftReader`→`EfRuleDraftReader` (scoped) + factory `PublishRulesUseCase` + validator.
+  5. Test `PublishRulesUseCaseTests` (Postgres Testcontainers, migration thật, 4): version-1 frozen + section sắp theo SortOrder + translation copy; publish lần 2 demote bản 1 + đúng-một-current (flip-before-insert giữ partial-unique); sửa Draft sau publish KHÔNG đổi snapshot (CP4 immutability); Draft rỗng → NoPublishableContent.
+- Gate (THỰC ĐO): `dotnet build Platform.slnx -c Release` = **0 warning/0 error**; `Rules.IntegrationTests` = **12/12 pass, 0 skip** (Docker thật: 4 constraint + 1 concurrency + 3 sanitize + 4 publish).
+- QR-AD-030 (snapshot-publish + ack + gate) VẪN Proposed: snapshot-publish PART nay đã code+test (PublishRulesUseCaseTests) nhưng ack server-authoritative + rule-gate = D-Rules.4 → chưa đủ để Implemented. Vì Proposed nên INV-6 chưa ràng buộc Guard-Tests (đúng).
+- NEXT — chọn một:
+  * **D-Rules.3b**: preview Draft (render như khách, không publish) + GetPublicationHistory (đọc publication cũ) — read đơn giản.
+  * **C-GA.4** (`ICurrentGuestContextResolver` + portal-window check-before-touch) — dependency của guest-read/ack/gate.
+  * **D-Rules.4**: guest GetCurrentRules + AcknowledgeRules (server-authoritative) + IRuleGate + Host wiring + RequirePort(IHtmlSanitizer) → khi đó QR-AD-030/031 chuyển Implemented.
+
+### QR-N-037 — Slice C-GA.4 XONG: ICurrentGuestContextResolver (portal-window check-before-touch) + đóng gap registry Rules
+- Date: 2026-07-15
+- Bối cảnh: theo dependency graph, C-GA.4 là port cross-module GuestAccess mà guest-read/ack/rule-gate (D-Rules.4) phụ thuộc. Ưu tiên C-GA.4 trước D-Rules.3b (preview/history là leaf không mở khóa gì; shape read có thể đổi khi làm guest-read → tránh gold-plate).
+- Đã đọc/valid TRƯỚC code (không suy đoán): `GuestVisit.LastSeenAt`/`ExpiresAt`/`Status`; `IResortGuestConfigQuery` mang `PortalWindowMinutes`+`VisitIdleExpiryHours`; `Error` factory (Unauthorized→401); boundary test GuestAccess.Contracts CHỈ cấm Application/Infra/Api (KHÔNG cấm Bedrock.Domain → Result<T> hợp lệ); precedent `EfRoomTokenResolver` (Contracts-resolver impl ở Infra); `Sha256GuestSessionKeyHasher` (hex thường 64); check constraint `ck_guest_visit_closed_at` (visit không-Active phải có ClosedAt — phát hiện qua test đỏ, sửa seed).
+- Đã làm (QR-AD-032 → Implemented):
+  1. `GuestAccess.Contracts/ICurrentGuestContextResolver` + `CurrentGuestContext` (+ref Bedrock.Domain cho Result<T>).
+  2. `GuestAccessErrors` +`SessionExpired`/`GuestContextMissing` (Unauthorized/401).
+  3. `EfCurrentGuestContextResolver` (Infra): ResolveAsync đọc-kiểm-window KHÔNG touch (cookie rỗng/lạ→guest_context_missing; không-Active/quá-window→session_expired; config null→configuration_unavailable; còn hạn→context); reuse `IGuestSessionKeyHasher` (nguồn hash duy nhất); TouchAsync bảo toàn idle-delta, no-op nếu không Active. Đăng ký factory keyed IUnitOfWork ở `AddGuestAccessInfrastructure`.
+  4. Test `CurrentGuestContextResolverTests` (Postgres Testcontainers, 8): within-window→context+không-touch; quá-window→session_expired+không-touch; visit-Closed→session_expired; cookie lạ/null→guest_context_missing; config null→configuration_unavailable; Touch→trượt LastSeenAt+giữ delta idle; Touch no-op trên visit đã đóng.
+- **DRIFT/GAP đóng tận gốc**: rà `ErrorCodeSnapshotTests` (QR-AD-018 "phủ MỌI catalog module") phát hiện **thiếu `Rules.Application`** → mã `rules_conflict` (RulesErrors.DraftConflict, D-Rules.2b) KHÔNG được gác. Fix: thêm `Rules.Application` vào catalogAssemblies + ProjectReference Bedrock.ContractTests + `rules_conflict`/`guest_context_missing`/`session_expired` vào snapshot. Nay registry phủ MỌI catalog (Identity/Rooms/GuestAccess/Rules).
+- Gate (THỰC ĐO): `dotnet build Platform.slnx -c Release` = **0 warning/0 error**; `GuestAccess.IntegrationTests` = **33/33 pass, 0 skip** (25 cũ + 8 C-GA.4); `Bedrock.ContractTests` = 2/2 (snapshot khớp sau khi phủ Rules).
+- NEXT — **D-Rules.4** (mở khóa QR-AD-030/031 → Implemented): guest `GetCurrentRulesUseCase` (đọc publication IsCurrent + i18n fallback CP5) + `AcknowledgeRulesUseCase` (server-authoritative, dùng ICurrentGuestContextResolver + IsCurrent, idempotent CP13) + `IRuleGate` (CP3, cờ ResortSettings) + endpoints (admin publish/preview + guest read/ack) + Host wiring + RequirePort(IHtmlSanitizer). D-Rules.3b (preview/history) có thể gộp vào đây.
+
+### QR-N-038 — Slice D-Rules.4a XONG: guest GetCurrentRules (đọc publication IsCurrent + i18n fallback CP5)
+- Date: 2026-07-15
+- Bối cảnh: D-Rules.4 là slice lớn mở khóa QR-AD-030/031→Implemented (guest read + ack + rule-gate + endpoints + Host wiring + RequirePort). Chia sub-slice verify từng bước: 4a = guest READ (cohesive, testable CP5, nền cho ack/gate). 4b = Acknowledge (server-authoritative, dùng ICurrentGuestContextResolver C-GA.4). 4c = IRuleGate + endpoints + Host wiring + RequirePort.
+- Đã đọc/valid TRƯỚC code: `ITranslationResolver.MatchSupported`/`Resolve<T>` + `ITranslation.HasContent` + `Translated<T>` (IsFallback/IsMissing); `IResortGuestConfigQuery` (EnabledLanguageCodes/DefaultLanguageCode); `IRepository` cấm IQueryable (F9 → read-model); precedent `EfRuleDraftReader` (QR-AD-036).
+- Đã làm:
+  1. `Rules.Application.csproj` +ref `ResortConfig.Contracts` (theo design §2 — cross-module Contracts cho config + i18n).
+  2. `IRulePublicationReader` + DTO (`CurrentRulesSnapshot`/`PublishedSectionSnapshot`/`PublishedTranslationSnapshot`). **QR-DV-007**: `ITranslation` đặt trên DTO `PublishedTranslationSnapshot` (Application), KHÔNG trên entity Domain → giữ `Rules.Domain` thuần (i18n là concern rendering/Application).
+  3. `GetCurrentRulesUseCase` (IUseCase read-only, không transaction): config fail-closed→configuration_unavailable; chưa publish→rules_unavailable; MatchSupported chọn ngôn ngữ hiển thị; Resolve mỗi section (requested→default fallback→missing).
+  4. `EfRulePublicationReader` (no-tracking, 3 truy vấn publication IsCurrent→sections ordered→translations).
+  5. `RulesErrors` +`RulesUnavailable` (rules_unavailable, 404) +`ConfigurationUnavailable` (dùng chung mã `configuration_unavailable`). Wiring reader + use case (factory resolve IResortGuestConfigQuery + ITranslationResolver).
+  6. `ErrorCodeSnapshotTests` +`rules_unavailable`.
+  7. Test `GetCurrentRulesTests` (SQLite + TranslationResolver THẬT, 7): exact-match không fallback; thiếu bản dịch→fallback default (IsFallback); ngôn ngữ lạ→default; section không có bản dịch→IsMissing; giữ SortOrder; chưa publish→rules_unavailable; config null→configuration_unavailable.
+- Gate (THỰC ĐO): `dotnet build Platform.slnx -c Release` = **0 warning/0 error**; `Rules.IntegrationTests` = **19/19 pass, 0 skip** (12 + 7 CP5); `Bedrock.ContractTests` = 2/2 (snapshot +rules_unavailable).
+- QR-AD-030 VẪN Proposed: snapshot-publish (D-Rules.3a) + guest-read (4a) đã có; CÒN ack server-authoritative (4b) + rule-gate (4c) → mới đủ Implemented.
+- NEXT — **D-Rules.4b**: `AcknowledgeRulesUseCase` (server-authoritative CP13 — server đọc publication IsCurrent, KHÔNG tin version client; ghi RuleAcknowledgement unique (visit,publication) idempotent; dùng `ICurrentGuestContextResolver` để lấy GuestVisit + touch sau thành công). Postgres test.

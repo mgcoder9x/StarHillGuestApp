@@ -44,6 +44,15 @@ public static class GuestAccessInfrastructureExtensions
         // Store aggregate session/visit (row-lock FOR UPDATE) — inject GuestAccessDbContext cụ thể (scoped).
         services.AddScoped<IGuestSessionStore, EfGuestSessionStore>();
 
+        // Current-guest-context resolver (C-GA.4 — QR-AD-032): port cross-module cho Rules/Faq/Concierge/Housekeeping.
+        // Factory resolve keyed IUnitOfWork (guest_access) cho TouchAsync — cùng scope nên cùng GuestAccessDbContext instance.
+        services.AddScoped<ICurrentGuestContextResolver>(sp => new EfCurrentGuestContextResolver(
+            sp.GetRequiredService<GuestAccessDbContext>(),
+            sp.GetRequiredService<IResortGuestConfigQuery>(),
+            sp.GetRequiredService<IGuestSessionKeyHasher>(),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
+            sp.GetRequiredService<IClock>()));
+
         // Resolve use case: factory resolve keyed IUnitOfWork (guest_access) + cross-module Contracts. IUseCase
         // thường (tự quản transaction hẹp qua ExecuteInTransactionAsync — QR-AD-026).
         services.AddScoped<IUseCase<ResolveTokenInput, ResolveTokenResult>>(sp => new ResolveTokenUseCase(

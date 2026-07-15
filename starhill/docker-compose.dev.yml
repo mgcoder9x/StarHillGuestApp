@@ -1,0 +1,7 @@
+# Overlay DEV (explicit — KHÔNG tự áp): bật Development cho Host để phơi OpenAPI (/openapi/v1.json) phục vụ
+# test API qua trình duyệt local (QR-AD-033). Dùng: `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`.
+# docker-compose.yml (mặc định) GIỮ Production → OpenAPI TẮT (posture nội-mạng an toàn). Không đổi secret/migrate.
+services:
+  host:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development

@@ -1,10 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
-    GuestAccess.Contracts (PUBLIC surface — matrix §3.3): CHỈ reference Bedrock.Messaging.Contracts. Hiện lộ
-    GuestAccessModule (PersistenceKey). Current-guest-context DTO/port thêm khi consumer đầu tiên (Rules) tồn tại
-    (QR-AD-024 — không khóa sớm interface chưa có consumer). KHÔNG marker DI.
+    GuestAccess.Contracts (PUBLIC surface — matrix §3.3): lộ GuestAccessModule (PersistenceKey) +
+    ICurrentGuestContextResolver/CurrentGuestContext (C-GA.4 — QR-AD-032, consumer đầu Rules đã tồn tại).
+    Reference Bedrock.Messaging.Contracts + Bedrock.Domain (dùng Result<T>/Error — nguyên thủy shared kernel;
+    boundary test cấm Application/Infra/Api, KHÔNG cấm Domain). KHÔNG marker DI.
   -->
   <ItemGroup>
     <ProjectReference Include="$(PlatformSrc)\Bedrock.Messaging.Contracts\Bedrock.Messaging.Contracts.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Domain\Bedrock.Domain.csproj" />
   </ItemGroup>
 </Project>
