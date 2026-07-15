@@ -38,6 +38,7 @@
     <Project Path="src/Modules/Rules/Rules.Domain/Rules.Domain.csproj" />
     <Project Path="src/Modules/Rules/Rules.Application/Rules.Application.csproj" />
     <Project Path="src/Modules/Rules/Rules.Infrastructure/Rules.Infrastructure.csproj" />
+    <Project Path="src/Modules/Rules/Rules.Api/Rules.Api.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/StarHill.Authorization/StarHill.Authorization.csproj" />

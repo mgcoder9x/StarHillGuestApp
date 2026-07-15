@@ -19,8 +19,12 @@ using GuestAccess.Infrastructure.Persistence;
 using Rooms.Api.DependencyInjection;
 using Rooms.Infrastructure.DependencyInjection;
 using Rooms.Infrastructure.Persistence;
+using Rules.Api.DependencyInjection;
+using Rules.Infrastructure.DependencyInjection;
+using Rules.Infrastructure.Persistence;
 using StarHill.Api;
 using StarHill.Authorization;
+using StarHill.Html.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -111,6 +115,23 @@ services.AddGuestAccessInfrastructure(options => options.UseNpgsql(
     npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "guest_access")));
 services.AddGuestAccessApi(configuration);
 
+// Module Rules (nội quy Draft→Publish + guest ack + rule-gate). Nửa-Infra (persistence + use case + IRuleGate) +
+// nửa-Api admin (D-Rules.4c-1: section CRUD + translation upsert + publish, RequireStaff). Connection string riêng
+// (cùng PostgreSQL, schema rules).
+var rulesConnectionString = configuration.GetConnectionString("Rules")
+    ?? throw new InvalidOperationException(
+        "Thiếu ConnectionStrings:Rules — fail-fast (F35). Cấu hình connection string cho module Rules.");
+services.AddRulesInfrastructure(options => options.UseNpgsql(
+    rulesConnectionString,
+    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "rules")));
+services.AddRulesApi();
+
+// IHtmlSanitizer (QR-AD-031): adapter Ganss dùng chung (Rules Draft sanitize-on-save; Faq sau). RequirePort → boot
+// FAIL-FAST nếu thiếu — port bảo mật KHÔNG default (thiếu = HTML script lọt vào nội dung khách). Host (composition
+// root) là nơi DUY NHẤT cắm adapter; UpsertRuleSectionTranslationUseCase inject IHtmlSanitizer → phải có mặt.
+services.AddStarHillHtml();
+services.AddRequiredPort<Bedrock.Application.Ports.Html.IHtmlSanitizer>();
+
 // (2b) OPT-IN messaging event-driven — mặc định TẮT (mirror opt-in migrate AD-053). Bật qua config
 //      Bedrock:Messaging:Enabled=true (docker-compose đặt cờ). Khi bật: cắm adapter RabbitMQ (OVERRIDE default
 //      fail-loud), đăng ký dispatcher outbox cho IdentityDbContext, LÊN LỊCH worker phát tự động (AD-056 —
@@ -174,6 +195,10 @@ if (bool.TryParse(configuration["Bedrock:ApplyMigrationsOnStartup"], out var app
     // GuestAccess: migrate schema guest_access (chưa seed — session/visit tạo runtime khi guest resolve).
     var guestAccessDb = migrationScope.ServiceProvider.GetRequiredService<GuestAccessDbContext>();
     await guestAccessDb.Database.MigrateAsync().ConfigureAwait(false);
+
+    // Rules: migrate schema rules (chưa seed — nội quy do Staff soạn/publish qua endpoint admin).
+    var rulesDb = migrationScope.ServiceProvider.GetRequiredService<RulesDbContext>();
+    await rulesDb.Database.MigrateAsync().ConfigureAwait(false);
 }
 
 // Slot #4 (HSTS/HTTPS-redirect) = TRÁCH NHIỆM HOST (AD-035). Sample host này chạy sau reverse-proxy terminate TLS

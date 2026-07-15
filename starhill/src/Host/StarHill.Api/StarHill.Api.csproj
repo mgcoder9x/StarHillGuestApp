@@ -23,6 +23,11 @@
     <!-- Module GuestAccess: nửa-Infra (persistence + resolve) + nửa-Api (C-GA.3 — endpoint công khai resolve). -->
     <ProjectReference Include="..\..\Modules\GuestAccess\GuestAccess.Infrastructure\GuestAccess.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\GuestAccess\GuestAccess.Api\GuestAccess.Api.csproj" />
+    <!-- Module Rules: nửa-Infra (persistence + use case + IRuleGate) + nửa-Api admin (D-Rules.4c — nội quy Draft/Publish). -->
+    <ProjectReference Include="..\..\Modules\Rules\Rules.Infrastructure\Rules.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Rules\Rules.Api\Rules.Api.csproj" />
+    <!-- Adapter bảo mật IHtmlSanitizer (Ganss) dùng chung — Rules/Faq sanitize-on-save; RequirePort ở Program.cs. -->
+    <ProjectReference Include="..\..\StarHill.Html\StarHill.Html.csproj" />
     <!-- Policy authorization sản phẩm (Admin/Staff superset) — Host khai role, mọi module Api tham chiếu. -->
     <ProjectReference Include="..\..\StarHill.Authorization\StarHill.Authorization.csproj" />
     <!-- Adapter công nghệ: Host (composition root) là nơi DUY NHẤT được cắm adapter (F29/CP5). Bật/tắt qua config

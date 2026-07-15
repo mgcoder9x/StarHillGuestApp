@@ -82,6 +82,52 @@ internal sealed class FakeUpdateResortSettings : ICommandUseCase<UpdateResortSet
         Task.FromResult(Result.Success());
 }
 
+// ---- Rules admin use case fakes (D-Rules.4c-1 endpoint auth guard, KHÔNG DB) ----
+
+internal sealed class FakeCreateRuleSection : IUseCase<Rules.Application.CreateRuleSectionInput, Rules.Application.CreateRuleSectionResult>
+{
+    public static readonly Guid SectionId = Guid.Parse("55555555-5555-5555-5555-555555555555");
+
+    public Task<Result<Rules.Application.CreateRuleSectionResult>> ExecuteAsync(
+        Rules.Application.CreateRuleSectionInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Rules.Application.CreateRuleSectionResult(SectionId)));
+}
+
+internal sealed class FakeUpdateRuleSection : ICommandUseCase<Rules.Application.UpdateRuleSectionInput>
+{
+    public string? PersistenceKey => null;
+
+    public Task<Result> ExecuteAsync(Rules.Application.UpdateRuleSectionInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success());
+}
+
+internal sealed class FakeDeleteRuleSection : ICommandUseCase<Rules.Application.DeleteRuleSectionInput>
+{
+    public string? PersistenceKey => null;
+
+    public Task<Result> ExecuteAsync(Rules.Application.DeleteRuleSectionInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success());
+}
+
+internal sealed class FakeUpsertRuleTranslation
+    : IUseCase<Rules.Application.UpsertRuleSectionTranslationInput, Rules.Application.UpsertRuleSectionTranslationResult>
+{
+    public static readonly Guid TranslationId = Guid.Parse("66666666-6666-6666-6666-666666666666");
+
+    public Task<Result<Rules.Application.UpsertRuleSectionTranslationResult>> ExecuteAsync(
+        Rules.Application.UpsertRuleSectionTranslationInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Rules.Application.UpsertRuleSectionTranslationResult(TranslationId)));
+}
+
+internal sealed class FakePublishRules : IUseCase<Rules.Application.PublishRulesInput, Rules.Application.PublishRulesResult>
+{
+    public static readonly Guid PublicationId = Guid.Parse("77777777-7777-7777-7777-777777777777");
+
+    public Task<Result<Rules.Application.PublishRulesResult>> ExecuteAsync(
+        Rules.Application.PublishRulesInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Rules.Application.PublishRulesResult(PublicationId, 1)));
+}
+
 internal sealed class FakeResortSettingsQuery : IResortSettingsQuery
 {
     public static readonly Guid ResortId = Guid.Parse("22222222-2222-2222-2222-222222222222");

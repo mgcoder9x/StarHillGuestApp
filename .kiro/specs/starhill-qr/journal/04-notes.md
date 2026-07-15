@@ -433,3 +433,16 @@
   4. Test CP3 `RuleGateTests` (SQLite, 6, KHÔNG Docker): cờ tắt cho qua dù chưa ack; cờ bật chưa ack→403; cờ bật đã ack→qua; cờ bật chưa publish→403; cờ độc lập theo tính năng; config null→configuration_unavailable.
 - Bằng chứng: `vp all` build 0-warning + full suite 0-fail; Rules.IntegrationTests 22 pass/9 skip(Postgres không-Docker) gồm 6 RuleGateTests; StarHill.ArchitectureTests 21/21 (boundary OK sau khi Rules.Contracts +Bedrock.Domain); ErrorCodeSnapshot 2/2. `vp journal` INV-1..6 xanh.
 - QR-AD-030 VẪN Proposed: còn endpoints guest/admin (Rules.Api) + Host wiring (AddRulesApi + RequirePort(IHtmlSanitizer) → QR-AD-031) + CI bundle mới đủ Implemented + Guard-Tests (INV-6). CÒN LẠI: D-Rules.4c(api) + D-Rules.3b (preview/history).
+
+
+### QR-N-041 — Slice D-Rules.4c(api-1) XONG: Host wiring Rules + RequirePort(IHtmlSanitizer) + admin endpoints
+- Date: 2026-07-15
+- Bối cảnh: phần đầu D-Rules.4c(api) — wire Rules vào Host LẦN ĐẦU + endpoints admin. Verify code thật: Host Program.cs CHƯA có Rules (không AddRulesInfrastructure/Api, không conn string, không migrate); `Rules.Api` chưa tồn tại; preview/history use case CHƯA có (D-Rules.3b) → endpoint admin giới hạn ở use case ĐANG CÓ.
+- Đã đọc/valid TRƯỚC: pattern guest/admin endpoint (GuestAccessEndpointModule/RoomsEndpointModule), `AddStarHillHtml` (StarHill.Html), API `services.AddRequiredPort<TPort>()` (BedrockRegistrationExtensions — Bedrock.Application.DependencyInjection), `IResortSettingsQuery.GetAsync()` (single-resort ResortId), `ICurrentUser.UserId` (actor publish), CI bundle pattern (4 module).
+- Đã làm:
+  1. `Rules.Api` project (ref Rules.Application + ResortConfig.Contracts + StarHill.Authorization + Bedrock.Api) + `RulesAdminEndpointModule` (`/v1/rules`: POST sections, PUT sections/{id}, DELETE sections/{id}, PUT sections/{id}/translations/{lang}, POST publish — TẤT CẢ RequireStaff Req 8/11.3; ResortId phân giải server qua IResortSettingsQuery; actor publish = ICurrentUser.UserId) + `AddRulesApi`.
+  2. Host: +conn string `Rules` + `AddRulesInfrastructure(MigrationsHistoryTable rules — QR-AD-028)` + `AddRulesApi` + migrate rules. **`AddStarHillHtml()` + `AddRequiredPort<IHtmlSanitizer>()`** — port bảo mật KHÔNG default (thiếu = XSS lọt) → boot FAIL-FAST tường minh. csproj Host +Rules.Infrastructure/Rules.Api/StarHill.Html; Platform.slnx +Rules.Api.
+  3. appsettings + docker-compose +`ConnectionStrings__Rules`; starhill-ci.yml +bundle `rules` (mirror 4 module).
+  4. Test `RulesAdminEndpointAuthTests` (TestServer + fake use cases, KHÔNG DB, 2): Staff soạn+publish→2xx (201/204/200); no-token→401. Fakes Rules admin thêm vào file fakes chung.
+- Bằng chứng: `vp all` build 0-warning + validate-ci OK + full suite 0-fail; StarHill.Api.Tests 35/35 (**Host boot WebApplicationFactory với Rules wired + RequirePort(IHtmlSanitizer)+AddStarHillHtml — không phá boot**); Rules.IntegrationTests 22 pass/9 skip(Postgres). `vp journal` INV-1..6 xanh.
+- QR-AD-031 (adapter + sanitize-on-save + RequirePort) NAY đủ 3 phần code; QR-AD-030 còn guest endpoints. GIỮ cả hai Proposed → flip Implemented + Guard-Tests atomic ở D-Rules.4c(api-2, guest endpoints). CÒN LẠI: 4c-api-2 (GET/POST guest rules + resolver+touch), D-Rules.3b (preview/history).

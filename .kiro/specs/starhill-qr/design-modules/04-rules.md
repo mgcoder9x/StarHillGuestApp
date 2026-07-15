@@ -257,8 +257,13 @@ Docker daemon phải có Server cho các test Postgres; không "skip mềm" làm
    - **D-Rules.4c(gate)** ✅ XONG (QR-N-040): `IRuleGate`+`GuestFeature` (Rules.Contracts, Id trần, trả Result) +
      `RuleGate` (Rules.Application: cờ tắt→Success; bật+chưa ack/chưa publish→rule_ack_required 403; bật+đã ack→Success;
      config null→configuration_unavailable) + mã `rule_ack_required` (+ErrorCodeSnapshot). Test `RuleGateTests` (SQLite, 6).
-   - **D-Rules.4c(api)** ⏳: endpoints (admin publish/preview/history + guest read/ack, dùng `ICurrentGuestContextResolver`
-     + `Touch` sau thành công) + Host wiring (`AddRulesApi` + RequirePort(IHtmlSanitizer)) + CI bundle → QR-AD-030 (+031)
+   - **D-Rules.4c(api-1)** ✅ XONG (QR-N-041): `Rules.Api` + `RulesAdminEndpointModule` (section CRUD + translation
+     upsert + publish, RequireStaff; resortId server-side; actor=ICurrentUser) + Host wiring (AddRulesInfrastructure/
+     Api + conn string + migrate + **AddStarHillHtml + AddRequiredPort<IHtmlSanitizer>** boot fail-fast) + compose +
+     CI bundle `rules`. Test `RulesAdminEndpointAuthTests` (TestServer, 2) + Host boot WebApplicationFactory 35/35.
+     Preview/history endpoint defer (use case D-Rules.3b chưa có).
+   - **D-Rules.4c(api-2)** ⏳: guest endpoints (GET `/v1/guest/rules` + POST `/v1/guest/rules/acknowledge`, dùng
+     `ICurrentGuestContextResolver` + `Touch` sau ack thành công) + `RulesGuestEndpointTests` → QR-AD-030 (+031)
      chuyển Implemented + Guard-Tests (INV-6).
 
 Mỗi slice dừng nếu: build warning/error; JournalConsistency INV-1..6 fail; migration model drift; Docker unique/
