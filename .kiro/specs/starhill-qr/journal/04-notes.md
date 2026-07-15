@@ -567,3 +567,28 @@
   cho `Result<>` (helper) → thêm; build lại 0-warning.
 - **NEXT — slice E-Faq.3** (reorder): `ReorderFaqUseCase` (nhận toàn bộ thứ tự mới, nguyên tử) + `ReorderFaqUseCaseTests`.
   Rồi E-Faq.4 (guest tree read + rule-gate consumer đầu tiên IRuleGate + Api + Host wiring + CI bundle faq).
+
+### QR-N-048 — Slice E-Faq.3 XONG: reorder danh mục/mục FAQ (drag-drop, batch nguyên tử)
+- Date: 2026-07-16
+- Bối cảnh: Req 4.5 (sắp xếp drag-drop category + item). Design §4: nhận TOÀN BỘ thứ tự mới (không swap từng cặp) →
+  batch một transaction.
+- Đã làm:
+  1. `FaqContracts` +`FaqReorderEntry(Id, SortOrder)` + `ReorderFaqCategoriesInput(ResortId, Entries)` + `ReorderFaqItemsInput(CategoryId, Entries)`.
+  2. `ReorderFaqUseCases`: **2 use case tách** (category vs item — khác entity/repo/validation): `ReorderFaqCategoriesUseCase`
+     (mỗi entry phải là category THUỘC ResortId — sai scope → faq_category_not_found) + `ReorderFaqItemsUseCase` (mỗi entry
+     phải là item THUỘC CategoryId — sai → faq_item_not_found). ICommandUseCase (void) khai PersistenceKey → batch SortOrder
+     một transaction (nguyên tử). Chỉ cập nhật Id được gửi (partial). KHÔNG đổi cha-con (chỉ thứ tự; move dùng UpdateFaqItem).
+     Validator: Entries not-empty + Id phân biệt + SortOrder ≥ 0.
+  3. Đăng ký 2 use case + 2 validator (keyed) trong `AddFaqInfrastructure`.
+  4. Test `ReorderFaqUseCaseTests` (SQLite, 4: reorder category cập nhật SortOrder; chặn category resort khác;
+     reorder item; chặn item ngoài category) + `ReorderValidatorTests` (4: Id trùng/rỗng/SortOrder âm/hợp lệ — validator độc lập).
+- Quyết định (∈ QR-AD-037): reorder KHÔNG dùng unique-SortOrder (SortOrder là gợi ý sắp xếp, ties vỡ ở read bằng thứ
+  tự phụ — E-Faq.4) → không cần "trạng thái trung gian không trùng"; batch vẫn tốt hơn swap (một transaction, ít round-trip).
+  Tách 2 use case (không dùng type-discriminator runtime) → type-safe + validation rõ theo scope.
+- Bằng chứng: `vp all` build 0-warning + validate-ci OK + full suite 0-fail — Faq.IntegrationTests 21 pass/5 skip(Postgres)
+  (+8 reorder). `vp journal` INV-1..6 xanh. QR-AD-037 Guard-Tests +ReorderFaqUseCaseTests/ReorderValidatorTests (INV-6 tồn tại thật).
+- **NEXT — slice E-Faq.4** (mắt xích cuối module Faq): read-model `IFaqReader`/`EfFaqReader` + `GetGuestFaqTreeUseCase`
+  (config→FaqEnabled→**rule-gate IRuleGate GuestFeature.Faq** [Faq là consumer đầu tiên]→i18n fallback CP5→dựng cây in-memory)
+  + `FaqGuestEndpointModule` (resolve context→gate→tree→touch) + `FaqAdminEndpointModule` (RequireStaff) + `AddFaqApi` +
+  Host wiring (conn Faq + migrate + AddFaqApi) + CI bundle `faq` + `FaqEndpointAuthTests` + `HostEndpointWiringSmokeTests` +InlineData.
+  Faq.Application sẽ +ref ResortConfig.Contracts + Rules.Contracts (rule-gate trong use case — defense-in-depth). Flip guard đủ.

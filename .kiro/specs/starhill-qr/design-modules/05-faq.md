@@ -229,7 +229,10 @@ Docker daemon phải có cho test Postgres; không "skip mềm" làm bằng ch�
    ResortId item derive từ category. `Faq.Infrastructure` ref→Application + đăng ký use case/validator keyed. `ErrorCodeSnapshotTests`
    +6 mã Faq. Test: `FaqSanitizeTests` (CP12, 3) + `FaqItemParentValidationTests` (5) + `FaqAdminCrudTests` (5) + `FaqConcurrencyTests`
    (CP15 Postgres). `vp all` Faq.IntegrationTests 13 pass/5 skip; `vp journal` INV-1..6 xanh.
-4. **E-Faq.3 — Reorder:** `ReorderFaqUseCase` + `ReorderFaqUseCaseTests`.
+4. **E-Faq.3 — Reorder:** ✅ XONG (QR-N-048): 2 use case tách `ReorderFaqCategoriesUseCase` (scope ResortId) +
+   `ReorderFaqItemsUseCase` (scope CategoryId) — batch SortOrder một transaction (nguyên tử), sai scope → not_found,
+   validator (Id phân biệt/không rỗng/SortOrder ≥ 0). Test `ReorderFaqUseCaseTests` (4) + `ReorderValidatorTests` (4).
+   `vp all` Faq.IntegrationTests 21 pass/5 skip.
 5. **E-Faq.4 — Guest read tree + rule-gate + Api:** `IFaqReader`/`EfFaqReader` + `GetGuestFaqTreeUseCase` (gate+i18n+tree)
    + `FaqGuestEndpointModule` (resolve→gate→tree→touch) + `FaqAdminEndpointModule` (RequireStaff) + `AddFaqApi` + Host
    wire + `FaqEndpointAuthTests` + `HostEndpointWiringSmokeTests` +InlineData + `ErrorCodeSnapshotTests` +mã Faq. Flip

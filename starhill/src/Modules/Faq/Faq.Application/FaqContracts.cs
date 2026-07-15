@@ -47,3 +47,17 @@ public sealed record DeleteFaqItemInput(Guid ItemId);
 public sealed record UpsertFaqItemTranslationInput(Guid ItemId, string LanguageCode, string? Question, string? AnswerHtml);
 
 public sealed record UpsertFaqItemTranslationResult(Guid TranslationId);
+
+// ---- Reorder (E-Faq.3, Req 4.5 drag-drop) ----
+// Nhận TOÀN BỘ thứ tự mới (cặp Id→SortOrder) rồi cập nhật hàng loạt trong MỘT transaction (nguyên tử — không swap
+// từng cặp, không trạng thái trung gian). Chỉ cập nhật các Id được gửi (partial cho phép); mỗi Id phải thuộc scope
+// (category thuộc ResortId; item thuộc CategoryId) — sai scope → not_found. Void command → ICommandUseCase.
+
+/// <summary>Một mục thứ tự mới: <paramref name="Id"/> (category hoặc item) → <paramref name="SortOrder"/>.</summary>
+public sealed record FaqReorderEntry(Guid Id, int SortOrder);
+
+/// <summary>Sắp lại thứ tự các danh mục FAQ của <paramref name="ResortId"/> (drag-drop cấp danh mục).</summary>
+public sealed record ReorderFaqCategoriesInput(Guid ResortId, IReadOnlyList<FaqReorderEntry> Entries);
+
+/// <summary>Sắp lại thứ tự các mục FAQ trong <paramref name="CategoryId"/> (drag-drop cấp item, cùng danh mục).</summary>
+public sealed record ReorderFaqItemsInput(Guid CategoryId, IReadOnlyList<FaqReorderEntry> Entries);

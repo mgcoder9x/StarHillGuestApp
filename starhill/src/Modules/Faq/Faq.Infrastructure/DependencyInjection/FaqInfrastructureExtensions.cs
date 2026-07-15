@@ -80,6 +80,15 @@ public static class FaqInfrastructureExtensions
                 sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
                 sp.GetRequiredService<Bedrock.Application.Ports.Html.IHtmlSanitizer>()));
 
+        // Reorder (E-Faq.3): void command khai PersistenceKey (batch SortOrder nguyên tử một transaction).
+        services.AddScoped<ICommandUseCase<ReorderFaqCategoriesInput>>(sp => new ReorderFaqCategoriesUseCase(
+            sp.GetRequiredKeyedService<IRepository<FaqCategory>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey)));
+
+        services.AddScoped<ICommandUseCase<ReorderFaqItemsInput>>(sp => new ReorderFaqItemsUseCase(
+            sp.GetRequiredKeyedService<IRepository<FaqItem>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey)));
+
         // Validator module (ValidationUseCaseDecorator nhận qua IEnumerable<IValidator<TInput>>).
         services.AddTransient<IValidator<CreateFaqCategoryInput>, CreateFaqCategoryValidator>();
         services.AddTransient<IValidator<UpdateFaqCategoryInput>, UpdateFaqCategoryValidator>();
@@ -87,6 +96,8 @@ public static class FaqInfrastructureExtensions
         services.AddTransient<IValidator<CreateFaqItemInput>, CreateFaqItemValidator>();
         services.AddTransient<IValidator<UpdateFaqItemInput>, UpdateFaqItemValidator>();
         services.AddTransient<IValidator<UpsertFaqItemTranslationInput>, UpsertFaqItemTranslationValidator>();
+        services.AddTransient<IValidator<ReorderFaqCategoriesInput>, ReorderFaqCategoriesValidator>();
+        services.AddTransient<IValidator<ReorderFaqItemsInput>, ReorderFaqItemsValidator>();
 
         return services;
     }
