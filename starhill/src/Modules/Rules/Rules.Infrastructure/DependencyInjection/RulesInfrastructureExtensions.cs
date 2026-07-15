@@ -95,6 +95,15 @@ public static class RulesInfrastructureExtensions
             sp.GetRequiredService<ResortConfig.Contracts.Queries.IResortGuestConfigQuery>(),
             sp.GetRequiredService<ResortConfig.Contracts.Localization.ITranslationResolver>()));
 
+        // Admin preview (render Draft như khách, không publish) + history (metadata publication) — D-Rules.3b (Req 8.4). Read-only.
+        services.AddScoped<IUseCase<GetDraftPreviewInput, GetDraftPreviewResult>>(sp => new GetDraftPreviewUseCase(
+            sp.GetRequiredService<IRuleDraftReader>(),
+            sp.GetRequiredService<ResortConfig.Contracts.Queries.IResortGuestConfigQuery>(),
+            sp.GetRequiredService<ResortConfig.Contracts.Localization.ITranslationResolver>()));
+
+        services.AddScoped<IUseCase<GetPublicationHistoryInput, GetPublicationHistoryResult>>(sp =>
+            new GetPublicationHistoryUseCase(sp.GetRequiredService<IRulePublicationReader>()));
+
         // Guest acknowledge (D-Rules.4b, CP13): value-returning write, MỘT insert (mirror CreateRoom — không
         // ITransactionalUseCase). Server đọc IsCurrent + ghi ack idempotent (pre-check + unique backstop).
         services.AddScoped<IUseCase<AcknowledgeRulesInput, AcknowledgeRulesResult>>(sp => new AcknowledgeRulesUseCase(

@@ -238,8 +238,11 @@ Docker daemon phải có Server cho các test Postgres; không "skip mềm" làm
      publication keyed + `NoPublishableContent`. Test `PublishRulesUseCaseTests` (Postgres migration thật, 4): version-1
      frozen ordered; demote+đúng-một-current (partial-unique atomic); CP4 immutability (sửa Draft không đổi snapshot);
      Draft rỗng→fail. Rules.IntegrationTests 12/12 Docker, 0 skip.
-   - **D-Rules.3b** ⏳: `GetDraftPreviewUseCase` (render Draft như khách, không publish — admin/staff) + `GetPublicationHistory`
-     (đọc publication cũ). Read đơn giản — có thể gộp cùng đường guest-read D-Rules.4.
+   - **D-Rules.3b** ✅ XONG (QR-N-044): `GetDraftPreviewUseCase` (render Draft như khách qua `ITranslationResolver` fallback
+     CP5, KHÔNG publish; config null→configuration_unavailable; Draft null→Success rỗng — admin/staff, RequireStaff) +
+     `GetPublicationHistoryUseCase` (`IRulePublicationReader.ListHistoryAsync` — metadata Version giảm dần). Endpoint
+     `GET /v1/rules/preview?lang=` + `GET /v1/rules/publications`. Test `RulesAdminReadTests` (SQLite, 5) + `RulesAdminEndpointAuthTests`
+     +2 (GET Staff→200/no-token→401). `vp all` StarHill.Api.Tests 52/52, Rules.IntegrationTests 27 pass/9 skip. Mặt admin nội quy hoàn tất.
 5. **C-GA.4 — GuestAccess current-guest-context port** (§6.2): ✅ XONG (QR-N-037/QR-AD-032): `ICurrentGuestContextResolver`
    + `CurrentGuestContext` (Contracts, Result<T>) + `EfCurrentGuestContextResolver` (Resolve đọc-kiểm-window KHÔNG touch;
    Touch trượt+giữ idle-delta, no-op nếu không Active) + 2 mã lỗi `session_expired`/`guest_context_missing`. Test
@@ -265,7 +268,7 @@ Docker daemon phải có Server cho các test Postgres; không "skip mềm" làm
    - **D-Rules.4c(api-2)** ✅ XONG (QR-N-042): `RulesGuestEndpointModule` (GET `/v1/guest/rules` KHÔNG touch + POST
      `/v1/guest/rules/acknowledge` touch-sau-thành-công, AllowAnonymous, resolve qua `ICurrentGuestContextResolver` +
      cookie canonical `GuestAccessModule.SessionCookieName`). Test `RulesGuestEndpointTests` (TestServer, 4). **QR-AD-030
-     + QR-AD-031 → Implemented + Guard-Tests (INV-6).** CÒN: D-Rules.3b (preview/history — use case chưa có).
+     + QR-AD-031 → Implemented + Guard-Tests (INV-6).** (D-Rules.3b preview/history hoàn tất sau — xem mục 4.D-Rules.3b.)
 
 Mỗi slice dừng nếu: build warning/error; JournalConsistency INV-1..6 fail; migration model drift; Docker unique/
 concurrency/window test fail; raw secret/cookie lọt log; **AD chuyển Implemented mà thiếu `Guard-Tests` (INV-6)**.

@@ -39,6 +39,8 @@ public sealed class HostEndpointWiringSmokeTests : IClassFixture<SecretInjecting
     [InlineData("POST", "/v1/rules/sections")]
     [InlineData("PUT", "/v1/rules/sections/11111111-1111-1111-1111-111111111111")]
     [InlineData("POST", "/v1/rules/publish")]
+    [InlineData("GET", "/v1/rules/preview")]
+    [InlineData("GET", "/v1/rules/publications")]
     public async Task Protected_admin_endpoint_requires_authentication(string method, string path)
     {
         var client = _factory.CreateClient();

@@ -10,7 +10,22 @@ namespace Rules.Application;
 public interface IRulePublicationReader
 {
     Task<CurrentRulesSnapshot?> LoadCurrentAsync(Guid resortId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Lịch sử publication của resort (Req 8.4) — mọi bản đã phát hành, sắp <c>Version</c> GIẢM DẦN (mới nhất trước).
+    /// Chỉ metadata (không kéo section/translation — nhẹ). Rỗng nếu chưa publish. Admin xem để đối soát/rollback thủ công.
+    /// </summary>
+    Task<IReadOnlyList<RulePublicationHistoryItem>> ListHistoryAsync(Guid resortId, CancellationToken ct = default);
 }
+
+/// <summary>Một mục lịch sử publication (metadata) — admin đối soát (Req 8.4).</summary>
+public sealed record RulePublicationHistoryItem(
+    Guid PublicationId,
+    int Version,
+    DateTimeOffset PublishedAt,
+    Guid? PublishedByUserId,
+    string? ChangeNote,
+    bool IsCurrent);
 
 /// <summary>Snapshot bản nội quy hiện hành (publication IsCurrent) — chỉ đọc.</summary>
 public sealed record CurrentRulesSnapshot(

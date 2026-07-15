@@ -59,4 +59,18 @@ public sealed class EfRulePublicationReader(RulesDbContext db) : IRulePublicatio
 
         return new CurrentRulesSnapshot(publication.Id, publication.Version, sectionSnapshots);
     }
+
+    public async Task<IReadOnlyList<RulePublicationHistoryItem>> ListHistoryAsync(
+        Guid resortId, CancellationToken ct = default)
+    {
+        // Chỉ metadata (không section/translation) — nhẹ. Version giảm dần (mới nhất trước).
+        return await db.RulePublications
+            .AsNoTracking()
+            .Where(p => p.ResortId == resortId)
+            .OrderByDescending(p => p.Version)
+            .Select(p => new RulePublicationHistoryItem(
+                p.Id, p.Version, p.PublishedAt, p.PublishedByUserId, p.ChangeNote, p.IsCurrent))
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+    }
 }

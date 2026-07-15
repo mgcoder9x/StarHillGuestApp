@@ -47,6 +47,8 @@ public sealed class RulesAdminEndpointAuthTests
                 services.AddScoped<ICommandUseCase<DeleteRuleSectionInput>, FakeDeleteRuleSection>();
                 services.AddScoped<IUseCase<UpsertRuleSectionTranslationInput, UpsertRuleSectionTranslationResult>, FakeUpsertRuleTranslation>();
                 services.AddScoped<IUseCase<PublishRulesInput, PublishRulesResult>, FakePublishRules>();
+                services.AddScoped<IUseCase<GetDraftPreviewInput, GetDraftPreviewResult>, FakeGetDraftPreview>();
+                services.AddScoped<IUseCase<GetPublicationHistoryInput, GetPublicationHistoryResult>, FakeGetPublicationHistory>();
             });
             webHost.Configure(app =>
             {
@@ -90,6 +92,10 @@ public sealed class RulesAdminEndpointAuthTests
             (await client.DeleteAsync(Rel($"/v1/rules/sections/{SectionId}"))).StatusCode);
         Assert.Equal(HttpStatusCode.OK,
             (await client.PostAsync(Rel("/v1/rules/publish"), JsonContent.Create(new { changeNote = "first" }))).StatusCode);
+        Assert.Equal(HttpStatusCode.OK,
+            (await client.GetAsync(Rel("/v1/rules/preview?lang=en"))).StatusCode);
+        Assert.Equal(HttpStatusCode.OK,
+            (await client.GetAsync(Rel("/v1/rules/publications"))).StatusCode);
     }
 
     [Fact]
@@ -102,5 +108,9 @@ public sealed class RulesAdminEndpointAuthTests
             (await client.PostAsync(Rel("/v1/rules/sections"), JsonContent.Create(new { key = "x", sortOrder = 1, isRequired = false, requireScrollEnd = false, minReadSeconds = 0 }))).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized,
             (await client.PostAsync(Rel("/v1/rules/publish"), JsonContent.Create(new { changeNote = (string?)null }))).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await client.GetAsync(Rel("/v1/rules/preview?lang=en"))).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await client.GetAsync(Rel("/v1/rules/publications"))).StatusCode);
     }
 }

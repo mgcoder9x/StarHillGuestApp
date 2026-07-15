@@ -69,6 +69,18 @@ public sealed class RulesAdminEndpointModule : IEndpointModule
             .RequireAuthorization(StarHillPolicies.RequireStaff)
             .MapToApiVersion(BedrockApiVersioning.V1)
             .WithName("RulesPublish");
+
+        // Xem trước Draft "như khách" (Req 8.4) — render theo lang, KHÔNG publish.
+        group.MapGet("/preview", PreviewAsync)
+            .RequireAuthorization(StarHillPolicies.RequireStaff)
+            .MapToApiVersion(BedrockApiVersioning.V1)
+            .WithName("RulesPreview");
+
+        // Lịch sử publication (Req 8.4) — metadata mọi bản đã phát hành.
+        group.MapGet("/publications", PublicationsAsync)
+            .RequireAuthorization(StarHillPolicies.RequireStaff)
+            .MapToApiVersion(BedrockApiVersioning.V1)
+            .WithName("RulesPublications");
     }
 
     private static async Task<IResult> CreateSectionAsync(
@@ -165,6 +177,39 @@ public sealed class RulesAdminEndpointModule : IEndpointModule
         return result.IsSuccess
             ? Results.Ok(new PublishRulesResponse(result.Value.PublicationId, result.Value.Version))
             : Problem(result.Error, http);
+    }
+
+    private static async Task<IResult> PreviewAsync(
+        IUseCase<GetDraftPreviewInput, GetDraftPreviewResult> useCase,
+        IResortSettingsQuery settingsQuery,
+        HttpContext http,
+        CancellationToken ct,
+        string? lang = null)
+    {
+        var resortId = await ResolveResortIdAsync(settingsQuery, http, ct).ConfigureAwait(false);
+        if (resortId is null)
+        {
+            return Problem(RulesErrors.ConfigurationUnavailable, http);
+        }
+
+        var result = await useCase.ExecuteAsync(new GetDraftPreviewInput(resortId.Value, lang), ct).ConfigureAwait(false);
+        return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error, http);
+    }
+
+    private static async Task<IResult> PublicationsAsync(
+        IUseCase<GetPublicationHistoryInput, GetPublicationHistoryResult> useCase,
+        IResortSettingsQuery settingsQuery,
+        HttpContext http,
+        CancellationToken ct)
+    {
+        var resortId = await ResolveResortIdAsync(settingsQuery, http, ct).ConfigureAwait(false);
+        if (resortId is null)
+        {
+            return Problem(RulesErrors.ConfigurationUnavailable, http);
+        }
+
+        var result = await useCase.ExecuteAsync(new GetPublicationHistoryInput(resortId.Value), ct).ConfigureAwait(false);
+        return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error, http);
     }
 
     private static async Task<Guid?> ResolveResortIdAsync(

@@ -1,3 +1,5 @@
+using ResortConfig.Contracts.Localization;
+
 namespace Rules.Application;
 
 /// <summary>
@@ -25,5 +27,14 @@ public sealed record RuleDraftSectionSnapshot(
     int MinReadSeconds,
     IReadOnlyList<RuleDraftTranslationSnapshot> Translations);
 
-/// <summary>Bản dịch Draft (Title/Body ĐÃ sanitize khi lưu — sao chép nguyên trạng sang publication).</summary>
-public sealed record RuleDraftTranslationSnapshot(string LanguageCode, string? Title, string? BodyHtmlSanitized);
+/// <summary>
+/// Bản dịch Draft (Title/Body ĐÃ sanitize khi lưu — sao chép nguyên trạng sang publication). Hiện thực
+/// <see cref="ITranslation"/> để GetDraftPreview render "như khách" qua <c>ITranslationResolver</c> (fallback CP5),
+/// giống guest read (QR-DV-007 — i18n là concern Application, không phải Domain). <see cref="HasContent"/> = Title
+/// HOẶC Body sau trim khác rỗng ("có row nhưng rỗng" coi như thiếu → fallback).
+/// </summary>
+public sealed record RuleDraftTranslationSnapshot(string LanguageCode, string? Title, string? BodyHtmlSanitized)
+    : ITranslation
+{
+    public bool HasContent => !string.IsNullOrWhiteSpace(Title) || !string.IsNullOrWhiteSpace(BodyHtmlSanitized);
+}

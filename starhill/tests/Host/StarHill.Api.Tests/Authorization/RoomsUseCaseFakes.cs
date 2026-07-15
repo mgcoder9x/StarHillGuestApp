@@ -128,6 +128,31 @@ internal sealed class FakePublishRules : IUseCase<Rules.Application.PublishRules
         Task.FromResult(Result.Success(new Rules.Application.PublishRulesResult(PublicationId, 1)));
 }
 
+internal sealed class FakeGetDraftPreview
+    : IUseCase<Rules.Application.GetDraftPreviewInput, Rules.Application.GetDraftPreviewResult>
+{
+    public Task<Result<Rules.Application.GetDraftPreviewResult>> ExecuteAsync(
+        Rules.Application.GetDraftPreviewInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Rules.Application.GetDraftPreviewResult(
+            "en",
+            new List<Rules.Application.RenderedRuleSection>
+            {
+                new("welcome", 1, true, false, 0, "Welcome", "<p>hi</p>", "en", false, false),
+            })));
+}
+
+internal sealed class FakeGetPublicationHistory
+    : IUseCase<Rules.Application.GetPublicationHistoryInput, Rules.Application.GetPublicationHistoryResult>
+{
+    public Task<Result<Rules.Application.GetPublicationHistoryResult>> ExecuteAsync(
+        Rules.Application.GetPublicationHistoryInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Rules.Application.GetPublicationHistoryResult(
+            new List<Rules.Application.RulePublicationHistoryItem>
+            {
+                new(FakePublishRules.PublicationId, 1, DateTimeOffset.UnixEpoch, null, "first", true),
+            })));
+}
+
 // ---- Rules guest fakes (D-Rules.4c-2 endpoint test, KHÔNG DB) ----
 
 internal sealed class FakeCurrentGuestContextResolver : GuestAccess.Contracts.ICurrentGuestContextResolver

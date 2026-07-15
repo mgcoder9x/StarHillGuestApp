@@ -100,3 +100,16 @@ public sealed record AcknowledgeRulesInput(
 /// đúng bản IsCurrent này từ trước — idempotent, không tạo trùng).
 /// </summary>
 public sealed record AcknowledgeRulesResult(Guid RulePublicationId, int Version, bool AlreadyAcknowledged);
+
+// ---- Admin preview + publication history (D-Rules.3b, Req 8.4) ----
+
+/// <summary>Xem trước bản Draft "NHƯ KHÁCH" (render theo ngôn ngữ + fallback, KHÔNG publish) — chỉ Staff/Admin.</summary>
+public sealed record GetDraftPreviewInput(Guid ResortId, string? RequestedLanguage);
+
+/// <summary>Draft đã render một ngôn ngữ (tái dùng <see cref="RenderedRuleSection"/>) — không có PublicationId (chưa publish).</summary>
+public sealed record GetDraftPreviewResult(string Language, IReadOnlyList<RenderedRuleSection> Sections);
+
+/// <summary>Lịch sử publication của resort (metadata) — chỉ Staff/Admin đối soát.</summary>
+public sealed record GetPublicationHistoryInput(Guid ResortId);
+
+public sealed record GetPublicationHistoryResult(IReadOnlyList<RulePublicationHistoryItem> Publications);
