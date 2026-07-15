@@ -1,5 +1,6 @@
 using System.Reflection;
 using Bedrock.Domain.Results;
+using Faq.Application;
 using GuestAccess.Application;
 using Identity.Domain;
 using Rooms.Application;
@@ -23,6 +24,12 @@ public sealed class ErrorCodeSnapshotTests
         "concurrency_conflict",
         "configuration_unavailable",     // GuestAccess (C-GA.2b)
         "conflict",
+        "faq_category_not_empty",        // Faq (E-Faq.2: chặn xóa category còn item)
+        "faq_category_not_found",        // Faq (E-Faq.2)
+        "faq_conflict",                  // Faq (E-Faq.2: unique key/translation race)
+        "faq_invalid_parent",            // Faq (E-Faq.2: bất biến cây — self/khác-category/cycle)
+        "faq_item_has_children",         // Faq (E-Faq.2: chặn xóa item còn con)
+        "faq_item_not_found",            // Faq (E-Faq.2)
         "forbidden",
         "guest_context_missing",         // GuestAccess (C-GA.4: current-guest-context)
         "identity.invalid_refresh_token",
@@ -52,6 +59,7 @@ public sealed class ErrorCodeSnapshotTests
             typeof(RoomsErrors).Assembly,        // Rooms.Application (P1-11: error catalog module QR — trước đây KHÔNG gác)
             typeof(GuestAccessErrors).Assembly,  // GuestAccess.Application (C-GA.2b + C-GA.4)
             typeof(RulesErrors).Assembly,        // Rules.Application (D-Rules.2b/3: rules_conflict — đóng gap QR-AD-018)
+            typeof(FaqErrors).Assembly,          // Faq.Application (E-Faq.2: catalog lỗi module Faq)
         ];
 
         var actual = CollectStableErrorCodes(catalogAssemblies);

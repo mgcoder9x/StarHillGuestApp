@@ -43,6 +43,7 @@
   <Folder Name="/src/Modules/Faq/">
     <Project Path="src/Modules/Faq/Faq.Contracts/Faq.Contracts.csproj" />
     <Project Path="src/Modules/Faq/Faq.Domain/Faq.Domain.csproj" />
+    <Project Path="src/Modules/Faq/Faq.Application/Faq.Application.csproj" />
     <Project Path="src/Modules/Faq/Faq.Infrastructure/Faq.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/">

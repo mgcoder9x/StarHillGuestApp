@@ -539,3 +539,31 @@
 - **NEXT — slice E-Faq.2**: `Faq.Application` (CRUD category/item + translation sanitize-on-save CP12 + cycle-check bất biến cây)
   + đổi Faq.Infrastructure ref→Application + validator + `FaqSanitizeTests`/`FaqItemParentValidationTests`/`FaqConcurrencyTests`.
   Rồi E-Faq.3 (reorder), E-Faq.4 (guest tree + rule-gate + Api + Host wiring + CI bundle faq).
+
+### QR-N-047 — Slice E-Faq.2 XONG: Faq.Application (CRUD category/item + translation sanitize-on-save + cycle-check)
+- Date: 2026-07-16
+- Bối cảnh: tiếp E-Faq.1, hiện thực use case admin theo design §4/§10. Mirror Rules.Application (Result API, IRepository
+  trực tiếp, IUseCase value-returning / ICommandUseCase void khai PersistenceKey, bắt UniqueConstraintViolationException).
+- Đã làm:
+  1. `Faq.Application` (ref Faq.Domain+Contracts+Bedrock.Application+FluentValidation): `FaqErrors` (6 mã: faq_category_not_found/
+     faq_item_not_found/faq_conflict/faq_invalid_parent/faq_category_not_empty/faq_item_has_children) + `FaqContracts` (input/result)
+     + 8 use case: CreateFaqCategory/UpdateFaqCategory/DeleteFaqCategory/UpsertFaqCategoryTranslation + CreateFaqItem/UpdateFaqItem/
+     DeleteFaqItem/UpsertFaqItemTranslation + validator mỗi cái.
+  2. **Sanitize-on-save (CP12)**: UpsertFaq*Translation sanitize Question/Answer/Name qua `IHtmlSanitizer` TRƯỚC lưu (adapter
+     Ganss do Host/test cấp qua AddStarHillHtml).
+  3. **Bất biến cây** (`FaqItemParentValidator` — quyết định AI tự ra): ParentId phải cùng category + không self + không cycle;
+     walk tổ tiên bằng FindById lặp (F9, không IQueryable), giới hạn độ sâu. Create: parent-exists + same-category (cycle bất
+     khả thi vì item chưa tồn tại). Update: +cycle-check (selfId).
+  4. **Delete an toàn tham chiếu**: DeleteFaqCategory chặn khi còn item (faq_category_not_empty); DeleteFaqItem chặn khi còn
+     con (faq_item_has_children) — enforce ở use case (AnyAsync) + backstop FK Restrict DB.
+  5. **ResortId item DERIVE từ category** (không trust input) — tránh mismatch. Đổi `Faq.Infrastructure` ref Domain+Contracts→
+     `Faq.Application`; đăng ký 8 use case (factory keyed) + 6 validator trong `AddFaqInfrastructure`. `Platform.slnx` +Faq.Application.
+  6. `ErrorCodeSnapshotTests` (Bedrock.ContractTests) +assembly Faq.Application + 6 mã (Ordinal giữa conflict/forbidden) →
+     đóng gap QR-AD-018 (registry phủ mọi catalog module). `FaqBoundaryTests` +Application⊥Infra/EF/ASP.NET (I7).
+- Bằng chứng: `vp all` build 0-warning + validate-ci OK + full suite 0-fail — Faq.IntegrationTests 13 pass/5 skip(Postgres):
+  FaqSanitizeTests(3, Ganss thật) + FaqItemParentValidationTests(5) + FaqAdminCrudTests(5); StarHill.ArchitectureTests 25
+  (+1 Faq Application boundary); Bedrock.ContractTests 2 (snapshot có mã Faq). `vp journal` INV-1..6 xanh. QR-AD-037 Guard-Tests
+  mở rộng +4 class (INV-6 xác nhận tồn tại thật). Fix biên dịch: FaqItemParentValidationTests thiếu `using Bedrock.Domain.Results`
+  cho `Result<>` (helper) → thêm; build lại 0-warning.
+- **NEXT — slice E-Faq.3** (reorder): `ReorderFaqUseCase` (nhận toàn bộ thứ tự mới, nguyên tử) + `ReorderFaqUseCaseTests`.
+  Rồi E-Faq.4 (guest tree read + rule-gate consumer đầu tiên IRuleGate + Api + Host wiring + CI bundle faq).

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Faq.Application (E-Faq.2, vertical-by-feature): reference Faq.Domain + Faq.Contracts + Bedrock.Application
+    (ports/behaviors/use-case + port bảo mật IHtmlSanitizer cho sanitize-on-save CP12). KHÔNG ref Infrastructure/EF/
+    ASP.NET (I7). ResortConfig.Contracts/Rules.Contracts CHƯA thêm ở E-Faq.2 (I10 — chỉ thêm khi guest-read/rule-gate
+    tiêu thụ ở E-Faq.4). FluentValidation cho validator (AD-018). Mirror khuôn Rules.Application (D-Rules.2b).
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Faq.Domain\Faq.Domain.csproj" />
+    <ProjectReference Include="..\Faq.Contracts\Faq.Contracts.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Application\Bedrock.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+</Project>

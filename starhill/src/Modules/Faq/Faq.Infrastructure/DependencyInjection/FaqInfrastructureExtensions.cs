@@ -1,7 +1,11 @@
+using Bedrock.Application.Ports.Persistence;
+using Bedrock.Application.UseCases;
 using Bedrock.Infrastructure.DependencyInjection;
+using Faq.Application;
 using Faq.Contracts;
 using Faq.Domain;
 using Faq.Infrastructure.Persistence;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -33,6 +37,56 @@ public static class FaqInfrastructureExtensions
         services.AddBedrockRepository<FaqDbContext, FaqCategoryTranslation>(PersistenceKey);
         services.AddBedrockRepository<FaqDbContext, FaqItem>(PersistenceKey);
         services.AddBedrockRepository<FaqDbContext, FaqItemTranslation>(PersistenceKey);
+
+        // Use case Admin CRUD (E-Faq.2): factory resolve repo/UoW bằng module key (mirror Rules). Value-returning
+        // IUseCase tự quản một SaveChanges; void command ICommandUseCase khai PersistenceKey (decorator resolve keyed UoW).
+        services.AddScoped<IUseCase<CreateFaqCategoryInput, CreateFaqCategoryResult>>(sp => new CreateFaqCategoryUseCase(
+            sp.GetRequiredKeyedService<IRepository<FaqCategory>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey)));
+
+        services.AddScoped<ICommandUseCase<UpdateFaqCategoryInput>>(sp => new UpdateFaqCategoryUseCase(
+            sp.GetRequiredKeyedService<IRepository<FaqCategory>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey)));
+
+        services.AddScoped<ICommandUseCase<DeleteFaqCategoryInput>>(sp => new DeleteFaqCategoryUseCase(
+            sp.GetRequiredKeyedService<IRepository<FaqCategory>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IRepository<FaqItem>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey)));
+
+        services.AddScoped<IUseCase<UpsertFaqCategoryTranslationInput, UpsertFaqCategoryTranslationResult>>(sp =>
+            new UpsertFaqCategoryTranslationUseCase(
+                sp.GetRequiredKeyedService<IRepository<FaqCategory>>(PersistenceKey),
+                sp.GetRequiredKeyedService<IRepository<FaqCategoryTranslation>>(PersistenceKey),
+                sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
+                sp.GetRequiredService<Bedrock.Application.Ports.Html.IHtmlSanitizer>()));
+
+        services.AddScoped<IUseCase<CreateFaqItemInput, CreateFaqItemResult>>(sp => new CreateFaqItemUseCase(
+            sp.GetRequiredKeyedService<IRepository<FaqCategory>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IRepository<FaqItem>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey)));
+
+        services.AddScoped<ICommandUseCase<UpdateFaqItemInput>>(sp => new UpdateFaqItemUseCase(
+            sp.GetRequiredKeyedService<IRepository<FaqItem>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey)));
+
+        services.AddScoped<ICommandUseCase<DeleteFaqItemInput>>(sp => new DeleteFaqItemUseCase(
+            sp.GetRequiredKeyedService<IRepository<FaqItem>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey)));
+
+        services.AddScoped<IUseCase<UpsertFaqItemTranslationInput, UpsertFaqItemTranslationResult>>(sp =>
+            new UpsertFaqItemTranslationUseCase(
+                sp.GetRequiredKeyedService<IRepository<FaqItem>>(PersistenceKey),
+                sp.GetRequiredKeyedService<IRepository<FaqItemTranslation>>(PersistenceKey),
+                sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
+                sp.GetRequiredService<Bedrock.Application.Ports.Html.IHtmlSanitizer>()));
+
+        // Validator module (ValidationUseCaseDecorator nhận qua IEnumerable<IValidator<TInput>>).
+        services.AddTransient<IValidator<CreateFaqCategoryInput>, CreateFaqCategoryValidator>();
+        services.AddTransient<IValidator<UpdateFaqCategoryInput>, UpdateFaqCategoryValidator>();
+        services.AddTransient<IValidator<UpsertFaqCategoryTranslationInput>, UpsertFaqCategoryTranslationValidator>();
+        services.AddTransient<IValidator<CreateFaqItemInput>, CreateFaqItemValidator>();
+        services.AddTransient<IValidator<UpdateFaqItemInput>, UpdateFaqItemValidator>();
+        services.AddTransient<IValidator<UpsertFaqItemTranslationInput>, UpsertFaqItemTranslationValidator>();
 
         return services;
     }

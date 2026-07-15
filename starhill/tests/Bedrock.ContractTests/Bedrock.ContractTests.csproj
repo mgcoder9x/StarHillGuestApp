@@ -29,5 +29,8 @@
     <!-- D-Rules.2b/3: error catalog Rules (RulesErrors — rules_conflict + validation_error/not_found dùng chung).
          Đóng gap QR-AD-018 (registry PHẢI phủ MỌI catalog module — trước đây thiếu Rules → rules_conflict không gác). -->
     <ProjectReference Include="..\..\src\Modules\Rules\Rules.Application\Rules.Application.csproj" />
+    <!-- E-Faq.2: error catalog Faq (FaqErrors — faq_category_not_found/faq_item_not_found/faq_conflict/
+         faq_invalid_parent/faq_category_not_empty/faq_item_has_children). Registry phủ MỌI catalog module (QR-AD-018). -->
+    <ProjectReference Include="..\..\src\Modules\Faq\Faq.Application\Faq.Application.csproj" />
   </ItemGroup>
 </Project>

@@ -5,8 +5,7 @@
     Infra→Application). KHÔNG ref Bedrock.Api/Faq.Api (Api⊥Infra I7).
   -->
   <ItemGroup>
-    <ProjectReference Include="..\Faq.Domain\Faq.Domain.csproj" />
-    <ProjectReference Include="..\Faq.Contracts\Faq.Contracts.csproj" />
+    <ProjectReference Include="..\Faq.Application\Faq.Application.csproj" />
     <ProjectReference Include="$(PlatformSrc)\Bedrock.Infrastructure\Bedrock.Infrastructure.csproj" />
   </ItemGroup>
 

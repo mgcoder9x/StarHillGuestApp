@@ -1,3 +1,4 @@
+using Faq.Application;
 using Faq.Contracts;
 using Faq.Domain;
 using Faq.Infrastructure.Persistence;
@@ -7,14 +8,16 @@ using Xunit;
 namespace StarHill.ArchitectureTests;
 
 /// <summary>
-/// GUARD ranh giới module (CP4) cho module <c>Faq</c> (E-Faq.1). Kiểm: Contracts thuần (chỉ Bedrock.Messaging.Contracts;
-/// KHÔNG rò Domain/Infra, KHÔNG coupling Contracts module khác); Domain ⊥ Infrastructure. (Application ⊥ Infra/EF/
-/// ASP.NET thêm ở E-Faq.2 khi Faq.Application tồn tại.) Negative control chứng minh engine bắt phụ thuộc thật.
+/// GUARD ranh giới module (CP4) cho module <c>Faq</c>. Kiểm: Contracts thuần (chỉ Bedrock.Messaging.Contracts;
+/// KHÔNG rò Domain/Infra, KHÔNG coupling Contracts module khác); Domain ⊥ Infrastructure; Application ⊥ Infra/EF/
+/// ASP.NET (I7 — use case bắt exception TRUNG LẬP, không chạm DbUpdateException). Negative control chứng minh engine
+/// bắt phụ thuộc thật.
 /// </summary>
 public sealed class FaqBoundaryTests
 {
     private static System.Reflection.Assembly Contracts => typeof(FaqModule).Assembly;
     private static System.Reflection.Assembly Domain => typeof(FaqCategory).Assembly;
+    private static System.Reflection.Assembly Application => typeof(CreateFaqCategoryUseCase).Assembly;
 
     [Fact]
     public void Contracts_should_stay_pure()
@@ -44,6 +47,22 @@ public sealed class FaqBoundaryTests
             .GetResult();
 
         Assert.True(result.IsSuccessful, Describe("Faq.Domain", result));
+    }
+
+    [Fact]
+    public void Application_should_not_depend_on_infrastructure_or_api()
+    {
+        var result = Types.InAssembly(Application)
+            .Should()
+            .NotHaveDependencyOnAny(
+                "Bedrock.Infrastructure",
+                "Bedrock.Api",
+                "Faq.Infrastructure",
+                "Microsoft.EntityFrameworkCore",
+                "Microsoft.AspNetCore")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, Describe("Faq.Application", result));
     }
 
     // NEGATIVE CONTROL: type giả giữ FaqDbContext (Infrastructure) → luật "ShouldNot dep Infrastructure" PHẢI bắt.
