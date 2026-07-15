@@ -482,3 +482,32 @@
   8. Guard wiring: `RulesAdminEndpointAuthTests` +2 fake (`FakeGetDraftPreview`/`FakeGetPublicationHistory`) +đăng ký +assertion (Staff GET preview/publications→200; no-token→401). **Root-cause fix:** endpoint GET map trong TestServer THẬT → nếu thiếu đăng ký use case, RDF suy luận param service thành BODY → GET cấm body → InvalidOperationException lúc build endpoint (đã gặp: 2 test fail trước khi thêm fake). Bổ sung fake là đúng bản chất — guard endpoint-auth phải phản ánh mọi endpoint module map thật.
 - Bằng chứng: `starhill\scripts\vp.cmd build` 0-warning; `vp all` build 0-warning + validate-ci OK + full suite 0-fail — StarHill.Api.Tests 52/52 (+2 GET auth), Rules.IntegrationTests 27 pass/9 skip(Postgres không-Docker) gồm 5 RulesAdminReadTests. `vp journal` INV-1..6 xanh.
 - Mặt admin nội quy (soạn Draft + upsert i18n sanitize + publish + preview + history) HOÀN TẤT. CÒN LẠI Rules: C-GA.5 cascade (khi có Concierge/Housekeeping), C-GA.4 sweeper (defer). Kế tiếp module: FAQ/Concierge/Housekeeping theo dependency graph (đều dùng `IRuleGate` đã có).
+
+### QR-N-045 — Design module Faq XONG (Wave E, design-first); CHƯA code
+- Date: 2026-07-16
+- Bối cảnh: BE mới xong 5/8 module (Identity/ResortConfig/Rooms/GuestAccess/Rules). Module kế theo dependency graph +
+  độ đơn giản = **Faq** (tái dùng ngay `IRuleGate` + i18n resolver + `IHtmlSanitizer` đã có; không phụ thuộc SignalR như
+  Concierge). Giữ nguyên tắc DESIGN-FIRST: viết `design-modules/05-faq.md` → diagnostics 0 → đọc lại valid → chờ user
+  duyệt trước khi code.
+- Đã VERIFY chữ ký thật TRƯỚC khi thiết kế (không suy đoán): `Rules.Contracts.IRuleGate.EnsureAcknowledgedAsync(resortId,
+  guestVisitId, GuestFeature, ct)` + `enum GuestFeature{Faq,Chat,Housekeeping}`; `GuestAccess.Contracts.ICurrentGuestContextResolver.
+  ResolveAsync(sessionKey, roomId)`→`Result<CurrentGuestContext(GuestVisitId,GuestSessionId,RoomId,ResortId)>`+`TouchAsync`;
+  `IResortGuestConfigQuery.GetAsync(resortId)`→`ResortGuestConfig(FaqEnabled,EnabledLanguageCodes,DefaultLanguageCode,
+  RequireRuleAckForFaq,...)`; `RulesGuestEndpointModule`/`RulesAdminEndpointModule` (pattern resolve→gate→touch/no-store/
+  ProblemDetailsBuilder/RequireStaff). Data model Faq lấy từ `docs/resort-qr-portal/design.md` §Data Models (FaqCategory/
+  FaqCategoryTranslation/FaqItem[ParentId self]/FaqItemTranslation) + §Constraints + §Concurrency.
+- **Faq là CONSUMER ĐẦU TIÊN của `IRuleGate`** → slice E-Faq.4 kiểm chứng luôn CP3 rule-gate ở tầng dùng thật (không chỉ
+  RuleGateTests nội bộ Rules).
+- Quyết định thiết kế nổi bật (sẽ cấp số QR-AD/DV/TO thật khi code — INV-3 cấm forward-ref số chưa tồn tại):
+  1. Faq **KHÔNG Draft→Publish/version** (khác Rules) — requirements không yêu cầu ack/version cho FAQ; `IsActive` đủ; tránh gold-plate.
+  2. Rule-gate đặt trong **use case guest-read** (`GetGuestFaqTreeUseCase`) → `Faq.Application` ref `Rules.Contracts` (defense-in-depth CP3, mọi caller bị gate; endpoint-only dễ quên).
+  3. Guest `/faq` GET **touch cửa sổ sau thành công** (KHÁC Rules-GET-no-touch) — product design §resolve liệt kê /faq là API tương tác; duyệt FAQ là hoạt động chính (rules-viewer là đọc-lại phụ trợ); tránh session_expired khi đang đọc.
+  4. Bất biến cây: `ParentId` phải cùng category + không self + không cycle → `faq_invalid_parent` (spec chỉ nói "cha-con"; AI tự ra chống đồ thị vòng gây render loop). Cycle-check in-memory (dữ liệu nhỏ, không recursive CTE).
+  5. Mở rộng xmin cho Category/CategoryTranslation (product chỉ liệt kê Item/ItemTranslation) — nhất quán chống ghi đè âm thầm.
+  6. Hard-delete chặn-khi-còn-tham-chiếu (category còn item / item còn con) thay cascade âm thầm.
+  7. DEFER `FaqEvent` (product ghi "tùy chọn") + CTA chat-prefill (Req 4.6 — cần Concierge tồn tại) — I10 tránh phân mảnh/coupling sớm.
+- Bằng chứng: `design-modules/05-faq.md` tạo xong, **getDiagnostics = 0**. Chưa viết C# (design-first tôn trọng). Mỗi CP/bất biến
+  đã map guard test + Docker? + slice (§9/§10). Mã lỗi mới `FaqErrors` (faq_category_not_found/faq_item_not_found/faq_conflict/
+  faq_invalid_parent/faq_category_not_empty/faq_item_has_children/faq_disabled) sẽ vào `ErrorCodeSnapshotTests` (QR-AD-018) khi code.
+- **NEXT**: chờ user duyệt design §1/§3/§5/§11. Nếu đồng ý/không phản hồi → slice **E-Faq.1** (Domain/Contracts/Persistence +
+  migration + boundary + Postgres unique) rồi lần lượt E-Faq.2..4. Mỗi slice: `vp all` 0-warning/0-fail + `vp journal` INV-1..6 + journal.
