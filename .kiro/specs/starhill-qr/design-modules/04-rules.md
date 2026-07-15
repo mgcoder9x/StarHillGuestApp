@@ -262,9 +262,10 @@ Docker daemon phải có Server cho các test Postgres; không "skip mềm" làm
      Api + conn string + migrate + **AddStarHillHtml + AddRequiredPort<IHtmlSanitizer>** boot fail-fast) + compose +
      CI bundle `rules`. Test `RulesAdminEndpointAuthTests` (TestServer, 2) + Host boot WebApplicationFactory 35/35.
      Preview/history endpoint defer (use case D-Rules.3b chưa có).
-   - **D-Rules.4c(api-2)** ⏳: guest endpoints (GET `/v1/guest/rules` + POST `/v1/guest/rules/acknowledge`, dùng
-     `ICurrentGuestContextResolver` + `Touch` sau ack thành công) + `RulesGuestEndpointTests` → QR-AD-030 (+031)
-     chuyển Implemented + Guard-Tests (INV-6).
+   - **D-Rules.4c(api-2)** ✅ XONG (QR-N-042): `RulesGuestEndpointModule` (GET `/v1/guest/rules` KHÔNG touch + POST
+     `/v1/guest/rules/acknowledge` touch-sau-thành-công, AllowAnonymous, resolve qua `ICurrentGuestContextResolver` +
+     cookie canonical `GuestAccessModule.SessionCookieName`). Test `RulesGuestEndpointTests` (TestServer, 4). **QR-AD-030
+     + QR-AD-031 → Implemented + Guard-Tests (INV-6).** CÒN: D-Rules.3b (preview/history — use case chưa có).
 
 Mỗi slice dừng nếu: build warning/error; JournalConsistency INV-1..6 fail; migration model drift; Docker unique/
 concurrency/window test fail; raw secret/cookie lọt log; **AD chuyển Implemented mà thiếu `Guard-Tests` (INV-6)**.

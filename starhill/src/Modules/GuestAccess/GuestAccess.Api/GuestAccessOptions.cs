@@ -9,8 +9,9 @@ public sealed class GuestAccessOptions
 {
     public const string SectionName = "GuestAccess";
 
-    /// <summary>Tên cookie thiết bị — PHẢI bắt đầu <c>__Host-</c> để browser enforce Secure/Path=/.</summary>
-    public string CookieName { get; set; } = "__Host-starhill_guest";
+    /// <summary>Tên cookie thiết bị — PHẢI bắt đầu <c>__Host-</c>. Mặc định = hằng canonical cross-module
+    /// <see cref="GuestAccess.Contracts.GuestAccessModule.SessionCookieName"/> (một nguồn sự thật cho consumer khác).</summary>
+    public string CookieName { get; set; } = GuestAccess.Contracts.GuestAccessModule.SessionCookieName;
 
     /// <summary>Hạn cookie (ngày) — thiết bị dài hạn, trong [30,90] (Req 11.2).</summary>
     public int SessionCookieDays { get; set; } = 60;

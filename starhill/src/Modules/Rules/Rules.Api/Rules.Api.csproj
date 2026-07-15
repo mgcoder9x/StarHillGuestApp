@@ -12,6 +12,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Rules.Application\Rules.Application.csproj" />
     <ProjectReference Include="..\..\ResortConfig\ResortConfig.Contracts\ResortConfig.Contracts.csproj" />
+    <!-- D-Rules.4c-2: guest endpoint phân giải ngữ cảnh khách qua GuestAccess.Contracts (ICurrentGuestContextResolver
+         + hằng cookie SessionCookieName). Cross-module qua Contracts (QR-AD-024), KHÔNG ref GuestAccess.Api/Infra. -->
+    <ProjectReference Include="..\..\GuestAccess\GuestAccess.Contracts\GuestAccess.Contracts.csproj" />
     <ProjectReference Include="..\..\..\StarHill.Authorization\StarHill.Authorization.csproj" />
     <ProjectReference Include="$(PlatformSrc)\Bedrock.Api\Bedrock.Api.csproj" />
   </ItemGroup>

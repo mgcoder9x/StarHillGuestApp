@@ -128,6 +128,49 @@ internal sealed class FakePublishRules : IUseCase<Rules.Application.PublishRules
         Task.FromResult(Result.Success(new Rules.Application.PublishRulesResult(PublicationId, 1)));
 }
 
+// ---- Rules guest fakes (D-Rules.4c-2 endpoint test, KHÔNG DB) ----
+
+internal sealed class FakeCurrentGuestContextResolver : GuestAccess.Contracts.ICurrentGuestContextResolver
+{
+    public required Result<GuestAccess.Contracts.CurrentGuestContext> NextResult { get; set; }
+    public string? LastSessionKey { get; private set; }
+    public int TouchCount { get; private set; }
+
+    public Task<Result<GuestAccess.Contracts.CurrentGuestContext>> ResolveAsync(
+        string? sessionKey, Guid roomId, CancellationToken ct = default)
+    {
+        LastSessionKey = sessionKey;
+        return Task.FromResult(NextResult);
+    }
+
+    public Task TouchAsync(Guid guestVisitId, CancellationToken ct = default)
+    {
+        TouchCount++;
+        return Task.CompletedTask;
+    }
+}
+
+internal sealed class FakeGetCurrentRules : IUseCase<Rules.Application.GetCurrentRulesInput, Rules.Application.GetCurrentRulesResult>
+{
+    public static readonly Guid PublicationId = Guid.Parse("88888888-8888-8888-8888-888888888888");
+
+    public Task<Result<Rules.Application.GetCurrentRulesResult>> ExecuteAsync(
+        Rules.Application.GetCurrentRulesInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Rules.Application.GetCurrentRulesResult(
+            PublicationId, 1, "en",
+            new List<Rules.Application.RenderedRuleSection>
+            {
+                new("welcome", 1, true, false, 0, "Welcome", "<p>hi</p>", "en", false, false),
+            })));
+}
+
+internal sealed class FakeAcknowledgeRules : IUseCase<Rules.Application.AcknowledgeRulesInput, Rules.Application.AcknowledgeRulesResult>
+{
+    public Task<Result<Rules.Application.AcknowledgeRulesResult>> ExecuteAsync(
+        Rules.Application.AcknowledgeRulesInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Rules.Application.AcknowledgeRulesResult(FakeGetCurrentRules.PublicationId, 1, false)));
+}
+
 internal sealed class FakeResortSettingsQuery : IResortSettingsQuery
 {
     public static readonly Guid ResortId = Guid.Parse("22222222-2222-2222-2222-222222222222");

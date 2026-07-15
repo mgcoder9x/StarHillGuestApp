@@ -351,7 +351,8 @@
 - Guard-Tests: `StarHillJournalConsistencyTests`
 
 ### QR-AD-030 — Rules: snapshot-on-publish + acknowledge server-authoritative + rule-gate backend
-- Status: Proposed (design D-Rules.0; chưa code)
+- Status: Implemented (D-Rules.3a Publish snapshot + 4a guest read + 4b acknowledge + 4c-gate IRuleGate + 4c-api admin/guest endpoints — QR-N-036/038/039/040/041/042)
+- Guard-Tests: `PublishRulesUseCaseTests`, `AcknowledgeRulesTests`, `RuleGateTests`, `RulesAdminEndpointAuthTests`, `RulesGuestEndpointTests`, `RulesPostgresConstraintTests`
 - Date: 2026-07-14
 - Decider: AI (module Rules dựng mới — legacy resort-qr chưa có; chi tiết on-Bedrock không được spec sẵn).
 - Provenance/Evidence: `docs/resort-qr-portal/requirements.md` Req 3.7/3.8/3.9/3.11 (ack gắn GuestVisit, backend enforce 403), Req 8.1/8.3/8.4 (Draft→Publish snapshot, preview/history); `docs/resort-qr-portal/design.md` §Data Models (RuleSet/RuleSection(+Translation)/RulePublication(+Section+Translation)/RuleAcknowledgement + unique `RulePublication(ResortId) WHERE IsCurrent`, unique `RuleAcknowledgement(GuestVisitId, RulePublicationId)`), CP3/CP4/CP13. `IResortSettingsQuery.ResortSettingsSnapshot` (đã đọc) mang đủ cờ RequireRuleAckForFaq/Chat/Housekeeping.
@@ -362,7 +363,8 @@
 - Reversibility: Medium. Traceability: `design-modules/04-rules.md` §4/§5/§6; CP3/CP4/CP13; Req 3/8.
 
 ### QR-AD-031 — IHtmlSanitizer: adapter Ganss ở shared starhill project + RequirePort + sanitize-on-save
-- Status: Proposed (design D-Rules.0; chưa code)
+- Status: Implemented (adapter D-Rules.2a + sanitize-on-save 2b + RequirePort<IHtmlSanitizer> ở Host 4c-api-1 — QR-N-033/035/041)
+- Guard-Tests: `GanssHtmlSanitizerAdapterTests`, `RuleSanitizeTests`
 - Date: 2026-07-14
 - Decider: AI (đóng mắt xích port bảo mật bắt buộc khi Rules là consumer đầu).
 - Provenance/Evidence: `platform/src/Bedrock.Application/Ports/Html/IHtmlSanitizer.cs` — "port bảo mật bắt buộc: không có default, thiếu → chặn boot (§5.5)". Điều tra thật: KHÔNG có adapter impl trong platform/starhill; KHÔNG đăng ký DI; package Ganss/HtmlSanitizer CHƯA pin ở `starhill/Directory.Packages.props`; RequiredPorts hiện KHÔNG liệt IHtmlSanitizer (Host boot được vì chưa ai consume). Req 8.6/11.4/CP12 yêu cầu sanitize.
