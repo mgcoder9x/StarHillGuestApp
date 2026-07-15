@@ -421,3 +421,15 @@
 - Quyết định (không AD mới — nằm trong QR-AD-030 acknowledge part): use case NHẬN `CurrentGuestContext` đã-phân-giải qua input (KHÔNG tự gọi `ICurrentGuestContextResolver`) → giữ use case thuần/testable-không-Docker; việc resolve context + `Touch` sau thành công là trách nhiệm ENDPOINT (D-Rules.4c, đúng tách Resolve/Touch của QR-AD-032). Idempotency pre-check + unique-backstop = cùng triết lý QR-AD-010/026 (không TOCTOU, DB là nguồn sự thật race).
 - Bằng chứng: `vp all` build 0-warning + validate-ci OK + full suite 0-fail; Rules.IntegrationTests 16 pass/9 skip(Postgres không-Docker) gồm 6 AcknowledgeRulesTests. `vp journal` INV-1..6 xanh.
 - QR-AD-030 VẪN Proposed (còn 4c: IRuleGate + endpoints guest/admin + Host wiring + RequirePort(IHtmlSanitizer) mới đủ Implemented + Guard-Tests — INV-6). CÒN LẠI: D-Rules.4c, D-Rules.3b (preview/history).
+
+
+### QR-N-040 — Slice D-Rules.4c(gate) XONG: IRuleGate backend (CP3)
+- Date: 2026-07-15
+- Bối cảnh: phần rule-gate của D-Rules.4c (tách nhỏ: gate trước, endpoints+Host+RequirePort sau). Verify code thật: tree CLEAN sau 4b (956307d); `IRuleGate`/`RuleGate` chưa tồn tại → đúng ranh giới. Đọc/valid trước: `ResortGuestConfig` (RequireRuleAckForFaq/Chat/Housekeeping — tên field xác nhận từ Contracts), `IRulePublicationReader.LoadCurrentAsync`, `IRepository.AnyAsync`, `ErrorCodeSnapshotTests` (Ordinal + scan Rules.Application), precedent GuestAccess.Contracts (trả `Result`).
+- Đã làm:
+  1. `Rules.Contracts`: `IRuleGate.EnsureAcknowledgedAsync(resortId, guestVisitId, GuestFeature, ct)` + enum `GuestFeature{Faq,Chat,Housekeeping}`. +ref `Bedrock.Domain` (trả `Result` — mirror GuestAccess.Contracts; KHÔNG ref Contracts module khác — QR-TO-010 giữ nguyên).
+  2. `RulesErrors.RuleAckRequired` = `Error.Forbidden("rule_ack_required", ...)` → HTTP 403. +vào `ErrorCodeSnapshotTests.ExpectedCodes` (Ordinal giữa room_inactive/rules_conflict) → snapshot 2/2 pass.
+  3. `RuleGate` (Rules.Application): cờ tắt→Success; cờ bật→kiểm `RuleAcknowledgement(visit, IsCurrent.Id)` (server-authoritative, cùng nguồn CP13); thiếu→rule_ack_required; chưa publish→rule_ack_required (fail-closed, không cho qua); config null→configuration_unavailable. Read-only, đăng ký scoped dưới `IRuleGate` (keyed repo ack).
+  4. Test CP3 `RuleGateTests` (SQLite, 6, KHÔNG Docker): cờ tắt cho qua dù chưa ack; cờ bật chưa ack→403; cờ bật đã ack→qua; cờ bật chưa publish→403; cờ độc lập theo tính năng; config null→configuration_unavailable.
+- Bằng chứng: `vp all` build 0-warning + full suite 0-fail; Rules.IntegrationTests 22 pass/9 skip(Postgres không-Docker) gồm 6 RuleGateTests; StarHill.ArchitectureTests 21/21 (boundary OK sau khi Rules.Contracts +Bedrock.Domain); ErrorCodeSnapshot 2/2. `vp journal` INV-1..6 xanh.
+- QR-AD-030 VẪN Proposed: còn endpoints guest/admin (Rules.Api) + Host wiring (AddRulesApi + RequirePort(IHtmlSanitizer) → QR-AD-031) + CI bundle mới đủ Implemented + Guard-Tests (INV-6). CÒN LẠI: D-Rules.4c(api) + D-Rules.3b (preview/history).

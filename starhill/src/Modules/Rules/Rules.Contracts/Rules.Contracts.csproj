@@ -6,5 +6,8 @@
   -->
   <ItemGroup>
     <ProjectReference Include="$(PlatformSrc)\Bedrock.Messaging.Contracts\Bedrock.Messaging.Contracts.csproj" />
+    <!-- D-Rules.4c: IRuleGate trả Bedrock.Domain.Results.Result (nguyên thủy shared kernel — consumer map Error→HTTP).
+         Mirror GuestAccess.Contracts (ICurrentGuestContextResolver cũng trả Result). KHÔNG ref Contracts module khác. -->
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Domain\Bedrock.Domain.csproj" />
   </ItemGroup>
 </Project>

@@ -33,6 +33,7 @@ public sealed class ErrorCodeSnapshotTests
         "rate_limited",
         "resort_not_found",              // Rooms (P1-11)
         "room_inactive",                 // GuestAccess (C-GA.2b)
+        "rule_ack_required",             // Rules (D-Rules.4c: IRuleGate backend gate — 403)
         "rules_conflict",                // Rules (D-Rules.2b: DraftConflict — nay được gác, đóng gap QR-AD-018)
         "rules_unavailable",             // Rules (D-Rules.4a: guest read chưa publish)
         "session_expired",               // GuestAccess (C-GA.4: portal-window)

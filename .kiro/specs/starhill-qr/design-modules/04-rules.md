@@ -254,8 +254,12 @@ Docker daemon phải có Server cho các test Postgres; không "skip mềm" làm
      backstop race). Use case NHẬN `CurrentGuestContext` qua input (resolve context + `Touch` là việc của endpoint 4c —
      tách Resolve/Touch QR-AD-032). Test `AcknowledgeRulesTests` (SQLite, 6) + unique (visit,pub) ở
      `RulesPostgresConstraintTests` (Postgres/CI). Rules.IntegrationTests 16 pass/9 skip(Postgres). QR-AD-030 vẫn Proposed.
-   - **D-Rules.4c** ⏳: `IRuleGate` (CP3, cờ ResortSettings) + endpoints (admin publish/preview + guest read/ack) +
-     Host wiring + CI bundle + RequirePort(IHtmlSanitizer) → QR-AD-030 (+031) chuyển Implemented + Guard-Tests.
+   - **D-Rules.4c(gate)** ✅ XONG (QR-N-040): `IRuleGate`+`GuestFeature` (Rules.Contracts, Id trần, trả Result) +
+     `RuleGate` (Rules.Application: cờ tắt→Success; bật+chưa ack/chưa publish→rule_ack_required 403; bật+đã ack→Success;
+     config null→configuration_unavailable) + mã `rule_ack_required` (+ErrorCodeSnapshot). Test `RuleGateTests` (SQLite, 6).
+   - **D-Rules.4c(api)** ⏳: endpoints (admin publish/preview/history + guest read/ack, dùng `ICurrentGuestContextResolver`
+     + `Touch` sau thành công) + Host wiring (`AddRulesApi` + RequirePort(IHtmlSanitizer)) + CI bundle → QR-AD-030 (+031)
+     chuyển Implemented + Guard-Tests (INV-6).
 
 Mỗi slice dừng nếu: build warning/error; JournalConsistency INV-1..6 fail; migration model drift; Docker unique/
 concurrency/window test fail; raw secret/cookie lọt log; **AD chuyển Implemented mà thiếu `Guard-Tests` (INV-6)**.

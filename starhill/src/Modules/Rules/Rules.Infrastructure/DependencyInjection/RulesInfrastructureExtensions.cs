@@ -105,6 +105,13 @@ public static class RulesInfrastructureExtensions
             sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
             sp.GetRequiredService<IClock>()));
 
+        // Rule-gate backend (D-Rules.4c, CP3): read-only. Lộ IRuleGate (Rules.Contracts) cho Faq/Concierge/
+        // Housekeeping. Resolve keyed repo ack (đọc AnyAsync). Đăng ký dưới interface Contracts (Id trần).
+        services.AddScoped<Rules.Contracts.IRuleGate>(sp => new RuleGate(
+            sp.GetRequiredService<ResortConfig.Contracts.Queries.IResortGuestConfigQuery>(),
+            sp.GetRequiredService<IRulePublicationReader>(),
+            sp.GetRequiredKeyedService<IRepository<RuleAcknowledgement>>(PersistenceKey)));
+
         // Validator module (ValidationUseCaseDecorator nhận qua IEnumerable<IValidator<TInput>>).
         services.AddTransient<IValidator<CreateRuleSectionInput>, CreateRuleSectionValidator>();
         services.AddTransient<IValidator<UpdateRuleSectionInput>, UpdateRuleSectionValidator>();

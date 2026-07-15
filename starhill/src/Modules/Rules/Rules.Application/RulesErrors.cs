@@ -38,4 +38,10 @@ public static class RulesErrors
     /// Dùng CHUNG mã <c>configuration_unavailable</c> với GuestAccess (ngữ nghĩa nền thiếu, hợp đồng client thống nhất).</summary>
     public static Error ConfigurationUnavailable =>
         Error.Unexpected("configuration_unavailable", "Cấu hình resort chưa sẵn sàng.");
+
+    /// <summary>Rule-gate CHẶN: tính năng yêu cầu ack nội quy nhưng visit CHƯA xác nhận bản IsCurrent (CP3/Req 3.11) —
+    /// hoặc chưa có bản publish nào để ack (fail-closed). <c>Forbidden</c> → HTTP 403. Consumer (Faq/Concierge/
+    /// Housekeeping) trả mã này để client điều hướng khách đọc nội quy trước.</summary>
+    public static Error RuleAckRequired =>
+        Error.Forbidden("rule_ack_required", "Vui lòng đọc và xác nhận nội quy trước khi sử dụng tính năng này.");
 }
