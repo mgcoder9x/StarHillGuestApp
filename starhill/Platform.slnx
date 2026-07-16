@@ -45,6 +45,7 @@
     <Project Path="src/Modules/Housekeeping/Housekeeping.Domain/Housekeeping.Domain.csproj" />
     <Project Path="src/Modules/Housekeeping/Housekeeping.Application/Housekeeping.Application.csproj" />
     <Project Path="src/Modules/Housekeeping/Housekeeping.Infrastructure/Housekeeping.Infrastructure.csproj" />
+    <Project Path="src/Modules/Housekeeping/Housekeeping.Api/Housekeeping.Api.csproj" />
   </Folder>
   <Folder Name="/src/Modules/Faq/">
     <Project Path="src/Modules/Faq/Faq.Contracts/Faq.Contracts.csproj" />

@@ -44,6 +44,9 @@ public sealed class HostEndpointWiringSmokeTests : IClassFixture<SecretInjecting
     [InlineData("POST", "/v1/faq/categories")]
     [InlineData("POST", "/v1/faq/items")]
     [InlineData("POST", "/v1/faq/reorder/categories")]
+    [InlineData("GET", "/v1/housekeeping")]
+    [InlineData("POST", "/v1/housekeeping/complete-by-room")]
+    [InlineData("POST", "/v1/housekeeping/complete-by-token")]
     public async Task Protected_admin_endpoint_requires_authentication(string method, string path)
     {
         var client = _factory.CreateClient();
@@ -57,6 +60,7 @@ public sealed class HostEndpointWiringSmokeTests : IClassFixture<SecretInjecting
     [Theory]
     [InlineData("/v1/guest/rules?roomId=11111111-1111-1111-1111-111111111111")]
     [InlineData("/v1/guest/faq?roomId=11111111-1111-1111-1111-111111111111")]
+    [InlineData("/v1/guest/housekeeping?roomId=11111111-1111-1111-1111-111111111111")]
     public async Task Guest_get_rules_is_mapped_and_returns_problem_without_cookie(string path)
     {
         var client = _factory.CreateClient();

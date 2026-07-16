@@ -165,3 +165,17 @@ jobs:
         with:
           name: starhill-efbundle-faq
           path: starhill/efbundle-faq
+
+      - name: Build Housekeeping migration bundle (linux-x64, self-contained)
+        run: >
+          dotnet ef migrations bundle
+          --project src/Modules/Housekeeping/Housekeeping.Infrastructure
+          --startup-project src/Modules/Housekeeping/Housekeeping.Infrastructure
+          --self-contained -r linux-x64 -o efbundle-housekeeping --force
+        working-directory: starhill
+
+      - name: Upload Housekeeping bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: starhill-efbundle-housekeeping
+          path: starhill/efbundle-housekeeping

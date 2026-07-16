@@ -320,3 +320,73 @@ internal sealed class FakeGetGuestFaqTree : IUseCase<Faq.Application.GetGuestFaq
                     }),
             })));
 }
+
+// ---- Housekeeping use case + reader fakes (H-Hk.3 endpoint auth guard, KHÔNG DB) ----
+
+internal sealed class FakeRequestHousekeeping : IUseCase<Housekeeping.Application.RequestHousekeepingInput, Housekeeping.Application.RequestHousekeepingResult>
+{
+    public static readonly Guid TicketId = Guid.Parse("dddddddd-9999-9999-9999-999999999999");
+
+    public Task<Result<Housekeeping.Application.RequestHousekeepingResult>> ExecuteAsync(
+        Housekeeping.Application.RequestHousekeepingInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Housekeeping.Application.RequestHousekeepingResult(
+            TicketId, Housekeeping.Domain.HousekeepingStatus.Requested, AlreadyOpen: false)));
+}
+
+internal sealed class FakeGetRoomHousekeepingStatus
+    : IUseCase<Housekeeping.Application.GetRoomHousekeepingStatusInput, Housekeeping.Application.GetRoomHousekeepingStatusResult>
+{
+    public Task<Result<Housekeeping.Application.GetRoomHousekeepingStatusResult>> ExecuteAsync(
+        Housekeeping.Application.GetRoomHousekeepingStatusInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Housekeeping.Application.GetRoomHousekeepingStatusResult(null)));
+}
+
+internal sealed class FakeSetHousekeepingStatus
+    : IUseCase<Housekeeping.Application.SetHousekeepingStatusInput, Housekeeping.Application.HousekeepingTicketResult>
+{
+    public Task<Result<Housekeeping.Application.HousekeepingTicketResult>> ExecuteAsync(
+        Housekeeping.Application.SetHousekeepingStatusInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Housekeeping.Application.HousekeepingTicketResult(
+            FakeRequestHousekeeping.TicketId, input.NewStatus)));
+}
+
+internal sealed class FakeCompleteHousekeepingByRoom
+    : IUseCase<Housekeeping.Application.CompleteHousekeepingByRoomInput, Housekeeping.Application.HousekeepingTicketResult>
+{
+    public Task<Result<Housekeeping.Application.HousekeepingTicketResult>> ExecuteAsync(
+        Housekeeping.Application.CompleteHousekeepingByRoomInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Housekeeping.Application.HousekeepingTicketResult(
+            FakeRequestHousekeeping.TicketId, Housekeeping.Domain.HousekeepingStatus.Done)));
+}
+
+internal sealed class FakeCompleteHousekeepingByToken
+    : IUseCase<Housekeeping.Application.CompleteHousekeepingByTokenInput, Housekeeping.Application.HousekeepingTicketResult>
+{
+    public Task<Result<Housekeeping.Application.HousekeepingTicketResult>> ExecuteAsync(
+        Housekeeping.Application.CompleteHousekeepingByTokenInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Housekeeping.Application.HousekeepingTicketResult(
+            FakeRequestHousekeeping.TicketId, Housekeeping.Domain.HousekeepingStatus.Done)));
+}
+
+internal sealed class FakeCreateHousekeepingByStaff
+    : IUseCase<Housekeeping.Application.CreateHousekeepingByStaffInput, Housekeeping.Application.RequestHousekeepingResult>
+{
+    public Task<Result<Housekeeping.Application.RequestHousekeepingResult>> ExecuteAsync(
+        Housekeeping.Application.CreateHousekeepingByStaffInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Housekeeping.Application.RequestHousekeepingResult(
+            FakeRequestHousekeeping.TicketId, Housekeeping.Domain.HousekeepingStatus.Requested, AlreadyOpen: false)));
+}
+
+internal sealed class FakeHousekeepingReader : Housekeeping.Application.IHousekeepingReader
+{
+    public Task<Housekeeping.Application.HousekeepingTicketView?> GetCurrentTicketByRoomAsync(Guid roomId, CancellationToken ct = default) =>
+        Task.FromResult<Housekeeping.Application.HousekeepingTicketView?>(null);
+
+    public Task<IReadOnlyList<Guid>> ListOpenTicketIdsByVisitAsync(Guid guestVisitId, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<Guid>>([]);
+
+    public Task<Bedrock.Application.UseCases.PagedResult<Housekeeping.Application.HousekeepingBoardItem>> ListBoardAsync(
+        Guid resortId, Housekeeping.Domain.HousekeepingStatus? status, Bedrock.Application.UseCases.PagedRequest paging, CancellationToken ct = default) =>
+        Task.FromResult(new Bedrock.Application.UseCases.PagedResult<Housekeeping.Application.HousekeepingBoardItem>(
+            [], paging.SafePage, paging.SafePageSize, 0));
+}

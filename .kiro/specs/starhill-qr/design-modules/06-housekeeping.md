@@ -175,8 +175,11 @@ Postgres test là gate cuối cho partial-unique/concurrency; không "skip mềm
    `CreateHousekeepingByStaffUseCase`/`CancelOpenTicketsForVisitUseCase` + `GetRoomHousekeepingStatusUseCase` + `IHousekeepingReader`/
    `EfHousekeepingReader` (order Id-v7 provider-agnostic — fix SQLite ORDER BY DateTimeOffset). Test `HousekeepingUseCaseTests` (13) +
    `HousekeepingConcurrencyTests` (Postgres) + `ErrorCodeSnapshotTests` +4 mã. `vp all` Housekeeping.IntegrationTests 13 pass/3 skip.
-4. **H-Hk.3 — Api + Host wiring:** guest endpoints (create/status, rule-gate, touch) + admin endpoints (board/complete/status,
-   RequireStaff) + `AddHousekeepingApi` + Host wire + CI bundle + `HousekeepingEndpointAuthTests` + smoke +InlineData. Flip QR-AD-0xx Implemented.
+4. **H-Hk.3 — Api + Host wiring:** ✅ XONG (QR-N-060): `IHousekeepingReader.ListBoardAsync` (paged, Id-v7 FIFO) +
+   `HousekeepingAdminEndpointModule` (board/create/status/complete-by-room/token, RequireStaff, actor=ICurrentUser, resortId server) +
+   `HousekeepingGuestEndpointModule` (POST create rule-gate + touch / GET status no-touch, no-store) + `AddHousekeepingApi` + Host wire
+   (conn + migrate) + appsettings/compose/CI-bundle housekeeping. Test `HousekeepingEndpointAuthTests` (4) + `HostEndpointWiringSmokeTests`
+   +4 InlineData. `vp all` StarHill.Api.Tests 70. **Module Housekeeping hoàn tất guest+admin — BE 7/8.**
 5. **C-GA.5 (sau, cross-module):** GuestVisitEnded outbox (GuestAccess) → consumer gọi `CancelOpenTicketsForVisitUseCase`
    + đóng hội thoại Concierge (khi có). Cascade CP9 hoàn tất.
 

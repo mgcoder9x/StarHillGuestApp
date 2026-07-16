@@ -768,3 +768,27 @@
 - **NEXT — slice H-Hk.3** (Api + Host): guest endpoints (POST /v1/guest/housekeeping create + GET status, rule-gate, touch) + admin endpoints
   (GET board phân trang + complete-by-room/token + set-status + create-by-staff, RequireStaff) + `AddHousekeepingApi` + Host wire (conn Housekeeping +
   migrate) + CI bundle + `HousekeepingEndpointAuthTests` + `HostEndpointWiringSmokeTests` +InlineData + board read-model (paged). Rồi C-GA.5 cascade wiring.
+
+### QR-N-060 — Slice H-Hk.3 XONG: Housekeeping Api + Host wiring (guest tạo/xem + admin board/complete/status); module Housekeeping hoàn tất guest+admin — BE 7/8
+- Date: 2026-07-16
+- Bối cảnh: mắt xích cuối mặt guest+admin module Housekeeping. Mirror Faq/Rules Api.
+- Đã làm:
+  1. Read-model: `IHousekeepingReader` +`ListBoardAsync(resortId,status?,paging)` → `PagedResult<HousekeepingBoardItem>`
+     (order Id-v7 ASC = FIFO cũ-nhất-trước, provider-agnostic). `EfHousekeepingReader` impl.
+  2. `Housekeeping.Api`: `HousekeepingAdminEndpointModule` (GET board phân trang + POST tạo-chủ-động + POST {id}/status +
+     complete-by-room + complete-by-token — TẤT CẢ RequireStaff; actor=ICurrentUser.UserId; resortId server qua IResortSettingsQuery)
+     + `HousekeepingGuestEndpointModule` (POST /v1/guest/housekeeping tạo [rule-gate trong use case] + GET status; resolve context;
+     **POST touch-sau-thành-công / GET không-touch** [QR-N-045]; no-store) + `AddHousekeepingApi`.
+  3. Host: +conn `Housekeeping` + AddHousekeepingInfrastructure/Api + migrate. csproj Host + Platform.slnx +Housekeeping.Api.
+     appsettings + docker-compose +`ConnectionStrings__Housekeeping`; starhill-ci.yml +bundle `housekeeping`.
+  4. Test: `HousekeepingEndpointAuthTests` (TestServer + fake, 4: Staff board/create/status/complete 2xx; no-token admin→401;
+     guest tạo/xem 200 no-token; guest resolver-fail→problem không-401) + `HostEndpointWiringSmokeTests` +4 InlineData (3 admin→401 +
+     guest→problem+json). +7 fake Housekeeping (6 use case + reader) vào file fakes chung.
+- Fix tận gốc phát sinh: `Staff_can_operate_housekeeping` fail — TestServer thiếu `JsonStringEnumConverter` → body {status:"InProgress"}
+  bind HousekeepingStatus fail 400. Thêm `ConfigureHttpJsonOptions(JsonStringEnumConverter)` khớp Host (QR-AD-021) — không vá ngọn.
+- Bằng chứng: `vp all` build 0-warning + validate-ci OK + full suite 0-fail — StarHill.Api.Tests 70 (+8), Housekeeping.IntegrationTests
+  13 pass/3 skip(Postgres). `vp journal` INV-1..6 xanh. QR-AD-041 Guard-Tests +HousekeepingEndpointAuthTests. **Module Housekeeping HOÀN TẤT
+  mặt guest+admin — BE 7/8 module** (Identity/ResortConfig/Rooms/GuestAccess/Rules/Faq/**Housekeeping**).
+- **NEXT**: (a) **C-GA.5 cascade** (GuestVisitEnded outbox GuestAccess → consumer gọi `CancelOpenTicketsForVisitUseCase` [đã có capability] +
+  đóng hội thoại Concierge khi có) — cần outbox GuestAccess + consumer; (b) **Concierge** (chat SignalR — module cuối, phức tạp nhất);
+  (c) **Dashboard** (thống kê ghép Host); (d) E-Faq.4b admin read; (e) Frontend Vue. Đề xuất: Concierge (để đủ 8/8 + kích hoạt trọn C-GA.5), rồi Dashboard, rồi FE.

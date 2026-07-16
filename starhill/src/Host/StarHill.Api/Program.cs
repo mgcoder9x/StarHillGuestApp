@@ -25,6 +25,9 @@ using Rules.Infrastructure.Persistence;
 using Faq.Api.DependencyInjection;
 using Faq.Infrastructure.DependencyInjection;
 using Faq.Infrastructure.Persistence;
+using Housekeeping.Api.DependencyInjection;
+using Housekeeping.Infrastructure.DependencyInjection;
+using Housekeeping.Infrastructure.Persistence;
 using StarHill.Api;
 using StarHill.Authorization;
 using StarHill.Html.DependencyInjection;
@@ -141,6 +144,18 @@ services.AddFaqInfrastructure(options => options.UseNpgsql(
     npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "faq")));
 services.AddFaqApi();
 
+// Module Housekeeping (yêu cầu dọn phòng: guest tạo + staff hoàn tất app/QR + máy trạng thái + log). Nửa-Infra
+// (persistence + use case + read-model) + nửa-Api (H-Hk.3: guest tạo/xem + admin board/complete/status, RequireStaff).
+// Connection string riêng (cùng PostgreSQL, schema housekeeping). Tiêu thụ IRuleGate (Rules) + IRoomTokenResolver (Rooms)
+// + IResortGuestConfigQuery (ResortConfig) qua Contracts. KHÔNG outbox (cascade GuestVisitEnded = C-GA.5).
+var housekeepingConnectionString = configuration.GetConnectionString("Housekeeping")
+    ?? throw new InvalidOperationException(
+        "Thiếu ConnectionStrings:Housekeeping — fail-fast (F35). Cấu hình connection string cho module Housekeeping.");
+services.AddHousekeepingInfrastructure(options => options.UseNpgsql(
+    housekeepingConnectionString,
+    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "housekeeping")));
+services.AddHousekeepingApi();
+
 // IHtmlSanitizer (QR-AD-031): adapter Ganss dùng chung (Rules Draft sanitize-on-save; Faq sau). RequirePort → boot
 // FAIL-FAST nếu thiếu — port bảo mật KHÔNG default (thiếu = HTML script lọt vào nội dung khách). Host (composition
 // root) là nơi DUY NHẤT cắm adapter; UpsertRuleSectionTranslationUseCase inject IHtmlSanitizer → phải có mặt.
@@ -228,6 +243,10 @@ if (bool.TryParse(configuration["Bedrock:ApplyMigrationsOnStartup"], out var app
     // Faq: migrate schema faq (chưa seed — FAQ do Staff soạn qua endpoint admin).
     var faqDb = migrationScope.ServiceProvider.GetRequiredService<FaqDbContext>();
     await faqDb.Database.MigrateAsync().ConfigureAwait(false);
+
+    // Housekeeping: migrate schema housekeeping (chưa seed — ticket tạo runtime bởi guest/staff).
+    var housekeepingDb = migrationScope.ServiceProvider.GetRequiredService<HousekeepingDbContext>();
+    await housekeepingDb.Database.MigrateAsync().ConfigureAwait(false);
 }
 
 // Slot #4 (HSTS/HTTPS-redirect) = TRÁCH NHIỆM HOST (AD-035). Sample host này chạy sau reverse-proxy terminate TLS

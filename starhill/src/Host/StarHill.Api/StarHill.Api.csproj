@@ -29,6 +29,9 @@
     <!-- Module Faq: nửa-Infra (persistence + CRUD/reorder + guest tree read) + nửa-Api (E-Faq.4 — admin CRUD + guest tree). -->
     <ProjectReference Include="..\..\Modules\Faq\Faq.Infrastructure\Faq.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Faq\Faq.Api\Faq.Api.csproj" />
+    <!-- Module Housekeeping: nửa-Infra (persistence + use case) + nửa-Api (H-Hk.3 — guest tạo/xem + admin board/complete). -->
+    <ProjectReference Include="..\..\Modules\Housekeeping\Housekeeping.Infrastructure\Housekeeping.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Housekeeping\Housekeeping.Api\Housekeeping.Api.csproj" />
     <!-- Adapter bảo mật IHtmlSanitizer (Ganss) dùng chung — Rules/Faq sanitize-on-save; RequirePort ở Program.cs. -->
     <ProjectReference Include="..\..\StarHill.Html\StarHill.Html.csproj" />
     <!-- Policy authorization sản phẩm (Admin/Staff superset) — Host khai role, mọi module Api tham chiếu. -->

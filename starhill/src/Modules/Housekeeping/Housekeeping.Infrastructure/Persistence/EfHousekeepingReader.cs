@@ -1,3 +1,4 @@
+using Bedrock.Application.UseCases;
 using Housekeeping.Application;
 using Housekeeping.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -36,5 +37,33 @@ public sealed class EfHousekeepingReader(HousekeepingDbContext db) : IHousekeepi
             .Select(t => t.Id)
             .ToListAsync(ct)
             .ConfigureAwait(false);
+    }
+
+    public async Task<PagedResult<HousekeepingBoardItem>> ListBoardAsync(
+        Guid resortId, HousekeepingStatus? status, PagedRequest paging, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(paging);
+
+        var query = db.HousekeepingTickets.AsNoTracking().Where(t => t.ResortId == resortId);
+        if (status is not null)
+        {
+            query = query.Where(t => t.Status == status.Value);
+        }
+
+        var total = await query.LongCountAsync(ct).ConfigureAwait(false);
+
+        // Order theo Id ASC (UUIDv7 time-ordered) = CŨ NHẤT trước (FIFO staff xử lý). Provider-agnostic (SQLite KHÔNG
+        // ORDER BY DateTimeOffset). Id-v7 tương đương CreatedAt asc.
+        var items = await query
+            .OrderBy(t => t.Id)
+            .Skip(paging.Skip)
+            .Take(paging.SafePageSize)
+            .Select(t => new HousekeepingBoardItem(
+                t.Id, t.RoomId, t.GuestVisitId, t.Status, t.CreatedAt, t.StartedAt, t.CompletedAt,
+                t.CompletedByUserId, t.CompletionMethod))
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+
+        return new PagedResult<HousekeepingBoardItem>(items, paging.SafePage, paging.SafePageSize, total);
     }
 }
