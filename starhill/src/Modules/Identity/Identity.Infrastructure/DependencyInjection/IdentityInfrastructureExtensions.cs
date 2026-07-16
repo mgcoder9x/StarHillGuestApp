@@ -38,6 +38,10 @@ public static class IdentityInfrastructureExtensions
         services.AddBedrockOutbox<IdentityDbContext>(PersistenceKey);
         services.AddBedrockInbox<IdentityDbContext>(PersistenceKey);
         services.AddBedrockRefreshTokens<IdentityDbContext>(PersistenceKey);
+        // F.1a: repository IdentityUser KEYED (login lookup + seeder). Mirror repo keyed các module khác.
+        services.AddBedrockRepository<IdentityDbContext, Identity.Domain.IdentityUser>(PersistenceKey);
+        // F.1a: repo user (login lookup theo username, seeder tạo admin) — KEYED theo IdentityDbContext.
+        services.AddBedrockRepository<IdentityDbContext, Identity.Domain.IdentityUser>(PersistenceKey);
 
         // Factory resolve toàn bộ persistence port bằng module key (không có global PlatformDbContext alias unkeyed).
         services.AddScoped<IUseCase<RefreshTokenCommand, RefreshTokenResult>>(sp =>
