@@ -712,3 +712,29 @@
   invalid_transition) sẽ vào ErrorCodeSnapshotTests khi code.
 - **NEXT**: chờ user duyệt design §1/§3/§4/§9. Nếu đồng ý/không phản hồi → slice **H-Hk.1** (Domain/Contracts/Persistence +
   migration partial-unique/xmin + boundary + Postgres constraint) rồi H-Hk.2 (Application) → H-Hk.3 (Api + Host). C-GA.5 cascade sau.
+
+### QR-N-058 — Slice H-Hk.1 XONG: Housekeeping persistence nền (Domain/Contracts/Infrastructure + migration + boundary + Postgres constraint)
+- Date: 2026-07-16
+- Bối cảnh: hiện thực module Housekeeping theo design QR-N-057. Mirror staging Rules/Faq (persistence nền TRƯỚC, KHÔNG
+  wire Host — Host wiring để slice có Api = H-Hk.3).
+- Đã làm:
+  1. `Housekeeping.Domain` (2 entity + 3 enum): `HousekeepingTicket : Entity, IHasConcurrencyToken` (ResortId/RoomId/
+     GuestSessionId?/GuestVisitId?/CompletedByUserId? Guid trần; Status + CompletionMethod?; timestamps) + `HousekeepingEvent
+     : Entity` (append-only nhật ký, không concurrency) + enum `HousekeepingStatus{Requested,InProgress,Done,Cancelled}`/
+     `HousekeepingCompletionMethod{App,StaffScan}`/`HousekeepingActorType{Guest,Staff,System}`.
+  2. `Housekeeping.Contracts` (`HousekeepingModule.PersistenceKey="housekeeping"`).
+  3. `Housekeeping.Infrastructure`: `HousekeepingDbContext:PlatformDbContext` schema `housekeeping` keyed + Factory +
+     `HousekeepingConfigurations` (**partial unique `ux_hk_open_ticket_room` filter `status IN ('Requested','InProgress')`**
+     — 1 ticket mở/phòng Req 6.2; enum lưu string HasConversion mirror Rooms; FK Cascade event→ticket; index resort/status
+     + event/ticket) + `AddHousekeepingInfrastructure` (persistence + 2 keyed repo).
+  4. Migration `InitialCreate` (dotnet ef, không cần DB). VERIFY grep: 2 CreateTable; xid rowVersion ticket; ux_hk_open_ticket_room
+     unique filter đúng; FK Cascade; 2 index.
+  5. Test: `HousekeepingBoundaryTests` (StarHill.ArchitectureTests, 3) + `HousekeepingPostgresConstraintTests` (2 SkippableFact
+     Postgres: 2-ticket-mở-cùng-phòng→vi phạm + Done giải phóng slot; Cancelled giải phóng slot). `Platform.slnx` +3 project
+     +Housekeeping.IntegrationTests; arch-test csproj +3 ref.
+- Bằng chứng: `vp all` build 0-warning + validate-ci OK + full suite 0-fail — StarHill.ArchitectureTests 28 (+3 Housekeeping),
+  Housekeeping.IntegrationTests 2 skip(Postgres không-Docker), không regression. `vp journal` INV-1..6 xanh. QR-AD-041
+  (Housekeeping foundation) Status Implemented + Guard-Tests `HousekeepingBoundaryTests`/`HousekeepingPostgresConstraintTests` (INV-6 tồn tại thật).
+- **NEXT — slice H-Hk.2**: `Housekeeping.Application` (RequestHousekeeping guest idempotent + rule-gate + flag; máy trạng thái
+  complete-by-room/token/set-status + event-log; guest status read; CancelOpenTicketsForVisit capability; read-model IHousekeepingReader)
+  + đổi Infra ref→Application + validator + tests (SQLite + Postgres concurrency) + ErrorCodeSnapshotTests +mã Housekeeping. Rồi H-Hk.3 (Api + Host).

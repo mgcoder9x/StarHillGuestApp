@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Housekeeping.Domain (POCO: HousekeepingTicket + HousekeepingEvent + enums): reference CHỈ Bedrock.Domain
+       (matrix §3.3, mirror Rules/Faq.Domain). -->
+  <ItemGroup>
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Domain\Bedrock.Domain.csproj" />
+  </ItemGroup>
+</Project>

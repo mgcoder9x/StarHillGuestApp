@@ -163,8 +163,12 @@ Postgres test là gate cuối cho partial-unique/concurrency; không "skip mềm
 ## 8. Build slices và cổng dừng
 
 1. **H-Hk.0 — design (file này):** journal + diagnostics 0; chưa code.
-2. **H-Hk.1 — Domain/Contracts/Persistence:** 2 entity + enum + `HousekeepingDbContext` schema `housekeeping` keyed +
-   migration (partial unique open + FK Cascade + xmin) + `HousekeepingBoundaryTests` + `HousekeepingPostgresConstraintTests`.
+2. **H-Hk.1 — Domain/Contracts/Persistence:** ✅ XONG (QR-N-058/QR-AD-041): 2 entity (`HousekeepingTicket : Entity,
+   IHasConcurrencyToken` + `HousekeepingEvent : Entity`) + 3 enum (string) + `HousekeepingDbContext` schema `housekeeping`
+   keyed + Factory + `HousekeepingConfigurations` (partial unique `ux_hk_open_ticket_room` filter `status IN
+   ('Requested','InProgress')` + FK Cascade event→ticket + xmin + 2 index) + `AddHousekeepingInfrastructure` + migration
+   `InitialCreate` (verify). Test `HousekeepingBoundaryTests` (3) + `HousekeepingPostgresConstraintTests` (2 Postgres/CI).
+   Host wiring + CI bundle DEFER H-Hk.3. `vp all` 0-warning/0-fail; `vp journal` INV-1..6 xanh.
 3. **H-Hk.2 — Application:** guest create (idempotent + rule-gate + flag) + status machine (complete-by-room/token/set-status
    + event-log) + guest status read + cancel-for-visit (capability) + read-model + validator + tests (SQLite + Postgres concurrency).
    `ErrorCodeSnapshotTests` +mã Housekeeping.

@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Housekeeping.Contracts (PUBLIC surface — matrix §3.3): CHỈ reference Bedrock.Messaging.Contracts (mirror
+    Rules/Faq.Contracts). Hiện lộ HousekeepingModule (PersistenceKey). Port cascade (cho C-GA.5 consumer gọi huỷ
+    ticket khi visit kết thúc) thêm khi C-GA.5 tồn tại. KHÔNG ref Contracts module khác. KHÔNG marker DI.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Messaging.Contracts\Bedrock.Messaging.Contracts.csproj" />
+  </ItemGroup>
+</Project>
