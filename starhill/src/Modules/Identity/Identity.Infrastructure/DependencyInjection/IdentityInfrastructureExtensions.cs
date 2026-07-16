@@ -40,6 +40,8 @@ public static class IdentityInfrastructureExtensions
         services.AddBedrockRefreshTokens<IdentityDbContext>(PersistenceKey);
         // F.1a: repository IdentityUser KEYED (login lookup + seeder). Mirror repo keyed các module khác.
         services.AddBedrockRepository<IdentityDbContext, Identity.Domain.IdentityUser>(PersistenceKey);
+        // F.1c: seeder admin idempotent (scoped — dùng chung scope/DbContext; Host gọi sau migrate, gated dev/config).
+        services.AddScoped<Identity.Infrastructure.Persistence.IdentityUserSeeder>();
         // F.1a: repo user (login lookup theo username, seeder tạo admin) — KEYED theo IdentityDbContext.
         services.AddBedrockRepository<IdentityDbContext, Identity.Domain.IdentityUser>(PersistenceKey);
 

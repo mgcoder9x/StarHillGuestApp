@@ -458,7 +458,8 @@
 - Reversibility: Medium (thêm cột ResortId = migration bổ sung sau). Traceability: `design-modules/06-identity-login.md` §2; QR-AD-005/020; QR-N-052.
 
 ### QR-AD-039 — Seed admin dev-only qua config (prod tạo admin out-of-band); login generic-error + timing-defense
-- Status: Proposed (cần user duyệt cơ chế seed prod)
+- Status: Accepted/Implemented (2026-07-16; F.1b generic-error/timing + F.1c seeder; user duyệt "dev-only seeder + rate-limiter v1")
+- Guard-Tests: `LoginUseCaseTests`, `IdentityUserSeederTests`
 - Date: 2026-07-16
 - Decider: AI (spec không nói cách bootstrap admin đầu tiên).
 - Provenance/Evidence: `ResortConfigSeeder` (precedent seeder idempotent dev-gated); F35 (secret ngoài repo); `Argon2idPasswordHasher.Verify` hằng-thời-gian; triết lý `AuthErrors.InvalidRefreshToken` (một mã chung chống oracle).

@@ -5,3 +5,7 @@ services:
   host:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      # F.1c: seed admin DEV (idempotent). Chỉ overlay dev đặt → default (prod-oriented) KHÔNG seed (admin out-of-band, F35).
+      # Password DEV placeholder — KHÔNG dùng cho prod. Login: POST /v1/identity/token/login {username,password}.
+      Identity__SeedAdmin__Username: "admin"
+      Identity__SeedAdmin__Password: "DevAdmin!2026"

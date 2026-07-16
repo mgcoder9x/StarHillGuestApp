@@ -197,6 +197,16 @@ if (bool.TryParse(configuration["Bedrock:ApplyMigrationsOnStartup"], out var app
     var identityDb = migrationScope.ServiceProvider.GetRequiredService<IdentityDbContext>();
     await identityDb.Database.MigrateAsync().ConfigureAwait(false);
 
+    // F.1c: seed admin CHỈ khi có CẢ HAI config Identity:SeedAdmin:Username/Password (dev/compose đặt; prod KHÔNG
+    // cấu hình → KHÔNG seed, admin tạo out-of-band — F35/QR-AD-039). Idempotent (chạy lại không nhân đôi).
+    var seedAdminUsername = configuration["Identity:SeedAdmin:Username"];
+    var seedAdminPassword = configuration["Identity:SeedAdmin:Password"];
+    if (!string.IsNullOrWhiteSpace(seedAdminUsername) && !string.IsNullOrWhiteSpace(seedAdminPassword))
+    {
+        var identityUserSeeder = migrationScope.ServiceProvider.GetRequiredService<IdentityUserSeeder>();
+        await identityUserSeeder.SeedAdminAsync(seedAdminUsername, seedAdminPassword).ConfigureAwait(false);
+    }
+
     // ResortConfig: migrate schema resort_config + seed idempotent (resort/settings/languages, en default — Req 12.4).
     var resortConfigDb = migrationScope.ServiceProvider.GetRequiredService<ResortConfigDbContext>();
     await resortConfigDb.Database.MigrateAsync().ConfigureAwait(false);
