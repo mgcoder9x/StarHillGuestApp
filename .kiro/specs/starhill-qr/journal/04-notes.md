@@ -685,3 +685,30 @@
 - **AUTH (F.1+F.2) HOÀN TẤT**: login (role) → dùng admin → refresh (role bền) → dùng admin; user vô hiệu → refresh chết; reuse token → 401. Admin surface + FE sẵn sàng dùng thật.
 - Ghi chú (chưa làm, không chặn): revoke-family TỨC THÌ khi vô hiệu hoá user (hiện session chết ở lần refresh kế trong ≤ access-TTL) — làm khi có màn quản trị user (admin-user-mgmt slice).
 - NEXT: module **Concierge** (chat khách↔lễ tân + ChatHub) hoặc **Housekeeping** (yêu cầu dịch vụ theo phòng) — 2/8 module cuối; cả hai là consumer của `IRuleGate` (rule-ack) + `ICurrentGuestContextResolver`. Rồi Dashboard. Sau đó "BE done" → chọn FE template.
+
+### QR-N-057 — Design module Housekeeping XONG (Wave G, design-first); CHƯA code
+- Date: 2026-07-16
+- Bối cảnh: BE 6/8 module (+ Auth Wave F). Module kế theo dependency graph + độ contained = **Housekeeping** (không SignalR
+  như Concierge; tái dùng ngay `IRoomTokenResolver`/`IRuleGate`/`ICurrentGuestContextResolver`/config; mở đường C-GA.5 cascade).
+  DESIGN-FIRST: `design-modules/06-housekeeping.md` → diagnostics 0 → đọc lại valid → chờ user duyệt trước code.
+- Đã VERIFY chữ ký thật TRƯỚC khi thiết kế (không suy đoán): `Rooms.Contracts.IRoomTokenResolver.ResolveActiveTokenAsync`
+  → `RoomResolution(RoomId,ResortId,RoomNumber,Building?,Floor?,IsRoomActive)` (complete-by-token); `IRuleGate` enum có
+  `Housekeeping`; `ICurrentGuestContextResolver`; `IResortGuestConfigQuery` (HousekeepingEnabled+RequireRuleAckForHousekeeping);
+  `IResortSettingsQuery` (HousekeepingRateLimitPerHour). Data model Housekeeping lấy từ `docs/resort-qr-portal/design.md`
+  §Data Models (HousekeepingTicket[Status Requested/InProgress/Done/Cancelled + CompletionMethod App/StaffScan] +
+  HousekeepingEvent[log mỗi transition]) + §Constraints (1 ticket mở/phòng unique) + §API. Req 6 đầy đủ.
+- Quyết định thiết kế nổi bật (cấp số QR-AD/DV/TO thật khi code — INV-3 tránh forward-ref):
+  1. **1-ticket-mở/phòng** bằng **partial unique** `ux_hk_open_ticket_room WHERE Status IN (Requested,InProgress)` (race-safe,
+     cùng lớp CP2/ux_qr_active) + create **idempotent** (bắt UniqueConstraintViolationException → trả ticket mở existing, không lỗi).
+  2. Rule-gate (Housekeeping) enforce TRONG use case (defense-in-depth CP3, mirror Faq); Application ref Rules.Contracts + Rooms.Contracts.
+  3. Enum lưu **string** (HasConversion) để partial-filter đọc được + ổn định (verify precedent Rooms lúc code).
+  4. **Log mỗi transition** (HousekeepingEvent) CÙNG transaction với đổi Status (Req 6.8 đối soát).
+  5. complete-by-token dùng `IRoomTokenResolver` (QR chỉ định phòng, KHÔNG thay đăng nhập — Req 6.5); complete-by-room/set-status; ghi CompletedByUserId+CompletionMethod.
+  6. **Cascade huỷ khi visit-end (CP9/Req 10.8) TÁCH sang C-GA.5** (event-driven outbox/inbox) — module cấp use case
+     `CancelOpenTicketsForVisitUseCase` (capability + test) nay, WIRING consumer sau (defer — cần outbox GuestAccess). Không premature-couple.
+  7. GET guest status KHÔNG touch (đọc phụ trợ như Rules-GET); POST create touch-sau-thành-công. Rate-limit dựa 1-mở/phòng + Bedrock global IP limiter (không bảng riêng).
+- Bằng chứng: `design-modules/06-housekeeping.md` tạo xong, **getDiagnostics = 0**. Chưa viết C#. Mỗi CP/bất biến map guard
+  test + Docker? + slice (§7/§8). Mã lỗi mới `HousekeepingErrors` (housekeeping_disabled/no_open_ticket/ticket_not_found/
+  invalid_transition) sẽ vào ErrorCodeSnapshotTests khi code.
+- **NEXT**: chờ user duyệt design §1/§3/§4/§9. Nếu đồng ý/không phản hồi → slice **H-Hk.1** (Domain/Contracts/Persistence +
+  migration partial-unique/xmin + boundary + Postgres constraint) rồi H-Hk.2 (Application) → H-Hk.3 (Api + Host). C-GA.5 cascade sau.
