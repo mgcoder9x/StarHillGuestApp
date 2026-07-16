@@ -21,4 +21,11 @@ internal static partial class ApiLog
         Message = "Unhandled exception for {Method} {MaskedPath} [correlation={CorrelationId}]")]
     public static partial void UnhandledException(
         ILogger logger, Exception exception, string method, string maskedPath, string correlationId);
+
+    [LoggerMessage(
+        EventId = 1002,
+        Level = LogLevel.Warning,
+        Message = "Bad request for {Method} {MaskedPath}: {Reason} [correlation={CorrelationId}]")]
+    public static partial void BadRequest(
+        ILogger logger, string method, string maskedPath, string reason, string correlationId);
 }

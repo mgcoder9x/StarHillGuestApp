@@ -53,4 +53,19 @@ public sealed class ExceptionHandlingMiddlewareTests
 
         Assert.Equal(StatusCodes.Status500InternalServerError, context.Response.StatusCode);
     }
+
+    [Fact]
+    public async Task Bad_http_request_becomes_400_not_500()
+    {
+        // Framework binding/parse (thiếu required route/query param, body JSON hỏng) ném BadHttpRequestException →
+        // PHẢI là 400 (lỗi client), KHÔNG rơi vào catch(Exception) chung thành 500 (lỗi server giả).
+        var middleware = Create(_ => throw new BadHttpRequestException(
+            "Required parameter \"Guid roomId\" was not provided from query string."));
+        var context = new DefaultHttpContext();
+        context.Response.Body = new MemoryStream();
+
+        await middleware.InvokeAsync(context);
+
+        Assert.Equal(StatusCodes.Status400BadRequest, context.Response.StatusCode);
+    }
 }

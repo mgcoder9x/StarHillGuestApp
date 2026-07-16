@@ -48,6 +48,26 @@ public sealed class ExceptionHandlingMiddleware(
             // BẮT UniqueConstraintViolationException để trả Error nghiệp vụ cụ thể (vd số phòng đã tồn tại).
             await WriteIfPossibleAsync(context, CommonErrors.Conflict());
         }
+        catch (BadHttpRequestException ex)
+        {
+            if (context.Response.HasStarted)
+            {
+                throw;
+            }
+
+            // Lỗi BINDING/PARSE của framework (thiếu/sai required route/query param, body JSON không đọc được) là
+            // LỖI CLIENT → 400, KHÔNG PHẢI 500. Nếu để rơi vào catch(Exception) chung thì mọi request thiếu param
+            // required trả 500 (lỗi server giả) — sai ngữ nghĩa HTTP + gây báo động nhầm. Log Warning (không phải
+            // Error server); path qua masker (F15) — message framework mô tả tên/kiểu param, KHÔNG chứa giá trị.
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                var maskedPath = masker.Mask(context.Request.Path.Value);
+                var correlationId = CorrelationContext.Resolve(context);
+                ApiLog.BadRequest(logger, context.Request.Method, maskedPath, ex.Message, correlationId);
+            }
+
+            await WriteIfPossibleAsync(context, CommonErrors.Validation());
+        }
         catch (Exception ex)
         {
             if (context.Response.HasStarted)

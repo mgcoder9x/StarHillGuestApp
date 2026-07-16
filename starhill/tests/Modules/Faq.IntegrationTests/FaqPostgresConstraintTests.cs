@@ -188,16 +188,28 @@ public sealed class FaqPostgresConstraintTests : IAsyncLifetime
 
         var resortId = Guid.CreateVersion7();
 
-        await using var scope = provider.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<FaqDbContext>();
+        // Seed category + item (scope riêng) rồi RỜI scope để không còn entity nào bị ChangeTracker theo dõi.
+        Guid categoryId;
+        await using (var seedScope = provider.CreateAsyncScope())
+        {
+            var db = seedScope.ServiceProvider.GetRequiredService<FaqDbContext>();
+            var category = NewCategory(resortId, "arrival");
+            db.FaqCategories.Add(category);
+            db.FaqItems.Add(new FaqItem { ResortId = resortId, CategoryId = category.Id, SortOrder = 1, IsActive = true });
+            await db.SaveChangesAsync();
+            categoryId = category.Id;
+        }
 
-        var category = NewCategory(resortId, "arrival");
-        db.FaqCategories.Add(category);
-        db.FaqItems.Add(new FaqItem { ResortId = resortId, CategoryId = category.Id, SortOrder = 1, IsActive = true });
-        await db.SaveChangesAsync();
-
-        // FK Restrict (item→category): xóa category còn item → vi phạm (backstop DB cho invariant use case E-Faq.2).
-        db.FaqCategories.Remove(category);
-        await Assert.ThrowsAnyAsync<DbUpdateException>(() => db.SaveChangesAsync());
+        // Xóa trong scope MỚI, chỉ load CHÍNH category (mirror DeleteFaqCategoryUseCase — KHÔNG track item con).
+        // → lệnh DELETE chạm DB → FK Restrict (item→category, 23503) bắn → DbUpdateException (backstop invariant E-Faq.2).
+        // (Nếu item con bị track cùng context, EF "sever" quan hệ client-side và ném InvalidOperationException TRƯỚC
+        //  khi tới DB → không kiểm được ràng buộc DB thật. Đây là gốc rễ lỗi cũ, không phải nới lỏng ràng buộc.)
+        await using (var deleteScope = provider.CreateAsyncScope())
+        {
+            var db = deleteScope.ServiceProvider.GetRequiredService<FaqDbContext>();
+            var category = await db.FaqCategories.SingleAsync(c => c.Id == categoryId);
+            db.FaqCategories.Remove(category);
+            await Assert.ThrowsAnyAsync<DbUpdateException>(() => db.SaveChangesAsync());
+        }
     }
 }
