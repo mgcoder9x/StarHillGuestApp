@@ -54,6 +54,11 @@
     <Project Path="src/Modules/Faq/Faq.Infrastructure/Faq.Infrastructure.csproj" />
     <Project Path="src/Modules/Faq/Faq.Api/Faq.Api.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Concierge/">
+    <Project Path="src/Modules/Concierge/Concierge.Contracts/Concierge.Contracts.csproj" />
+    <Project Path="src/Modules/Concierge/Concierge.Domain/Concierge.Domain.csproj" />
+    <Project Path="src/Modules/Concierge/Concierge.Infrastructure/Concierge.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/StarHill.Authorization/StarHill.Authorization.csproj" />
     <Project Path="src/StarHill.Html/StarHill.Html.csproj" />
@@ -74,6 +79,7 @@
     <Project Path="tests/Modules/Rules.IntegrationTests/Rules.IntegrationTests.csproj" />
     <Project Path="tests/Modules/Faq.IntegrationTests/Faq.IntegrationTests.csproj" />
     <Project Path="tests/Modules/Housekeeping.IntegrationTests/Housekeeping.IntegrationTests.csproj" />
+    <Project Path="tests/Modules/Concierge.IntegrationTests/Concierge.IntegrationTests.csproj" />
     <Project Path="tests/StarHill.Html.Tests/StarHill.Html.Tests.csproj" />
     <Project Path="tests/Host/StarHill.Api.Tests/StarHill.Api.Tests.csproj" />
   </Folder>

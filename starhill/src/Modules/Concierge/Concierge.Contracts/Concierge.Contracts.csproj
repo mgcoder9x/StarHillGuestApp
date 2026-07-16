@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Concierge.Contracts (PUBLIC surface — matrix §3.3): CHỈ reference Bedrock.Messaging.Contracts (mirror
+    Housekeeping/Rules/Faq.Contracts). K-Con.1 hiện lộ ConciergeModule (PersistenceKey). Port cascade
+    (cho C-GA.5 consumer gọi đóng hội thoại khi visit kết thúc) thêm khi C-GA.5 tồn tại. KHÔNG ref Contracts
+    module khác. KHÔNG marker DI.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Messaging.Contracts\Bedrock.Messaging.Contracts.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Concierge.Domain (POCO: Conversation + Message + InternalNote + enums): reference CHỈ Bedrock.Domain
+       (matrix §3.3, mirror Housekeeping/Rules/Faq.Domain). -->
+  <ItemGroup>
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Domain\Bedrock.Domain.csproj" />
+  </ItemGroup>
+</Project>
