@@ -1,1903 +1,382 @@
-Thinking completed
-+
-Phát hiện quan trọng (drift risk): QR-AD-035 được code tham chiếu (RulesConfigurations, RuleContracts, CreateRuleSectionUseCase) NHƯNG CHƯA có trong journal. Đây đúng là loại drift design↔journal cần chặn. Trạng thái D-Rules.2b thực tế:
-
-✅ Application code + Infrastructure wiring + EF config ux_rule_set_resort + migration
-✅ Test csproj đã ref StarHill.Html + Sqlite
-❌ Test CP12 sanitize + CP15 concurrency use-case chưa viết
-❌ QR-AD-035 (journal) thiếu + QR-N-035 thiếu
-❓ Build/test chưa verify phiên này
-Đọc domain entities + RulesBoundaryTests để hoàn tất chính xác, rồi build.
+Cập nhật Faq.IntegrationTests csproj (thêm StarHill.Html + Sqlite) và đọc RuleSanitizeTests/RuleConcurrencyTests để mirror setup.
 
 Read file(s)
 
-RuleSet.cs
+RuleSanitizeTests.cs
 
-RuleSection.cs
-
-RuleSectionTranslation.cs
-
-RulesBoundaryTests.cs
+RuleConcurrencyTests.cs
 Thinking completed
 +
-Bức tranh đầy đủ đã rõ. D-Rules.2b còn thiếu: (1) test CP12 sanitize, (2) test CP15 concurrency (Postgres xmin), (3) assertion Rules.Application ⊥ Infra/Api (I7) trong RulesBoundaryTests, (4) journal QR-AD-035 (code đã tham chiếu — drift), (5) QR-N-035 + anti-drift map, (6) build/test verify.
+Cập nhật Faq.IntegrationTests csproj (thêm StarHill.Html + Sqlite cho test sanitize/CRUD local).
 
-Trước hết build để xác nhận code hiện tại (uncommitted) biên dịch sạch.
+Accepted edits to
 
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
+Faq.IntegrationTests.csproj
 
-dotnet build Platform.slnx -c Release --nologo 2>&1 | Select-String -Pattern "error|warning|Build succeeded|Build FAILED|succeeded|FAILED" | Select-Object -Last 15
-
-Build 
-succeeded.
-    0 
-Warning(s)
-    0 
-Error(s)
 
 Thinking completed
 +
-Build 0-warning/0-error. Giờ đọc StarHill.ArchitectureTests.csproj (xem có ref Rules.Application cho assertion I7 chưa) và API của StarHill.Html (tên method AddStarHillHtml/Sanitize) để viết test/assertion chính xác.
+Viết FaqSanitizeTests (CP12, SQLite + Ganss thật).
 
-Read file(s)
+Accepted creation of
+
+FaqSanitizeTests.cs
+
+
+Thinking completed
++
+Viết FaqItemParentValidationTests (bất biến cây) + FaqAdminCrudTests (happy path + delete guards) — SQLite.
+
+Accepted creation of
+
+FaqItemParentValidationTests.cs
+
+
+Accepted creation of
+
+FaqAdminCrudTests.cs
+
+
+Thinking completed
++
+Viết FaqConcurrencyTests (CP15 xmin, Postgres/Testcontainers).
+
+Accepted creation of
+
+FaqConcurrencyTests.cs
+
+
+Thinking completed
++
+Bổ sung boundary test Application (giờ Faq.Application đã tồn tại) + ref vào arch-test csproj.
+
+
+2 edits to file
+
+FaqBoundaryTests.cs
+
+
+Accepted edits to
 
 StarHill.ArchitectureTests.csproj
 
-GanssHtmlSanitizerAdapter.cs
-
-StarHillHtmlServiceCollectionExtensions.cs
-Thinking completed
-+
-StarHill.ArchitectureTests.csproj đã ref Rules.Infrastructure (kéo theo Application transitively). Tìm tên extension method AddStarHillHtml.
-
-Searched workspace
-Tìm tên chính xác extension method đăng ký adapter HTML để dùng trong test CP12.
-Thinking completed
-+
-Đủ thông tin. Đọc test concurrency CP15 của ResortConfig để mirror chính xác pattern xmin (hai scope, ConcurrencyConflictException).
-
-Searched workspace
-Tìm test concurrency CP15 hiện có để mirror pattern xmin chính xác.
-Read file(s)
-
-ResortConfigPersistenceTests.cs 100 - 137
-Thinking completed
-+
-Đọc RoomsUseCaseTests để mirror chính xác cách dựng SQLite cho test use-case (CP12) — đặc biệt cách EnsureCreated + xử lý xmin trên SQLite.
-
-Read file(s)
-
-RoomsUseCaseTests.cs 1 - 91
-Thinking completed
-+
-Đủ dữ liệu để triển khai chính xác. Kế hoạch hoàn tất D-Rules.2b (mọi tên khớp design §11 để không tạo drift):
-
-RuleSanitizeTests (SQLite, no Docker) — CP12 sanitize-on-save qua adapter Ganss thật.
-RuleConcurrencyTests (Postgres Testcontainers) — CP15 xmin conflict.
-Thêm test Only_one_rule_set_per_resort vào RulesPostgresConstraintTests — guard QR-AD-035.
-Thêm assertion Application ⊥ Infra/Api (I7) vào RulesBoundaryTests.
-Journal: QR-AD-035 (Implemented + Guard-Tests), QR-N-035, cập nhật anti-drift map + range.
-Bắt đầu viết CP12 sanitize test.
-
-Accepted creation of
-
-RuleSanitizeTests.cs
-
 
 Thinking completed
 +
-CP15 concurrency test (Postgres Testcontainers) — mirror ResortConfig + container setup của RulesPostgresConstraintTests.
-
-Accepted creation of
-
-RuleConcurrencyTests.cs
-
-
-Thinking completed
-+
-Thêm test guard AD-035 (Only_one_rule_set_per_resort) vào RulesPostgresConstraintTests.
-
-Accepted edits to
-
-RulesPostgresConstraintTests.cs
-
-
-Thinking completed
-+
-Thêm assertion I7 (Rules.Application ⊥ Infra/Api) vào RulesBoundaryTests, mirror Rooms.
-
-
-2 edits to file
-
-RulesBoundaryTests.cs
-
-
-Thinking completed
-+
-Build lại để xác nhận test biên dịch, rồi chạy test Rules + boundary.
+Tất cả code + test E-Faq.2 đã xong. Chạy vp all.
 
 Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
+c:\Users\to…illGuestApp
 
-dotnet build Platform.slnx -c Release --nologo 2>&1 | Select-String -Pattern "error|warning|Build succeeded|Build FAILED" | Select-Object -Last 20
-0           
-C:\Users\k.
-nguyen.manh
-.toan\Deskt
-op\TOANM\WO
-RK\StarHill
-GuestApp\st
-arhill\test
-s\Modules\R
-ules.Integr
-ationTests\
-RuleSanitiz
-eTests.cs(5
-3,18): 
-error 
-CS1061: 'Se
-rviceCollec
-tion' does 
-not 
-contain a 
-definition 
-for 'AddRul
-esInfrastru
-cture' and 
-no 
-accessible 
-extension 
-method 'Add
-RulesInfras
-tructure' 
-accepting 
-a first 
-argument 
-of type 'Se
-rviceCollec
-tion' 
-could be 
-found (are 
-you 
-missing a 
-using 
-directive 
-or an 
-assembly re
-ference?) [
-C:\Users\k.
-nguyen.manh
-.toan\Deskt
-op\TOANM\WO
-RK\StarHill
-GuestApp\st
-arhill\test
-s\Modules\R
-ules.Integr
-ationTests\
-Rules.Integ
-rationTests
-.csproj]
-Build 
-FAILED.
-C:\Users\k.
-nguyen.manh
-.toan\Deskt
-op\TOANM\WO
-RK\StarHill
-GuestApp\st
-arhill\test
-s\Modules\R
-ules.Integr
-ationTests\
-RuleSanitiz
-eTests.cs(5
-3,18): 
-error 
-CS1061: 'Se
-rviceCollec
-tion' does 
-not 
-contain a 
-definition 
-for 'AddRul
-esInfrastru
-cture' and 
-no 
-accessible 
-extension 
-method 'Add
-RulesInfras
-tructure' 
-accepting 
-a first 
-argument 
-of type 'Se
-rviceCollec
-tion' 
-could be 
-found (are 
-you 
-missing a 
-using 
-directive 
-or an 
-assembly re
-ference?) [
-C:\Users\k.
-nguyen.manh
-.toan\Deskt
-op\TOANM\WO
-RK\StarHill
-GuestApp\st
-arhill\test
-s\Modules\R
-ules.Integr
-ationTests\
-Rules.Integ
-rationTests
-.csproj]
-    0 
-Warning(s)
-    1 
-Error(s)
+cmd /c "starhill\scripts\vp.cmd all" > "$env:TEMP\vpfaq2.txt" 2>&1; Write-Output "EXIT=$LASTEXITCODE"; Get-Content "$env:TEMP\vpfaq2.txt" | Select-String -Pattern "error CS|error |warning |Failed!|Passed!|\[FAIL\]|SUMMARY|OK |FAIL |Faq" | Select-Object -Last 45
+EXIT=1
 
-Thinking completed
-+
-Thiếu using Rules.Infrastructure.DependencyInjection; trong RuleSanitizeTests.
-
-Accepted edits to
-
-RuleSanitizeTests.cs
-
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet build Platform.slnx -c Release --nologo 2>&1 | Select-String -Pattern "error|warning|Build succeeded|Build FAILED" | Select-Object -Last 10
-0           
-Build 
-succeeded.
-    0 
-Warning(s)
-    0 
-Error(s)
-
-Thinking completed
-+
-Build 0/0. Chạy test Rules (CP12 SQLite + CP15/AD-035 Postgres) + RulesBoundaryTests. Docker sẵn nên Testcontainers chạy thật.
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet test tests/Modules/Rules.IntegrationTests/Rules.IntegrationTests.csproj -c Release --no-build --nologo 2>&1 | Select-String -Pattern "Passed!|Failed!|error|Passed:|Failed:|Skipped:"
-
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 8, 
-Skipped:   
-  0, 
-Total:     
-8, 
-Duration: 
-56 s - Rule
-s.Integrati
-onTests.dll
+C:\Users\toann\Desktop
+\WORK_PRO\StarHillGues
+tApp\starhill\tests\Mo
+dules\Faq.IntegrationT
+ests\FaqItemParentVali
+dationTests.cs(69,31):
+ error CS0246: The 
+type or namespace 
+name 'Result<>' could 
+not be found (are you 
+missing a using 
+directive or an 
+assembly reference?) [
+C:\Users\toann\Desktop
+\WORK_PRO\StarHillGues
+tApp\starhill\tests\Mo
+dules\Faq.IntegrationT
+ests\Faq.IntegrationTe
+sts.csproj]
+VALIDATE CI: OK 
+(starhill-ci.yml; push
+⊇main/master/develop 
++ pull_request; 
+concurrency 
+cancel-in-progress; pe
+rmissions.contents=rea
+d; jobs build-test/doc
+ker-image/migration-bu
+ndle + timeouts; nhắm 
+starhill/)
+Test run for C:\Users\
+toann\Desktop\WORK_PRO
+\StarHillGuestApp\star
+hill\tests\Modules\Faq
+.IntegrationTests\bin\
+Debug\net10.0\Faq.Inte
+grationTests.dll (.NET
+CoreApp,Version=v10.0)
+Passed!  - Failed:    
+ 0, Passed:     2, 
+Skipped:     0, 
+Total:     2, 
+Duration: 101 ms - Bed
+rock.ContractTests.dll
  (net10.0)
-
-Thinking completed
-+
-8/8 pass, 0 skip (Docker thật). Chạy RulesBoundaryTests (gồm assertion I7 mới).
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet test tests/StarHill.ArchitectureTests/StarHill.ArchitectureTests.csproj -c Release --no-build --nologo --filter "FullyQualifiedName~RulesBoundaryTests" 2>&1 | Select-String -Pattern "Passed!|Failed!|error|Passed:|Failed:|Skipped:"
-
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 4, 
-Skipped:   
-  0, 
-Total:     
-4, 
-Duration: 
-767 ms - St
-arHill.Arch
-itectureTes
-ts.dll 
+Passed!  - Failed:    
+ 0, Passed:     7, 
+Skipped:     0, 
+Total:     7, 
+Duration: 388 ms - Ide
+ntity.UnitTests.dll 
 (net10.0)
-
-Thinking completed
-+
-RulesBoundaryTests 4/4 pass (gồm assertion I7 mới). Giờ ghi journal. Đọc cuối 01-decisions.md (sau AD-034) để append QR-AD-035 đúng format.
-
-Read file(s)
-
-01-decisions.md 398 - 421
-Accepted edits to
-
-01-decisions.md
-
-
-Thinking completed
-+
-Ghi QR-N-035 (note hoàn tất D-Rules.2b) vào cuối 04-notes.md.
-
-Accepted edits to
-
-04-notes.md
-
-
-Thinking completed
-+
-Cập nhật 05-anti-drift.md: thêm row AD-035 vào guard map + cập nhật range (AD→035, N→035).
-
-
-2 edits to file
-
-05-anti-drift.md
-
-
-Thinking completed
-+
-Cập nhật row QR-AD-031 để phản ánh chính xác: sanitize-on-save đã xong+test, chỉ còn RequirePort (vẫn Proposed).
-
-Accepted edits to
-
-05-anti-drift.md
-
-
-Thinking completed
-+
-Cập nhật design 04-rules.md §12 D-Rules.2b từ ⏳ → ✅ để design↔code khớp.
-
-Accepted edits to
-
-04-rules.md
-
-
-Error(s) while checking diagnostics
-Thinking completed
-+
-Diagnostics tool tạm không khả dụng — chạy thẳng cổng thật: JournalConsistency INV-1..6 (kiểm INV-6 thấy AD-035 khai RulesPostgresConstraintTests tồn tại, range liên tục tới AD-035/N-035).
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet test tests/StarHill.ArchitectureTests/StarHill.ArchitectureTests.csproj -c Release --no-build --nologo --filter "FullyQualifiedName~StarHillJournalConsistencyTests" 2>&1 | Select-String -Pattern "Passed!|Failed!|error|Passed:|Failed:|Skipped:"
-
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 6, 
-Skipped:   
-  0, 
-Total:     
-6, 
-Duration: 
-5 s - StarH
-ill.Archite
-ctureTests.
-dll 
-(net10.0)
-
-Thinking completed
-+
-JournalConsistency 6/6 pass (INV-6 xác nhận AD-035 Guard-Tests tồn tại, range liên tục).
-
-Bước cuối nghiêm ngặt: chạy TOÀN BỘ test suite (Docker sẵn → Testcontainers thật, không skip mềm) để chắc không có gì vỡ.
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet test Platform.slnx -c Release --no-build --nologo 2>&1 | Select-String -Pattern "Passed!|Failed!|error CS|Passed:|Failed:|Skipped:|Test summary|Total tests"
-tests"      
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 2, 
-Skipped:   
-  0, 
-Total:     
-2, 
-Duration: 
-1 s - Bedro
-ck.Contract
-Tests.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 7, 
-Skipped:   
-  0, 
-Total:     
-7, 
-Duration: 
-965 ms - Id
-entity.Unit
-Tests.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-20, 
-Skipped:   
-  0, 
-Total:    
-20, 
-Duration: 
-390 ms - Re
-sortConfig.
-UnitTests.d
-ll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 2, 
-Skipped:   
-  0, 
-Total:     
-2, 
-Duration: 
-453 ms - Ro
-oms.UnitTes
-ts.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 6, 
-Skipped:   
-  0, 
-Total:     
-6, 
-Duration: 
-3 s - StarH
-ill.Html.Te
-sts.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-33, 
-Skipped:   
-  0, 
-Total:    
-33, 
-Duration: 
-16 s - Star
-Hill.Api.Te
-sts.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-21, 
-Skipped:   
-  0, 
-Total:    
-21, 
-Duration: 
-25 s - Star
-Hill.Archit
-ectureTests
-.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-27, 
-Skipped:   
-  0, 
-Total:    
-27, 
-Duration: 
-1 m 24 s - 
-Rooms.Integ
-rationTests
-.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 2, 
-Skipped:   
-  0, 
-Total:     
-2, 
-Duration: 
-1 m 32 s - 
-Identity.In
-tegrationTe
-sts.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-15, 
-Skipped:   
-  0, 
-Total:    
-15, 
-Duration: 
-1 m 48 s - 
-ResortConfi
-g.Integrati
-onTests.dll
- (net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 8, 
-Skipped:   
-  0, 
-Total:     
-8, 
-Duration: 
-1 m 57 s - 
-Rules.Integ
-rationTests
-.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-25, 
-Skipped:   
-  0, 
-Total:    
-25, 
-Duration: 
-1 m 58 s - 
-GuestAccess
-.Integratio
-nTests.dll 
-(net10.0)
-
-Thinking completed
-+
-Hoàn tất D-Rules.2b, đã kiểm chứng đầu-cuối với Docker thật. Tóm tắt (mọi khẳng định dựa lệnh/test thực đo):
-
-Phát hiện quan trọng khi vào phiên
-Tôi xác minh trạng thái thực trên đĩa (không tin summary "chưa bắt đầu"): phần lớn D-Rules.2b đã code từ trước (use cases + wiring + EF config ux_rule_set_resort + migration), build 0/0. Nhưng phát hiện drift design↔journal: code tham chiếu QR-AD-035 mà journal chưa có entry. Đây đúng loại drift cần chặn tận gốc → tôi bổ sung QR-AD-035 đầy đủ + guard test, không để code "mồ côi quyết định".
-
-Đã bổ sung phiên này (phần còn thiếu của 2b)
-CP12 sanitize RuleSanitizeTests (SQLite + adapter Ganss thật qua AddStarHillHtml, 3 test): <script>/onerror/javascript: không lọt vào BodyHtmlSanitized; markup an toàn <p>/<strong> được giữ (chứng minh làm-sạch chứ không xóa-trắng); Title cũng sanitize; blank→null; upsert idempotent.
-CP15 concurrency RuleConcurrencyTests (Postgres Testcontainers): hai scope sửa cùng RuleSection → người sau DbUpdateConcurrencyException (xmin active).
-QR-AD-035 guard RulesPostgresConstraintTests.Only_one_rule_set_per_resort (Postgres): hai RuleSet cùng ResortId → vi phạm ux_rule_set_resort.
-I7 boundary RulesBoundaryTests.Application_should_not_depend_on_infrastructure_or_api — Rules.Application ⊥ Infra/Api/EFCore/AspNetCore.
-Lý do các quyết định (chính xác)
-ux_rule_set_resort (DB unique) thay vì pre-check: CreateRuleSectionUseCase lazy find-or-create RuleSet theo ResortId. Nếu dùng AnyAsync pre-check thì TOCTOU — hai admin đồng thời tạo section đầu tiên → hai RuleSet mồ côi → Publish (đọc "the Draft RuleSet" số ít) nhập nhằng. DB-constraint là nguồn sự thật race-safe; use case bắt UniqueConstraintViolationException→DraftConflict (409, client retry). Cùng triết lý QR-AD-010/QR-N-018 (không TOCTOU), giữ Application ⊥ EF (I7).
-AD-035 tách riêng, không gộp QR-AD-030: là quyết định lưu-trữ AI tự ra, cần truy vết độc lập.
-QR-AD-031 vẫn Proposed: sanitize-on-save đã code+test, nhưng còn RequirePort(IHtmlSanitizer) ở Host (D-Rules.4) mới đủ 3 phần → chưa chuyển Implemented (tránh Implemented non trước khi hoàn chỉnh; INV-6 do đó chưa ràng buộc).
-Bằng chứng (thực đo)
-dotnet build Platform.slnx -c Release = 0 warning / 0 error.
-Full suite Docker thật: 168 test, 0 fail, 0 skip — trong đó Rules.IntegrationTests 8/8, StarHill.ArchitectureTests 21/21 (gồm I7 + JournalConsistency), StarHill.Html 6/6.
-StarHillJournalConsistencyTests INV-1..6 = 6/6: INV-6 xác nhận AD-035 khai Guard-Tests: RulesPostgresConstraintTests tồn tại thật; range liên tục tới QR-AD-035 / QR-N-035 / QR-TO-013.
-Journal đã cập nhật
-QR-AD-035 (01), QR-N-035 (04), anti-drift map +row AD-035 & sửa row AD-031 (05), range→035, design 04-rules.md §12 D-Rules.2b→✅.
-
-Trạng thái commit: chưa commit (theo đúng quy tắc — chờ bạn yêu cầu rõ). Các slice đang chờ: D-Rules.1, D-Rules.2a, D-Rules.2b, Phase-1 OpenAPI, TASK 7 compose.
-
-Bước kế tiếp theo mạch là D-Rules.3 (PublishRulesUseCase flip-before-insert + preview/history + CP4 Postgres). Bạn muốn tôi tiếp D-Rules.3, hay commit các slice đang chờ trước?
-
-Est. Credits Used: 39.43
-Elapsed time: 1h 14m 36s
-
-
-Checkpoint
-Restore
-Hãy xử lý để hệ thống cực tốt và an toàn; duyệt theo khuyến nghị từng bước chắc chắn và hướng tới lâu dài, sản phẩm thương mại, chú ý khuyến nghị thì bạn phải hiểu và nói lên được các lý do chọn thì mới được và lý phải là chính xác. Tiếp tục đi cực nghiêm ngặt và tuyệt đối không bịa ; không suy đoán, luôn valid nhiều lần đảm bảo chính xác tuyệt đối. Cần 1 cách nhìn sâu rộng nhé. Tôi luôn nghiên về 1 sự chuẩn bị thiết kế rõ ràng rồi đọc lại valid thiết kế. chính xác có thể kiểm chứng rồi mới triển khai cái gì đó. Và khi fix 1 cái gì thì phải nhìn vào bản chất đừng fix tận gốc đừng fix mỗi cái ngọn. Chú ý tuyệt đối không tiết kiệm token để nhanh xong task. Tôi cần bạn tạo 1 thư mục trong đó chứa các file làm 4 việc:   1. Các quyết định AI tự ra mà spec không nói  2. Những chỗ AI phải đổi so với yêu cầu ban đầu  3. Các Trade-off AI phải cân nhắc  4. Bất kỳ điều gì mà bạn nên biết  Bạn có thể lưu bất kỳ định dạng gì tốt nhất cho AI dùng, file này sẽ là xuyên suốt lưu lại để sau làm kiểm chứng.nếu có rồi thì cập nhật vào. Tôi cần bạn có 1 cách nào cực mạnh để tránh tránh dift.
-
-Kiro
-Thinking completed
-+
-Hiểu rõ. Tôi tiếp tục theo mạch build sang D-Rules.3 (PublishRulesUseCase — snapshot flip-before-insert + CP4), giữ đúng design-first: đọc kỹ thiết kế §4 + đọc code thật (entities publication + cơ chế transaction của base + precedent GuestAccess update-before-insert) để valid trước khi code.
-
-Đọc các file nền cần thiết.
-
-Read file(s)
-
-RulePublication.cs
-
-RulePublicationSection.cs
-
-RulePublicationSectionTranslation.cs
-
-RuleAcknowledgement.cs
-Thinking completed
-+
-Đọc precedent GuestAccess (update-before-insert trong transaction — QR-AD-026) và cơ chế transaction của base để thiết kế flip-before-insert đúng bản chất.
-
-Searched workspace
-Tìm ResolveTokenUseCase và các file transaction base để đọc.
-Read file(s)
-
-ResolveTokenUseCase.cs
-Thinking completed
-+
-IUnitOfWork.ExecuteInTransactionAsync là cơ chế đúng cho flip-before-insert (nhiều SaveChanges nguyên tử). Đọc port base IUnitOfWork + IRepository để xác nhận signature (query có OrderBy/list không) trước khi code.
-
-Searched workspace
-Tìm file IUnitOfWork và IRepository trong base để đọc signature.
-Tìm định nghĩa IUnitOfWork và IRepository để xác nhận method signatures.
-Thinking completed
-+
-Đọc trọn IRepository để biết method query khả dụng (không có IQueryable — F9) nhằm load toàn bộ section/translation theo SortOrder.
-
-Read file(s)
-
-IRepository.cs
-Thinking completed
-+
-IRepository không phơi IQueryable (F9) → không list được. Publish cần đọc toàn bộ section/translation ordered → cần một read-port purpose-built (CQRS-lite, đúng F9), giống IGuestSessionStore. Đọc Entity base để xác nhận Id sinh client-side (cần cho copy FK trước SaveChanges) + ExecuteInTransactionAsync signature.
-
-Read file(s)
-
-Entity.cs
-
-IUnitOfWork.cs
-Thinking completed
-+
-Xác nhận: Entity sinh UUIDv7 trong ctor (nên newPub.Id sẵn sàng cho FK copy trước SaveChanges), và ExecuteInTransactionAsync reentrancy-safe. Đọc precedent IGuestSessionStore + cách đăng ký DI store dùng keyed DbContext để mirror EfRuleDraftReader.
-
-Searched workspace
-Tìm impl store GuestAccess và cách nó nhận DbContext + đăng ký DI để mirror EfRuleDraftReader.
-Thinking completed
-+
-Pattern rõ: store inject DbContext cụ thể (unkeyed — type riêng mỗi module), ports generic thì keyed. Thiết kế D-Rules.3a đã valid đầy đủ. Bắt đầu triển khai. Trước hết read-model port IRuleDraftReader (CQRS-lite, đúng F9 vì IRepository cấm IQueryable).
-
-Accepted creation of
-
-IRuleDraftReader.cs
-
-
-Thinking completed
-+
-Thêm PublishRulesInput/Result vào RuleContracts.cs và error NoPublishableContent.
-
-Accepted edits to
-
-RuleContracts.cs
-
-
-Accepted edits to
-
-RulesErrors.cs
-
-
-Giờ viết PublishRulesUseCase (IUseCase tự quản transaction, flip-before-insert — mirror ResolveTokenUseCase/QR-AD-026).
-
-Accepted creation of
-
-PublishRulesUseCase.cs
-
-
-Thinking completed
-+
-Viết EfRuleDraftReader (Rules.Infrastructure, AsNoTracking, load RuleSet + sections ordered + translations).
-
-Accepted creation of
-
-EfRuleDraftReader.cs
-
-
-Wiring: đăng ký IRuleDraftReader + 2 repo publication mới + factory PublishRulesUseCase + validator.
-
-
-3 edits to file
-
-RulesInfrastructureExtensions.cs
-
-
-Thinking completed
-+
-Build để xác nhận compile trước khi viết test CP4.
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet build Platform.slnx -c Release --nologo 2>&1 | Select-String -Pattern "error|warning|Build succeeded|Build FAILED" | Select-Object -Last 12
-2           
-Build 
-succeeded.
-    0 
-Warning(s)
-    0 
-Error(s)
-
-Thinking completed
-+
-Build 0/0. Viết test CP4 PublishRulesUseCaseTests (Postgres Testcontainers, migration thật) — chứng minh flip-before-insert nguyên tử + version++ + snapshot bất biến.
-
-Accepted creation of
-
-PublishRulesUseCaseTests.cs
-
-
-Thinking completed
-+
-Build test để bắt lỗi API (đặc biệt result.Error.Code và using Result).
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet build tests/Modules/Rules.IntegrationTests/Rules.IntegrationTests.csproj -c Release --nologo 2>&1 | Select-String -Pattern "error|Build succeeded|Build FAILED" | Select-Object -Last 12
-
-C:\Users\k.
-nguyen.manh
-.toan\Deskt
-op\TOANM\WO
-RK\StarHill
-GuestApp\st
-arhill\test
-s\Modules\R
-ules.Integr
-ationTests\
-PublishRule
-sUseCaseTes
-ts.cs(110,3
-1): error 
-CS0246: 
-The type 
-or 
-namespace 
-name 
-'Result<>' 
-could not 
-be found 
-(are you 
-missing a 
-using 
-directive 
-or an 
-assembly re
-ference?) [
-C:\Users\k.
-nguyen.manh
-.toan\Deskt
-op\TOANM\WO
-RK\StarHill
-GuestApp\st
-arhill\test
-s\Modules\R
-ules.Integr
-ationTests\
-Rules.Integ
-rationTests
-.csproj]
-Build 
-FAILED.
-C:\Users\k.
-nguyen.manh
-.toan\Deskt
-op\TOANM\WO
-RK\StarHill
-GuestApp\st
-arhill\test
-s\Modules\R
-ules.Integr
-ationTests\
-PublishRule
-sUseCaseTes
-ts.cs(110,3
-1): error 
-CS0246: 
-The type 
-or 
-namespace 
-name 
-'Result<>' 
-could not 
-be found 
-(are you 
-missing a 
-using 
-directive 
-or an 
-assembly re
-ference?) [
-C:\Users\k.
-nguyen.manh
-.toan\Deskt
-op\TOANM\WO
-RK\StarHill
-GuestApp\st
-arhill\test
-s\Modules\R
-ules.Integr
-ationTests\
-Rules.Integ
-rationTests
-.csproj]
-    1 
-Error(s)
-
-Thêm using Bedrock.Domain.Results;.
-
-Accepted edits to
-
-PublishRulesUseCaseTests.cs
-
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet build tests/Modules/Rules.IntegrationTests/Rules.IntegrationTests.csproj -c Release --nologo 2>&1 | Select-String -Pattern "error CS|Build succeeded|Build FAILED" | Select-Object -Last 12
-
-Build 
-succeeded.
-
-Thinking completed
-+
-Build OK. Chạy Rules.IntegrationTests (giờ có 8 cũ + 4 Publish CP4 = 12, Docker thật).
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet test tests/Modules/Rules.IntegrationTests/Rules.IntegrationTests.csproj -c Release --no-build --nologo 2>&1 | Select-String -Pattern "Passed!|Failed!|error|Passed:|Failed:|Skipped:"
-
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-12, 
-Skipped:   
-  0, 
-Total:    
-12, 
-Duration: 
-25 s - Rule
-s.Integrati
-onTests.dll
- (net10.0)
-
-Thinking completed
-+
-12/12 pass, 0 skip (Docker thật) — CP4 Publish đầy đủ. Ghi journal. Append QR-AD-036 (quyết định hiện thực Publish).
-
-Accepted edits to
-
-01-decisions.md
-
-
-Accepted edits to
-
-04-notes.md
-
-
-Cập nhật 05-anti-drift.md: range→036, row AD-030 (partial), thêm row AD-036.
-
-
-3 edits to file
-
-05-anti-drift.md
-
-
-Thinking completed
-+
-Cập nhật design 04-rules.md §12 D-Rules.3 (tách 3a xong / 3b preview-history còn lại).
-
-Accepted edits to
-
-04-rules.md
-
-
-Thinking completed
-+
-Chạy JournalConsistency INV-1..6 (kiểm INV-6 thấy AD-036 → PublishRulesUseCaseTests tồn tại, range liên tục tới 036).
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet test tests/StarHill.ArchitectureTests/StarHill.ArchitectureTests.csproj -c Release --nologo --filter "FullyQualifiedName~StarHillJournalConsistencyTests" 2>&1 | Select-String -Pattern "Passed!|Failed!|error|Passed:|Failed:|Skipped:"
-
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 6, 
-Skipped:   
-  0, 
-Total:     
-6, 
-Duration: 
-792 ms - St
-arHill.Arch
-itectureTes
-ts.dll 
-(net10.0)
-
-Thinking completed
-+
-INV-1..6 = 6/6. Bước cuối: full suite (Docker thật, không skip mềm) làm bằng chứng cuối.
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet test Platform.slnx -c Release --no-build --nologo 2>&1 | Select-String -Pattern "Passed!|Failed!|error CS|Failed:.*Passed:|Passed:.*Skipped"
-d"          
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 2, 
-Skipped:   
-  0, 
-Total:     
-2, 
-Duration: 
-328 
-msPassed!  
-- Failed:  
-   0, 
-Passed:    
- 2, 
-Skipped:   
-  0, 
-Total:     
-2, 
-Duration: 
-704 ms - Ro
-oms.UnitTes
-ts.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-20, 
-Skipped:   
-  0, 
-Total:    
-20, 
-Duration: 
-370 ms - Re
-sortConfig.
-UnitTests.d
-ll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 7, 
-Skipped:   
-  0, 
-Total:     
-7, 
-Duration: 
-299 ms - Id
-entity.Unit
-Tests.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 6, 
-Skipped:   
-  0, 
-Total:     
-6, 
-Duration: 
-2 s - StarH
-ill.Html.Te
-sts.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-21, 
-Skipped:   
-  0, 
-Total:    
-21, 
-Duration: 
-8 s - StarH
-ill.Archite
-ctureTests.
-dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-33, 
-Skipped:   
-  0, 
-Total:    
-33, 
-Duration: 
-10 s - Star
-Hill.Api.Te
-sts.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-27, 
-Skipped:   
-  0, 
-Total:    
-27, 
-Duration: 
-34 s - Room
-s.Integrati
-onTests.dll
- (net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 2, 
-Skipped:   
-  0, 
-Total:     
-2, 
-Duration: 
-36 s - Iden
-tity.Integr
-ationTests.
-dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-15, 
-Skipped:   
-  0, 
-Total:    
-15, 
-Duration: 
-45 s - Reso
-rtConfig.In
-tegrationTe
-sts.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-25, 
-Skipped:   
-  0, 
-Total:    
-25, 
-Duration: 
-49 s - Gues
-tAccess.Int
-egrationTes
-ts.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-12, 
-Skipped:   
-  0, 
-Total:    
-12, 
-Duration: 
-49 s - Rule
-s.Integrati
-onTests.dll
- (net10.0)
-
-Thinking completed
-+
-Hoàn tất D-Rules.3a (PublishRulesUseCase — snapshot CP4), kiểm chứng đầu-cuối Docker thật.
-
-Đã làm (design-first, valid trước khi code)
-Đọc/valid trước: IRepository cấm IQueryable (F9), IUnitOfWork.ExecuteInTransactionAsync reentrancy-safe, Entity sinh UUIDv7 trong ctor (Id sẵn cho FK copy trước SaveChanges), precedent ResolveTokenUseCase/QR-AD-026 (flush-trước-insert cho partial-unique).
-
-IRuleDraftReader + EfRuleDraftReader — read-model nội-module (CQRS-lite) đọc Draft ordered.
-PublishRulesUseCase — IUseCase tự quản transaction, flip-before-insert, version=current+1, copy đông cứng section/translation.
-Wiring: +3 repo publication keyed + reader + factory + validator + NoPublishableContent.
-PublishRulesUseCaseTests (Postgres migration thật, 4 test).
-Lý do các quyết định (QR-AD-036)
-read-model thay IRepository list: IRepository cố ý không phơi IQueryable (F9) → không list/sort được; đọc-nhiều dùng read-model riêng (đúng hướng dẫn IRepository + precedent IGuestSessionStore).
-IUseCase tự-quản transaction (không ICommandUseCase): Publish cần HAI SaveChanges có kiểm soát thứ tự trong một transaction. ICommandUseCase chỉ bọc một transaction quanh một ExecuteAsync → không cho flush-giữa-chừng có chủ đích.
-flip-before-insert: partial unique ux_rule_publication_current kiểm mỗi row-write; insert bản mới IsCurrent=true trước khi hạ bản cũ → hai hàng cùng thỏa filter → 23505. Hạ cũ + SaveChanges TRƯỚC rồi insert. Cùng lớp bài học QR-N-018/QR-AD-026 — fix tận gốc thứ tự lệnh, không dựa may rủi thứ tự EF.
-version = current+1 (không query MAX): bản current luôn là version cao nhất (mỗi publish tăng + demote bản trước) → current.Version là nguồn sự thật, không cần aggregation thừa.
-Bằng chứng (thực đo)
-dotnet build Platform.slnx -c Release = 0 warning / 0 error.
-Rules.IntegrationTests = 12/12 pass, 0 skip (4 constraint + 1 concurrency + 3 sanitize + 4 publish CP4).
-Full suite Docker thật: 172 test, 0 fail, 0 skip.
-StarHillJournalConsistencyTests INV-1..6 = 6/6: INV-6 xác nhận AD-036 khai Guard-Tests: PublishRulesUseCaseTests tồn tại; range liên tục tới QR-AD-036 / QR-N-036.
-Journal cập nhật
-QR-AD-036 (01), QR-N-036 (04), anti-drift map +row AD-036 & AD-030→🟡partial (05), range→036, design §12 (D-Rules.3a✅ / 3b⏳).
-
-QR-AD-030 (snapshot-publish+ack+gate) vẫn Proposed — snapshot-publish part xong+test, còn ack + rule-gate ở D-Rules.4 mới đủ Implemented (tránh Implemented non).
-
-Trạng thái commit: chưa commit (theo đúng quy tắc — chờ bạn yêu cầu rõ).
-
-Bước kế tiếp có 3 lựa chọn theo dependency graph: D-Rules.3b (preview/history — read đơn giản), C-GA.4 (ICurrentGuestContextResolver + portal-window — dependency của guest-read/ack/gate), hoặc D-Rules.4 (guest read + ack + IRuleGate + RequirePort → khi đó AD-030/031 chuyển Implemented). Bạn muốn tôi tiếp hướng nào, hay commit các slice đang chờ trước?
-
-Est. Credits Used: 40.38
-Elapsed time: 41m 50s
-
-
-Checkpoint
-Restore
-Hãy xử lý để hệ thống cực tốt và an toàn; duyệt theo khuyến nghị từng bước chắc chắn và hướng tới lâu dài, sản phẩm thương mại, chú ý khuyến nghị thì bạn phải hiểu và nói lên được các lý do chọn thì mới được và lý phải là chính xác. Tiếp tục đi cực nghiêm ngặt và tuyệt đối không bịa ; không suy đoán, luôn valid nhiều lần đảm bảo chính xác tuyệt đối. Cần 1 cách nhìn sâu rộng nhé. Tôi luôn nghiên về 1 sự chuẩn bị thiết kế rõ ràng rồi đọc lại valid thiết kế. chính xác có thể kiểm chứng rồi mới triển khai cái gì đó. Và khi fix 1 cái gì thì phải nhìn vào bản chất đừng fix tận gốc đừng fix mỗi cái ngọn. Chú ý tuyệt đối không tiết kiệm token để nhanh xong task. Tôi cần bạn tạo 1 thư mục trong đó chứa các file làm 4 việc:   1. Các quyết định AI tự ra mà spec không nói  2. Những chỗ AI phải đổi so với yêu cầu ban đầu  3. Các Trade-off AI phải cân nhắc  4. Bất kỳ điều gì mà bạn nên biết  Bạn có thể lưu bất kỳ định dạng gì tốt nhất cho AI dùng, file này sẽ là xuyên suốt lưu lại để sau làm kiểm chứng.nếu có rồi thì cập nhật vào. Tôi cần bạn có 1 cách nào cực mạnh để tránh tránh dift.
-
-Kiro
-Thinking completed
-+
-Hiểu rõ. Khuyến nghị của tôi (nêu lý do chính xác): làm C-GA.4 (ICurrentGuestContextResolver + portal-window check-before-touch) tiếp theo, KHÔNG phải D-Rules.3b. Lý do:
-
-C-GA.4 là dependency trên đường tới hạn — nó mở khóa toàn bộ luồng guest-facing (D-Rules.4: guest read + ack + rule-gate), là slice đưa QR-AD-030/031/032 tới Implemented.
-D-Rules.3b (preview/history) là leaf không mở khóa gì; hơn nữa shape read của nó có thể định hình lại khi làm guest-read → làm sớm dễ phải sửa (tránh gold-plating, I10).
-Giữ design-first: đọc kỹ thiết kế GuestAccess + domain thật để valid semantics portal-window check-before-touch TRƯỚC khi code (không suy đoán).
-
-Read file(s)
-
-GuestAccessModule.cs
-
-IGuestSessionStore.cs
-
-GuestVisit.cs
-
-GuestSession.cs
-Thinking completed
-+
-Đọc thiết kế GuestAccess §resolve step 5 (semantics portal-window) + config query (PortalWindow/idle) + errors + hasher để chốt chính xác semantics C-GA.4.
-
-Read file(s)
-
-GuestAccessErrors.cs
-
-IGuestSessionKeyHasher.cs
-
-IResortGuestConfigQuery.cs
-Thinking completed
-+
-Đọc precedent trực tiếp: IRoomTokenResolver (Contracts) + EfRoomTokenResolver (Infra impl) + cách đăng ký, và csproj/DI của GuestAccess.Infrastructure để đặt EfCurrentGuestContextResolver đúng chỗ (không suy đoán placement/persist).
-
-Read file(s)
-
-EfRoomTokenResolver.cs
-
-GuestAccess.Infrastructure.csproj
-
-GuestAccessInfrastructureExtensions.cs
-
-GuestAccess.Application.csproj
-Thinking completed
-+
-Cần quyết định quan trọng: ICurrentGuestContextResolver trả Result<CurrentGuestContext> (design §6.2) → GuestAccess.Contracts phải ref Bedrock.Domain.Results. Phải valid điều này không phá boundary "Contracts thuần". Đọc boundary test + csproj Contracts + xem có Contracts nào đã dùng Result.
-
-Read file(s)
-
-GuestAccess.Contracts.csproj
-
-GuestAccessBoundaryTests.cs
-Thinking completed
-+
-Boundary test chỉ cấm Contracts ref Application/Infra/Api — KHÔNG cấm Bedrock.Domain, nên trả Result<CurrentGuestContext> (design §6.2) hợp lệ khi thêm ref Bedrock.Domain. Cần đọc Error (các kind + factory) để map HTTP đúng cho session_expired/guest_context_missing, và ErrorCodeSnapshotTests (QR-AD-018) vì thêm mã lỗi làm đổi snapshot.
-
-Searched workspace
-Tìm các factory Error (kind) khả dụng để chọn đúng cho session_expired/guest_context_missing.
-Thinking completed
-+
-Error.Unauthorized (401) đúng cho cả session_expired và guest_context_missing (cần session hợp lệ). Đọc ErrorCodeSnapshotTests (QR-AD-018) để cập nhật snapshot đúng cách (thêm mã lỗi làm đổi snapshot).
-
-Searched workspace
-Tìm ErrorCodeSnapshotTests để hiểu cách gác snapshot mã lỗi và cập nhật đúng.
-Read file(s)
-
-ErrorCodeSnapshotTests.cs
-Thinking completed
-+
-Phát hiện thêm (rà soát kỹ): ErrorCodeSnapshotTests (QR-AD-018 — "phủ MỌI catalog module") KHÔNG gồm Rules.Application → mã rules_conflict (RulesErrors.DraftConflict, thêm ở D-Rules.2b) hiện không được gác. Đây là gap anti-drift thật, tôi sẽ đóng luôn (fix tận gốc: registry phải phủ Rules) khi đụng registry cho C-GA.4.
-
-Đọc GuestCredentialFormat + một integration test GuestAccess để mirror container/seed pattern.
-
-Read file(s)
-
-GuestCredentialFormat.cs
-
-GuestAccessResolveRaceTests.cs
-Thinking completed
-+
-GuestCredentialFormat là internal (không dùng được từ Infrastructure) — nhưng resolver không cần nó: cookie null/rỗng → guest_context_missing; cookie lạ hash ra không khớp → cũng guest_context_missing (đúng, không cần optimization đó). Tìm các stub dùng chung trong test project để tái dùng.
-
-Searched workspace
-Tìm định nghĩa các stub dùng chung để tái dùng trong CurrentGuestContextResolverTests.
-Thinking completed
-+
-Có file GuestAccessTestDoubles.cs dùng chung. Đọc để tái dùng đúng API trong test C-GA.4.
-
-Read file(s)
-
-GuestAccessTestDoubles.cs
-Thinking completed
-+
-Đủ dữ liệu, thiết kế đã valid đầy đủ. Bắt đầu triển khai C-GA.4.
-
-Thêm port + DTO vào GuestAccess.Contracts (trả Result<CurrentGuestContext> — cần ref Bedrock.Domain, boundary test cho phép).
-
-Accepted creation of
-
-ICurrentGuestContextResolver.cs
-
-
-Accepted edits to
-
-GuestAccess.Contracts.csproj
-
-
-Thêm 2 mã lỗi vào GuestAccessErrors (Unauthorized → 401).
-
-Accepted edits to
-
-GuestAccessErrors.cs
-
-
-Thinking completed
-+
-Viết EfCurrentGuestContextResolver (GuestAccess.Infrastructure) — ResolveAsync (check portal-window, không touch) + TouchAsync (delta-preservation).
-
-Accepted creation of
-
-EfCurrentGuestContextResolver.cs
-
-
-Thinking completed
-+
-Tôi inline hash là sai hướng (rủi ro lệch thuật toán với Sha256GuestSessionKeyHasher). Sửa tận gốc: inject IGuestSessionKeyHasher (nguồn hash duy nhất) để không bao giờ lệch. Đọc hasher để xác nhận rồi sửa resolver.
-
-Searched workspace
-Đọc impl hasher để quyết định inject thay vì inline.
-Read file(s)
-
-Sha256GuestSessionKeyHasher.cs
-Thinking completed
-+
-Thuật toán inline trùng hasher, nhưng để không có 2 nguồn hash (drift), inject IGuestSessionKeyHasher. Sửa resolver.
-
-
-2 edits to file
-
-EfCurrentGuestContextResolver.cs
-
-
-Đăng ký resolver trong DI (factory resolve keyed IUnitOfWork).
-
-Accepted edits to
-
-GuestAccessInfrastructureExtensions.cs
-
-
-Thinking completed
-+
-Cập nhật ErrorCodeSnapshotTests: thêm assembly Rules.Application (đóng gap registry) + 3 mã mới. Đọc csproj test để thêm ProjectReference Rules.Application.
-
-Read file(s)
-
-Bedrock.ContractTests.csproj
-Accepted edits to
-
-Bedrock.ContractTests.csproj
-
-
-
-2 edits to file
-
-ErrorCodeSnapshotTests.cs
-
-
-Thinking completed
-+
-Build để xác nhận compile toàn bộ (Contracts ref Bedrock.Domain + resolver + snapshot).
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet build Platform.slnx -c Release --nologo 2>&1 | Select-String -Pattern "error CS|error |warning|Build succeeded|Build FAILED" | Select-Object -Last 15
-ct -Last 15 
-Build 
-succeeded.
-    0 
-Warning(s)
-
-Thinking completed
-+
-Build 0/0. Chạy nhanh ErrorCodeSnapshotTests xác nhận snapshot khớp (đã thêm Rules assembly + 3 mã).
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet test tests/Bedrock.ContractTests/Bedrock.ContractTests.csproj -c Release --no-build --nologo 2>&1 | Select-String -Pattern "Passed!|Failed!|error|Passed:|Failed:"
-
-
-[xUnit.net 
-00:00:00.67
-]     Bedro
-ck.Contract
-Tests.Error
-CodeSnapsho
-tTests.Erro
-r_code_regi
-stry_matche
-s_snapshot 
-[FAIL]
-  Failed Be
-drock.Contr
-actTests.Er
-rorCodeSnap
-shotTests.E
-rror_code_r
-egistry_mat
-ches_snapsh
-ot [105 ms]
-  Error 
-Message:
-     at Bed
-rock.Contra
-ctTests.Err
-orCodeSnaps
-hotTests.Er
-ror_code_re
-gistry_matc
-hes_snapsho
-t() in C:\U
-sers\k.nguy
-en.manh.toa
-n\Desktop\T
-OANM\WORK\S
-tarHillGues
-tApp\starhi
-ll\tests\Be
-drock.Contr
-actTests\Er
-rorCodeSnap
-shotTests.c
-s:line 56
-Failed!  - 
-Failed:    
- 1, 
-Passed:    
- 1, 
-Skipped:   
-  0, 
-Total:     
-2, 
-Duration: 
-143 ms - Be
-drock.Contr
-actTests.dl
+Passed!  - Failed:    
+ 0, Passed:    20, 
+Skipped:     0, 
+Total:    20, 
+Duration: 308 ms - Res
+ortConfig.UnitTests.dl
 l (net10.0)
-
-Thinking completed
-+
-Snapshot fail — cần xem diff thực. Ghi output ra file để đọc rõ (terminal wrap làm rối).
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet test tests/Bedrock.ContractTests/Bedrock.ContractTests.csproj -c Release --no-build --nologo --logger "console;verbosity=detailed" 2>&1 | Select-String -Pattern "Expected|Actual|found|differ" | Select-Object -First 20
-
-[xUnit.net 
-00:00:00.44
-]       Ass
-ert.Equal()
- Failure: C
-ollections 
-differ
-[xUnit.net 
-00:00:00.44
-]       
-Expected: 
-[···, "reso
-rt_not_foun
-d", "room_i
-nactive", "
-rules_confl
-ict", "sess
-ion_expired
-", "unautho
-rized", 
-···]
-[xUnit.net 
-00:00:00.44
-]       
-Actual:   
-[···, "reso
-rt_not_foun
-d", "room_i
-nactive", "
-session_exp
-ired", "una
-uthorized",
- "unexpecte
-d", ···]
-   Assert.E
-qual() 
-Failure: Co
-llections 
-differ
-Expected: 
-[···, "reso
-rt_not_foun
-d", "room_i
-nactive", "
-rules_confl
-ict", "sess
-ion_expired
-", "unautho
-rized", 
-···]
-Actual:   
-[···, "reso
-rt_not_foun
-d", "room_i
-nactive", "
-session_exp
-ired", "una
-uthorized",
- "unexpecte
-d", ···]
-
-Thinking completed
-+
-Tôi quên thêm Rules.Application vào mảng catalogAssemblies (mới thêm using + ref + ExpectedCodes). Đó là lý do rules_conflict không được thu. Sửa:
-
-Accepted edits to
-
-ErrorCodeSnapshotTests.cs
-
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet test tests/Bedrock.ContractTests/Bedrock.ContractTests.csproj -c Release --nologo 2>&1 | Select-String -Pattern "Passed!|Failed!|error CS|Passed:|Failed:"
-ed:"        
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 2, 
-Skipped:   
-  0, 
-Total:     
-2, 
-Duration: 
-97 ms - Bed
-rock.Contra
-ctTests.dll
- (net10.0)
-
-Thinking completed
-+
-Snapshot 2/2 pass (gap Rules đóng). Giờ viết CurrentGuestContextResolverTests (Postgres Testcontainers). Xác nhận nhanh enum GuestVisitStatus.
-
-Searched workspace
-Xác nhận giá trị enum GuestVisitStatus để dùng đúng trong test (Active/Expired/Ended).
-Read file(s)
-
-GuestVisitStatus.cs
-Thinking completed
-+
-Viết CurrentGuestContextResolverTests (Postgres Testcontainers, tái dùng test doubles).
-
-Accepted creation of
-
-CurrentGuestContextResolverTests.cs
-
-
-Thinking completed
-+
-Build test project + chạy GuestAccess.IntegrationTests (giờ có 25 cũ + C-GA.4 tests).
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet build tests/Modules/GuestAccess.IntegrationTests/GuestAccess.IntegrationTests.csproj -c Release --nologo 2>&1 | Select-String -Pattern "error CS|Build succeeded|Build FAILED" | Select-Object -Last 10
-
-Build 
-FAILED.
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet build tests/Modules/GuestAccess.IntegrationTests/GuestAccess.IntegrationTests.csproj -c Release --nologo 2>&1 | Select-String -Pattern "error" | Select-Object -First 8
-
-C:\Users\k.
-nguyen.manh
-.toan\Deskt
-op\TOANM\WO
-RK\StarHill
-GuestApp\st
-arhill\test
-s\Modules\G
-uestAccess.
-Integration
-Tests\Curre
-ntGuestCont
-extResolver
-Tests.cs(81
-,84): 
-error 
-CA1822: 
-Member 'See
-dAsync' 
-does not 
-access 
-instance 
-data and 
-can be 
-marked as 
-static (htt
-ps://learn.
-microsoft.c
-om/dotnet/f
-undamentals
-/code-analy
-sis/quality
--rules/ca18
-22) [C:\Use
-rs\k.nguyen
-.manh.toan\
-Desktop\TOA
-NM\WORK\Sta
-rHillGuestA
-pp\starhill
-\tests\Modu
-les\GuestAc
-cess.Integr
-ationTests\
-GuestAccess
-.Integratio
-nTests.cspr
-oj]
-C:\Users\k.
-nguyen.manh
-.toan\Deskt
-op\TOANM\WO
-RK\StarHill
-GuestApp\st
-arhill\test
-s\Modules\G
-uestAccess.
-Integration
-Tests\Curre
-ntGuestCont
-extResolver
-Tests.cs(81
-,84): 
-error 
-CA1822: 
-Member 'See
-dAsync' 
-does not 
-access 
-instance 
-data and 
-can be 
-marked as 
-static (htt
-ps://learn.
-microsoft.c
-om/dotnet/f
-undamentals
-/code-analy
-sis/quality
--rules/ca18
-22) [C:\Use
-rs\k.nguyen
-.manh.toan\
-Desktop\TOA
-NM\WORK\Sta
-rHillGuestA
-pp\starhill
-\tests\Modu
-les\GuestAc
-cess.Integr
-ationTests\
-GuestAccess
-.Integratio
-nTests.cspr
-oj]
-    1 
-Error(s)
-
-Thinking completed
-+
-SeedAsync không dùng instance data → CA1822. Đổi thành static.
-
-Accepted edits to
-
-CurrentGuestContextResolverTests.cs
-
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet build tests/Modules/GuestAccess.IntegrationTests/GuestAccess.IntegrationTests.csproj -c Release --nologo 2>&1 | Select-String -Pattern "error CS|error CA|Build succeeded|Build FAILED" | Select-Object -Last 8
-
-Build 
-succeeded.
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet test tests/Modules/GuestAccess.IntegrationTests/GuestAccess.IntegrationTests.csproj -c Release --no-build --nologo 2>&1 | Select-String -Pattern "Passed!|Failed!|error|Passed:|Failed:|Skipped:"
-
-  Error 
-Message:
-   Microsof
-t.EntityFra
-meworkCore.
-DbUpdateExc
-eption : 
-An error 
-occurred 
-while 
-saving the 
-entity 
-changes. 
-See the 
-inner 
-exception 
-for 
-details.
-DETAIL: 
-Detail 
-redacted 
-as it may 
-contain 
-sensitive 
-data. 
-Specify 
-'Include 
-Error 
-Detail' in 
-the 
-connection 
-string to 
-include 
-this inform
-ation.
-  Error 
-Message:
-   Microsof
-t.EntityFra
-meworkCore.
-DbUpdateExc
-eption : 
-An error 
-occurred 
-while 
-saving the 
-entity 
-changes. 
-See the 
-inner 
-exception 
-for 
-details.
-DETAIL: 
-Detail 
-redacted 
-as it may 
-contain 
-sensitive 
-data. 
-Specify 
-'Include 
-Error 
-Detail' in 
-the 
-connection 
-string to 
-include 
-this inform
-ation.
-Failed!  - 
-Failed:    
- 2, 
-Passed:    
-31, 
-Skipped:   
-  0, 
-Total:    
-33, 
-Duration: 
-36 s - Gues
-tAccess.Int
-egrationTes
-ts.dll 
+Passed!  - Failed:    
+ 0, Passed:     2, 
+Skipped:     0, 
+Total:     2, 
+Duration: 115 ms - 
+Rooms.UnitTests.dll 
 (net10.0)
-
-Thinking completed
-+
-Hai test fail với DbUpdateException (chi tiết bị redact). Cần inner exception + tên test. Chạy detailed.
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet test tests/Modules/GuestAccess.IntegrationTests/GuestAccess.IntegrationTests.csproj -c Release --no-build --nologo --filter "FullyQualifiedName~CurrentGuestContextResolverTests" --logger "console;verbosity=detailed" 2>&1 | Select-String -Pattern "\[FAIL\]|PostgresException|23|null value|violates|column|constraint" | Select-Object -First 25
-
-[testcontai
-ners.org 00
-:00:23.12] 
-Execute "pg
-_isready 
---host 
-localhost 
---dbname 
-postgres 
---username 
-postgres" 
-at Docker 
-container 7
-5f43350e401
-[xUnit.net 
-00:00:25.77
-]     Guest
-Access.Inte
-grationTest
-s.CurrentGu
-estContextR
-esolverTest
-s.Touch_is_
-noop_on_non
-_active_vis
-it [FAIL]
-[xUnit.net 
-00:00:25.77
-]       
----- Npgsql
-.PostgresEx
-ception : 
-23514: new 
-row for 
-relation "g
-uest_visit"
- violates 
-check 
-constraint 
-"ck_guest_v
-isit_closed
-_at"
----- Npgsql
-.PostgresEx
-ception : 
-23514: new 
-row for 
-relation "g
-uest_visit"
- violates 
-check 
-constraint 
-"ck_guest_v
-isit_closed
-_at"
-[xUnit.net 
-00:00:30.19
-]     Guest
-Access.Inte
-grationTest
-s.CurrentGu
-estContextR
-esolverTest
-s.Resolve_n
-on_active_v
-isit_return
-s_session_e
-xpired 
-[FAIL]
-[xUnit.net 
-00:00:30.19
-]       
----- Npgsql
-.PostgresEx
-ception : 
-23514: new 
-row for 
-relation "g
-uest_visit"
- violates 
-check 
-constraint 
-"ck_guest_v
-isit_closed
-_at"
----- Npgsql
-.PostgresEx
-ception : 
-23514: new 
-row for 
-relation "g
-uest_visit"
- violates 
-check 
-constraint 
-"ck_guest_v
-isit_closed
-_at"
-
-Thinking completed
-+
-Rõ nguyên nhân bản chất: check constraint ck_guest_visit_closed_at yêu cầu visit không-Active phải có ClosedAt. Seed Closed thiếu ClosedAt → vi phạm. Sửa seed set ClosedAt khi không Active.
-
-Accepted edits to
-
-CurrentGuestContextResolverTests.cs
-
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet test tests/Modules/GuestAccess.IntegrationTests/GuestAccess.IntegrationTests.csproj -c Release --nologo 2>&1 | Select-String -Pattern "Passed!|Failed!|error CS|Passed:|Failed:|Skipped:"
-
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-33, 
-Skipped:   
-  0, 
-Total:    
-33, 
-Duration: 
-40 s - Gues
-tAccess.Int
-egrationTes
-ts.dll 
+Passed!  - Failed:    
+ 0, Passed:    52, 
+Skipped:     0, 
+Total:    52, 
+Duration: 10 s - StarH
+ill.Api.Tests.dll 
 (net10.0)
+Passed!  - Failed:    
+ 0, Passed:    20, 
+Skipped:    13, 
+Total:    33, 
+Duration: 12 s - Guest
+Access.IntegrationTest
+s.dll (net10.0)
+[xUnit.net 
+00:00:13.34]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.C
+annot_delete_category_
+while_items_reference_
+it [SKIP]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Cannot_d
+elete_category_while_i
+tems_reference_it [1 
+ms]
+[xUnit.net 
+00:00:13.42]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.C
+ategory_translation_is
+_unique_per_category_a
+nd_language [SKIP]
+[xUnit.net 
+00:00:13.42]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.I
+tem_translation_is_uni
+que_per_item_and_langu
+age [SKIP]
+[xUnit.net 
+00:00:13.42]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.C
+ategory_key_is_unique_
+per_resort [SKIP]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Category
+_translation_is_unique
+_per_category_and_lang
+uage [1 ms]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Item_tra
+nslation_is_unique_per
+_item_and_language [1 
+ms]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Category
+_key_is_unique_per_res
+ort [1 ms]
+Skipped! - Failed:    
+ 0, Passed:     0, 
+Skipped:     4, 
+Total:     4, 
+Duration: 10 s - Faq.I
+ntegrationTests.dll 
+(net10.0)
+Passed!  - Failed:    
+ 0, Passed:    25, 
+Skipped:     0, 
+Total:    25, 
+Duration: 518 ms - Sta
+rHill.ArchitectureTest
+s.dll (net10.0)
+Passed!  - Failed:    
+ 0, Passed:    12, 
+Skipped:     3, 
+Total:    15, 
+Duration: 11 s - Resor
+tConfig.IntegrationTes
+ts.dll (net10.0)
+Passed!  - Failed:    
+ 0, Passed:     6, 
+Skipped:     0, 
+Total:     6, 
+Duration: 839 ms - Sta
+rHill.Html.Tests.dll 
+(net10.0)
+Passed!  - Failed:    
+ 0, Passed:    25, 
+Skipped:     2, 
+Total:    27, 
+Duration: 11 s - Rooms
+.IntegrationTests.dll 
+(net10.0)
+Passed!  - Failed:    
+ 0, Passed:    27, 
+Skipped:     9, 
+Total:    36, 
+Duration: 11 s - Rules
+.IntegrationTests.dll 
+(net10.0)
+==== [vp] SUMMARY ====
+  FAIL  build 
+(0-warning)
+  OK    validate-ci
+  OK    test (full 
+suite, --no-build)
+
 
 Thinking completed
 +
-33/33 pass, 0 skip (25 cũ + 8 C-GA.4). Cập nhật journal. Đọc QR-AD-032 hiện tại (Proposed) để nâng lên Implemented với chi tiết hiện thực.
+Lỗi biên dịch: Result<> thiếu using trong FaqItemParentValidationTests (helper trả Result<CreateFaqItemResult>). Thêm using.
 
-Read file(s)
-
-01-decisions.md 366 - 385
 Accepted edits to
+
+FaqItemParentValidationTests.cs
+
+
+Command
+c:\Users\to…illGuestApp
+
+cmd /c "starhill\scripts\vp.cmd all" > "$env:TEMP\vpfaq2b.txt" 2>&1; Write-Output "EXIT=$LASTEXITCODE"; Get-Content "$env:TEMP\vpfaq2b.txt" | Select-String -Pattern "error CS|error |warning |Failed!|\[FAIL\]|SUMMARY|OK |FAIL |Faq.Integration" | Select-Object -Last 30
+EXIT=0
+
+VALIDATE CI: OK 
+(starhill-ci.yml; push
+⊇main/master/develop 
++ pull_request; 
+concurrency 
+cancel-in-progress; pe
+rmissions.contents=rea
+d; jobs build-test/doc
+ker-image/migration-bu
+ndle + timeouts; nhắm 
+starhill/)
+Test run for C:\Users\
+toann\Desktop\WORK_PRO
+\StarHillGuestApp\star
+hill\tests\Modules\Faq
+.IntegrationTests\bin\
+Debug\net10.0\Faq.Inte
+grationTests.dll (.NET
+CoreApp,Version=v10.0)
+[xUnit.net 
+00:00:11.47]     Faq.I
+ntegrationTests.FaqCon
+currencyTests.Concurre
+nt_item_update_second_
+writer_gets_concurrenc
+y_conflict [SKIP]
+[xUnit.net 
+00:00:11.47]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.C
+annot_delete_category_
+while_items_reference_
+it [SKIP]
+  Skipped Faq.Integrat
+ionTests.FaqConcurrenc
+yTests.Concurrent_item
+_update_second_writer_
+gets_concurrency_confl
+ict [1 ms]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Cannot_d
+elete_category_while_i
+tems_reference_it [1 
+ms]
+[xUnit.net 
+00:00:11.48]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.C
+ategory_translation_is
+_unique_per_category_a
+nd_language [SKIP]
+[xUnit.net 
+00:00:11.48]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.I
+tem_translation_is_uni
+que_per_item_and_langu
+age [SKIP]
+[xUnit.net 
+00:00:11.48]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.C
+ategory_key_is_unique_
+per_resort [SKIP]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Category
+_translation_is_unique
+_per_category_and_lang
+uage [1 ms]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Item_tra
+nslation_is_unique_per
+_item_and_language [1 
+ms]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Category
+_key_is_unique_per_res
+ort [1 ms]
+Passed!  - Failed:    
+ 0, Passed:    13, 
+Skipped:     5, 
+Total:    18, 
+Duration: 10 s - Faq.I
+ntegrationTests.dll 
+(net10.0)
+==== [vp] SUMMARY ====
+  OK    build 
+(0-warning)
+  OK    validate-ci
+  OK    test (full 
+suite, --no-build)
+
+
+Thinking completed
++
+Toàn bộ xanh: build 0-warning, validate-ci OK, full suite 0-fail. Faq.IntegrationTests 13 pass / 5 skip (5 Postgres) = FaqSanitizeTests(3) + FaqItemParentValidationTests(5) + FaqAdminCrudTests(5); StarHill.ArchitectureTests 25 (+1 Application boundary); ErrorCodeSnapshot pass (mã Faq). Cập nhật journal: mở rộng QR-AD-037 Guard-Tests + QR-N-047.
+
+
+2 edits to file
 
 01-decisions.md
 
-
-Thinking completed
-+
-Ghi QR-N-037 (C-GA.4 xong + đóng gap registry Rules).
 
 Accepted edits to
 
 04-notes.md
 
-
-Thinking completed
-+
-Cập nhật 05-anti-drift.md: range N→037, QR-AD-032 row →✅, QR-AD-018 row (phủ Rules).
 
 
 2 edits to file
@@ -1905,364 +384,639 @@ Cập nhật 05-anti-drift.md: range N→037, QR-AD-032 row →✅, QR-AD-018 ro
 05-anti-drift.md
 
 
+Accepted edits to
+
+05-faq.md
+
+
+Chạy vp journal xác nhận INV-1..6 xanh (INV-6 kiểm 6 Guard-Tests của QR-AD-037 tồn tại thật).
+
+Command
+c:\Users\to…illGuestApp
+
+cmd /c "starhill\scripts\vp.cmd journal" > "$env:TEMP\vpj4.txt" 2>&1; Write-Output "EXIT=$LASTEXITCODE"; Get-Content "$env:TEMP\vpj4.txt" | Select-String -Pattern "Passed!|Failed!|OK |FAIL " | Select-Object -Last 6
+Object -Last 6         EXIT=0
+
+Passed!  - Failed:    
+ 0, Passed:     6, 
+Skipped:     0, 
+Total:     6, 
+Duration: 291 ms - Sta
+rHill.ArchitectureTest
+s.dll (net10.0)
+  OK    
+journal-consistency
+
+
+INV-1..6 xanh. Commit + push (path tường minh, kiểm cached bin/obj/nested).
+
+Command
+c:\Users\to…illGuestApp
+
+git add "starhill/src/Modules/Faq/Faq.Application" "starhill/src/Modules/Faq/Faq.Infrastructure/Faq.Infrastructure.csproj" "starhill/src/Modules/Faq/Faq.Infrastructure/DependencyInjection/FaqInfrastructureExtensions.cs" "starhill/tests/Modules/Faq.IntegrationTests" "starhill/tests/StarHill.ArchitectureTests/FaqBoundaryTests.cs" "starhill/tests/StarHill.ArchitectureTests/StarHill.ArchitectureTests.csproj" "starhill/tests/Bedrock.ContractTests/ErrorCodeSnapshotTests.cs" "starhill/tests/Bedrock.ContractTests/Bedrock.ContractTests.csproj" "starhill/Platform.slnx" ".kiro/specs/starhill-qr/design-modules/05-faq.md" ".kiro/specs/starhill-qr/journal/01-decisions.md" ".kiro/specs/starhill-qr/journal/04-notes.md" ".kiro/specs/starhill-qr/journal/05-anti-drift.md"; Write-Output "---CACHED bin/obj/nested CHECK (phải RỖNG)---"; git diff --cached --name-only | Select-String "/bin/|/obj/|StarHillGuestApp/StarHillGuestApp"; Write-Output "---COUNT---"; (git diff --cached --name-only | Measure-Object).Count
+---CACHED bin/obj/neste
+d CHECK (phải RỖNG)--- ---COUNT---
+22
+Command
+c:\Users\to…illGuestApp
+
+git -c core.autocrlf=false commit -m "feat(faq): E-Faq.2 Faq.Application admin CRUD + sanitize-on-save + cycle-check [QR-N-047]" -m "8 use case (Create/Update/Delete category+item, UpsertTranslation category+item) + FaqErrors (6 ma) + validator. Sanitize-on-save CP12 (Question/Answer/Name qua IHtmlSanitizer). Bat bien cay FaqItemParentValidator (cung-category/khong-self/khong-cycle, walk FindById F9). Delete-guard (category-not-empty/item-has-children). ResortId item derive tu category. Faq.Infrastructure ref->Application + dang ky use case/validator keyed. ErrorCodeSnapshotTests +6 ma Faq (QR-AD-018). Tests: FaqSanitizeTests(3)+FaqItemParentValidationTests(5)+FaqAdminCrudTests(5)+FaqConcurrencyTests(Postgres). vp all 0-warning/0-fail (Faq.IntegrationTests 13 pass/5 skip); vp journal INV-1..6 xanh." 2>&1 | Select-Object -Last 3; git push origin develop 2>&1 | Select-Object -Last 3; Write-Output "---SYNC---"; git fetch origin develop 2>&1 | Out-Null; git rev-list --left-right --count origin/develop...HEAD; git rev-parse --short HEAD
+ create mode 100644 sta
+rhill/tests/Modules/Faq.IntegrationTests/FaqConcurrencyTests.cs       create mode 100644 sta
+rhill/tests/Modules/Faq.IntegrationTests/FaqItemParentValidationTests.cs                     create mode 100644 sta
+rhill/tests/Modules/Faq.IntegrationTests/FaqSanitizeTests.cs         git : To https://githu
+b.com/mgcoder9x/StarHi
+llGuestApp.git
+At line:1 char:842
++ ... ." 2>&1 | 
+Select-Object -Last 
+3; git push origin 
+develop 2>&1 | Selec 
+...
++                     
+                 ~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (To https:/   
+ /gith...illGuestA    
+pp.git:String) []    
+, RemoteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+   092ac1a..acc7955  
+develop -> develop
+---SYNC---
+0       0
+acc7955
 Thinking completed
 +
+Push thành công (092ac1a..acc7955 develop -> develop, sync 0 0, HEAD acc7955).
+
+Hoàn tất slice E-Faq.2 — tầng use case admin của module FAQ:
+
+Đã code (mirror Rules.Application, verify từng bước):
+
+Faq.Application: FaqErrors (6 mã) + FaqContracts + 8 use case (Create/Update/Delete cho category & item + UpsertTranslation category & item) + validator mỗi cái.
+Sanitize-on-save (CP12): Question/Answer/Name qua IHtmlSanitizer (Ganss) trước khi lưu.
+Bất biến cây (FaqItemParentValidator): ParentId phải cùng category + không tự trỏ + không tạo chu trình — walk tổ tiên bằng FindById lặp (F9, không IQueryable), có chặn độ sâu. Create không thể cycle; Update kiểm cycle đầy đủ.
+Delete an toàn tham chiếu: chặn xóa category còn item / item còn con (enforce use case + backstop FK Restrict).
+ResortId item derive từ category (không trust input → không mismatch).
+ErrorCodeSnapshotTests phủ thêm 6 mã Faq (đóng gap QR-AD-018 — registry phủ mọi catalog module).
+Verify nhiều lớp:
+
+vp all: build 0-warning + validate-ci OK + full suite 0-fail. Faq.IntegrationTests 13 pass / 5 skip (Postgres): FaqSanitizeTests (3, Ganss thật) + FaqItemParentValidationTests (5) + FaqAdminCrudTests (5); StarHill.ArchitectureTests 25 (+1 Application⊥Infra boundary); ErrorCodeSnapshot pass.
+Có 1 lỗi biên dịch phát hiện & fix tận gốc: test thiếu using Bedrock.Domain.Results cho Result<> → thêm, build lại 0-warning (không vá ngọn).
+vp journal: INV-1..6 xanh (INV-6 xác nhận 6 Guard-Tests của QR-AD-037 tồn tại thật).
+Git: commit acc7955 (22 file, cached bin/obj/nested RỖNG) đã push; sync 0 0.
+4-việc + chống drift: QR-AD-037 mở rộng Guard-Tests (+4 class) + QR-N-047 (04-notes) + guard-map row + state line (05-anti-drift) + design §10 E-Faq.2 → ✅.
+
+Còn lại module FAQ:
+
+E-Faq.3 (reorder): ReorderFaqUseCase (nhận toàn bộ thứ tự mới, nguyên tử) + test.
+E-Faq.4 (guest tree read + rule-gate — FAQ là consumer đầu tiên của IRuleGate + Api + Host wiring + CI bundle faq).
+Tôi sẽ tiếp E-Faq.3 ở lượt sau (increment nhỏ, verify được, commit riêng). Nếu bạn muốn điều chỉnh gì trong E-Faq.2 (vd ngưỡng maxlen, hành vi delete-guard), cho tôi biết trước khi đi tiếp.
+
+Est. Credits Used: 83.69
+Elapsed time: 24m 34s
+
+
+Checkpoint
+Restore
+
+
+Hãy xử lý để hệ thống cực tốt và an toàn; duyệt theo khuyến nghị từng bước chắc chắn và hướng tới lâu dài, sản phẩm thương mại, chú ý khuyến nghị thì bạn phải hiểu và nói lên được các lý do chọn thì mới được và lý phải là chính xác. Tiếp tục đi cực nghiêm ngặt và tuyệt đối không bịa ; không suy đoán, luôn valid nhiều lần đảm bảo chính xác tuyệt đối. Cần 1 cách nhìn sâu rộng nhé. Tôi luôn nghiên về 1 sự chuẩn bị thiết kế rõ ràng rồi đọc lại valid thiết kế. chính xác có thể kiểm chứng rồi mới triển khai cái gì đó. Và khi fix 1 cái gì thì phải nhìn vào bản chất đừng fix tận gốc đừng fix mỗi cái ngọn. Chú ý tuyệt đối không tiết kiệm token để nhanh xong task. Tôi cần bạn tạo 1 thư mục trong đó chứa các file làm 4 việc: 
+
+1. Các quyết định AI tự ra mà spec không nói
+
+2. Những chỗ AI phải đổi so với yêu cầu ban đầu
+
+3. Các Trade-off AI phải cân nhắc
+
+4. Bất kỳ điều gì mà bạn nên biết
+
+Bạn có thể lưu bất kỳ định dạng gì tốt nhất cho AI dùng, file này sẽ là xuyên suốt lưu lại để sau làm kiểm chứng.nếu có rồi thì cập nhật vào. Tôi cần bạn có 1 cách nào cực mạnh để tránh tránh dift. Tôi nghĩ bạn cần mở web để xem và hình như có 1 mcp hỗ trợ và bạn cài rồi đó. vì mở web bằng browser phát hiện cực nhiều lỗi
+
+Kiro
+Thinking completed
++
+Tiếp tục E-Faq.3 (reorder — Req 4.5 drag-drop). Theo design §4: nhận toàn bộ thứ tự mới (nguyên tử, một transaction). Tôi tách 2 use case (category vs item — khác entity/repo, validation khác nhau: category theo resort, item theo category). Thêm contracts vào FaqContracts.cs.
+
+Accepted edits to
+
+FaqContracts.cs
+
+
+Accepted creation of
+
+ReorderFaqUseCases.cs
+
+
+Thinking completed
++
+Đăng ký 2 reorder use case + validator trong AddFaqInfrastructure.
+
+
+2 edits to file
+
+FaqInfrastructureExtensions.cs
+
+
+Thinking completed
++
+Viết ReorderFaqUseCaseTests (SQLite): cập nhật SortOrder hàng loạt + chặn sai scope.
+
+Accepted creation of
+
+ReorderFaqUseCaseTests.cs
+
+
+Thinking completed
++
+Chạy vp all.
+
+Command
+c:\Users\to…illGuestApp
+
+cmd /c "starhill\scripts\vp.cmd all" > "$env:TEMP\vpfaq3.txt" 2>&1; Write-Output "EXIT=$LASTEXITCODE"; Get-Content "$env:TEMP\vpfaq3.txt" | Select-String -Pattern "error CS|error |warning |Failed!|\[FAIL\]|SUMMARY|OK |FAIL |Faq.Integration" | Select-Object -Last 25
+ect-Object -Last 25    EXIT=0
+
+VALIDATE CI: OK 
+(starhill-ci.yml; push
+⊇main/master/develop 
++ pull_request; 
+concurrency 
+cancel-in-progress; pe
+rmissions.contents=rea
+d; jobs build-test/doc
+ker-image/migration-bu
+ndle + timeouts; nhắm 
+starhill/)
+Test run for C:\Users\
+toann\Desktop\WORK_PRO
+\StarHillGuestApp\star
+hill\tests\Modules\Faq
+.IntegrationTests\bin\
+Debug\net10.0\Faq.Inte
+grationTests.dll (.NET
+CoreApp,Version=v10.0)
+[xUnit.net 
+00:00:16.25]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.C
+annot_delete_category_
+while_items_reference_
+it [SKIP]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Cannot_d
+elete_category_while_i
+tems_reference_it [1 
+ms]
+[xUnit.net 
+00:00:16.26]     Faq.I
+ntegrationTests.FaqCon
+currencyTests.Concurre
+nt_item_update_second_
+writer_gets_concurrenc
+y_conflict [SKIP]
+[xUnit.net 
+00:00:16.26]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.C
+ategory_translation_is
+_unique_per_category_a
+nd_language [SKIP]
+[xUnit.net 
+00:00:16.26]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.I
+tem_translation_is_uni
+que_per_item_and_langu
+age [SKIP]
+[xUnit.net 
+00:00:16.26]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.C
+ategory_key_is_unique_
+per_resort [SKIP]
+  Skipped Faq.Integrat
+ionTests.FaqConcurrenc
+yTests.Concurrent_item
+_update_second_writer_
+gets_concurrency_confl
+ict [1 ms]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Category
+_translation_is_unique
+_per_category_and_lang
+uage [1 ms]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Item_tra
+nslation_is_unique_per
+_item_and_language [1 
+ms]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Category
+_key_is_unique_per_res
+ort [1 ms]
+Passed!  - Failed:    
+ 0, Passed:    21, 
+Skipped:     5, 
+Total:    26, 
+Duration: 13 s - Faq.I
+ntegrationTests.dll 
+(net10.0)
+==== [vp] SUMMARY ====
+  OK    build 
+(0-warning)
+  OK    validate-ci
+  OK    test (full 
+suite, --no-build)
+
+
+Thinking completed
++
+Xanh toàn bộ: Faq.IntegrationTests 21 pass / 5 skip (+8 reorder tests). Cập nhật journal QR-N-048 + mở rộng QR-AD-037 Guard-Tests + design §10.
+
+
+2 edits to file
+
+01-decisions.md
+
+
+Accepted edits to
+
+04-notes.md
+
+
 Accepted edits to
 
 05-anti-drift.md
 
 
-Thinking completed
-+
-Cập nhật design 04-rules.md §12 C-GA.4 → ✅.
-
 Accepted edits to
 
-04-rules.md
+05-faq.md
 
-
-Chạy JournalConsistency INV-1..6 (kiểm INV-6 thấy AD-032 → CurrentGuestContextResolverTests tồn tại; range liên tục tới N-037).
 
 Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
+c:\Users\to…illGuestApp
 
-dotnet test tests/StarHill.ArchitectureTests/StarHill.ArchitectureTests.csproj -c Release --nologo --filter "FullyQualifiedName~StarHillJournalConsistencyTests" 2>&1 | Select-String -Pattern "Passed!|Failed!|error|Passed:|Failed:|Skipped:"
+cmd /c "starhill\scripts\vp.cmd journal" > "$env:TEMP\vpj5.txt" 2>&1; Write-Output "EXIT=$LASTEXITCODE"; Get-Content "$env:TEMP\vpj5.txt" | Select-String -Pattern "Passed!|Failed!|OK |FAIL " | Select-Object -Last 5
+Object -Last 5         EXIT=0
 
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 6, 
-Skipped:   
-  0, 
-Total:     
-6, 
-Duration: 
-2 s - StarH
-ill.Archite
-ctureTests.
-dll 
-(net10.0)
+Passed!  - Failed:    
+ 0, Passed:     6, 
+Skipped:     0, 
+Total:     6, 
+Duration: 626 ms - Sta
+rHill.ArchitectureTest
+s.dll (net10.0)
+  OK    
+journal-consistency
 
-Thinking completed
-+
-INV-1..6 = 6/6. Bước cuối: full suite (build + Docker thật, không skip mềm) làm bằng chứng cuối.
+
+INV-1..6 xanh. Commit + push.
 
 Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
+c:\Users\to…illGuestApp
 
-dotnet test Platform.slnx -c Release --nologo 2>&1 | Select-String -Pattern "Passed!|Failed!|error CS|Build FAILED|Passed:.*Skipped"
-:.*Skipped" 
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 6, 
-Skipped:   
-  0, 
-Total:     
-6, 
-Duration: 
-1 s - StarH
-ill.Html.Te
-sts.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 7, 
-Skipped:   
-  0, 
-Total:     
-7, 
-Duration: 
-172 ms - Id
-entity.Unit
-Tests.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-20, 
-Skipped:   
-  0, 
-Total:    
-20, 
-Duration: 
-99 msA 
-total of 1 
-test files 
-matched 
-the 
-specified 
-pattern.
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-15, 
-Skipped:   
-  0, 
-Total:    
-15, 
-Duration: 
-1 m 11 s - 
-ResortConfi
-g.Integrati
-onTests.dll
- (net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 2, 
-Skipped:   
-  0, 
-Total:     
-2, 
-Duration: 
-1 m 1 s - I
-dentity.Int
-egrationTes
-ts.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 2, 
-Skipped:   
-  0, 
-Total:     
-2, 
-Duration: 
-141 ms - Ro
-oms.UnitTes
-ts.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-27, 
-Skipped:   
-  0, 
-Total:    
-27, 
-Duration: 
-1 m 2 s - R
-ooms.Integr
-ationTests.
-dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-12, 
-Skipped:   
-  0, 
-Total:    
-12, 
-Duration: 
-1 m 52 s - 
-Rules.Integ
-rationTests
-.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-33, 
-Skipped:   
-  0, 
-Total:    
-33, 
-Duration: 
-3 m 10 s - 
-GuestAccess
-.Integratio
-nTests.dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 2, 
-Skipped:   
-  0, 
-Total:     
-2, 
-Duration: 
-322 ms - Be
-drock.Contr
-actTests.dl
-l (net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-21, 
-Skipped:   
-  0, 
-Total:    
-21, 
-Duration: 
-6 s - StarH
-ill.Archite
-ctureTests.
-dll 
-(net10.0)
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-33, 
-Skipped:   
-  0, 
-Total:    
-33, 
-Duration: 
-5 s - StarH
-ill.Api.Tes
-ts.dll 
-(net10.0)
+git add "starhill/src/Modules/Faq/Faq.Application/ReorderFaqUseCases.cs" "starhill/src/Modules/Faq/Faq.Application/FaqContracts.cs" "starhill/src/Modules/Faq/Faq.Infrastructure/DependencyInjection/FaqInfrastructureExtensions.cs" "starhill/tests/Modules/Faq.IntegrationTests/ReorderFaqUseCaseTests.cs" ".kiro/specs/starhill-qr/design-modules/05-faq.md" ".kiro/specs/starhill-qr/journal/01-decisions.md" ".kiro/specs/starhill-qr/journal/04-notes.md" ".kiro/specs/starhill-qr/journal/05-anti-drift.md"; Write-Output "---CACHED bin/obj/nested (phải RỖNG)---"; git diff --cached --name-only | Select-String "/bin/|/obj/|StarHillGuestApp/StarHillGuestApp"; Write-Output "---COUNT---"; (git diff --cached --name-only | Measure-Object).Count
+---CACHED bin/obj/neste
+d (phải RỖNG)---       ---COUNT---
+8
+Command
+c:\Users\to…illGuestApp
 
+git -c core.autocrlf=false commit -m "feat(faq): E-Faq.3 reorder category/item (batch atomic, drag-drop) [QR-N-048]" -m "2 use case tach ReorderFaqCategoriesUseCase (scope ResortId) + ReorderFaqItemsUseCase (scope CategoryId) - batch SortOrder mot transaction; sai scope -> not_found; validator (Id phan biet/khong rong/SortOrder>=0). Tests ReorderFaqUseCaseTests(4)+ReorderValidatorTests(4). vp all 0-warning/0-fail (Faq.IntegrationTests 21 pass/5 skip); vp journal INV-1..6 xanh. QR-AD-037 Guard-Tests mo rong." 2>&1 | Select-Object -Last 2; git push origin develop 2>&1 | Select-Object -Last 3; Write-Output "---SYNC---"; git fetch origin develop 2>&1 | Out-Null; git rev-list --left-right --count origin/develop...HEAD; git rev-parse --short HEAD
+ create mode 100644 sta
+rhill/src/Modules/Faq/Faq.Application/ReorderFaqUseCases.cs           create mode 100644 sta
+rhill/tests/Modules/Faq.IntegrationTests/ReorderFaqUseCaseTests.cs   git : To https://githu
+b.com/mgcoder9x/StarHi
+llGuestApp.git
+At line:1 char:545
++ ... ." 2>&1 | 
+Select-Object -Last 
+2; git push origin 
+develop 2>&1 | Selec 
+...
++                     
+                 ~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (To https:/   
+ /gith...illGuestA    
+pp.git:String) []    
+, RemoteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+   acc7955..e1dc450  
+develop -> develop
+---SYNC---
+0       0
+e1dc450
 Thinking completed
 +
-Hoàn tất C-GA.4 (ICurrentGuestContextResolver — portal-window check-before-touch) + đóng gap registry lỗi Rules. Kiểm chứng đầu-cuối Docker thật.
+Push thành công (acc7955..e1dc450, sync 0 0, HEAD e1dc450).
 
-Lý do chọn C-GA.4 (không D-Rules.3b)
-C-GA.4 là dependency trên đường tới hạn — mở khóa toàn bộ luồng guest-facing (D-Rules.4). D-Rules.3b (preview/history) là leaf không mở khóa gì và shape read có thể đổi khi làm guest-read → làm sớm dễ phải sửa (I10).
+Hoàn tất slice E-Faq.3 — reorder drag-drop:
 
-Đã làm (design-first, đọc/valid trước code)
-GuestAccess.Contracts: ICurrentGuestContextResolver + CurrentGuestContext (+ref Bedrock.Domain cho Result<T>).
-GuestAccessErrors: +session_expired/guest_context_missing (Unauthorized/401).
-EfCurrentGuestContextResolver: Resolve đọc-kiểm-window KHÔNG touch; Touch trượt cửa sổ + bảo toàn idle-delta, no-op nếu không Active.
-CurrentGuestContextResolverTests (Postgres, 8 test).
-Lý do các quyết định (QR-AD-032 → Implemented)
-Tách Resolve/Touch: nếu touch trước khi kiểm window thì cửa sổ tự gia hạn vô hạn, không bao giờ hết hạn (đúng cảnh báo design §resolve bước 5). Resolve chỉ đọc+kiểm; Touch gọi SAU nghiệp vụ thành công.
-Resolve đọc config, Touch dùng delta-preservation: portal-window (phút) KHÔNG vật hoá → Resolve phải đọc config (fail-closed nếu thiếu). Idle-expiry (giờ) đã vật hoá ở ExpiresAt → Touch bảo toàn ExpiresAt - LastSeenAt khi trượt → không cần query config ở đường touch (bền, không nhánh fail-closed thừa). Đây là dùng đúng công cụ cho từng cửa sổ, không phải hack.
-Reuse IGuestSessionKeyHasher: tôi đã inline SHA-256 rồi sửa lại inject hasher — nguồn hash DUY NHẤT, tránh 2 định nghĩa lệch nhau (fix tận gốc).
-Result<T> ở Contracts: boundary test chỉ cấm Application/Infra/Api; Result/Error là nguyên thủy shared kernel (Bedrock.Domain) → hợp lệ, cho consumer map thẳng Error→HTTP.
-Gap anti-drift đóng tận gốc (phát hiện khi rà)
-ErrorCodeSnapshotTests (QR-AD-018 "phủ MỌI catalog module") thiếu Rules.Application → mã rules_conflict (D-Rules.2b) không được gác. Đã thêm Rules.Application vào registry + 3 mã (rules_conflict/session_expired/guest_context_missing). Nay registry phủ Identity/Rooms/GuestAccess/Rules.
+Đã code:
 
-Bằng chứng (thực đo)
-dotnet build Platform.slnx -c Release = 0 warning / 0 error.
-GuestAccess.IntegrationTests = 33/33, 0 skip (25 cũ + 8 C-GA.4).
-Full suite Docker thật: 180 test, 0 fail, 0 skip.
-StarHillJournalConsistencyTests INV-1..6 = 6/6: INV-6 xác nhận AD-032 Guard-Tests: CurrentGuestContextResolverTests tồn tại; range liên tục tới QR-N-037.
-Một test đỏ trung gian (ck_guest_visit_closed_at: visit không-Active phải có ClosedAt) → sửa seed đúng bản chất, không phải nới lỏng constraint.
-Journal cập nhật
-QR-AD-032 Proposed→Implemented (01), QR-N-037 (04), anti-drift map: AD-032→✅ + AD-018 phủ Rules + range→N-037 (05), design §12 C-GA.4→✅.
+2 use case tách theo scope (bản chất khác nhau, không dùng type-discriminator runtime): ReorderFaqCategoriesUseCase (scope ResortId) + ReorderFaqItemsUseCase (scope CategoryId) — cập nhật SortOrder hàng loạt trong một transaction (nguyên tử), sai scope → not_found (chống sửa chéo resort/category), partial cho phép. Validator: Id phân biệt + không rỗng + SortOrder ≥ 0.
+Lý do chính xác: batch (nhận toàn bộ thứ tự mới) thay vì swap từng cặp → một transaction, ít round-trip; SortOrder không unique (ties vỡ ở tầng read E-Faq.4) nên không có "trạng thái trung gian trùng"; reorder chỉ đổi thứ tự, KHÔNG đổi cha-con (move-node dùng UpdateFaqItem).
+Verify:
 
-Trạng thái commit: chưa commit (theo đúng quy tắc — chờ bạn yêu cầu rõ).
+vp all: build 0-warning + validate-ci OK + full suite 0-fail. Faq.IntegrationTests 21 pass / 5 skip (+8: ReorderFaqUseCaseTests 4 + ReorderValidatorTests 4).
+vp journal: INV-1..6 xanh (QR-AD-037 Guard-Tests mở rộng, tồn tại thật).
+Git: commit e1dc450 (8 file, cached bin/obj/nested RỖNG), sync 0 0.
+4-việc + chống drift: QR-AD-037 (status + Guard-Tests) + QR-N-048 + state line + design §10 E-Faq.3 → ✅.
 
-Bước kế tiếp: D-Rules.4 — slice lớn mở khóa QR-AD-030/031→Implemented: guest GetCurrentRulesUseCase (đọc publication IsCurrent + i18n fallback CP5) + AcknowledgeRulesUseCase (server-authoritative dùng ICurrentGuestContextResolver, idempotent CP13) + IRuleGate (CP3) + endpoints admin/guest + Host wiring + RequirePort(IHtmlSanitizer). Bạn muốn tôi tiếp D-Rules.4, hay commit các slice đang chờ (D-Rules.1/2a/2b/3a, C-GA.4, Phase-1 OpenAPI, TASK 7) trước?
+Còn lại module FAQ — chỉ E-Faq.4 (mắt xích cuối, lớn nhất):
 
-Est. Credits Used: 78.69
-Elapsed time: 42m 37s
+read-model IFaqReader/EfFaqReader (F9, không IQueryable) + GetGuestFaqTreeUseCase: config → FaqEnabled → rule-gate IRuleGate (GuestFeature.Faq) — FAQ là consumer đầu tiên của rule-gate, kiểm chứng CP3 ở tầng dùng thật → i18n fallback CP5 → dựng cây in-memory.
+FaqGuestEndpointModule (resolve context → gate → tree → touch cửa sổ) + FaqAdminEndpointModule (RequireStaff) + AddFaqApi.
+Host wiring (conn Faq + migrate + AddFaqApi) + CI bundle faq + appsettings/compose.
+Test FaqEndpointAuthTests + HostEndpointWiringSmokeTests +InlineData + flip guard đủ.
+Faq.Application +ref ResortConfig.Contracts + Rules.Contracts.
+E-Faq.4 là slice lớn (đụng Host + cross-module rule-gate); tôi sẽ làm ở lượt sau, chia rõ và verify từng bước như trên. Sau E-Faq.4, module FAQ hoàn tất (BE 6/8 module) — kế tiếp Concierge hoặc Housekeeping.
+
+Est. Credits Used: 32.58
+Elapsed time: 12m
 
 
 Checkpoint
 Restore
-Hãy xử lý để hệ thống cực tốt và an toàn; duyệt theo khuyến nghị từng bước chắc chắn và hướng tới lâu dài, sản phẩm thương mại, chú ý khuyến nghị thì bạn phải hiểu và nói lên được các lý do chọn thì mới được và lý phải là chính xác. Tiếp tục đi cực nghiêm ngặt và tuyệt đối không bịa ; không suy đoán, luôn valid nhiều lần đảm bảo chính xác tuyệt đối. Cần 1 cách nhìn sâu rộng nhé. Tôi luôn nghiên về 1 sự chuẩn bị thiết kế rõ ràng rồi đọc lại valid thiết kế. chính xác có thể kiểm chứng rồi mới triển khai cái gì đó. Và khi fix 1 cái gì thì phải nhìn vào bản chất đừng fix tận gốc đừng fix mỗi cái ngọn. Chú ý tuyệt đối không tiết kiệm token để nhanh xong task. Tôi cần bạn tạo 1 thư mục trong đó chứa các file làm 4 việc:   1. Các quyết định AI tự ra mà spec không nói  2. Những chỗ AI phải đổi so với yêu cầu ban đầu  3. Các Trade-off AI phải cân nhắc  4. Bất kỳ điều gì mà bạn nên biết  Bạn có thể lưu bất kỳ định dạng gì tốt nhất cho AI dùng, file này sẽ là xuyên suốt lưu lại để sau làm kiểm chứng.nếu có rồi thì cập nhật vào. Tôi cần bạn có 1 cách nào cực mạnh để tránh tránh dift.
+Hãy xử lý để hệ thống cực tốt và an toàn; duyệt theo khuyến nghị từng bước chắc chắn và hướng tới lâu dài, sản phẩm thương mại, chú ý khuyến nghị thì bạn phải hiểu và nói lên được các lý do chọn thì mới được và lý phải là chính xác. Tiếp tục đi cực nghiêm ngặt và tuyệt đối không bịa ; không suy đoán, luôn valid nhiều lần đảm bảo chính xác tuyệt đối. Cần 1 cách nhìn sâu rộng nhé. Tôi luôn nghiên về 1 sự chuẩn bị thiết kế rõ ràng rồi đọc lại valid thiết kế. chính xác có thể kiểm chứng rồi mới triển khai cái gì đó. Và khi fix 1 cái gì thì phải nhìn vào bản chất đừng fix tận gốc đừng fix mỗi cái ngọn. Chú ý tuyệt đối không tiết kiệm token để nhanh xong task. Tôi cần bạn tạo 1 thư mục trong đó chứa các file làm 4 việc: 
+
+1. Các quyết định AI tự ra mà spec không nói
+
+2. Những chỗ AI phải đổi so với yêu cầu ban đầu
+
+3. Các Trade-off AI phải cân nhắc
+
+4. Bất kỳ điều gì mà bạn nên biết
+
+Bạn có thể lưu bất kỳ định dạng gì tốt nhất cho AI dùng, file này sẽ là xuyên suốt lưu lại để sau làm kiểm chứng.nếu có rồi thì cập nhật vào. Tôi cần bạn có 1 cách nào cực mạnh để tránh tránh dift. Tôi nghĩ bạn cần mở web để xem và hình như có 1 mcp hỗ trợ và bạn cài rồi đó. vì mở web bằng browser phát hiện cực nhiều lỗi
+
+
 
 Kiro
 Thinking completed
 +
-Hiểu rõ. Tiếp tục sang D-Rules.4 — slice lớn nhất, mở khóa QR-AD-030/031→Implemented. Vì phạm vi rộng (guest read + i18n, acknowledge server-authoritative, rule-gate, endpoints, Host wiring, RequirePort), tôi sẽ chia sub-slice verify từng bước chắc chắn, bắt đầu D-Rules.4a: guest read (GetCurrentRules + i18n fallback CP5) — phần cohesive testable nhất, và là nền cho ack/gate.
-
-Design-first: đọc API i18n thật (ITranslationResolver/ITranslation/Translated) + cách TranslationResolver hoạt động để dùng đúng CP5 (không suy đoán).
-
-Searched workspace
-Tìm các file i18n contracts + resolver để đọc API chính xác cho CP5.
-Thinking completed
-+
-Đọc chi tiết ITranslation, signature Resolve<T>, và impl TranslationResolver.Resolve để dùng đúng cho GetCurrentRules.
+E-Faq.4 — mắt xích cuối module FAQ (lớn nhất: guest tree read + rule-gate + Api + Host wiring). Trước khi code, đọc chính xác chữ ký ITranslationResolver/ITranslation, use case guest read mẫu, reader mẫu, và AddRulesApi để mirror.
 
 Read file(s)
-
-ITranslation.cs
 
 ITranslationResolver.cs
 
-TranslationResolver.cs
-Thinking completed
-+
-Đã nắm API i18n. Thiết kế D-Rules.4a rõ. Một điểm thiết kế quan trọng cần chốt: design §8 nói entity implement ITranslation, nhưng làm vậy ép Rules.Domain → ResortConfig.Contracts (Domain phụ thuộc Contracts module khác — leak concern rendering vào Domain). Bản chất: i18n-resolution là concern Application (render theo request khách), không phải bất biến Domain. → Tôi đặt ITranslation trên read-DTO ở Rules.Application (đã ref ResortConfig.Contracts theo §2), giữ Domain thuần. Đây là deviation có chủ đích (sẽ ghi QR-DV-007).
-
-Bắt đầu: thêm ref ResortConfig.Contracts vào Rules.Application + tạo read-model publication.
-
-Accepted edits to
-
-Rules.Application.csproj
-
-
-Accepted creation of
-
-IRulePublicationReader.cs
-
-
-Thinking completed
-+
-Thêm RulesUnavailable vào RulesErrors + input/result GetCurrentRules.
-
-Accepted edits to
-
-RulesErrors.cs
-
-
-Accepted edits to
-
-RuleContracts.cs
-
-
-Accepted creation of
-
 GetCurrentRulesUseCase.cs
 
+RulesApiExtensions.cs
 
+EfRuleDraftReader.cs
 Thinking completed
 +
-Tôi tham chiếu ConfigurationUnavailableForRules chưa định nghĩa. Dùng cùng mã configuration_unavailable (ngữ nghĩa fail-closed chung, registry đã có mã này). Sửa RulesErrors + use case.
+Đã nắm đủ. E-Faq.4 lớn — tôi giữ phạm vi E-Faq.4a: guest tree read + rule-gate (consumer đầu tiên của IRuleGate) + admin WRITE endpoints (CRUD/reorder) + Host wiring; defer admin READ-tree (editor + missing-langs) sang E-Faq.4b (pairs với admin FE chưa dựng — I10, tránh bloat + reader shape riêng). Lý do: đường guest (giá trị khách hàng) + admin write hoàn chỉnh; read-back editor gắn với FE.
+
+Bước 1: Faq.Application.csproj +ResortConfig.Contracts +Rules.Contracts.
 
 Accepted edits to
 
-RulesErrors.cs
-
-
-Accepted edits to
-
-GetCurrentRulesUseCase.cs
+Faq.Application.csproj
 
 
 Thinking completed
 +
-Viết EfRulePublicationReader (Rules.Infrastructure).
+Bước 2: thêm Disabled + ConfigurationUnavailable vào FaqErrors (guest read fail-closed).
+
+Accepted edits to
+
+FaqErrors.cs
+
+
+Bước 3: read-model IFaqReader + snapshot DTOs (implement ITranslation cho resolver).
 
 Accepted creation of
 
-EfRulePublicationReader.cs
+IFaqReader.cs
 
 
 Thinking completed
 +
-Wiring: đăng ký reader + GetCurrentRulesUseCase.
+Bước 4: contracts guest tree + GetGuestFaqTreeUseCase (config → FaqEnabled → rule-gate → i18n → dựng cây).
+
+Accepted edits to
+
+FaqContracts.cs
+
+
+Accepted creation of
+
+GetGuestFaqTreeUseCase.cs
+
+
+Thinking completed
++
+Bước 5: EfFaqReader (Infrastructure, no-tracking, chỉ active).
+
+Accepted creation of
+
+EfFaqReader.cs
+
+
+Thinking completed
++
+Bước 6: đăng ký IFaqReader + GetGuestFaqTreeUseCase trong AddFaqInfrastructure.
+
+Accepted edits to
+
+FaqInfrastructureExtensions.cs
+
+
+Thinking completed
++
+Build Faq.Infrastructure xác nhận Application + reader + guest use case biên dịch.
+
+Command
+c:\Users\toa…App\starhill
+
+dotnet build "src\Modules\Faq\Faq.Infrastructure\Faq.Infrastructure.csproj" -c Debug 2>&1 | Select-Object -Last 12
+12                       Bedrock.Application -
+> C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Bedrock.Application\bin\Debug\net10.0\Bedrock.Application.dll               Faq.Domain -> C:\User
+s\toann\Desktop\WORK_PRO\StarHillGuestApp\starhill\src\Modules\Faq\Faq.Domain\bin\Debug\net10.0\Faq.Domain.dll     C:\Users\toann\Desktop\
+WORK_PRO\StarHillGuestApp\starhill\src\Modules\Faq\Faq.Application\GetGuestFaqTreeUseCase.cs(72,29): error CS8714: The type 'System.Guid?' cannot be used as type parameter 'TKey' in the generic type or method 'Enumerable.ToDictionary<TSource, TKey, TElement>(IEnumerable<TSource>, Func<TSource, TKey>, Func<TSource, TElement>)'. Nullability of type argument 'System.Guid?' doesn't match 'notnull' constraint. [C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\starhill\src\Modules\Faq\Faq.Application\Faq.Application.csproj]        Bedrock.Infrastructur
+e -> C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\platform\src\Bedrock.Infrastructure\bin\Debug\net10.0\Bedrock.Infrastructure.dll    
+Build FAILED.
+
+C:\Users\toann\Desktop\
+WORK_PRO\StarHillGuestApp\starhill\src\Modules\Faq\Faq.Application\GetGuestFaqTreeUseCase.cs(72,29): error CS8714: The type 'System.Guid?' cannot be used as type parameter 'TKey' in the generic type or method 'Enumerable.ToDictionary<TSource, TKey, TElement>(IEnumerable<TSource>, Func<TSource, TKey>, Func<TSource, TElement>)'. Nullability of type argument 'System.Guid?' doesn't match 'notnull' constraint. [C:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\starhill\src\Modules\Faq\Faq.Application\Faq.Application.csproj]          0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:46.7
+4                      
+Thinking completed
++
+ToDictionary không nhận key Guid?. Dùng ToLookup (cho phép key null) + order nguồn trước. Sửa tận gốc.
 
 
 2 edits to file
 
-RulesInfrastructureExtensions.cs
+GetGuestFaqTreeUseCase.cs
+
+
+Command
+c:\Users\toa…App\starhill
+
+dotnet build "src\Modules\Faq\Faq.Infrastructure\Faq.Infrastructure.csproj" -c Debug 2>&1 | Select-Object -Last 6
+Object -Last 6         
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:10.5
+5                      
+Thinking completed
++
+Bước 7: tạo Faq.Api. Đọc Rules.Api.csproj để mirror refs.
+
+Read file(s)
+
+Rules.Api.csproj
+Accepted creation of
+
+Faq.Api.csproj
 
 
 Thinking completed
 +
-Thêm rules_unavailable vào snapshot registry (ordinal sau rules_conflict).
+Bước 7b: FaqAdminEndpointModule (CRUD + reorder, RequireStaff, resortId server-side).
+
+Accepted creation of
+
+FaqAdminEndpointModule.cs
+
+
+Thinking completed
++
+Bước 7c: FaqGuestEndpointModule (guest tree, resolve → gate qua use case → touch sau thành công).
+
+Accepted creation of
+
+FaqGuestEndpointModule.cs
+
+
+Accepted creation of
+
+FaqApiExtensions.cs
+
+
+Thinking completed
++
+Bước 8: Host wiring. Đọc vùng Program.cs quanh Rules + migrate để chèn Faq chính xác.
+
+Read file(s)
+
+Program.cs 118 - 205
+Thinking completed
++
+Chèn Faq wiring vào Program.cs (service + migrate).
+
+
+2 edits to file
+
+Program.cs
+
+
+Thinking completed
++
+Thêm usings Faq vào Program.cs (cạnh Rules usings).
+
+Accepted edits to
+
+Program.cs
+
+
+Host csproj + appsettings + docker-compose + slnx (Faq.Api) + CI bundle.
+
+Accepted edits to
+
+StarHill.Api.csproj
+
+
+Accepted edits to
+
+appsettings.json
+
+
+Accepted edits to
+
+docker-compose.yml
+
+
+Accepted edits to
+
+Platform.slnx
+
+
+Accepted edits to
+
+starhill-ci.yml
+
+
+Thinking completed
++
+Bước 8b: build Host để xác nhận Api + wiring biên dịch trước khi viết test.
+
+Command
+c:\Users\toa…App\starhill
+
+dotnet build "src\Host\StarHill.Api\StarHill.Api.csproj" -c Debug 2>&1 | Select-Object -Last 12
+  Identity.Api -> C:\Us
+ers\toann\Desktop\WORK_PRO\StarHillGuestApp\starhill\src\Modules\Identity\Identity.Api\bin\Debug\net10.0\Identity.Api.dll                   ResortConfig.Api -> C
+:\Users\toann\Desktop\WORK_PRO\StarHillGuestApp\starhill\src\Modules\ResortConfig\ResortConfig.Api\bin\Debug\net10.0\ResortConfig.Api.dll   Rooms.Api -> C:\Users
+\toann\Desktop\WORK_PRO\StarHillGuestApp\starhill\src\Modules\Rooms\Rooms.Api\bin\Debug\net10.0\Rooms.Api.dll        Rules.Api -> C:\Users
+\toann\Desktop\WORK_PRO\StarHillGuestApp\starhill\src\Modules\Rules\Rules.Api\bin\Debug\net10.0\Rules.Api.dll        Faq.Api -> C:\Users\t
+oann\Desktop\WORK_PRO\StarHillGuestApp\starhill\src\Modules\Faq\Faq.Api\bin\Debug\net10.0\Faq.Api.dll                StarHill.Api -> C:\Us
+ers\toann\Desktop\WORK_PRO\StarHillGuestApp\starhill\src\Host\StarHill.Api\bin\Debug\net10.0\StarHill.Api.dll      
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:12.1
+1                      
+Thinking completed
++
+Host build 0-warning. Bước 9: tests. Thêm ref ResortConfig.Application vào Faq.IntegrationTests (cần TranslationResolver thật cho guest tree test).
+
+Accepted edits to
+
+Faq.IntegrationTests.csproj
+
+
+Thinking completed
++
+Viết GuestFaqTreeUseCaseTests (SQLite + resolver thật + fake IRuleGate + stub config): rule-gate CP3, feature-flag, i18n fallback, cấu trúc cây.
+
+Accepted creation of
+
+GuestFaqTreeUseCaseTests.cs
+
+
+Thinking completed
++
+Cập nhật ErrorCodeSnapshotTests +faq_disabled (Ordinal giữa faq_conflict và faq_invalid_parent).
 
 Accepted edits to
 
@@ -2271,94 +1025,322 @@ ErrorCodeSnapshotTests.cs
 
 Thinking completed
 +
-Build để xác nhận compile (Rules.Application +ResortConfig.Contracts, use case, reader, wiring, snapshot).
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet build Platform.slnx -c Release --nologo 2>&1 | Select-String -Pattern "error CS|error CA|warning|Build succeeded|Build FAILED" | Select-Object -Last 15
-5           
-Build 
-succeeded.
-    0 
-Warning(s)
-
-Thinking completed
-+
-Build 0/0. Viết CP5 test. Cần TranslationResolver thật (ResortConfig.Application) để test đúng logic i18n → thêm ProjectReference vào Rules.IntegrationTests.
-
-Accepted edits to
-
-Rules.IntegrationTests.csproj
-
-
-Accepted creation of
-
-GetCurrentRulesTests.cs
-
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet build tests/Modules/Rules.IntegrationTests/Rules.IntegrationTests.csproj -c Release --nologo 2>&1 | Select-String -Pattern "error CS|error CA|Build succeeded|Build FAILED" | Select-Object -Last 10
-ct -Last 10 
-Build 
-succeeded.
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet test tests/Modules/Rules.IntegrationTests/Rules.IntegrationTests.csproj -c Release --no-build --nologo 2>&1 | Select-String -Pattern "Passed!|Failed!|error|Passed:|Failed:|Skipped:"
-
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
-19, 
-Skipped:   
-  0, 
-Total:    
-19, 
-Duration: 
-43 s - Rule
-s.Integrati
-onTests.dll
- (net10.0)
-
-Thinking completed
-+
-19/19 pass (12 + 7 CP5). Verify snapshot (rules_unavailable) + JournalConsistency.
-
-Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
-
-dotnet test tests/Bedrock.ContractTests/Bedrock.ContractTests.csproj -c Release --no-build --nologo 2>&1 | Select-String -Pattern "Passed!|Failed!|Passed:|Failed:"
-
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 2, 
-Skipped:   
-  0, 
-Total:     
-2, 
-Duration: 
-303 ms - Be
-drock.Contr
-actTests.dl
-l (net10.0)
-
-Thinking completed
-+
-Snapshot 2/2. Ghi journal D-Rules.4a. Đọc 02-deviations.md để thêm QR-DV-007 đúng format (ITranslation trên DTO thay vì entity).
+Bước 9b: đọc StarHill.Api.Tests.csproj để thêm ref Faq.Api/Application trước khi viết fakes + auth test.
 
 Read file(s)
 
-02-deviations.md
+StarHill.Api.Tests.csproj
+Thinking completed
++
+StarHill.Api.Tests ref Host (transitive tới Faq.Application) — không cần thêm ref. Thêm Faq fakes vào file fakes chung.
+
 Accepted edits to
 
-02-deviations.md
+RoomsUseCaseFakes.cs
+
+
+Thinking completed
++
+Bước 9c: FaqEndpointAuthTests (TestServer + fakes): admin RequireStaff + guest AllowAnonymous.
+
+Accepted creation of
+
+FaqEndpointAuthTests.cs
+
+
+Thinking completed
++
+Bước 9d: đọc HostEndpointWiringSmokeTests để thêm InlineData cho endpoint Faq.
+
+Read file(s)
+
+HostEndpointWiringSmokeTests.cs
+Thinking completed
++
+Thêm InlineData Faq vào smoke test (admin 401 + guest problem+json).
+
+
+2 edits to file
+
+HostEndpointWiringSmokeTests.cs
+
+
+Thinking completed
++
+Tất cả code + test E-Faq.4 xong. Chạy vp all.
+
+Command
+c:\Users\to…illGuestApp
+
+cmd /c "starhill\scripts\vp.cmd all" > "$env:TEMP\vpfaq4.txt" 2>&1; Write-Output "EXIT=$LASTEXITCODE"; Get-Content "$env:TEMP\vpfaq4.txt" | Select-String -Pattern "error CS|error |warning |Failed!|\[FAIL\]|SUMMARY|OK |FAIL |Faq.Integration|StarHill.Api.Tests" | Select-Object -Last 30
+ct -Last 30            EXIT=1
+
+C:\Users\toann\Desktop
+\WORK_PRO\StarHillGues
+tApp\starhill\tests\Mo
+dules\Faq.IntegrationT
+ests\GuestFaqTreeUseCa
+seTests.cs(167,36): 
+error CS0234: The 
+type or namespace 
+name 'Application' 
+does not exist in the 
+namespace 'Rules' 
+(are you missing an 
+assembly reference?) [
+C:\Users\toann\Desktop
+\WORK_PRO\StarHillGues
+tApp\starhill\tests\Mo
+dules\Faq.IntegrationT
+ests\Faq.IntegrationTe
+sts.csproj]
+VALIDATE CI: OK 
+(starhill-ci.yml; push
+⊇main/master/develop 
++ pull_request; 
+concurrency 
+cancel-in-progress; pe
+rmissions.contents=rea
+d; jobs build-test/doc
+ker-image/migration-bu
+ndle + timeouts; nhắm 
+starhill/)
+Test run for C:\Users\
+toann\Desktop\WORK_PRO
+\StarHillGuestApp\star
+hill\tests\Host\StarHi
+ll.Api.Tests\bin\Debug
+\net10.0\StarHill.Api.
+Tests.dll (.NETCoreApp
+,Version=v10.0)
+Test run for C:\Users\
+toann\Desktop\WORK_PRO
+\StarHillGuestApp\star
+hill\tests\Modules\Faq
+.IntegrationTests\bin\
+Debug\net10.0\Faq.Inte
+grationTests.dll (.NET
+CoreApp,Version=v10.0)
+Passed!  - Failed:    
+ 0, Passed:    60, 
+Skipped:     0, 
+Total:    60, 
+Duration: 5 s - StarHi
+ll.Api.Tests.dll 
+(net10.0)
+[xUnit.net 
+00:00:11.41]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.C
+annot_delete_category_
+while_items_reference_
+it [SKIP]
+[xUnit.net 
+00:00:11.42]     Faq.I
+ntegrationTests.FaqCon
+currencyTests.Concurre
+nt_item_update_second_
+writer_gets_concurrenc
+y_conflict [SKIP]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Cannot_d
+elete_category_while_i
+tems_reference_it [1 
+ms]
+  Skipped Faq.Integrat
+ionTests.FaqConcurrenc
+yTests.Concurrent_item
+_update_second_writer_
+gets_concurrency_confl
+ict [1 ms]
+[xUnit.net 
+00:00:11.42]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.C
+ategory_translation_is
+_unique_per_category_a
+nd_language [SKIP]
+[xUnit.net 
+00:00:11.42]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.I
+tem_translation_is_uni
+que_per_item_and_langu
+age [SKIP]
+[xUnit.net 
+00:00:11.42]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.C
+ategory_key_is_unique_
+per_resort [SKIP]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Category
+_translation_is_unique
+_per_category_and_lang
+uage [1 ms]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Item_tra
+nslation_is_unique_per
+_item_and_language [1 
+ms]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Category
+_key_is_unique_per_res
+ort [1 ms]
+Passed!  - Failed:    
+ 0, Passed:    21, 
+Skipped:     5, 
+Total:    26, 
+Duration: 10 s - Faq.I
+ntegrationTests.dll 
+(net10.0)
+==== [vp] SUMMARY ====
+  FAIL  build 
+(0-warning)
+  OK    validate-ci
+  OK    test (full 
+suite, --no-build)
+
+
+Thinking completed
++
+Lỗi biên dịch: test dùng Rules.Application.RulesErrors nhưng Faq.IntegrationTests không ref Rules.Application. Fix tận gốc: dùng Error.Forbidden("rule_ack_required", ...) trực tiếp (không cần ref thừa module Rules.Application vào test Faq).
+
+Accepted edits to
+
+GuestFaqTreeUseCaseTests.cs
+
+
+Command
+c:\Users\to…illGuestApp
+
+cmd /c "starhill\scripts\vp.cmd all" > "$env:TEMP\vpfaq4b.txt" 2>&1; Write-Output "EXIT=$LASTEXITCODE"; Get-Content "$env:TEMP\vpfaq4b.txt" | Select-String -Pattern "error CS|error |warning |Failed!|\[FAIL\]|SUMMARY|OK |FAIL |Faq.Integration|StarHill.Api.Tests.dll" | Select-Object -Last 22
+EXIT=0
+
+VALIDATE CI: OK 
+(starhill-ci.yml; push
+⊇main/master/develop 
++ pull_request; 
+concurrency 
+cancel-in-progress; pe
+rmissions.contents=rea
+d; jobs build-test/doc
+ker-image/migration-bu
+ndle + timeouts; nhắm 
+starhill/)
+Test run for C:\Users\
+toann\Desktop\WORK_PRO
+\StarHillGuestApp\star
+hill\tests\Modules\Faq
+.IntegrationTests\bin\
+Debug\net10.0\Faq.Inte
+grationTests.dll (.NET
+CoreApp,Version=v10.0)
+Test run for C:\Users\
+toann\Desktop\WORK_PRO
+\StarHillGuestApp\star
+hill\tests\Host\StarHi
+ll.Api.Tests\bin\Debug
+\net10.0\StarHill.Api.
+Tests.dll (.NETCoreApp
+,Version=v10.0)
+Passed!  - Failed:    
+ 0, Passed:    60, 
+Skipped:     0, 
+Total:    60, 
+Duration: 3 s - StarHi
+ll.Api.Tests.dll 
+(net10.0)
+[xUnit.net 
+00:00:11.37]     Faq.I
+ntegrationTests.FaqCon
+currencyTests.Concurre
+nt_item_update_second_
+writer_gets_concurrenc
+y_conflict [SKIP]
+[xUnit.net 
+00:00:11.37]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.C
+annot_delete_category_
+while_items_reference_
+it [SKIP]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Cannot_d
+elete_category_while_i
+tems_reference_it [1 
+ms]
+  Skipped Faq.Integrat
+ionTests.FaqConcurrenc
+yTests.Concurrent_item
+_update_second_writer_
+gets_concurrency_confl
+ict [1 ms]
+[xUnit.net 
+00:00:11.37]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.C
+ategory_translation_is
+_unique_per_category_a
+nd_language [SKIP]
+[xUnit.net 
+00:00:11.37]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.I
+tem_translation_is_uni
+que_per_item_and_langu
+age [SKIP]
+[xUnit.net 
+00:00:11.37]     Faq.I
+ntegrationTests.FaqPos
+tgresConstraintTests.C
+ategory_key_is_unique_
+per_resort [SKIP]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Category
+_translation_is_unique
+_per_category_and_lang
+uage [1 ms]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Item_tra
+nslation_is_unique_per
+_item_and_language [1 
+ms]
+  Skipped Faq.Integrat
+ionTests.FaqPostgresCo
+nstraintTests.Category
+_key_is_unique_per_res
+ort [1 ms]
+Passed!  - Failed:    
+ 0, Passed:    26, 
+Skipped:     5, 
+Total:    31, 
+Duration: 10 s - Faq.I
+ntegrationTests.dll 
+(net10.0)
+==== [vp] SUMMARY ====
+  OK    build 
+(0-warning)
+  OK    validate-ci
+  OK    test (full 
+suite, --no-build)
+
+
+Thinking completed
++
+Xanh toàn bộ: StarHill.Api.Tests 60 pass (+8: FaqEndpointAuthTests 4 + smoke +4), Faq.IntegrationTests 26 pass / 5 skip (+5 GuestFaqTreeUseCaseTests). Module FAQ hoàn tất mặt guest+admin. Cập nhật journal.
+
+
+2 edits to file
+
+01-decisions.md
 
 
 Accepted edits to
@@ -2366,76 +1348,159 @@ Accepted edits to
 04-notes.md
 
 
-Thinking completed
-+
-Cập nhật range trong 05-anti-drift.md (DV→007, N→038) + design §12.
-
 Accepted edits to
 
 05-anti-drift.md
 
 
-Error(s) while editing
-
-04-rules.md
-
-Unable to replace text, trying a different approach...
-Read file(s)
-
-04-rules.md 205 - 223
-Thinking completed
-+
-Searched workspace
-Tìm dòng item 6 D-Rules.4 để cập nhật.
-Read file(s)
-
-04-rules.md 248 - 252
 Accepted edits to
 
-04-rules.md
+05-faq.md
 
-
-Thinking completed
-+
-Chạy JournalConsistency INV-1..6 (kiểm DV-007/N-038 liên tục; không có AD Implemented mới ở slice này).
 
 Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
+c:\Users\to…illGuestApp
 
-dotnet test tests/StarHill.ArchitectureTests/StarHill.ArchitectureTests.csproj -c Release --nologo --filter "FullyQualifiedName~StarHillJournalConsistencyTests" 2>&1 | Select-String -Pattern "Passed!|Failed!|error|Passed:|Failed:"
+cmd /c "starhill\scripts\vp.cmd journal" > "$env:TEMP\vpj6.txt" 2>&1; Write-Output "EXIT=$LASTEXITCODE"; Get-Content "$env:TEMP\vpj6.txt" | Select-String -Pattern "Passed!|Failed!|OK |FAIL " | Select-Object -Last 5
+stApp> ^C                            
+Command
+c:\Users\to…illGuestApp
 
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 6, 
-Skipped:   
-  0, 
-Total:     
-6, 
-Duration: 
-913 ms - St
-arHill.Arch
-itectureTes
-ts.dll 
+cmd /c "starhill\scripts\vp.cmd journal" > "$env:TEMP\vpj6.txt" 2>&1; Write-Output "EXIT=$LASTEXITCODE"; Get-Content "$env:TEMP\vpj6.txt" | Select-String -Pattern "Passed!|Failed!|OK |FAIL " | Select-Object -Last 5
+EXIT=0
+
+Passed!  - Failed:     0, Passed:   
+  6, Skipped:     0, Total:     6, 
+Duration: 140 ms - 
+StarHill.ArchitectureTests.dll 
 (net10.0)
+  OK    journal-consistency
+
+
+INV-1..6 xanh. Commit + push (path tường minh).
+
+Command
+c:\Users\to…illGuestApp
+
+git add "starhill/src/Modules/Faq/Faq.Application" "starhill/src/Modules/Faq/Faq.Api" "starhill/src/Modules/Faq/Faq.Infrastructure/Faq.Infrastructure.csproj" "starhill/src/Modules/Faq/Faq.Infrastructure/DependencyInjection/FaqInfrastructureExtensions.cs" "starhill/src/Modules/Faq/Faq.Infrastructure/Persistence/EfFaqReader.cs" "starhill/src/Host/StarHill.Api/Program.cs" "starhill/src/Host/StarHill.Api/StarHill.Api.csproj" "starhill/src/Host/StarHill.Api/appsettings.json" "starhill/docker-compose.yml" "starhill/Platform.slnx" ".github/workflows/starhill-ci.yml" "starhill/tests/Modules/Faq.IntegrationTests/GuestFaqTreeUseCaseTests.cs" "starhill/tests/Modules/Faq.IntegrationTests/Faq.IntegrationTests.csproj" "starhill/tests/Host/StarHill.Api.Tests/Authorization/RoomsUseCaseFakes.cs" "starhill/tests/Host/StarHill.Api.Tests/Authorization/FaqEndpointAuthTests.cs" "starhill/tests/Host/StarHill.Api.Tests/HostEndpointWiringSmokeTests.cs" "starhill/tests/Bedrock.ContractTests/ErrorCodeSnapshotTests.cs" ".kiro/specs/starhill-qr/design-modules/05-faq.md" ".kiro/specs/starhill-qr/journal/01-decisions.md" ".kiro/specs/starhill-qr/journal/04-notes.md" ".kiro/specs/starhill-qr/journal/05-anti-drift.md"; Write-Output "---CACHED bin/obj/nested (phải RỖNG)---"; git diff --cached --name-only | Select-String "/bin/|/obj/|StarHillGuestApp/StarHillGuestApp"; Write-Output "---COUNT---"; (git diff --cached --name-only | Measure-Object).Count
+---CACHED bin/obj/nested (phải RỖNG)-
+--                                   ---COUNT---
+3
+Thinking completed
++
+Chỉ 3 file staged — bất thường. Kiểm git status để chẩn đoán.
+
+Command
+c:\Users\to…illGuestApp
+
+Write-Output "=== STAGED ==="; git diff --cached --name-only; Write-Output "=== UNSTAGED/UNTRACKED (short) ==="; git status --short | Select-Object -First 40
+PS C:\Users\toann\Desktop\WORK_PRO\St
+arHillGuestApp> Write-Output "=== STAGED ==="; git diff --cached --name-only; Write-Output "=== UNSTAGED/UNTRACKED (short) ==="; git status --short | Select-Object -First 40            === STAGED ===
+.kiro/specs/starhill-qr/design-module
+s/05-faq.md                          .kiro/specs/starhill-qr/journal/04-no
+tes.md                               .kiro/specs/starhill-qr/journal/05-an
+ti-drift.md                          === UNSTAGED/UNTRACKED (short) ===
+M  .kiro/specs/starhill-qr/design-mod
+ules/05-faq.md                       M  .kiro/specs/starhill-qr/journal/04
+-notes.md                            M  .kiro/specs/starhill-qr/journal/05
+-anti-drift.md                       
+Thinking completed
++
+Cần chẩn đoán rõ. Kiểm trạng thái sạch + 1 file mới cụ thể.
+
+Command
+c:\Users\to…illGuestApp
+
+Write-Output "=== full porcelain count ==="; (git status --porcelain | Measure-Object).Count; Write-Output "=== all porcelain ==="; git status --porcelain; Write-Output "=== is GetGuestFaqTreeUseCase tracked? ==="; git ls-files "starhill/src/Modules/Faq/Faq.Application/GetGuestFaqTreeUseCase.cs"; Write-Output "=== is Faq.Api tracked? ==="; git ls-files "starhill/src/Modules/Faq/Faq.Api/*.cs"
+=== full porcelain count ===
+3
+=== all porcelain ===
+M  .kiro/specs/starhill-qr/design-mod
+ules/05-faq.md                       M  .kiro/specs/starhill-qr/journal/04
+-notes.md                            M  .kiro/specs/starhill-qr/journal/05
+-anti-drift.md                       === is GetGuestFaqTreeUseCase tracked
+? ===                                starhill/src/Modules/Faq/Faq.Applicat
+ion/GetGuestFaqTreeUseCase.cs        === is Faq.Api tracked? ===
+starhill/src/Modules/Faq/Faq.Api/Depe
+ndencyInjection/FaqApiExtensions.cs  starhill/src/Modules/Faq/Faq.Api/FaqA
+dminEndpointModule.cs                starhill/src/Modules/Faq/Faq.Api/FaqG
+uestEndpointModule.cs                
+Thinking completed
++
+Các file source E-Faq.4 đã tracked và git status "clean" cho chúng → có vẻ đã được commit. Kiểm git log để hiểu.
+
+Command
+c:\Users\to…illGuestApp
+
+Write-Output "=== log -4 ==="; git log --oneline -4; Write-Output "=== HEAD stat (file count) ==="; (git show --stat --name-only --format="" HEAD | Where-Object { $_ -ne "" } | Measure-Object).Count; Write-Output "=== HEAD contains Faq.Api? ==="; git show --stat --name-only --format="" HEAD | Select-String "Faq.Api|GetGuestFaqTree|EfFaqReader|Program.cs"; Write-Output "=== sync ==="; git rev-list --left-right --count origin/develop...HEAD
+develop...HEAD                       === log -4 ===
+465dd3a (HEAD -> develop, origin/deve
+lop, origin/HEAD) update             e1dc450 feat(faq): E-Faq.3 reorder ca
+tegory/item (batch atomic, drag-drop) [QR-N-048]                          acc7955 feat(faq): E-Faq.2 Faq.Applic
+ation admin CRUD + sanitize-on-save + cycle-check [QR-N-047]              092ac1a feat(faq): E-Faq.1 Faq persis
+tence foundation (schema faq + 4 entity + migration) [QR-AD-037]          === HEAD stat (file count) ===
+24
+=== HEAD contains Faq.Api? ===
+
+starhill/src/Host/StarHill.Api/Progr
+am.cs
+starhill/src/Modules/Faq/Faq.Api/Dep
+endencyInjection/FaqApiExtensions.cs
+starhill/src/Modules/Faq/Faq.Api/Faq
+.Api.csproj
+starhill/src/Modules/Faq/Faq.Api/Faq
+AdminEndpointModule.cs
+starhill/src/Modules/Faq/Faq.Api/Faq
+GuestEndpointModule.cs
+starhill/src/Modules/Faq/Faq.Applica
+tion/GetGuestFaqTreeUseCase.cs
+starhill/src/Modules/Faq/Faq.Infrast
+ructure/Persistence/EfFaqReader.cs
+=== sync ===
+0       0
+
 
 Thinking completed
 +
-INV-1..6 = 6/6. Full suite làm bằng chứng cuối (Docker thật).
+Rõ rồi: có commit 465dd3a "update" (auto-tạo, 24 file) đã gộp toàn bộ source+test E-Faq.4a và đã push (sync 0 0). Còn lại 3 file journal/design tôi vừa sửa. Kiểm commit "update" không chứa bin/obj/nested, rồi commit 3 file journal với message đúng.
 
 Command
-c:\Users\k.nguyen.manh.toan\Desktop\TOANM\WORK\StarHillGuestApp\starhill
+c:\Users\to…illGuestApp
 
-dotnet test Platform.slnx -c Release --nologo 2>&1 | Select-String -Pattern "Passed!|Failed!|error CS|Build FAILED|Failed:.*Passed:"
-:.*Passed:" 
-Passed!  - 
-Failed:    
- 0, 
-Passed:    
- 7, 
-Skipped:   
-  0, 
-Total:     
-7, 
-Duration: 
+Write-Output "=== 465dd3a bin/obj/nested? (phải RỖNG) ==="; git show --stat --name-only --format="" 465dd3a | Select-String "/bin/|/obj/|StarHillGuestApp/StarHillGuestApp"; Write-Output "=== full 24 files ==="; git show --stat --name-only --format="" 465dd3a
+rmat="" 465dd3a                      === 465dd3a bin/obj/nested? (phải RỖN
+G) ===                               === full 24 files ===
+.github/workflows/starhill-ci.yml
+.kiro/specs/starhill-qr/journal/01-de
+cisions.md                           starhill/Platform.slnx
+starhill/docker-compose.yml
+starhill/src/Host/StarHill.Api/Progra
+m.cs                                 starhill/src/Host/StarHill.Api/StarHi
+ll.Api.csproj                        starhill/src/Host/StarHill.Api/appset
+tings.json                           starhill/src/Modules/Faq/Faq.Api/Depe
+ndencyInjection/FaqApiExtensions.cs  starhill/src/Modules/Faq/Faq.Api/Faq.
+Api.csproj                           starhill/src/Modules/Faq/Faq.Api/FaqA
+dminEndpointModule.cs                starhill/src/Modules/Faq/Faq.Api/FaqG
+uestEndpointModule.cs                starhill/src/Modules/Faq/Faq.Applicat
+ion/Faq.Application.csproj           starhill/src/Modules/Faq/Faq.Applicat
+ion/FaqContracts.cs                  starhill/src/Modules/Faq/Faq.Applicat
+ion/FaqErrors.cs                     starhill/src/Modules/Faq/Faq.Applicat
+ion/GetGuestFaqTreeUseCase.cs        starhill/src/Modules/Faq/Faq.Applicat
+ion/IFaqReader.cs                    starhill/src/Modules/Faq/Faq.Infrastr
+ucture/DependencyInjection/FaqInfrastructureExtensions.cs                 starhill/src/Modules/Faq/Faq.Infrastr
+ucture/Persistence/EfFaqReader.cs    starhill/tests/Bedrock.ContractTests/
+ErrorCodeSnapshotTests.cs            starhill/tests/Host/StarHill.Api.Test
+s/Authorization/FaqEndpointAuthTests.cs                                   starhill/tests/Host/StarHill.Api.Test
+s/Authorization/RoomsUseCaseFakes.cs starhill/tests/Host/StarHill.Api.Test
+s/HostEndpointWiringSmokeTests.cs    starhill/tests/Modules/Faq.Integratio
+nTests/Faq.IntegrationTests.csproj   starhill/tests/Modules/Faq.Integratio
+nTests/GuestFaqTreeUseCaseTests.cs   
+Thinking completed
++
+Commit 465dd3a sạch (không bin/obj/nested), chứa đúng 24 file E-Faq.4a (source+test+Host+CI, gồm cả 01-decisions.md) và đã push. Đây là auto-commit "update" (không phải style của tôi, nhưng sạch + đã đẩy — không viết lại lịch sử đã push). Còn 3 file journal/design tôi vừa sửa (đã staged). Commit chúng với message đúng.
+
+Command
+c:\Users\to…illGuestApp
+
+git -c core.autocrlf=false commit -m "docs(faq): E-Faq.4a journal QR-N-049 + design status (guest tree + rule-gate + Host wiring)" -m "Bo sung ghi chep 4-viec cho E-Faq.4a (source+test da commit o 465dd3a): QR-N-049 (04-notes) + state line (05-anti-drift) + design-modules/05-faq.md E-Faq.4a done / E-Faq.4b defer (admin read-tree pairs FE). Module Faq hoan tat mat guest+admin write; BE 6/8 module. vp all 0-fail; vp journal INV-1..6 xanh." 2>&1 | Select-Object -Last 2; git push origin develop 2>&1 | Select-Object -Last 3; Write-Output "---SYNC---"; git fetch origin develop 2>&1 | Out-Null; git rev-list --left-right --count origin/develop...HEAD; git rev-parse --short HEAD
+Est. Credits Used: 122.92(?)
