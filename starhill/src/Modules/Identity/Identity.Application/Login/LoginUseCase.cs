@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Bedrock.Application.Ports.Persistence;
 using Bedrock.Application.Ports.Security;
 using Bedrock.Application.Ports.Time;
@@ -96,18 +95,8 @@ public sealed class LoginUseCase : IUseCase<LoginCommand, LoginResult>
             },
             ct).ConfigureAwait(false);
 
-        var accessToken = _jwt.Issue(BuildIdentity(user));
+        // Access-token sub+role qua helper CHUNG (dùng chung refresh — nguồn duy nhất dựng claim, tránh drift).
+        var accessToken = _jwt.Issue(IdentityClaims.Build(user.Id, user.Role));
         return Result.Success(new LoginResult(accessToken, rawRefresh, expiresAt));
-    }
-
-    // sub = UserId; role = claim JWT-native "role" = tên enum viết thường ("admin"/"staff"). DERIVE từ enum (KHÔNG ref
-    // StarHill.Authorization — project đó FrameworkReference ASP.NET, ref vào Application sẽ phá I7). Hợp đồng
-    // enum-name ↔ StarHillPolicies.RoleAdmin/RoleStaff được GUARD bằng test `RoleClaimContractTests` (fail build nếu lệch).
-    private static ClaimsIdentity BuildIdentity(IdentityUser user)
-    {
-        var role = user.Role.ToString().ToLowerInvariant(); // Admin→"admin", Staff→"staff"
-        return new ClaimsIdentity(
-            [new Claim("sub", user.Id.ToString()), new Claim("role", role)],
-            authenticationType: "jwt");
     }
 }

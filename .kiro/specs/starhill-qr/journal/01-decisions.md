@@ -467,3 +467,15 @@
 - Rationale (verifiable): bootstrap admin cần cơ chế nhưng KHÔNG được nhét password prod vào repo (F35); dev cần seed để test end-to-end. Generic-error + timing-defense là chuẩn chống enumeration (bản chất bảo mật, không phải trang trí).
 - Alternatives: hardcode admin/password (loại: rò secret, F35); phân biệt mã lỗi user-not-found vs wrong-password (loại: oracle enumeration); seeder chạy cả prod (loại: password dev lọt prod).
 - Reversibility: High (seeder + cờ). Traceability: `design-modules/06-identity-login.md` §7/§1; QR-AD-008 (seeder precedent); F35; QR-N-052.
+
+### QR-AD-040 — Refresh-rotation nạp user → phát access-token MANG ROLE + chặn user vô hiệu (F.2); helper claim dùng chung
+- Status: Accepted/Implemented (2026-07-16; F.2)
+- Date: 2026-07-16
+- Decider: AI (đóng gap phát hiện khi làm login: refresh skeleton chỉ phát `sub`, comment tự thừa nhận "chờ user store").
+- Provenance/Evidence: `RefreshAccessTokenUseCase` (trước F.2) `BuildIdentity(userId)` chỉ `sub` → sau refresh access-token KHÔNG có role → policy RequireAdmin/RequireStaff từ chối (admin mất quyền sau ~access-TTL). `IRefreshTokenStore` snapshot mang `UserId`; `IRepository<IdentityUser>` (F.1a) cho lookup. Sau F.2 (verify runtime Docker): login→refresh→access-token mới KÈM Bearer gọi `GET /v1/resort/settings` → **200** (role giữ qua refresh); reuse refresh cũ → **401**.
+- Decision/Change: (1) `RefreshAccessTokenUseCase` +dep `IRepository<IdentityUser>` (keyed); sau reuse-detection, TRƯỚC consume: nạp user theo `current.UserId` — `null || !IsActive` → `InvalidRefreshToken` (KHÔNG rotate cho user không còn hợp lệ; user bị vô hiệu SAU đăng nhập → refresh CHẾT = giết session ở lần refresh kế). (2) Phát access-token qua helper CHUNG `IdentityClaims.Build(userId, role)` — DÙNG CHUNG login + refresh (nguồn duy nhất dựng claim `sub`+`role`, tránh drift claim giữa hai đường).
+- Rationale (verifiable): role phải bền qua refresh (nếu không admin mất quyền âm thầm — bug thật). Kiểm IsActive ở refresh biến "vô hiệu hoá user" thành có hiệu lực trong ≤ access-TTL (không cần revoke tường minh ngay). Helper chung = một chỗ dựng claim → login/refresh không lệch (login cấp role thì refresh cũng phải).
+- Alternatives: giữ refresh chỉ `sub` (loại: admin mất quyền sau refresh — bug); không kiểm IsActive (loại: user bị vô hiệu vẫn refresh vô hạn — lỗ bảo mật); revoke-family ngay khi user vô hiệu (mạnh hơn nhưng thuộc admin-user-mgmt — để dành, QR-N-056).
+- Consequences: refresh nay phụ thuộc user store (cùng module Identity — hợp lệ). Vô hiệu hoá user: session chết ở lần refresh kế (trong ≤ access-TTL) — chấp nhận v1; revoke-family tức thì khi có màn quản trị user.
+- Reversibility: Medium. Traceability: `design-modules/06-identity-login.md` §8 (refresh-role follow-up); QR-AD-038 (role→claim); QR-N-056.
+- Guard-Tests: `RefreshAccessTokenUseCaseTests`, `RefreshRotationEmitsEventTests`

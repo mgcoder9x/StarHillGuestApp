@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Bedrock.Application.Messaging;
 using Bedrock.Application.Ports.Persistence;
 using Bedrock.Application.Ports.Security;
@@ -27,6 +26,7 @@ public sealed class RefreshAccessTokenUseCase : IUseCase<RefreshTokenCommand, Re
     private const string RotatedReason = "rotated";
 
     private readonly IRefreshTokenStore _store;
+    private readonly IRepository<IdentityUser> _users;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly ITokenGenerator _tokenGenerator;
@@ -35,6 +35,7 @@ public sealed class RefreshAccessTokenUseCase : IUseCase<RefreshTokenCommand, Re
 
     public RefreshAccessTokenUseCase(
         IRefreshTokenStore store,
+        IRepository<IdentityUser> users,
         IUnitOfWork unitOfWork,
         IClock clock,
         ITokenGenerator tokenGenerator,
@@ -42,12 +43,14 @@ public sealed class RefreshAccessTokenUseCase : IUseCase<RefreshTokenCommand, Re
         IOutboxWriter outboxWriter)
     {
         ArgumentNullException.ThrowIfNull(store);
+        ArgumentNullException.ThrowIfNull(users);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(tokenGenerator);
         ArgumentNullException.ThrowIfNull(jwt);
         ArgumentNullException.ThrowIfNull(outboxWriter);
         _store = store;
+        _users = users;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _tokenGenerator = tokenGenerator;
@@ -81,6 +84,16 @@ public sealed class RefreshAccessTokenUseCase : IUseCase<RefreshTokenCommand, Re
                 return Result<RefreshTokenResult>.Failure(AuthErrors.InvalidRefreshToken);
             }
 
+            // F.2: nạp user chủ token → phát access-token MANG ROLE (không thì admin mất quyền sau refresh) + kiểm
+            // IsActive: user bị vô hiệu hoá/xóa SAU khi đăng nhập → refresh THẤT BẠI (giết session, không rotate cho
+            // user không còn hợp lệ). Kiểm TRƯỚC consume (không rotate cho user vô hiệu). Mã chung InvalidRefreshToken
+            // (không tiết lộ lý do). (Ghi chú: revoke-family khi vô hiệu hoá user là việc admin-user-mgmt — QR-N-056.)
+            var user = await _users.FindByIdAsync(current.UserId, token).ConfigureAwait(false);
+            if (user is null || !user.IsActive)
+            {
+                return Result<RefreshTokenResult>.Failure(AuthErrors.InvalidRefreshToken);
+            }
+
             var newRawToken = _tokenGenerator.NewToken();
             var newTokenId = Guid.CreateVersion7();
             var expiresAt = now.Add(RefreshTokenLifetime);
@@ -110,13 +123,10 @@ public sealed class RefreshAccessTokenUseCase : IUseCase<RefreshTokenCommand, Re
             // Enlist consume (ghi ngay) + insert token mới + outbox event vào CÙNG transaction → all-or-nothing (fix F5).
             await _unitOfWork.SaveChangesAsync(token).ConfigureAwait(false);
 
-            var accessToken = _jwt.Issue(BuildIdentity(current.UserId));
+            // Access-token mang sub+role (helper CHUNG với login — QR-N-056). Role giữ nguyên qua refresh → admin
+            // KHÔNG mất quyền sau rotation.
+            var accessToken = _jwt.Issue(IdentityClaims.Build(user.Id, user.Role));
             return Result<RefreshTokenResult>.Success(new RefreshTokenResult(accessToken, newRawToken, expiresAt));
         }
     }
-
-    // Claim tối thiểu cho rotation: sub = UserId (AD-023). role/permission/tenant/sid cần user-profile store —
-    // ngoài phạm vi rotation skeleton (N-040); module bổ sung khi có user store thật.
-    private static ClaimsIdentity BuildIdentity(Guid userId) =>
-        new([new Claim("sub", userId.ToString())], authenticationType: "jwt");
 }

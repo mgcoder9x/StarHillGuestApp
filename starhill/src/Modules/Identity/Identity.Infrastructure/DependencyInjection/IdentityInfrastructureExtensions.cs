@@ -49,6 +49,7 @@ public static class IdentityInfrastructureExtensions
         services.AddScoped<IUseCase<RefreshTokenCommand, RefreshTokenResult>>(sp =>
             new RefreshAccessTokenUseCase(
                 sp.GetRequiredKeyedService<IRefreshTokenStore>(PersistenceKey),
+                sp.GetRequiredKeyedService<IRepository<Identity.Domain.IdentityUser>>(PersistenceKey),
                 sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
                 sp.GetRequiredService<IClock>(),
                 sp.GetRequiredService<ITokenGenerator>(),

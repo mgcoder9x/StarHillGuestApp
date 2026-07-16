@@ -75,11 +75,23 @@ public sealed class RefreshRotationEmitsEventTests : IAsyncLifetime
         }
 
         const string rawToken = "known-raw-refresh-token";
-        var userId = Guid.CreateVersion7();
+        Guid userId;
 
-        // Seed một refresh token HỢP LỆ (hash khớp cách use case băm) trong một scope riêng.
+        // Seed user ACTIVE (F.2: refresh nạp user theo UserId + kiểm IsActive) rồi refresh token HỢP LỆ khớp UserId đó.
         await using (var seedScope = provider.CreateAsyncScope())
         {
+            var db = seedScope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+            var user = new Identity.Domain.IdentityUser
+            {
+                Username = "refresh-admin",
+                PasswordHash = "$argon2id$v=19$m=1,t=1,p=1$c2FsdA$aGFzaA",
+                Role = Identity.Domain.UserRole.Admin,
+                IsActive = true,
+            };
+            db.Users.Add(user);
+            await db.SaveChangesAsync();
+            userId = user.Id;
+
             var store = seedScope.ServiceProvider.GetRequiredKeyedService<IRefreshTokenStore>(IdentityInfrastructureExtensions.PersistenceKey);
             var uow = seedScope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(IdentityInfrastructureExtensions.PersistenceKey);
             await store.AddAsync(new RefreshTokenSnapshot(
@@ -94,6 +106,7 @@ public sealed class RefreshRotationEmitsEventTests : IAsyncLifetime
             var sp = rotateScope.ServiceProvider;
             var useCase = new RefreshAccessTokenUseCase(
                 sp.GetRequiredKeyedService<IRefreshTokenStore>(IdentityInfrastructureExtensions.PersistenceKey),
+                sp.GetRequiredKeyedService<IRepository<Identity.Domain.IdentityUser>>(IdentityInfrastructureExtensions.PersistenceKey),
                 sp.GetRequiredKeyedService<IUnitOfWork>(IdentityInfrastructureExtensions.PersistenceKey),
                 sp.GetRequiredService<IClock>(),
                 new FakeTokenGenerator(),

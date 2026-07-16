@@ -677,3 +677,11 @@
 - Gate: build 0-warning; `Identity.IntegrationTests` **9/9 Docker** (5 login + seeder + 3 cũ); `StarHill.Api.Tests` 62/62. QR-AD-039 → **Implemented** (seeder + generic-error/timing đủ).
 - **LOGIN (F.1) HOÀN TẤT** (F.1a persistence + F.1b use case/endpoint + F.1c seeder/wiring/e2e). Admin đăng nhập được thật.
 - NEXT: **F.2** (refresh-role: RefreshAccessTokenUseCase load user theo UserId → thêm claim role + kiểm IsActive → auth đúng SAU refresh; hiện refresh mất role). Rồi module **Concierge** + **Housekeeping** + **Dashboard** để "BE done" → chọn FE template.
+
+### QR-N-056 — Slice F.2 XONG: refresh giữ role + chặn user vô hiệu; helper claim dùng chung (auth đúng end-to-end)
+- Date: 2026-07-16
+- Đã làm (QR-AD-040): `RefreshAccessTokenUseCase` +`IRepository<IdentityUser>`; sau reuse-detection/trước consume nạp user → `null||!IsActive`→InvalidRefreshToken; phát access-token qua helper CHUNG `IdentityClaims.Build(userId, role)` (login + refresh dùng chung → nguồn dựng claim duy nhất). Bỏ `BuildIdentity` riêng ở cả 2 use case + xóa using thừa.
+- Verify: build 0-warning; `Identity.UnitTests` **9/9** (+2: missing-user/inactive-user→fail-không-consume); `Identity.IntegrationTests` **9/9 Docker** (RefreshRotationEmitsEventTests cập nhật seed user active). **Runtime e2e (Docker)**: login→refresh(rotation)→access-token mới KÈM Bearer gọi `GET /v1/resort/settings` → **200** (ROLE GIỮ qua refresh); reuse refresh cũ → **401** (reuse-detection). ⇒ vòng đời auth đầy-đủ đúng.
+- **AUTH (F.1+F.2) HOÀN TẤT**: login (role) → dùng admin → refresh (role bền) → dùng admin; user vô hiệu → refresh chết; reuse token → 401. Admin surface + FE sẵn sàng dùng thật.
+- Ghi chú (chưa làm, không chặn): revoke-family TỨC THÌ khi vô hiệu hoá user (hiện session chết ở lần refresh kế trong ≤ access-TTL) — làm khi có màn quản trị user (admin-user-mgmt slice).
+- NEXT: module **Concierge** (chat khách↔lễ tân + ChatHub) hoặc **Housekeeping** (yêu cầu dịch vụ theo phòng) — 2/8 module cuối; cả hai là consumer của `IRuleGate` (rule-ack) + `ICurrentGuestContextResolver`. Rồi Dashboard. Sau đó "BE done" → chọn FE template.
