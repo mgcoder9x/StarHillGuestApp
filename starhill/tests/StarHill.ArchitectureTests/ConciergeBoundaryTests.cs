@@ -1,3 +1,4 @@
+using Concierge.Application;
 using Concierge.Contracts;
 using Concierge.Domain;
 using Concierge.Infrastructure.Persistence;
@@ -7,15 +8,16 @@ using Xunit;
 namespace StarHill.ArchitectureTests;
 
 /// <summary>
-/// GUARD ranh giới module (CP4) cho module <c>Concierge</c>. K-Con.1 (persistence nền): Contracts thuần (chỉ
-/// Bedrock.Messaging.Contracts; KHÔNG rò Domain/Infra, KHÔNG coupling Contracts module khác); Domain ⊥ Infrastructure.
-/// Negative control chứng minh engine bắt phụ thuộc thật. Assertion Application ⊥ Infra/EF/SignalR thêm ở K-Con.2
-/// (khi Concierge.Application tồn tại).
+/// GUARD ranh giới module (CP4) cho module <c>Concierge</c>. Kiểm: Contracts thuần (chỉ Bedrock.Messaging.Contracts;
+/// KHÔNG rò Domain/Infra, KHÔNG coupling Contracts module khác); Domain ⊥ Infrastructure; Application ⊥ Infra/EF/
+/// ASP.NET/SignalR (I7 — use case bắt exception TRUNG LẬP + realtime qua port, không chạm IHubContext). Negative
+/// control chứng minh engine bắt phụ thuộc thật.
 /// </summary>
 public sealed class ConciergeBoundaryTests
 {
     private static System.Reflection.Assembly Contracts => typeof(ConciergeModule).Assembly;
     private static System.Reflection.Assembly Domain => typeof(Conversation).Assembly;
+    private static System.Reflection.Assembly Application => typeof(SendGuestMessageUseCase).Assembly;
 
     [Fact]
     public void Contracts_should_stay_pure()
@@ -47,6 +49,23 @@ public sealed class ConciergeBoundaryTests
             .GetResult();
 
         Assert.True(result.IsSuccessful, Describe("Concierge.Domain", result));
+    }
+
+    [Fact]
+    public void Application_should_not_depend_on_infrastructure_or_api()
+    {
+        var result = Types.InAssembly(Application)
+            .Should()
+            .NotHaveDependencyOnAny(
+                "Bedrock.Infrastructure",
+                "Bedrock.Api",
+                "Concierge.Infrastructure",
+                "Microsoft.EntityFrameworkCore",
+                "Microsoft.AspNetCore",
+                "Microsoft.AspNetCore.SignalR")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, Describe("Concierge.Application", result));
     }
 
     // NEGATIVE CONTROL: type giả giữ ConciergeDbContext (Infrastructure) → luật "ShouldNot dep Infrastructure" PHẢI bắt.

@@ -44,6 +44,7 @@
     <ProjectReference Include="..\..\src\Modules\Housekeeping\Housekeeping.Infrastructure\Housekeeping.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Modules\Concierge\Concierge.Contracts\Concierge.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\Concierge\Concierge.Domain\Concierge.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Concierge\Concierge.Application\Concierge.Application.csproj" />
     <ProjectReference Include="..\..\src\Modules\Concierge\Concierge.Infrastructure\Concierge.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

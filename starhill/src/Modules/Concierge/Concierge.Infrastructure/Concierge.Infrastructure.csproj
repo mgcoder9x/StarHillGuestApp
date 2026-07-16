@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
-    Concierge.Infrastructure (persistence + composition nửa-Infra — matrix §3.3). K-Con.1: ref Concierge.Domain +
-    Concierge.Contracts (persistence nền, chưa use case). K-Con.2 đổi ref sang Concierge.Application (mirror
-    Housekeeping/Rules/Faq: Infra→Application). KHÔNG ref Bedrock.Api/Concierge.Api (Api⊥Infra I7).
+    Concierge.Infrastructure (persistence + composition nửa-Infra — matrix §3.3). K-Con.2: ref Concierge.Application
+    (kế thừa Domain+Contracts transitive; mirror Housekeeping/Rules/Faq: Infra→Application). KHÔNG ref
+    Bedrock.Api/Concierge.Api (Api⊥Infra I7). SignalR notifier impl ở Api/Host (K-Con.4) — Infra chỉ no-op default.
   -->
   <ItemGroup>
-    <ProjectReference Include="..\Concierge.Domain\Concierge.Domain.csproj" />
-    <ProjectReference Include="..\Concierge.Contracts\Concierge.Contracts.csproj" />
+    <ProjectReference Include="..\Concierge.Application\Concierge.Application.csproj" />
     <ProjectReference Include="$(PlatformSrc)\Bedrock.Infrastructure\Bedrock.Infrastructure.csproj" />
   </ItemGroup>
 

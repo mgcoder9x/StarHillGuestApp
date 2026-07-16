@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Concierge.Application (K-Con.2, vertical-by-feature): reference Concierge.Domain + Concierge.Contracts +
+    Bedrock.Application. Cross-module CHỈ qua Contracts (QR-AD-002): Rules.Contracts (IRuleGate rule-gate CP3 trong
+    use case) + ResortConfig.Contracts (IResortGuestConfigQuery: ChatEnabled + IResortSettingsQuery: MaxMessageLength).
+    KHÔNG ref GuestAccess.Contracts (Api phân giải context). KHÔNG ref Infrastructure/EF/ASP.NET/SignalR (I7).
+    FluentValidation cho validator. Mirror Housekeeping/Faq/Rules.Application.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Concierge.Domain\Concierge.Domain.csproj" />
+    <ProjectReference Include="..\Concierge.Contracts\Concierge.Contracts.csproj" />
+    <ProjectReference Include="..\..\Rules\Rules.Contracts\Rules.Contracts.csproj" />
+    <ProjectReference Include="..\..\ResortConfig\ResortConfig.Contracts\ResortConfig.Contracts.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Application\Bedrock.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+</Project>

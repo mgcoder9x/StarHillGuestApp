@@ -57,6 +57,7 @@
   <Folder Name="/src/Modules/Concierge/">
     <Project Path="src/Modules/Concierge/Concierge.Contracts/Concierge.Contracts.csproj" />
     <Project Path="src/Modules/Concierge/Concierge.Domain/Concierge.Domain.csproj" />
+    <Project Path="src/Modules/Concierge/Concierge.Application/Concierge.Application.csproj" />
     <Project Path="src/Modules/Concierge/Concierge.Infrastructure/Concierge.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/">

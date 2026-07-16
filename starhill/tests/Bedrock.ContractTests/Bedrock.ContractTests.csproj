@@ -35,5 +35,9 @@
     <!-- H-Hk.2: error catalog Housekeeping (HousekeepingErrors — housekeeping_disabled/no_open_ticket/ticket_not_found/
          invalid_transition; qr_invalid/configuration_unavailable tái dùng). Registry phủ MỌI catalog module (QR-AD-018). -->
     <ProjectReference Include="..\..\src\Modules\Housekeeping\Housekeeping.Application\Housekeeping.Application.csproj" />
+    <!-- K-Con.2: error catalog Concierge (ConciergeErrors — chat_disabled/concierge_message_empty/
+         concierge_message_too_long/concierge_conversation_not_found; configuration_unavailable tái dùng).
+         Registry phủ MỌI catalog module (QR-AD-018). -->
+    <ProjectReference Include="..\..\src\Modules\Concierge\Concierge.Application\Concierge.Application.csproj" />
   </ItemGroup>
 </Project>

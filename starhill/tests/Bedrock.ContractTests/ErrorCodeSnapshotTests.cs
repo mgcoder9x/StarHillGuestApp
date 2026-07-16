@@ -2,6 +2,7 @@ using System.Reflection;
 using Bedrock.Domain.Results;
 using Faq.Application;
 using GuestAccess.Application;
+using Concierge.Application;
 using Housekeeping.Application;
 using Identity.Domain;
 using Rooms.Application;
@@ -22,6 +23,10 @@ public sealed class ErrorCodeSnapshotTests
     // SNAPSHOT ĐÃ DUYỆT (sắp Ordinal). Cập nhật CÓ Ý THỨC khi thêm/đổi code (kèm review breaking-change F20).
     private static readonly string[] ExpectedCodes =
     [
+        "chat_disabled",                 // Concierge (K-Con.2a: ChatEnabled=false backend enforce — 403)
+        "concierge_conversation_not_found", // Concierge (K-Con.2b: staff reply/read/close theo id — 404)
+        "concierge_message_empty",       // Concierge (K-Con.2a: body rỗng sau trim)
+        "concierge_message_too_long",    // Concierge (K-Con.2a: body > MaxMessageLength cấu hình)
         "concurrency_conflict",
         "configuration_unavailable",     // GuestAccess (C-GA.2b)
         "conflict",
@@ -68,6 +73,7 @@ public sealed class ErrorCodeSnapshotTests
             typeof(RulesErrors).Assembly,        // Rules.Application (D-Rules.2b/3: rules_conflict — đóng gap QR-AD-018)
             typeof(FaqErrors).Assembly,          // Faq.Application (E-Faq.2: catalog lỗi module Faq)
             typeof(HousekeepingErrors).Assembly, // Housekeeping.Application (H-Hk.2: catalog lỗi module Housekeeping)
+            typeof(ConciergeErrors).Assembly,    // Concierge.Application (K-Con.2: catalog lỗi module Concierge)
         ];
 
         var actual = CollectStableErrorCodes(catalogAssemblies);
