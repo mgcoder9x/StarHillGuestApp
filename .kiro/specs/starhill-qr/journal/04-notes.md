@@ -592,3 +592,34 @@
   + `FaqGuestEndpointModule` (resolve context→gate→tree→touch) + `FaqAdminEndpointModule` (RequireStaff) + `AddFaqApi` +
   Host wiring (conn Faq + migrate + AddFaqApi) + CI bundle `faq` + `FaqEndpointAuthTests` + `HostEndpointWiringSmokeTests` +InlineData.
   Faq.Application sẽ +ref ResortConfig.Contracts + Rules.Contracts (rule-gate trong use case — defense-in-depth). Flip guard đủ.
+
+### QR-N-049 — Slice E-Faq.4a XONG: guest tree read + rule-gate (consumer đầu tiên IRuleGate) + Api + Host wiring
+- Date: 2026-07-16
+- Bối cảnh: mắt xích cuối mặt guest+admin module Faq. FAQ là **CONSUMER ĐẦU TIÊN của `IRuleGate`** → kiểm chứng CP3 ở
+  tầng dùng thật (không chỉ RuleGateTests nội bộ Rules).
+- Đã làm:
+  1. `Faq.Application` +ref ResortConfig.Contracts + Rules.Contracts. `FaqErrors` +`Disabled` (faq_disabled 403) +
+     `ConfigurationUnavailable`. Read-model `IFaqReader` + snapshot DTO (FaqCategory/Item/Translation implement ITranslation
+     — QR-DV-007) + `GetGuestFaqTreeUseCase`: config→FaqEnabled(false→faq_disabled)→**rule-gate EnsureAcknowledgedAsync(Faq)**
+     (gate TRONG use case = defense-in-depth CP3)→MatchSupported→dựng cây (ToLookup theo ParentId [key null OK, KHÔNG
+     ToDictionary], order SortOrder/Id, đệ quy). `EfFaqReader` (Infra, no-tracking, CHỈ active — item parent-inactive tự
+     ẩn cả nhánh). Đăng ký reader + guest use case.
+  2. `Faq.Api`: `FaqAdminEndpointModule` (CRUD category/item + upsert translation + reorder categories/items — TẤT CẢ
+     RequireStaff; resortId server-side qua IResortSettingsQuery) + `FaqGuestEndpointModule` (GET `/v1/guest/faq?roomId&lang`
+     AllowAnonymous, resolve context→use case→**touch SAU thành công** [KHÁC Rules-GET, QR-N-045]; no-store) + `AddFaqApi`.
+  3. Host: +conn `Faq` + `AddFaqInfrastructure(MigrationsHistoryTable faq)` + `AddFaqApi` + migrate faq. csproj Host
+     +Faq.Infrastructure/Faq.Api; Platform.slnx +Faq.Api. appsettings + docker-compose +`ConnectionStrings__Faq`;
+     starhill-ci.yml +bundle `faq`. IHtmlSanitizer RequirePort đã có từ Rules (không thêm trùng).
+  4. Test: `GuestFaqTreeUseCaseTests` (SQLite + resolver thật + fake IRuleGate, 5: i18n fallback + cha-con; gate-fail→
+     rule_ack_required; faq_disabled; config-null→configuration_unavailable; inactive loại) + `FaqEndpointAuthTests`
+     (TestServer + fake, 4: Staff CRUD/reorder 2xx; no-token admin→401; guest tree 200 no-token; guest resolver-fail→
+     problem không-401) + `HostEndpointWiringSmokeTests` +4 InlineData (3 admin faq→401 + guest faq→problem+json). +11 fake
+     Faq vào file fakes chung. `ErrorCodeSnapshotTests` +faq_disabled.
+- Fix biên dịch (tận gốc): (a) `ToDictionary<Guid?,...>` vi phạm notnull → chuyển `ToLookup` (cho phép key null) + order
+  nguồn trước; (b) test dùng `Rules.Application.RulesErrors` mà Faq.IntegrationTests không ref Rules.Application → dùng
+  `Error.Forbidden("rule_ack_required",...)` trực tiếp (không kéo ref thừa).
+- Bằng chứng: `vp all` build 0-warning + validate-ci OK + full suite 0-fail — StarHill.Api.Tests 60 (+8), Faq.IntegrationTests
+  26 pass/5 skip(Postgres) (+5). `vp journal` INV-1..6 xanh. QR-AD-037 Guard-Tests +GuestFaqTreeUseCaseTests/FaqEndpointAuthTests.
+- **Module Faq HOÀN TẤT mặt guest+admin write** (BE 6/8 module: Identity/ResortConfig/Rooms/GuestAccess/Rules/**Faq**).
+  CÒN LẠI Faq: **E-Faq.4b** (admin READ-tree editor: full tree incl inactive + raw translations + MissingLanguages —
+  hoãn pairs admin FE, I10). Kế tiếp module: **Concierge** (chat SignalR) hoặc **Housekeeping** (ticket) theo dependency graph.

@@ -233,10 +233,16 @@ Docker daemon phải có cho test Postgres; không "skip mềm" làm bằng ch�
    `ReorderFaqItemsUseCase` (scope CategoryId) — batch SortOrder một transaction (nguyên tử), sai scope → not_found,
    validator (Id phân biệt/không rỗng/SortOrder ≥ 0). Test `ReorderFaqUseCaseTests` (4) + `ReorderValidatorTests` (4).
    `vp all` Faq.IntegrationTests 21 pass/5 skip.
-5. **E-Faq.4 — Guest read tree + rule-gate + Api:** `IFaqReader`/`EfFaqReader` + `GetGuestFaqTreeUseCase` (gate+i18n+tree)
-   + `FaqGuestEndpointModule` (resolve→gate→tree→touch) + `FaqAdminEndpointModule` (RequireStaff) + `AddFaqApi` + Host
-   wire + `FaqEndpointAuthTests` + `HostEndpointWiringSmokeTests` +InlineData + `ErrorCodeSnapshotTests` +mã Faq. Flip
-   QR-AD-0xx (Faq) → Implemented + Guard-Tests (INV-6).
+5. **E-Faq.4a — Guest read tree + rule-gate + Api + Host wiring:** ✅ XONG (QR-N-049): `IFaqReader`/`EfFaqReader`
+   (no-tracking, chỉ active) + `GetGuestFaqTreeUseCase` (config→FaqEnabled→**rule-gate IRuleGate GuestFeature.Faq**
+   [Faq consumer đầu tiên]→i18n fallback CP5→dựng cây ToLookup/đệ quy) + `FaqGuestEndpointModule` (GET guest/faq,
+   resolve→use-case-gate→touch-sau-thành-công [KHÁC Rules-GET], no-store) + `FaqAdminEndpointModule` (CRUD/reorder,
+   RequireStaff, resortId server-side) + `AddFaqApi` + Host wire (conn Faq + migrate + AddFaqApi) + appsettings/compose/
+   CI-bundle faq. Test `GuestFaqTreeUseCaseTests` (5) + `FaqEndpointAuthTests` (4) + `HostEndpointWiringSmokeTests` +4
+   InlineData + `ErrorCodeSnapshotTests` +faq_disabled. `vp all` StarHill.Api.Tests 60, Faq.IntegrationTests 26 pass/5 skip.
+6. **E-Faq.4b — Admin READ-tree (editor):** ⏳ HOÃN (pairs admin FE — I10): full tree incl inactive + raw translations
+   mỗi ngôn ngữ + `MissingLanguages` (Req 8.7 "chỉ báo ngôn ngữ thiếu"). Cần reader shape riêng (activeOnly=false +
+   không resolve-một-ngôn-ngữ). Làm khi dựng admin FE.
 
 Mỗi slice dừng nếu: build warning/error; JournalConsistency INV-1..6 fail; migration model drift; Docker unique/
 concurrency test fail; raw cookie/secret lọt log; **AD chuyển Implemented mà thiếu `Guard-Tests` (INV-6)**.
