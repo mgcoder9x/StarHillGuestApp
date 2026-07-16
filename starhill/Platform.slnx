@@ -43,6 +43,7 @@
   <Folder Name="/src/Modules/Housekeeping/">
     <Project Path="src/Modules/Housekeeping/Housekeeping.Contracts/Housekeeping.Contracts.csproj" />
     <Project Path="src/Modules/Housekeeping/Housekeeping.Domain/Housekeeping.Domain.csproj" />
+    <Project Path="src/Modules/Housekeeping/Housekeeping.Application/Housekeeping.Application.csproj" />
     <Project Path="src/Modules/Housekeeping/Housekeeping.Infrastructure/Housekeeping.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Modules/Faq/">

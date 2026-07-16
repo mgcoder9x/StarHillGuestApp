@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Housekeeping.Application (H-Hk.2, vertical-by-feature): reference Housekeeping.Domain + Housekeeping.Contracts +
+    Bedrock.Application. Cross-module CHỈ qua Contracts (QR-AD-002): Rooms.Contracts (IRoomTokenResolver cho
+    complete-by-token) + Rules.Contracts (IRuleGate rule-gate CP3 trong use case) + ResortConfig.Contracts
+    (IResortGuestConfigQuery: HousekeepingEnabled + RequireRuleAckForHousekeeping). KHÔNG ref Infrastructure/EF/ASP.NET
+    (I7). FluentValidation cho validator. Mirror Faq/Rules.Application.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Housekeeping.Domain\Housekeeping.Domain.csproj" />
+    <ProjectReference Include="..\Housekeeping.Contracts\Housekeeping.Contracts.csproj" />
+    <ProjectReference Include="..\..\Rooms\Rooms.Contracts\Rooms.Contracts.csproj" />
+    <ProjectReference Include="..\..\Rules\Rules.Contracts\Rules.Contracts.csproj" />
+    <ProjectReference Include="..\..\ResortConfig\ResortConfig.Contracts\ResortConfig.Contracts.csproj" />
+    <ProjectReference Include="$(PlatformSrc)\Bedrock.Application\Bedrock.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+</Project>

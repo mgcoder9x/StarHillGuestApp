@@ -1,4 +1,9 @@
+using Bedrock.Application.Ports.Persistence;
+using Bedrock.Application.Ports.Time;
+using Bedrock.Application.UseCases;
 using Bedrock.Infrastructure.DependencyInjection;
+using FluentValidation;
+using Housekeeping.Application;
 using Housekeeping.Contracts;
 using Housekeeping.Domain;
 using Housekeeping.Infrastructure.Persistence;
@@ -31,6 +36,57 @@ public static class HousekeepingInfrastructureExtensions
         // Repository aggregate KEYED theo HousekeepingDbContext.
         services.AddBedrockRepository<HousekeepingDbContext, HousekeepingTicket>(PersistenceKey);
         services.AddBedrockRepository<HousekeepingDbContext, HousekeepingEvent>(PersistenceKey);
+
+        // Read-model (F9 — GetCurrentTicketByRoom + ListOpenTicketIdsByVisit). DbContext cụ thể (unkeyed).
+        services.AddScoped<IHousekeepingReader, EfHousekeepingReader>();
+
+        // Use case (H-Hk.2): factory resolve repo/UoW keyed (mirror Faq/Rules). Value-returning IUseCase tự quản một SaveChanges.
+        services.AddScoped<IUseCase<RequestHousekeepingInput, RequestHousekeepingResult>>(sp => new RequestHousekeepingUseCase(
+            sp.GetRequiredService<ResortConfig.Contracts.Queries.IResortGuestConfigQuery>(),
+            sp.GetRequiredService<Rules.Contracts.IRuleGate>(),
+            sp.GetRequiredKeyedService<IRepository<HousekeepingTicket>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IRepository<HousekeepingEvent>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
+            sp.GetRequiredService<IClock>()));
+
+        services.AddScoped<IUseCase<GetRoomHousekeepingStatusInput, GetRoomHousekeepingStatusResult>>(sp =>
+            new GetRoomHousekeepingStatusUseCase(sp.GetRequiredService<IHousekeepingReader>()));
+
+        services.AddScoped<IUseCase<SetHousekeepingStatusInput, HousekeepingTicketResult>>(sp => new SetHousekeepingStatusUseCase(
+            sp.GetRequiredKeyedService<IRepository<HousekeepingTicket>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IRepository<HousekeepingEvent>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
+            sp.GetRequiredService<IClock>()));
+
+        services.AddScoped<IUseCase<CompleteHousekeepingByRoomInput, HousekeepingTicketResult>>(sp => new CompleteHousekeepingByRoomUseCase(
+            sp.GetRequiredKeyedService<IRepository<HousekeepingTicket>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IRepository<HousekeepingEvent>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
+            sp.GetRequiredService<IClock>()));
+
+        services.AddScoped<IUseCase<CompleteHousekeepingByTokenInput, HousekeepingTicketResult>>(sp => new CompleteHousekeepingByTokenUseCase(
+            sp.GetRequiredService<Rooms.Contracts.IRoomTokenResolver>(),
+            sp.GetRequiredKeyedService<IRepository<HousekeepingTicket>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IRepository<HousekeepingEvent>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
+            sp.GetRequiredService<IClock>()));
+
+        services.AddScoped<IUseCase<CreateHousekeepingByStaffInput, RequestHousekeepingResult>>(sp => new CreateHousekeepingByStaffUseCase(
+            sp.GetRequiredKeyedService<IRepository<HousekeepingTicket>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IRepository<HousekeepingEvent>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
+            sp.GetRequiredService<IClock>()));
+
+        services.AddScoped<IUseCase<CancelOpenTicketsForVisitInput, CancelOpenTicketsForVisitResult>>(sp => new CancelOpenTicketsForVisitUseCase(
+            sp.GetRequiredService<IHousekeepingReader>(),
+            sp.GetRequiredKeyedService<IRepository<HousekeepingTicket>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IRepository<HousekeepingEvent>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
+            sp.GetRequiredService<IClock>()));
+
+        // Validator module (ValidationUseCaseDecorator nhận qua IEnumerable<IValidator<TInput>>).
+        services.AddTransient<IValidator<SetHousekeepingStatusInput>, SetHousekeepingStatusValidator>();
+        services.AddTransient<IValidator<CompleteHousekeepingByTokenInput>, CompleteHousekeepingByTokenValidator>();
 
         return services;
     }

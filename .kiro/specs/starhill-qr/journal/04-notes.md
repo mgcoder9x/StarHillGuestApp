@@ -738,3 +738,33 @@
 - **NEXT — slice H-Hk.2**: `Housekeeping.Application` (RequestHousekeeping guest idempotent + rule-gate + flag; máy trạng thái
   complete-by-room/token/set-status + event-log; guest status read; CancelOpenTicketsForVisit capability; read-model IHousekeepingReader)
   + đổi Infra ref→Application + validator + tests (SQLite + Postgres concurrency) + ErrorCodeSnapshotTests +mã Housekeeping. Rồi H-Hk.3 (Api + Host).
+
+### QR-N-059 — Slice H-Hk.2 XONG: Housekeeping.Application (create idempotent + rule-gate + máy trạng thái + event-log + complete app/token + cancel-for-visit)
+- Date: 2026-07-16
+- Bối cảnh: tiếp H-Hk.1, hiện thực use case theo design §4. Mirror Faq/Rules.Application (Result API, IRepository trực tiếp,
+  IUseCase value-returning, bắt UniqueConstraintViolationException, cross-module qua Contracts).
+- Đã làm:
+  1. `Housekeeping.Application` (ref Domain+Contracts+Rooms.Contracts+Rules.Contracts+ResortConfig.Contracts+Bedrock.Application+FluentValidation):
+     `HousekeepingErrors` (housekeeping_disabled/no_open_ticket/ticket_not_found/invalid_transition + **tái dùng qr_invalid/
+     configuration_unavailable**) + `HousekeepingContracts` + `HousekeepingStateMachine` (luật chuyển + tạo event, nguồn DUY NHẤT)
+     + `IHousekeepingReader`/`EfHousekeepingReader`.
+  2. Use case: `RequestHousekeepingUseCase` (guest: config→HousekeepingEnabled→**rule-gate Housekeeping**→idempotent [ticket mở→trả existing;
+     race→bắt unique→existing]); `SetHousekeepingStatusUseCase` (InProgress/Done + timestamps + event, xmin CP15); `CompleteHousekeepingByRoomUseCase`
+     (method App); `CompleteHousekeepingByTokenUseCase` (`IRoomTokenResolver`→RoomId, method StaffScan; token lạ→qr_invalid);
+     `CreateHousekeepingByStaffUseCase` (Req 6.9, idempotent, không gate/flag); `CancelOpenTicketsForVisitUseCase` (cascade capability CP9, System);
+     `GetRoomHousekeepingStatusUseCase` (read-model). Helper `HousekeepingCompletion` dùng chung complete-by-room/token. Đổi Infra ref→Application + đăng ký keyed.
+  3. `ErrorCodeSnapshotTests` +assembly Housekeeping + 4 mã (Ordinal giữa guest_context_missing/identity.*). `HousekeepingBoundaryTests` +Application⊥Infra/EF/ASP.NET.
+  4. Test `HousekeepingUseCaseTests` (SQLite, 13: config-null/disabled/gate-fail/create+idempotent; máy trạng thái Requested→InProgress→Done +
+     3 event + Done→InProgress invalid; not-found; complete-by-room App + no-open; complete-by-token StaffScan + qr_invalid; cancel-for-visit; guest status; create-by-staff idempotent)
+     + `HousekeepingConcurrencyTests` (Postgres xmin).
+- Fix biên dịch (tận gốc): (a) `Error` là CLASS → `Error?` nullable-reference, dùng `error` không `error.Value`; (b) ternary `? enum : null` cast `(HousekeepingCompletionMethod?)null`.
+- **Fix bug thật (provider-portability, fix tận gốc):** `Get_room_status` fail — **SQLite KHÔNG hỗ trợ ORDER BY DateTimeOffset** (chỉ Postgres).
+  Read-model đổi order `CreatedAt DESC` → **`Id DESC` (UUIDv7 time-ordered by design — Entity sinh Guid.CreateVersion7)** = "mới nhất" TƯƠNG ĐƯƠNG
+  nhưng PROVIDER-AGNOSTIC. **Trade-off (ghi nhận):** "latest" nay phụ thuộc bất biến UUIDv7-monotonic của Id thay vì CreatedAt tường minh —
+  chấp nhận vì (1) Id LUÔN là v7 (Entity ctor), (2) tránh order client-side unbounded, (3) không để giới hạn provider-test chi phối. Nếu đổi cách sinh Id → phải xem lại.
+- Bằng chứng: `vp all` build 0-warning + validate-ci OK + full suite 0-fail — Housekeeping.IntegrationTests 13 pass/3 skip(Postgres),
+  StarHill.ArchitectureTests 29 (+1 Application boundary), Bedrock.ContractTests 2 (snapshot có 4 mã Housekeeping). `vp journal` INV-1..6 xanh.
+  QR-AD-041 Guard-Tests +HousekeepingUseCaseTests/HousekeepingConcurrencyTests.
+- **NEXT — slice H-Hk.3** (Api + Host): guest endpoints (POST /v1/guest/housekeeping create + GET status, rule-gate, touch) + admin endpoints
+  (GET board phân trang + complete-by-room/token + set-status + create-by-staff, RequireStaff) + `AddHousekeepingApi` + Host wire (conn Housekeeping +
+  migrate) + CI bundle + `HousekeepingEndpointAuthTests` + `HostEndpointWiringSmokeTests` +InlineData + board read-model (paged). Rồi C-GA.5 cascade wiring.

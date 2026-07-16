@@ -5,8 +5,7 @@
     Rules/Faq: Infra→Application). KHÔNG ref Bedrock.Api/Housekeeping.Api (Api⊥Infra I7).
   -->
   <ItemGroup>
-    <ProjectReference Include="..\Housekeeping.Domain\Housekeeping.Domain.csproj" />
-    <ProjectReference Include="..\Housekeeping.Contracts\Housekeeping.Contracts.csproj" />
+    <ProjectReference Include="..\Housekeeping.Application\Housekeeping.Application.csproj" />
     <ProjectReference Include="$(PlatformSrc)\Bedrock.Infrastructure\Bedrock.Infrastructure.csproj" />
   </ItemGroup>
 

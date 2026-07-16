@@ -2,6 +2,7 @@ using System.Reflection;
 using Bedrock.Domain.Results;
 using Faq.Application;
 using GuestAccess.Application;
+using Housekeeping.Application;
 using Identity.Domain;
 using Rooms.Application;
 using Rules.Application;
@@ -33,6 +34,10 @@ public sealed class ErrorCodeSnapshotTests
         "faq_item_not_found",            // Faq (E-Faq.2)
         "forbidden",
         "guest_context_missing",         // GuestAccess (C-GA.4: current-guest-context)
+        "housekeeping_disabled",         // Housekeeping (H-Hk.2: HousekeepingEnabled=false — 403)
+        "housekeeping_invalid_transition", // Housekeeping (H-Hk.2: máy trạng thái ticket)
+        "housekeeping_no_open_ticket",   // Housekeeping (H-Hk.2: complete không có ticket mở — 404)
+        "housekeeping_ticket_not_found", // Housekeeping (H-Hk.2: set-status theo id — 404)
         "identity.invalid_credentials",  // Identity (F.1b: login)
         "identity.invalid_refresh_token",
         "invalid_configuration",         // Rooms (P1-11: nay được gác)
@@ -62,6 +67,7 @@ public sealed class ErrorCodeSnapshotTests
             typeof(GuestAccessErrors).Assembly,  // GuestAccess.Application (C-GA.2b + C-GA.4)
             typeof(RulesErrors).Assembly,        // Rules.Application (D-Rules.2b/3: rules_conflict — đóng gap QR-AD-018)
             typeof(FaqErrors).Assembly,          // Faq.Application (E-Faq.2: catalog lỗi module Faq)
+            typeof(HousekeepingErrors).Assembly, // Housekeeping.Application (H-Hk.2: catalog lỗi module Housekeeping)
         ];
 
         var actual = CollectStableErrorCodes(catalogAssemblies);

@@ -169,9 +169,12 @@ Postgres test là gate cuối cho partial-unique/concurrency; không "skip mềm
    ('Requested','InProgress')` + FK Cascade event→ticket + xmin + 2 index) + `AddHousekeepingInfrastructure` + migration
    `InitialCreate` (verify). Test `HousekeepingBoundaryTests` (3) + `HousekeepingPostgresConstraintTests` (2 Postgres/CI).
    Host wiring + CI bundle DEFER H-Hk.3. `vp all` 0-warning/0-fail; `vp journal` INV-1..6 xanh.
-3. **H-Hk.2 — Application:** guest create (idempotent + rule-gate + flag) + status machine (complete-by-room/token/set-status
-   + event-log) + guest status read + cancel-for-visit (capability) + read-model + validator + tests (SQLite + Postgres concurrency).
-   `ErrorCodeSnapshotTests` +mã Housekeeping.
+3. **H-Hk.2 — Application:** ✅ XONG (QR-N-059): `HousekeepingErrors` (4 mã + tái dùng qr_invalid/configuration_unavailable) +
+   `HousekeepingStateMachine` (luật chuyển + event-log, nguồn duy nhất) + `RequestHousekeepingUseCase` (idempotent + rule-gate + flag) +
+   `SetHousekeepingStatusUseCase`/`CompleteHousekeepingByRoomUseCase`/`CompleteHousekeepingByTokenUseCase`(IRoomTokenResolver)/
+   `CreateHousekeepingByStaffUseCase`/`CancelOpenTicketsForVisitUseCase` + `GetRoomHousekeepingStatusUseCase` + `IHousekeepingReader`/
+   `EfHousekeepingReader` (order Id-v7 provider-agnostic — fix SQLite ORDER BY DateTimeOffset). Test `HousekeepingUseCaseTests` (13) +
+   `HousekeepingConcurrencyTests` (Postgres) + `ErrorCodeSnapshotTests` +4 mã. `vp all` Housekeeping.IntegrationTests 13 pass/3 skip.
 4. **H-Hk.3 — Api + Host wiring:** guest endpoints (create/status, rule-gate, touch) + admin endpoints (board/complete/status,
    RequireStaff) + `AddHousekeepingApi` + Host wire + CI bundle + `HousekeepingEndpointAuthTests` + smoke +InlineData. Flip QR-AD-0xx Implemented.
 5. **C-GA.5 (sau, cross-module):** GuestVisitEnded outbox (GuestAccess) → consumer gọi `CancelOpenTicketsForVisitUseCase`

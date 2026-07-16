@@ -32,5 +32,8 @@
     <!-- E-Faq.2: error catalog Faq (FaqErrors — faq_category_not_found/faq_item_not_found/faq_conflict/
          faq_invalid_parent/faq_category_not_empty/faq_item_has_children). Registry phủ MỌI catalog module (QR-AD-018). -->
     <ProjectReference Include="..\..\src\Modules\Faq\Faq.Application\Faq.Application.csproj" />
+    <!-- H-Hk.2: error catalog Housekeeping (HousekeepingErrors — housekeeping_disabled/no_open_ticket/ticket_not_found/
+         invalid_transition; qr_invalid/configuration_unavailable tái dùng). Registry phủ MỌI catalog module (QR-AD-018). -->
+    <ProjectReference Include="..\..\src\Modules\Housekeeping\Housekeeping.Application\Housekeeping.Application.csproj" />
   </ItemGroup>
 </Project>

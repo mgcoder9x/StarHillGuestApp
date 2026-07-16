@@ -40,6 +40,7 @@
     <ProjectReference Include="..\..\src\Modules\Faq\Faq.Infrastructure\Faq.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Modules\Housekeeping\Housekeeping.Contracts\Housekeeping.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\Housekeeping\Housekeeping.Domain\Housekeeping.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Housekeeping\Housekeeping.Application\Housekeeping.Application.csproj" />
     <ProjectReference Include="..\..\src\Modules\Housekeeping\Housekeeping.Infrastructure\Housekeeping.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

@@ -1,3 +1,4 @@
+using Housekeeping.Application;
 using Housekeeping.Contracts;
 using Housekeeping.Domain;
 using Housekeeping.Infrastructure.Persistence;
@@ -7,15 +8,16 @@ using Xunit;
 namespace StarHill.ArchitectureTests;
 
 /// <summary>
-/// GUARD ranh giới module (CP4) cho module <c>Housekeeping</c> (H-Hk.1). Kiểm: Contracts thuần (chỉ
-/// Bedrock.Messaging.Contracts; KHÔNG rò Domain/Infra, KHÔNG coupling Contracts module khác); Domain ⊥ Infrastructure.
-/// (Application ⊥ Infra/EF/ASP.NET thêm ở H-Hk.2 khi Housekeeping.Application tồn tại.) Negative control chứng minh
-/// engine bắt phụ thuộc thật.
+/// GUARD ranh giới module (CP4) cho module <c>Housekeeping</c>. Kiểm: Contracts thuần (chỉ Bedrock.Messaging.Contracts;
+/// KHÔNG rò Domain/Infra, KHÔNG coupling Contracts module khác); Domain ⊥ Infrastructure; Application ⊥ Infra/EF/
+/// ASP.NET (I7 — use case bắt exception TRUNG LẬP, không chạm DbUpdateException). Negative control chứng minh engine
+/// bắt phụ thuộc thật.
 /// </summary>
 public sealed class HousekeepingBoundaryTests
 {
     private static System.Reflection.Assembly Contracts => typeof(HousekeepingModule).Assembly;
     private static System.Reflection.Assembly Domain => typeof(HousekeepingTicket).Assembly;
+    private static System.Reflection.Assembly Application => typeof(RequestHousekeepingUseCase).Assembly;
 
     [Fact]
     public void Contracts_should_stay_pure()
@@ -46,6 +48,22 @@ public sealed class HousekeepingBoundaryTests
             .GetResult();
 
         Assert.True(result.IsSuccessful, Describe("Housekeeping.Domain", result));
+    }
+
+    [Fact]
+    public void Application_should_not_depend_on_infrastructure_or_api()
+    {
+        var result = Types.InAssembly(Application)
+            .Should()
+            .NotHaveDependencyOnAny(
+                "Bedrock.Infrastructure",
+                "Bedrock.Api",
+                "Housekeeping.Infrastructure",
+                "Microsoft.EntityFrameworkCore",
+                "Microsoft.AspNetCore")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, Describe("Housekeeping.Application", result));
     }
 
     // NEGATIVE CONTROL: type giả giữ HousekeepingDbContext (Infrastructure) → luật "ShouldNot dep Infrastructure" PHẢI bắt.
