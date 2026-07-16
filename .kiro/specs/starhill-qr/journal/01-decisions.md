@@ -445,3 +445,23 @@
 - Consequences: schema `faq` có 4 bảng + 3 unique + 3 index; use case CRUD/reorder (E-Faq.2/3) phải chịu `faq_conflict` (unique) + validate cây; guest read + rule-gate + Api (E-Faq.4) — Faq là consumer đầu tiên của `IRuleGate`. Host wiring + CI bundle `faq` để E-Faq.4 (khi có Api — mirror Rules D-Rules.1 chưa wire Host).
 - Reversibility: Medium (drop schema). Traceability: `design-modules/05-faq.md` §2/§3/§10/§11 (E-Faq.1); QR-AD-028 (migration history per-schema); QR-AD-012 (D1-a keyed base); QR-N-045 (design) / QR-N-046 (code).
 - Guard-Tests: `FaqBoundaryTests`, `FaqPostgresConstraintTests`, `FaqSanitizeTests`, `FaqItemParentValidationTests`, `FaqAdminCrudTests`, `FaqConcurrencyTests`, `ReorderFaqUseCaseTests`, `ReorderValidatorTests`, `GuestFaqTreeUseCaseTests`, `FaqEndpointAuthTests`
+
+### QR-AD-038 — `IdentityUser` v1 tối giản: KHÔNG mang `ResortId` (single-resort); role Admin/Staff → claim `role`
+- Status: Proposed (design Wave F; triển khai slice F.1a)
+- Date: 2026-07-16
+- Decider: AI (spec không nói schema user trên Bedrock; Identity hiện không có User entity).
+- Provenance/Evidence: `Identity.Domain` chỉ có `AuthErrors` (đọc thật — không User); `StarHillPolicies` (role `admin`/`staff`, claim JWT-native `role`); sản phẩm single-resort (QR-DV-004: caller phân giải resortId qua `IResortSettingsQuery`). `RefreshAccessTokenUseCase` chỉ phát `sub` (không role) — comment "chờ user store".
+- Decision/Change: `IdentityUser(Id, Username[unique,lower], PasswordHash[Argon2], Role[UserRole Admin/Staff], IsActive, DisplayName?, CreatedAt)` + enum `UserRole`. KHÔNG `ResortId` v1, KHÔNG concurrency token v1. Map role→claim `role`=admin|staff (StarHillPolicies).
+- Rationale (verifiable): single-resort hiện tại → resortId không cần trên user (admin phân giải qua settings khi tạo phòng); thêm ResortId khi multi-resort thật (I10, không gold-plate). Không concurrency token vì chưa có màn CRUD user đua-ghi. Claim `role` khớp CHÍNH XÁC hợp đồng policy đã đọc → login xong authorize đúng.
+- Alternatives: user mang ResortId ngay (loại: gold-plate cho single-resort); dùng permission-based thay role (loại: sản phẩm chỉ 2 vai — role đơn giản đủ, QR-AD-005).
+- Reversibility: Medium (thêm cột ResortId = migration bổ sung sau). Traceability: `design-modules/06-identity-login.md` §2; QR-AD-005/020; QR-N-052.
+
+### QR-AD-039 — Seed admin dev-only qua config (prod tạo admin out-of-band); login generic-error + timing-defense
+- Status: Proposed (cần user duyệt cơ chế seed prod)
+- Date: 2026-07-16
+- Decider: AI (spec không nói cách bootstrap admin đầu tiên).
+- Provenance/Evidence: `ResortConfigSeeder` (precedent seeder idempotent dev-gated); F35 (secret ngoài repo); `Argon2idPasswordHasher.Verify` hằng-thời-gian; triết lý `AuthErrors.InvalidRefreshToken` (một mã chung chống oracle).
+- Decision/Change: (1) `IdentityUserSeeder` idempotent, GATED cờ dev; username+password từ config (`Identity:SeedAdmin:*`), KHÔNG hardcode; prod KHÔNG bật seeder (admin tạo out-of-band/secret). (2) Login trả MỘT mã `invalid_credentials` cho mọi fail (user lạ/sai pass/inactive) + chạy `Verify` giả khi user null (cân bằng timing) → chống user-enumeration.
+- Rationale (verifiable): bootstrap admin cần cơ chế nhưng KHÔNG được nhét password prod vào repo (F35); dev cần seed để test end-to-end. Generic-error + timing-defense là chuẩn chống enumeration (bản chất bảo mật, không phải trang trí).
+- Alternatives: hardcode admin/password (loại: rò secret, F35); phân biệt mã lỗi user-not-found vs wrong-password (loại: oracle enumeration); seeder chạy cả prod (loại: password dev lọt prod).
+- Reversibility: High (seeder + cờ). Traceability: `design-modules/06-identity-login.md` §7/§1; QR-AD-008 (seeder precedent); F35; QR-N-052.
