@@ -33,6 +33,7 @@ public sealed class ErrorCodeSnapshotTests
         "faq_item_not_found",            // Faq (E-Faq.2)
         "forbidden",
         "guest_context_missing",         // GuestAccess (C-GA.4: current-guest-context)
+        "identity.invalid_credentials",  // Identity (F.1b: login)
         "identity.invalid_refresh_token",
         "invalid_configuration",         // Rooms (P1-11: nay được gác)
         "not_found",

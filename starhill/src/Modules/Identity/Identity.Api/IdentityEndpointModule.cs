@@ -4,6 +4,7 @@ using Bedrock.Api.ErrorHandling;
 using Bedrock.Api.Observability;
 using Bedrock.Api.Versioning;
 using Bedrock.Application.UseCases;
+using Identity.Application.Login;
 using Identity.Application.RefreshToken;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -15,6 +16,11 @@ namespace Identity.Api;
 public sealed record RefreshRequest(string RefreshToken);
 
 public sealed record RefreshResponse(string AccessToken, string RefreshToken, DateTimeOffset RefreshTokenExpiresAt);
+
+/// <summary>Request/response HTTP đăng nhập (F.1b). Password KHÔNG log (F15). Response mang access+refresh token.</summary>
+public sealed record LoginRequest(string Username, string Password);
+
+public sealed record LoginResponse(string AccessToken, string RefreshToken, DateTimeOffset RefreshTokenExpiresAt);
 
 /// <summary>
 /// Nửa-Api của module Identity: khai endpoint qua <see cref="IEndpointModule"/> (discovery §6 — Host resolve
@@ -35,6 +41,35 @@ public sealed class IdentityEndpointModule : IEndpointModule
             .AllowAnonymous()
             .MapToApiVersion(BedrockApiVersioning.V1)
             .WithName("IdentityRefreshToken");
+
+        // Đăng nhập (F.1b): công khai (chính nó cấp token). Rate-limiter base (slot #9) chống brute-force.
+        group.MapPost("/token/login", LoginAsync)
+            .AllowAnonymous()
+            .MapToApiVersion(BedrockApiVersioning.V1)
+            .WithName("IdentityLogin");
+    }
+
+    private static async Task<IResult> LoginAsync(
+        LoginRequest request,
+        IUseCase<LoginCommand, LoginResult> useCase,
+        HttpContext http,
+        CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        http.Response.Headers["Cache-Control"] = "no-store"; // không cache token.
+
+        var result = await useCase
+            .ExecuteAsync(new LoginCommand(request.Username, request.Password), ct)
+            .ConfigureAwait(false);
+
+        if (result.IsSuccess)
+        {
+            var value = result.Value;
+            return Results.Ok(new LoginResponse(value.AccessToken, value.RefreshToken, value.RefreshTokenExpiresAt));
+        }
+
+        return Results.Problem(ProblemDetailsBuilder.Build(result.Error, CorrelationContext.Resolve(http)));
     }
 
     private static async Task<IResult> RefreshAsync(

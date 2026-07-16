@@ -14,4 +14,11 @@ public static class AuthErrors
     /// </summary>
     public static readonly Error InvalidRefreshToken =
         Error.Unauthorized("identity.invalid_refresh_token", "The refresh token is invalid, expired, or has been revoked.");
+
+    /// <summary>
+    /// Đăng nhập thất bại. CỐ Ý dùng MỘT mã chung cho MỌI nguyên nhân (username không tồn tại / sai mật khẩu /
+    /// tài khoản bị vô hiệu hoá) — KHÔNG tiết lộ nguyên nhân cụ thể (chống user-enumeration/oracle, F.1b/QR-AD-039).
+    /// </summary>
+    public static readonly Error InvalidCredentials =
+        Error.Unauthorized("identity.invalid_credentials", "The username or password is incorrect.");
 }

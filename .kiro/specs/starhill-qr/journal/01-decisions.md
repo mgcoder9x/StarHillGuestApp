@@ -447,7 +447,8 @@
 - Guard-Tests: `FaqBoundaryTests`, `FaqPostgresConstraintTests`, `FaqSanitizeTests`, `FaqItemParentValidationTests`, `FaqAdminCrudTests`, `FaqConcurrencyTests`, `ReorderFaqUseCaseTests`, `ReorderValidatorTests`, `GuestFaqTreeUseCaseTests`, `FaqEndpointAuthTests`
 
 ### QR-AD-038 — `IdentityUser` v1 tối giản: KHÔNG mang `ResortId` (single-resort); role Admin/Staff → claim `role`
-- Status: Proposed (design Wave F; triển khai slice F.1a)
+- Status: Accepted/Implemented (2026-07-16; F.1a persistence + F.1b login/role-claim)
+- Guard-Tests: `LoginUseCaseTests`, `RoleClaimContractTests`, `IdentityPostgresConstraintTests`
 - Date: 2026-07-16
 - Decider: AI (spec không nói schema user trên Bedrock; Identity hiện không có User entity).
 - Provenance/Evidence: `Identity.Domain` chỉ có `AuthErrors` (đọc thật — không User); `StarHillPolicies` (role `admin`/`staff`, claim JWT-native `role`); sản phẩm single-resort (QR-DV-004: caller phân giải resortId qua `IResortSettingsQuery`). `RefreshAccessTokenUseCase` chỉ phát `sub` (không role) — comment "chờ user store".

@@ -53,8 +53,20 @@ public static class IdentityInfrastructureExtensions
                 sp.GetRequiredService<IJwtTokenService>(),
                 sp.GetRequiredKeyedService<IOutboxWriter>(PersistenceKey)));
 
-        // Validator của module (ValidationUseCaseDecorator nhận qua IEnumerable<IValidator<RefreshTokenCommand>>).
+        // F.1b: LoginUseCase — factory resolve repo user + refresh store + UoW keyed + port bảo mật base (Argon2/JWT/token-gen).
+        services.AddScoped<IUseCase<Identity.Application.Login.LoginCommand, Identity.Application.Login.LoginResult>>(sp =>
+            new Identity.Application.Login.LoginUseCase(
+                sp.GetRequiredKeyedService<IRepository<Identity.Domain.IdentityUser>>(PersistenceKey),
+                sp.GetRequiredKeyedService<IRefreshTokenStore>(PersistenceKey),
+                sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
+                sp.GetRequiredService<IClock>(),
+                sp.GetRequiredService<ITokenGenerator>(),
+                sp.GetRequiredService<IJwtTokenService>(),
+                sp.GetRequiredService<IPasswordHasher>()));
+
+        // Validator của module (ValidationUseCaseDecorator nhận qua IEnumerable<IValidator<TInput>>).
         services.AddTransient<IValidator<RefreshTokenCommand>, RefreshTokenCommandValidator>();
+        services.AddTransient<IValidator<Identity.Application.Login.LoginCommand>, Identity.Application.Login.LoginCommandValidator>();
 
         return services;
     }

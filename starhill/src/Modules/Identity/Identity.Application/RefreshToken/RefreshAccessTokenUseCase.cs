@@ -1,6 +1,4 @@
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using Bedrock.Application.Messaging;
 using Bedrock.Application.Ports.Persistence;
 using Bedrock.Application.Ports.Security;
@@ -66,7 +64,7 @@ public sealed class RefreshAccessTokenUseCase : IUseCase<RefreshTokenCommand, Re
         async Task<Result<RefreshTokenResult>> RotateAsync(CancellationToken token)
         {
             var now = _clock.UtcNow;
-            var presentedHash = Sha256Hex(input.RawRefreshToken);
+            var presentedHash = RefreshTokenHashing.Sha256Hex(input.RawRefreshToken);
 
             var current = await _store.GetByHashAsync(presentedHash, token).ConfigureAwait(false);
             if (current is null || current.ExpiresAt < now)
@@ -97,7 +95,7 @@ public sealed class RefreshAccessTokenUseCase : IUseCase<RefreshTokenCommand, Re
             }
 
             var newSnapshot = new RefreshTokenSnapshot(
-                newTokenId, current.UserId, current.FamilyId, Sha256Hex(newRawToken), expiresAt, RevokedAt: null);
+                newTokenId, current.UserId, current.FamilyId, RefreshTokenHashing.Sha256Hex(newRawToken), expiresAt, RevokedAt: null);
             await _store.AddAsync(newSnapshot, token).ConfigureAwait(false);
 
             // EMIT integration event vào Outbox TRONG CÙNG transaction rotation (N-040 → nay có consumer path
@@ -121,9 +119,4 @@ public sealed class RefreshAccessTokenUseCase : IUseCase<RefreshTokenCommand, Re
     // ngoài phạm vi rotation skeleton (N-040); module bổ sung khi có user store thật.
     private static ClaimsIdentity BuildIdentity(Guid userId) =>
         new([new Claim("sub", userId.ToString())], authenticationType: "jwt");
-
-    // Hash refresh token bằng SHA-256 hex (design §7.4: hash ← SHA256). Token là 256-bit CSPRNG entropy cao →
-    // KHÔNG cần Argon2 (Argon2 dành cho password entropy thấp). Primitive chuẩn, không phải "công nghệ swap được".
-    private static string Sha256Hex(string raw) =>
-        Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(raw)));
 }
