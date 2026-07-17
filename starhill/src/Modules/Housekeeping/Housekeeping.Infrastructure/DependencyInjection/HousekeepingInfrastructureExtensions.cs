@@ -40,6 +40,9 @@ public static class HousekeepingInfrastructureExtensions
         // Read-model (F9 — GetCurrentTicketByRoom + ListOpenTicketIdsByVisit). DbContext cụ thể (unkeyed).
         services.AddScoped<IHousekeepingReader, EfHousekeepingReader>();
 
+        // Query-port stats cho Host Dashboard (QR-AD-002, đọc-đếm ticket mở). Contracts interface — Id trần.
+        services.AddScoped<Housekeeping.Contracts.IHousekeepingStatsQuery, EfHousekeepingStatsQuery>();
+
         // Use case (H-Hk.2): factory resolve repo/UoW keyed (mirror Faq/Rules). Value-returning IUseCase tự quản một SaveChanges.
         services.AddScoped<IUseCase<RequestHousekeepingInput, RequestHousekeepingResult>>(sp => new RequestHousekeepingUseCase(
             sp.GetRequiredService<ResortConfig.Contracts.Queries.IResortGuestConfigQuery>(),

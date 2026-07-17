@@ -50,6 +50,9 @@ public static class RoomsInfrastructureExtensions
         // Read admin nội-module (B-Rooms.4): list/detail phòng. Read-only → inject RoomsDbContext cụ thể (không keyed).
         services.AddScoped<IRoomQueries, EfRoomQueries>();
 
+        // Query-port stats cho Host Dashboard (QR-AD-002, đếm phòng active). Contracts interface — Id trần.
+        services.AddScoped<IRoomStatsQuery, EfRoomStatsQuery>();
+
         // QR render service (QRCoder) — thuần managed, stateless → singleton (thủ công, không auto-scan).
         services.AddSingleton<IQrService, QrCoderQrService>();
 

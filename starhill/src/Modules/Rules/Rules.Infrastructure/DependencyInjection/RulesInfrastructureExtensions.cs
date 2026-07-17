@@ -56,6 +56,9 @@ public static class RulesInfrastructureExtensions
         // Read-model guest đọc publication IsCurrent (D-Rules.4a).
         services.AddScoped<IRulePublicationReader, EfRulePublicationReader>();
 
+        // Query-port stats cho Host Dashboard (QR-AD-002, đếm ack ≥ mốc). Contracts interface — Id trần.
+        services.AddScoped<Rules.Contracts.IRulesStatsQuery, EfRulesStatsQuery>();
+
         // Use case Draft CRUD: factory resolve repo/UoW bằng module key (mirror Rooms). Void command (Update/Delete)
         // khai PersistenceKey → TransactionCommandUseCaseDecorator resolve cùng keyed UoW (nhất quán).
         services.AddScoped<IUseCase<CreateRuleSectionInput, CreateRuleSectionResult>>(sp => new CreateRuleSectionUseCase(

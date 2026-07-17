@@ -198,6 +198,10 @@ services.AddConciergeInfrastructure(options => options.UseNpgsql(
     npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "concierge")));
 services.AddConciergeApi();
 
+// Dashboard (task 11.1, Req 9.1) — KHÔNG là module, ghép Ở HOST: đọc query-port stats mỗi module qua Contracts
+// (QR-AD-002). Endpoint GET /v1/dashboard/stats RequireStaff. Đăng ký dưới IEndpointModule để UseBedrockApi map.
+services.AddSingleton<Bedrock.Api.Endpoints.IEndpointModule, DashboardEndpointModule>();
+
 // IHtmlSanitizer (QR-AD-031): adapter Ganss dùng chung (Rules Draft sanitize-on-save; Faq sau). RequirePort → boot
 // FAIL-FAST nếu thiếu — port bảo mật KHÔNG default (thiếu = HTML script lọt vào nội dung khách). Host (composition
 // root) là nơi DUY NHẤT cắm adapter; UpsertRuleSectionTranslationUseCase inject IHtmlSanitizer → phải có mặt.

@@ -43,6 +43,9 @@ public static class ConciergeInfrastructureExtensions
         // Read-model (F9). DbContext cụ thể (unkeyed — dùng chung scope).
         services.AddScoped<IConciergeReader, EfConciergeReader>();
 
+        // Query-port stats cho Host Dashboard (QR-AD-002, đọc-đếm). Contracts interface — Id trần.
+        services.AddScoped<Concierge.Contracts.IConciergeStatsQuery, EfConciergeStatsQuery>();
+
         // Realtime notifier NO-OP mặc định (Host OVERRIDE bằng SignalRConciergeNotifier — K-Con.4). KHÔNG keyed.
         services.AddSingleton<IConciergeRealtimeNotifier, NoOpConciergeRealtimeNotifier>();
 
