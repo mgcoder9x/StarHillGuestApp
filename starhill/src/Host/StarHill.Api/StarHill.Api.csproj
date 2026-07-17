@@ -32,6 +32,9 @@
     <!-- Module Housekeeping: nửa-Infra (persistence + use case) + nửa-Api (H-Hk.3 — guest tạo/xem + admin board/complete). -->
     <ProjectReference Include="..\..\Modules\Housekeeping\Housekeeping.Infrastructure\Housekeeping.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Housekeeping\Housekeeping.Api\Housekeeping.Api.csproj" />
+    <!-- Module Concierge: nửa-Infra (persistence + use case guest/staff/notes + read-model) + nửa-Api (K-Con.3 — guest gửi/đọc + admin board/reply/notes). -->
+    <ProjectReference Include="..\..\Modules\Concierge\Concierge.Infrastructure\Concierge.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Concierge\Concierge.Api\Concierge.Api.csproj" />
     <!-- Adapter bảo mật IHtmlSanitizer (Ganss) dùng chung — Rules/Faq sanitize-on-save; RequirePort ở Program.cs. -->
     <ProjectReference Include="..\..\StarHill.Html\StarHill.Html.csproj" />
     <!-- Policy authorization sản phẩm (Admin/Staff superset) — Host khai role, mọi module Api tham chiếu. -->

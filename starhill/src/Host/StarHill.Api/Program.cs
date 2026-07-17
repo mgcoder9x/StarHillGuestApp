@@ -28,6 +28,9 @@ using Faq.Infrastructure.Persistence;
 using Housekeeping.Api.DependencyInjection;
 using Housekeeping.Infrastructure.DependencyInjection;
 using Housekeeping.Infrastructure.Persistence;
+using Concierge.Api.DependencyInjection;
+using Concierge.Infrastructure.DependencyInjection;
+using Concierge.Infrastructure.Persistence;
 using StarHill.Api;
 using StarHill.Authorization;
 using StarHill.Html.DependencyInjection;
@@ -156,6 +159,19 @@ services.AddHousekeepingInfrastructure(options => options.UseNpgsql(
     npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "housekeeping")));
 services.AddHousekeepingApi();
 
+// Module Concierge (nhắn tin khách↔lễ tân + ghi chú nội bộ; module nghiệp vụ CUỐI 8/8). Nửa-Infra (persistence keyed
+// + use case guest/staff/notes + read-model + notifier no-op) + nửa-Api (K-Con.3: guest gửi/đọc + admin board/reply/
+// read/close + notes CRUD, RequireStaff). Connection string riêng (cùng PostgreSQL, schema concierge). Tiêu thụ IRuleGate
+// (Rules) + IResortGuestConfigQuery/IResortSettingsQuery (ResortConfig) + ICurrentGuestContextResolver (GuestAccess) qua
+// Contracts. KHÔNG outbox (cascade GuestVisitEnded = C-GA.5). SignalR notifier override = K-Con.4.
+var conciergeConnectionString = configuration.GetConnectionString("Concierge")
+    ?? throw new InvalidOperationException(
+        "Thiếu ConnectionStrings:Concierge — fail-fast (F35). Cấu hình connection string cho module Concierge.");
+services.AddConciergeInfrastructure(options => options.UseNpgsql(
+    conciergeConnectionString,
+    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "concierge")));
+services.AddConciergeApi();
+
 // IHtmlSanitizer (QR-AD-031): adapter Ganss dùng chung (Rules Draft sanitize-on-save; Faq sau). RequirePort → boot
 // FAIL-FAST nếu thiếu — port bảo mật KHÔNG default (thiếu = HTML script lọt vào nội dung khách). Host (composition
 // root) là nơi DUY NHẤT cắm adapter; UpsertRuleSectionTranslationUseCase inject IHtmlSanitizer → phải có mặt.
@@ -247,6 +263,10 @@ if (bool.TryParse(configuration["Bedrock:ApplyMigrationsOnStartup"], out var app
     // Housekeeping: migrate schema housekeeping (chưa seed — ticket tạo runtime bởi guest/staff).
     var housekeepingDb = migrationScope.ServiceProvider.GetRequiredService<HousekeepingDbContext>();
     await housekeepingDb.Database.MigrateAsync().ConfigureAwait(false);
+
+    // Concierge: migrate schema concierge (chưa seed — hội thoại/tin/ghi chú tạo runtime bởi guest/staff).
+    var conciergeDb = migrationScope.ServiceProvider.GetRequiredService<ConciergeDbContext>();
+    await conciergeDb.Database.MigrateAsync().ConfigureAwait(false);
 }
 
 // Slot #4 (HSTS/HTTPS-redirect) = TRÁCH NHIỆM HOST (AD-035). Sample host này chạy sau reverse-proxy terminate TLS

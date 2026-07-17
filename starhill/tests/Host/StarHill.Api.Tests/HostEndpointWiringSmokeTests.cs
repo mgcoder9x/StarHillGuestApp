@@ -47,6 +47,14 @@ public sealed class HostEndpointWiringSmokeTests : IClassFixture<SecretInjecting
     [InlineData("GET", "/v1/housekeeping")]
     [InlineData("POST", "/v1/housekeeping/complete-by-room")]
     [InlineData("POST", "/v1/housekeeping/complete-by-token")]
+    [InlineData("GET", "/v1/conversations")]
+    [InlineData("GET", "/v1/conversations/11111111-1111-1111-1111-111111111111")]
+    [InlineData("POST", "/v1/conversations/11111111-1111-1111-1111-111111111111/reply")]
+    [InlineData("POST", "/v1/conversations/11111111-1111-1111-1111-111111111111/read")]
+    [InlineData("POST", "/v1/conversations/11111111-1111-1111-1111-111111111111/close")]
+    [InlineData("POST", "/v1/notes")]
+    [InlineData("PUT", "/v1/notes/11111111-1111-1111-1111-111111111111")]
+    [InlineData("DELETE", "/v1/notes/11111111-1111-1111-1111-111111111111")]
     public async Task Protected_admin_endpoint_requires_authentication(string method, string path)
     {
         var client = _factory.CreateClient();
@@ -61,6 +69,7 @@ public sealed class HostEndpointWiringSmokeTests : IClassFixture<SecretInjecting
     [InlineData("/v1/guest/rules?roomId=11111111-1111-1111-1111-111111111111")]
     [InlineData("/v1/guest/faq?roomId=11111111-1111-1111-1111-111111111111")]
     [InlineData("/v1/guest/housekeeping?roomId=11111111-1111-1111-1111-111111111111")]
+    [InlineData("/v1/guest/conversation?roomId=11111111-1111-1111-1111-111111111111")]
     public async Task Guest_get_rules_is_mapped_and_returns_problem_without_cookie(string path)
     {
         var client = _factory.CreateClient();

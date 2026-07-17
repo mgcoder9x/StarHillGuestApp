@@ -59,6 +59,7 @@
     <Project Path="src/Modules/Concierge/Concierge.Domain/Concierge.Domain.csproj" />
     <Project Path="src/Modules/Concierge/Concierge.Application/Concierge.Application.csproj" />
     <Project Path="src/Modules/Concierge/Concierge.Infrastructure/Concierge.Infrastructure.csproj" />
+    <Project Path="src/Modules/Concierge/Concierge.Api/Concierge.Api.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/StarHill.Authorization/StarHill.Authorization.csproj" />

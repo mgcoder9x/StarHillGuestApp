@@ -40,6 +40,7 @@ services:
       ConnectionStrings__Rules: "Host=postgres;Port=5432;Database=starhill;Username=postgres;Password=postgres"
       ConnectionStrings__Faq: "Host=postgres;Port=5432;Database=starhill;Username=postgres;Password=postgres"
       ConnectionStrings__Housekeeping: "Host=postgres;Port=5432;Database=starhill;Username=postgres;Password=postgres"
+      ConnectionStrings__Concierge: "Host=postgres;Port=5432;Database=starhill;Username=postgres;Password=postgres"
       # DEV placeholder secret (base64 ≥32B). Prod nạp qua secret store (F35).
       Jwt__Keys__0__Secret: "ZGV2LXBsYWNlaG9sZGVyLWp3dC1zaWduaW5nLWtleS0wMTIzNDU2Nzg5YWJjZGVm"
       # CHỈ dev/compose single-instance: Host tự áp migration lúc start. Prod đa-instance KHÔNG bật (AD-050).

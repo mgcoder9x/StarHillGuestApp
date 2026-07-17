@@ -390,3 +390,100 @@ internal sealed class FakeHousekeepingReader : Housekeeping.Application.IHouseke
         Task.FromResult(new Bedrock.Application.UseCases.PagedResult<Housekeeping.Application.HousekeepingBoardItem>(
             [], paging.SafePage, paging.SafePageSize, 0));
 }
+
+// ---- Concierge use case + reader fakes (K-Con.3 endpoint auth guard, KHÔNG DB) ----
+
+internal sealed class FakeSendGuestMessage
+    : IUseCase<Concierge.Application.SendGuestMessageInput, Concierge.Application.SendGuestMessageResult>
+{
+    public static readonly Guid ConversationId = Guid.Parse("eeeeeeee-9999-9999-9999-999999999999");
+    public static readonly Guid MessageId = Guid.Parse("ffffffff-9999-9999-9999-999999999999");
+
+    public Task<Result<Concierge.Application.SendGuestMessageResult>> ExecuteAsync(
+        Concierge.Application.SendGuestMessageInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Concierge.Application.SendGuestMessageResult(
+            ConversationId, MessageId, Concierge.Domain.ConversationStatus.Open, Reopened: false)));
+}
+
+internal sealed class FakeGetGuestConversation
+    : IUseCase<Concierge.Application.GetGuestConversationInput, Concierge.Application.GetGuestConversationResult>
+{
+    public Task<Result<Concierge.Application.GetGuestConversationResult>> ExecuteAsync(
+        Concierge.Application.GetGuestConversationInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Concierge.Application.GetGuestConversationResult(null)));
+}
+
+internal sealed class FakeReplyConversation
+    : IUseCase<Concierge.Application.ReplyConversationInput, Concierge.Application.ReplyConversationResult>
+{
+    public Task<Result<Concierge.Application.ReplyConversationResult>> ExecuteAsync(
+        Concierge.Application.ReplyConversationInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Concierge.Application.ReplyConversationResult(
+            FakeSendGuestMessage.MessageId, Concierge.Domain.ConversationStatus.Open)));
+}
+
+internal sealed class FakeMarkConversationRead : ICommandUseCase<Concierge.Application.MarkConversationReadInput>
+{
+    public string? PersistenceKey => null;
+
+    public Task<Result> ExecuteAsync(Concierge.Application.MarkConversationReadInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success());
+}
+
+internal sealed class FakeCloseConversation : ICommandUseCase<Concierge.Application.CloseConversationInput>
+{
+    public string? PersistenceKey => null;
+
+    public Task<Result> ExecuteAsync(Concierge.Application.CloseConversationInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success());
+}
+
+internal sealed class FakeCreateInternalNote
+    : IUseCase<Concierge.Application.CreateInternalNoteInput, Concierge.Application.CreateInternalNoteResult>
+{
+    public static readonly Guid NoteId = Guid.Parse("abababab-9999-9999-9999-999999999999");
+
+    public Task<Result<Concierge.Application.CreateInternalNoteResult>> ExecuteAsync(
+        Concierge.Application.CreateInternalNoteInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Concierge.Application.CreateInternalNoteResult(NoteId)));
+}
+
+internal sealed class FakeUpdateInternalNote : ICommandUseCase<Concierge.Application.UpdateInternalNoteInput>
+{
+    public string? PersistenceKey => null;
+
+    public Task<Result> ExecuteAsync(Concierge.Application.UpdateInternalNoteInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success());
+}
+
+internal sealed class FakeDeleteInternalNote : ICommandUseCase<Concierge.Application.DeleteInternalNoteInput>
+{
+    public string? PersistenceKey => null;
+
+    public Task<Result> ExecuteAsync(Concierge.Application.DeleteInternalNoteInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success());
+}
+
+internal sealed class FakeConciergeReader : Concierge.Application.IConciergeReader
+{
+    public Task<Concierge.Application.GuestConversationView?> GetGuestConversationByVisitAsync(
+        Guid guestVisitId, CancellationToken ct = default) =>
+        Task.FromResult<Concierge.Application.GuestConversationView?>(null);
+
+    public Task<IReadOnlyList<Guid>> ListMessageIdsUnreadByGuestAsync(Guid conversationId, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<Guid>>([]);
+
+    public Task<IReadOnlyList<Guid>> ListMessageIdsUnreadByStaffAsync(Guid conversationId, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<Guid>>([]);
+
+    public Task<Concierge.Application.PagedConversations> ListConversationsAsync(
+        Guid resortId, Concierge.Domain.ConversationStatus? status, int page, int pageSize, CancellationToken ct = default) =>
+        Task.FromResult(new Concierge.Application.PagedConversations([], page, pageSize, 0));
+
+    public Task<Concierge.Application.ConversationDetailView?> GetConversationAsync(
+        Guid conversationId, CancellationToken ct = default) =>
+        Task.FromResult<Concierge.Application.ConversationDetailView?>(
+            new Concierge.Application.ConversationDetailView(
+                conversationId, Guid.CreateVersion7(), Guid.CreateVersion7(),
+                Concierge.Domain.ConversationStatus.Open, DateTimeOffset.UnixEpoch, 0, []));
+}
