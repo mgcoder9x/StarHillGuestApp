@@ -1,8 +1,10 @@
+using Bedrock.Application.Messaging;
 using Bedrock.Application.Ports.Persistence;
 using Bedrock.Application.Ports.Security;
 using Bedrock.Application.Ports.Time;
 using Bedrock.Application.UseCases;
 using Bedrock.Domain.Results;
+using GuestAccess.Contracts.Events;
 using GuestAccess.Domain;
 using ResortConfig.Contracts.Queries;
 using Rooms.Contracts;
@@ -32,6 +34,7 @@ public sealed class ResolveTokenUseCase : IUseCase<ResolveTokenInput, ResolveTok
     private readonly IGuestSessionKeyHasher _hasher;
     private readonly ITokenGenerator _tokenGenerator;
     private readonly IClock _clock;
+    private readonly IOutboxWriter _outboxWriter;
 
     public ResolveTokenUseCase(
         IGuestSessionStore store,
@@ -40,7 +43,8 @@ public sealed class ResolveTokenUseCase : IUseCase<ResolveTokenInput, ResolveTok
         IResortGuestConfigQuery configQuery,
         IGuestSessionKeyHasher hasher,
         ITokenGenerator tokenGenerator,
-        IClock clock)
+        IClock clock,
+        IOutboxWriter outboxWriter)
     {
         _store = store;
         _unitOfWork = unitOfWork;
@@ -49,6 +53,7 @@ public sealed class ResolveTokenUseCase : IUseCase<ResolveTokenInput, ResolveTok
         _hasher = hasher;
         _tokenGenerator = tokenGenerator;
         _clock = clock;
+        _outboxWriter = outboxWriter;
     }
 
     public async Task<Result<ResolveTokenResult>> ExecuteAsync(ResolveTokenInput input, CancellationToken ct = default)
@@ -134,6 +139,14 @@ public sealed class ResolveTokenUseCase : IUseCase<ResolveTokenInput, ResolveTok
         {
             visit.Status = GuestVisitStatus.Expired;
             visit.ClosedAt = now;
+
+            // C-GA.5: visit kết thúc (idle-expiry) → PHÁT GuestVisitEnded vào outbox TRONG CÙNG transaction (đang ở
+            // trong ExecuteInTransactionAsync — CP6/F5: state Expired + outbox all-or-nothing). Consumer cascade đóng
+            // hội thoại Concierge + huỷ ticket Housekeeping (idempotent, at-least-once — QR-AD-027). Event.Id = OutboxMessage.Id.
+            await _outboxWriter
+                .EnqueueAsync(new GuestVisitEndedIntegrationEvent(Guid.CreateVersion7(), now, visit.Id), ct)
+                .ConfigureAwait(false);
+
             await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
             visit = null;
         }

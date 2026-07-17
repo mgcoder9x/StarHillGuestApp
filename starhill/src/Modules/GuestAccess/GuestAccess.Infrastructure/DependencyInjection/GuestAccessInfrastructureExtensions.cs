@@ -1,3 +1,4 @@
+using Bedrock.Application.Messaging;
 using Bedrock.Application.Ports.Persistence;
 using Bedrock.Application.Ports.Security;
 using Bedrock.Application.Ports.Time;
@@ -38,6 +39,12 @@ public static class GuestAccessInfrastructureExtensions
         // DbContext + Unit of Work + DB readiness check (schema "guest_access"), KEYED theo PersistenceKey.
         services.AddBedrockPersistence<GuestAccessDbContext>(PersistenceKey, configureDbContext);
 
+        // C-GA.5: Outbox producer (phát GuestVisitEnded) + Inbox store (consume cascade idempotent) KEYED theo module.
+        // Cần AddOutboxInbox ở GuestAccessDbContext.OnModelCreating (đã có). Startup guard P1-15: khi messaging TẮT,
+        // producer không có drainer → boot chặn TRỪ KHI AllowOutboxWithoutDispatcher=true (compose/smoke đã đặt).
+        services.AddBedrockOutbox<GuestAccessDbContext>(PersistenceKey);
+        services.AddBedrockInbox<GuestAccessDbContext>(PersistenceKey);
+
         // Hasher cookie thiết bị (thuật toán thuần, stateless) — singleton thủ công (port không mang marker DI).
         services.AddSingleton<IGuestSessionKeyHasher, Sha256GuestSessionKeyHasher>();
 
@@ -62,7 +69,8 @@ public static class GuestAccessInfrastructureExtensions
             sp.GetRequiredService<IResortGuestConfigQuery>(),
             sp.GetRequiredService<IGuestSessionKeyHasher>(),
             sp.GetRequiredService<ITokenGenerator>(),
-            sp.GetRequiredService<IClock>()));
+            sp.GetRequiredService<IClock>(),
+            sp.GetRequiredKeyedService<IOutboxWriter>(PersistenceKey)));
 
         return services;
     }
