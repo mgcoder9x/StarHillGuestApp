@@ -317,7 +317,7 @@
 - Guard-Tests: `GuestAccessResolveRaceTests`, `ResolveTokenUseCaseTests`
 
 ### QR-AD-027 — Cascade GuestVisitEnded dùng outbox/inbox at-least-once; supersede cascade đồng bộ của QR-AD-002
-- Status: Proposed (design; triển khai C-GA.5 khi consumer tồn tại)
+- Status: Accepted/Implemented (2026-07-17; C-GA.5a producer [GuestAccess emit-on-idle-expiry, commit 8022ca0] + C-GA.5b consumer [handler cascade + wiring Host] — đóng CP9 trọn vẹn)
 - Date: 2026-07-14
 - Decider: AI (sửa giả định atomicity sai trong design cũ).
 - Provenance/Evidence: QR-AD-002/QR-TO-002 nói gọi 3 module trong “một transaction/scope”, nhưng mỗi module có DbContext/key riêng; cùng DI scope không tạo shared transaction. Base có outbox/inbox keyed và startup guard, RabbitMQ semantics at-least-once. Req 10.8 span GuestAccess/Concierge/Housekeeping.
@@ -326,6 +326,8 @@
 - Alternatives: sequential sync calls (loại: partial failure không recover); TransactionScope nhiều connection (loại: coupling/operational complexity); dual sync+event (loại: hai nguồn side effect).
 - Consequences: cleanup có độ trễ ngắn khi broker/downstream chậm; outbox giữ sự kiện khi broker lỗi. Supersedes **chỉ phần cascade** của QR-AD-002; phân rã/boundary còn hiệu lực.
 - Reversibility: Medium. Traceability: `design-modules/03-guestaccess.md` §9; QR-TO-006; Req 10.8.
+- Implementation (C-GA.5, 2026-07-17): **5a PRODUCER** (commit `8022ca0`, ban đầu commit dạng "update" CHƯA journal — nay bổ sung tài liệu): `GuestVisitEndedIntegrationEvent(Id, OccurredAt, GuestVisitId)` (EventType `guest_access.guest_visit_ended`, payload Id trần) ở `GuestAccess.Contracts.Events`; `GuestAccessDbContext.AddOutboxInbox(schema guest_access)` (context vừa PRODUCE outbox vừa là INBOX khử trùng consumer); `AddBedrockOutbox/Inbox<GuestAccessDbContext>(key)`; `ResolveTokenUseCase` inject `IOutboxWriter` → tại nhánh lazy idle-expiry (visit→Expired) `EnqueueAsync(GuestVisitEnded)` TRONG `ExecuteInTransactionAsync` (CP6/F5 all-or-nothing); migration `20260717074936_AddGuestAccessOutboxInbox` (chỉ tạo outbox_message + inbox_message schema guest_access, verify). **5b CONSUMER**: `GuestVisitEndedCascadeHandler` (Host — composition root, điều phối 2 module qua use case) gọi `CloseConversationForVisitUseCase` (Concierge) + `CancelOpenTicketsForVisitUseCase` (Housekeeping), cả hai IDEMPOTENT; use case fail → NÉM cho consume không mark inbox → redeliver (at-least-once + idempotent = đúng-một-lần nghiệp vụ). Host wiring (block messaging-enabled): `AddOutboxDispatcher/Worker<GuestAccessDbContext>` + `AddIntegrationEventConsumer<GuestAccessDbContext>` + `AddKeyedScoped<IIntegrationEventHandler<GuestVisitEnded>, handler>(guestAccessKey)` + `AddRabbitMqConsumer(queue starhill.guest_access, routing guest_access.#)` + registry `params Assembly[]` thêm GuestAccess.Contracts. Verify: `vp all` build 0-warning + full 0-fail (StarHill.Api.Tests 98 [+4 handler]; GuestAccess.IntegrationTests +1 producer SQLite); runtime RabbitMQ/inbox = messaging overlay (Docker/CI — máy này không Docker).
+- Guard-Tests: `ResolveTokenUseCaseTests`, `GuestVisitEndedCascadeHandlerTests`
 ### QR-AD-028 — EF migration history thuộc schema module, runtime và design-time phải đồng nhất
 - Status: Accepted/Implemented (C-GA.3a; QR-N-028 verify Compose + upgrade path)
 - Date: 2026-07-14

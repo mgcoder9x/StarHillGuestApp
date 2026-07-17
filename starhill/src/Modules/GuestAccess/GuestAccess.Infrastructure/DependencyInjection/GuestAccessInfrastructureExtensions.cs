@@ -21,8 +21,9 @@ namespace GuestAccess.Infrastructure.DependencyInjection;
 /// <see cref="GuestAccessModule.PersistenceKey"/> → resolve đúng module (chống last-registration-wins). C-GA.2b:
 /// thêm hasher (SHA-256, singleton), <see cref="IGuestSessionStore"/> (scoped, row-lock) và
 /// <see cref="ResolveTokenUseCase"/> (factory resolve keyed IUnitOfWork + cross-module Contracts). Resolve TỰ quản
-/// transaction hẹp (không ITransactionalUseCase). GuestAccess KHÔNG map Outbox/Inbox tới khi cascade
-/// GuestVisitEnded có consumer (QR-AD-027).
+/// transaction hẹp (không ITransactionalUseCase). C-GA.5: map Outbox (produce <c>GuestVisitEndedIntegrationEvent</c>)
+/// + Inbox (context consume cascade idempotent) qua <c>AddBedrockOutbox/Inbox</c> keyed — wiring dispatcher/consumer +
+/// handler cascade ở Host (QR-AD-027, đóng CP9).
 /// </summary>
 public static class GuestAccessInfrastructureExtensions
 {

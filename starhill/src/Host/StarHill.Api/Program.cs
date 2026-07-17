@@ -15,6 +15,7 @@ using ResortConfig.Api.DependencyInjection;
 using ResortConfig.Infrastructure.DependencyInjection;
 using ResortConfig.Infrastructure.Persistence;
 using GuestAccess.Api.DependencyInjection;
+using GuestAccess.Contracts.Events;
 using GuestAccess.Infrastructure.DependencyInjection;
 using GuestAccess.Infrastructure.Persistence;
 using Rooms.Api.DependencyInjection;
@@ -215,11 +216,15 @@ if (bool.TryParse(configuration["Bedrock:Messaging:Enabled"], out var messagingE
     // scope+DbContext module (không còn last-registration-wins). Mirror platform sample Host.
     services.AddOutboxDispatcher<IdentityDbContext>(IdentityInfrastructureExtensions.PersistenceKey);
     services.AddOutboxDispatcherWorker<IdentityDbContext>();
-    services.AddIntegrationEventRegistry(typeof(UserTokenRefreshedIntegrationEvent).Assembly);
+    // Registry EventType→CLR cho MỌI module có event (params Assembly[]): Identity (UserTokenRefreshed) +
+    // GuestAccess (GuestVisitEnded — C-GA.5). EventType lạ → dead-letter, không crash (R17.3).
+    services.AddIntegrationEventRegistry(
+        typeof(UserTokenRefreshedIntegrationEvent).Assembly,
+        typeof(GuestVisitEndedIntegrationEvent).Assembly);
 
-    // CONSUME side (AD-059): dispatch core agnostic (Bedrock.Infrastructure) + handler demo + subscriber RabbitMQ.
-    // Topology TỐI THIỂU cho sample (queue + binding) — quyết định app (N-063). Handler chạy trong transaction
-    // consume (inbox + business nguyên tử, F30). Multi-module thật: mỗi module một consumer + scope riêng.
+    // CONSUME side (AD-059): dispatch core agnostic (Bedrock.Infrastructure) + handler + subscriber RabbitMQ.
+    // Topology TỐI THIỂU (queue + binding) — quyết định app (N-063). Handler chạy trong transaction consume
+    // (inbox + business nguyên tử, F30). Multi-module: MỖI module một consumer + scope+DbContext riêng.
     services.AddIntegrationEventConsumer<IdentityDbContext>(IdentityInfrastructureExtensions.PersistenceKey);
     services.AddKeyedScoped<IIntegrationEventHandler<UserTokenRefreshedIntegrationEvent>, UserTokenRefreshedLogHandler>(
         IdentityInfrastructureExtensions.PersistenceKey);
@@ -228,6 +233,22 @@ if (bool.TryParse(configuration["Bedrock:Messaging:Enabled"], out var messagingE
         o.QueueName = "starhill.identity";
         o.DispatcherServiceKey = IdentityInfrastructureExtensions.PersistenceKey;
         o.RoutingKeys.Add("identity.#"); // nhận mọi event của module Identity (topic pattern).
+    });
+
+    // C-GA.5b — CASCADE cross-module (đóng CP9/QR-AD-027): GuestAccess PRODUCE GuestVisitEnded (outbox guest_access,
+    // cùng transaction visit→Expired) → dispatcher/worker phát lên bus → consumer guest_access (inbox khử trùng) →
+    // GuestVisitEndedCascadeHandler đóng hội thoại Concierge + huỷ ticket Housekeeping (idempotent, at-least-once).
+    // KEYED theo GuestAccessDbContext (module guest_access) — outbox/inbox chạy đúng scope+DbContext, không đua module khác.
+    services.AddOutboxDispatcher<GuestAccessDbContext>(GuestAccessInfrastructureExtensions.PersistenceKey);
+    services.AddOutboxDispatcherWorker<GuestAccessDbContext>();
+    services.AddIntegrationEventConsumer<GuestAccessDbContext>(GuestAccessInfrastructureExtensions.PersistenceKey);
+    services.AddKeyedScoped<IIntegrationEventHandler<GuestVisitEndedIntegrationEvent>, GuestVisitEndedCascadeHandler>(
+        GuestAccessInfrastructureExtensions.PersistenceKey);
+    services.AddRabbitMqConsumer(o =>
+    {
+        o.QueueName = "starhill.guest_access";
+        o.DispatcherServiceKey = GuestAccessInfrastructureExtensions.PersistenceKey;
+        o.RoutingKeys.Add("guest_access.#"); // nhận mọi event của module GuestAccess (topic pattern).
     });
 }
 

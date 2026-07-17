@@ -2,7 +2,9 @@ using Bedrock.Application.Ports.Security;
 using Bedrock.Application.Ports.Time;
 using Bedrock.Application.Ports.Users;
 using Bedrock.Application.UseCases;
+using Bedrock.Application.Messaging.Dispatch;
 using GuestAccess.Application;
+using GuestAccess.Contracts.Events;
 using GuestAccess.Domain;
 using GuestAccess.Infrastructure.DependencyInjection;
 using GuestAccess.Infrastructure.Persistence;
@@ -207,6 +209,40 @@ public sealed class ResolveTokenUseCaseTests
         var db = scope.ServiceProvider.GetRequiredService<GuestAccessDbContext>();
         Assert.Equal(1, await db.GuestVisits.CountAsync(v => v.Status == GuestVisitStatus.Active));
         Assert.Equal(1, await db.GuestVisits.CountAsync(v => v.Status == GuestVisitStatus.Expired));
+    }
+
+    // C-GA.5a (QR-AD-027): visit idle-expiry PHÁT GuestVisitEnded vào OUTBOX trong CÙNG transaction chuyển visit→Expired
+    // (CP6/F5 all-or-nothing). Đây là nửa PRODUCER của cascade (consumer = GuestVisitEndedCascadeHandlerTests). Chạy
+    // SQLite local (outbox_message do AddOutboxInbox map → EnsureCreated tạo). Payload mang GuestVisitId của visit hết hạn.
+    [Fact]
+    public async Task Emits_guest_visit_ended_to_outbox_on_idle_expiry()
+    {
+        await using var h = await BuildAsync();
+        var roomId = Guid.CreateVersion7();
+        var resortId = Guid.CreateVersion7();
+        h.Room.Result = ActiveRoom(roomId, resortId);
+        h.ConfigQuery.Config = Config(resortId);
+
+        var first = await ResolveAsync(h, ValidToken, null);
+        var cookie = first.Value.IssuedSessionKey;
+        var expiredVisitId = first.Value.VisitId;
+
+        // Vượt idle 24h → visit cũ Expired + enqueue GuestVisitEnded.
+        h.Clock.UtcNow = h.Clock.UtcNow.AddHours(25);
+        var second = await ResolveAsync(h, ValidToken, cookie);
+        Assert.True(second.IsSuccess);
+
+        await using var scope = h.Provider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<GuestAccessDbContext>();
+        var expectedEventType =
+            new GuestVisitEndedIntegrationEvent(Guid.CreateVersion7(), h.Clock.UtcNow, expiredVisitId).EventType;
+        var emitted = await db.Set<OutboxMessage>()
+            .Where(m => m.EventType == expectedEventType)
+            .ToListAsync();
+
+        Assert.Single(emitted);
+        // Payload mang GuestVisitId của visit ĐÃ hết hạn (consumer cascade tra theo id này để đóng hội thoại/huỷ ticket).
+        Assert.Contains(expiredVisitId.ToString(), emitted[0].Payload, StringComparison.OrdinalIgnoreCase);
     }
 
     // QR-AD-025 (C-GA.3a): capability token do Rooms phát hành là base64url 43 ký tự. Mọi biến thể không canonical
