@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/*
+  Design tokens FLUID (§3.2) — nguồn duy nhất, đồng bộ PrimeVue + Tailwind + CSS thuần.
+  clamp() nội suy mượt theo bề rộng → không "nhảy bậc" giữa breakpoint, đọc tốt 320px→tablet. Đơn vị rem (tôn trọng zoom).
+*/
+:root {
+  --sh-space-page: clamp(1rem, 0.5rem + 3vw, 2rem);
+  --sh-gap: clamp(0.75rem, 0.5rem + 1.5vw, 1.25rem);
+  --sh-font-body: clamp(0.95rem, 0.9rem + 0.4vw, 1.125rem);
+  --sh-font-title: clamp(1.35rem, 1.1rem + 2.2vw, 2rem);
+}
+
+html {
+  -webkit-text-size-adjust: 100%; /* chống iOS tự phóng chữ khi xoay ngang */
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    "Noto Sans", "Noto Sans KR", "Noto Sans SC", sans-serif;
+  font-size: var(--sh-font-body);
+  line-height: 1.5;
+}
+
+/*
+  Chống scroll ngang (bug responsive #1) — KHÔNG dùng `overflow-x:hidden` toàn cục (nó GIẤU lỗi tràn thật + làm
+  Playwright gate vô nghĩa). Thay vào đó: chặn media/element vượt khung + cho text dài (token/URL) tự xuống dòng.
+*/
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+  height: auto;
+}
+
+* {
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
