@@ -28,4 +28,8 @@ public static class ConciergeErrors
     /// <summary>Hội thoại không tồn tại (staff reply/read/close theo id). 404.</summary>
     public static Error ConversationNotFound =>
         Error.NotFound("concierge_conversation_not_found", "Không tìm thấy hội thoại.");
+
+    /// <summary>Ghi chú nội bộ không tồn tại (staff update/delete theo id). 404.</summary>
+    public static Error NoteNotFound =>
+        Error.NotFound("concierge_note_not_found", "Không tìm thấy ghi chú.");
 }

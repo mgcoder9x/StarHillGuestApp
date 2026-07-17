@@ -49,4 +49,87 @@ public sealed class EfConciergeReader(ConciergeDbContext db) : IConciergeReader
             .ToListAsync(ct)
             .ConfigureAwait(false);
     }
+
+    public async Task<IReadOnlyList<Guid>> ListMessageIdsUnreadByStaffAsync(
+        Guid conversationId, CancellationToken ct = default)
+    {
+        return await db.Messages
+            .AsNoTracking()
+            .Where(m => m.ConversationId == conversationId
+                        && m.SenderType == MessageSenderType.Guest
+                        && m.ReadByStaffAt == null)
+            .Select(m => m.Id)
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<PagedConversations> ListConversationsAsync(
+        Guid resortId, ConversationStatus? status, int page, int pageSize, CancellationToken ct = default)
+    {
+        var normalizedPage = page < 1 ? 1 : page;
+        var normalizedPageSize = pageSize < 1 ? 20 : (pageSize > 100 ? 100 : pageSize);
+
+        var query = db.Conversations
+            .AsNoTracking()
+            .Where(c => c.ResortId == resortId);
+        if (status is not null)
+        {
+            query = query.Where(c => c.Status == status.Value);
+        }
+
+        var totalCount = await query.CountAsync(ct).ConfigureAwait(false);
+
+        // Board sắp LastMessageAt DESC (mới-hoạt-động-nhất trước — Req 5.3). Chỉ Postgres (SQLite KHÔNG ORDER BY DateTimeOffset).
+        var items = await query
+            .OrderByDescending(c => c.LastMessageAt)
+            .ThenByDescending(c => c.Id)
+            .Skip((normalizedPage - 1) * normalizedPageSize)
+            .Take(normalizedPageSize)
+            .Select(c => new ConversationSummary(c.Id, c.RoomId, c.Status, c.LastMessageAt, c.UnreadForStaff))
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+
+        return new PagedConversations(items, normalizedPage, normalizedPageSize, totalCount);
+    }
+
+    public async Task<ConversationDetailView?> GetConversationAsync(
+        Guid conversationId, CancellationToken ct = default)
+    {
+        var conversation = await db.Conversations
+            .AsNoTracking()
+            .Where(c => c.Id == conversationId)
+            .Select(c => new
+            {
+                c.Id,
+                c.RoomId,
+                c.GuestVisitId,
+                c.Status,
+                c.LastMessageAt,
+                c.UnreadForStaff,
+            })
+            .FirstOrDefaultAsync(ct)
+            .ConfigureAwait(false);
+        if (conversation is null)
+        {
+            return null;
+        }
+
+        var messages = await db.Messages
+            .AsNoTracking()
+            .Where(m => m.ConversationId == conversation.Id)
+            .OrderBy(m => m.Id)
+            .Select(m => new StaffMessageView(
+                m.Id, m.SenderType, m.SenderUserId, m.Body, m.CreatedAt, m.ReadByStaffAt, m.ReadByGuestAt))
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+
+        return new ConversationDetailView(
+            conversation.Id,
+            conversation.RoomId,
+            conversation.GuestVisitId,
+            conversation.Status,
+            conversation.LastMessageAt,
+            conversation.UnreadForStaff,
+            messages);
+    }
 }

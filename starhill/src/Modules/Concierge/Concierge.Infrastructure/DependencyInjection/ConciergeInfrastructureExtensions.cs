@@ -6,6 +6,7 @@ using Concierge.Application;
 using Concierge.Contracts;
 using Concierge.Domain;
 using Concierge.Infrastructure.Persistence;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using ResortConfig.Contracts.Queries;
@@ -61,6 +62,57 @@ public static class ConciergeInfrastructureExtensions
             sp.GetRequiredKeyedService<IRepository<Message>>(PersistenceKey),
             sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
             sp.GetRequiredService<IClock>()));
+
+        // Use case staff (K-Con.2b). Reply value-returning IUseCase (tự SaveChanges, mirror SendGuestMessage);
+        // mark-read/close/close-for-visit là ICommandUseCase void (decorator mở transaction theo PersistenceKey).
+        services.AddScoped<IUseCase<ReplyConversationInput, ReplyConversationResult>>(sp => new ReplyConversationUseCase(
+            sp.GetRequiredService<IResortSettingsQuery>(),
+            sp.GetRequiredKeyedService<IRepository<Conversation>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IRepository<Message>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
+            sp.GetRequiredService<IClock>(),
+            sp.GetRequiredService<IConciergeRealtimeNotifier>()));
+
+        services.AddScoped<ICommandUseCase<MarkConversationReadInput>>(sp => new MarkConversationReadUseCase(
+            sp.GetRequiredService<IConciergeReader>(),
+            sp.GetRequiredKeyedService<IRepository<Conversation>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IRepository<Message>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
+            sp.GetRequiredService<IClock>(),
+            sp.GetRequiredService<IConciergeRealtimeNotifier>()));
+
+        services.AddScoped<ICommandUseCase<CloseConversationInput>>(sp => new CloseConversationUseCase(
+            sp.GetRequiredKeyedService<IRepository<Conversation>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
+            sp.GetRequiredService<IClock>(),
+            sp.GetRequiredService<IConciergeRealtimeNotifier>()));
+
+        services.AddScoped<ICommandUseCase<CloseConversationForVisitInput>>(sp => new CloseConversationForVisitUseCase(
+            sp.GetRequiredKeyedService<IRepository<Conversation>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
+            sp.GetRequiredService<IClock>(),
+            sp.GetRequiredService<IConciergeRealtimeNotifier>()));
+
+        // Use case notes (K-Con.2b). Create value-returning IUseCase; update/delete là ICommandUseCase void.
+        services.AddScoped<IUseCase<CreateInternalNoteInput, CreateInternalNoteResult>>(sp => new CreateInternalNoteUseCase(
+            sp.GetRequiredKeyedService<IRepository<InternalNote>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IRepository<Conversation>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
+            sp.GetRequiredService<IClock>()));
+
+        services.AddScoped<ICommandUseCase<UpdateInternalNoteInput>>(sp => new UpdateInternalNoteUseCase(
+            sp.GetRequiredKeyedService<IRepository<InternalNote>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey),
+            sp.GetRequiredService<IClock>()));
+
+        services.AddScoped<ICommandUseCase<DeleteInternalNoteInput>>(sp => new DeleteInternalNoteUseCase(
+            sp.GetRequiredKeyedService<IRepository<InternalNote>>(PersistenceKey),
+            sp.GetRequiredKeyedService<IUnitOfWork>(PersistenceKey)));
+
+        // Validators (K-Con.2b).
+        services.AddTransient<IValidator<ReplyConversationInput>, ReplyConversationValidator>();
+        services.AddTransient<IValidator<CreateInternalNoteInput>, CreateInternalNoteValidator>();
+        services.AddTransient<IValidator<UpdateInternalNoteInput>, UpdateInternalNoteValidator>();
 
         return services;
     }

@@ -27,6 +27,7 @@ public sealed class ErrorCodeSnapshotTests
         "concierge_conversation_not_found", // Concierge (K-Con.2b: staff reply/read/close theo id — 404)
         "concierge_message_empty",       // Concierge (K-Con.2a: body rỗng sau trim)
         "concierge_message_too_long",    // Concierge (K-Con.2a: body > MaxMessageLength cấu hình)
+        "concierge_note_not_found",      // Concierge (K-Con.2b: staff update/delete ghi chú theo id — 404)
         "concurrency_conflict",
         "configuration_unavailable",     // GuestAccess (C-GA.2b)
         "conflict",
