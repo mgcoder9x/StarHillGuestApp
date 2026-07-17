@@ -3,13 +3,17 @@ import { useAuthStore } from '../stores/auth';
 import AdminShell from '../layouts/AdminShell.vue';
 import LoginView from '../views/LoginView.vue';
 import DashboardView from '../views/DashboardView.vue';
+import RoomsView from '../views/RoomsView.vue';
 
 const routes: RouteRecordRaw[] = [
   { path: '/login', name: 'login', component: LoginView, meta: { public: true } },
   {
     path: '/',
     component: AdminShell,
-    children: [{ path: '', name: 'dashboard', component: DashboardView }],
+    children: [
+      { path: '', name: 'dashboard', component: DashboardView },
+      { path: 'rooms', name: 'rooms', component: RoomsView },
+    ],
   },
 ];
 

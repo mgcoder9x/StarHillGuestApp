@@ -139,3 +139,20 @@
 - Chi phí chấp nhận: "Closed" không còn là bất biến tuyệt đối phía staff — reply làm sống lại. Chấp nhận vì hội thoại gắn theo visit còn hiệu lực; khi visit kết thúc, `CloseConversationForVisitUseCase` (System, C-GA.5) đóng và guest hết session nên không thể reopen tiếp.
 - Điều kiện xem xét lại: nếu nghiệp vụ cần "archived vĩnh viễn" (không cho reply) → thêm trạng thái thứ ba (Archived) tách khỏi Closed. Hiện chỉ 2 trạng thái (Open/Closed) theo design.
 - Reversibility: High. Ref: QR-AD-044; QR-AD-043 (guest reopen); QR-N-064.
+
+
+### QR-TO-016 — Rooms list: DataTable cuộn-ngang-cục-bộ vs card-list <sm
+- Chosen: PrimeVue **DataTable** bọc wrapper `overflow-x:auto; min-width:0` (`.rooms__table`) — dày cho admin desktop; phone cuộn bảng CỤC BỘ trong khung, KHÔNG đẩy tràn trang. (FE.3a, QR-AD-050.)
+- Provenance/Evidence: design §3.5/§3.8 (bảng data-dense → overflow-x cục bộ trong wrapper, giữ no-horizontal-overflow gate). Verify: Playwright `rooms no horizontal overflow @ phone-390/tablet-820/desktop-1280` PASS (scrollWidth ≤ clientWidth+1) — bảng KHÔNG làm tràn document ở 390px.
+- Phía chọn (DataTable+wrapper): admin xem/soát nhiều phòng (số phòng, token-version, trạng thái) → bảng dày quét nhanh; wrapper cuộn cục bộ giữ trang không tràn ngang (bug responsive #1). Ít code hơn duy trì 2 render-path.
+- Phía card-list <sm (chưa dùng): dễ đọc trên phone lễ tân đi lại; NHƯNG thêm nhánh render thứ 2 + đồng bộ 2 UI. Giữ làm DỰ PHÒNG nếu sau này phone-UX cần (đã nêu §3.8) — chưa cần vì gate phone PASS.
+- Chi phí chấp nhận: phone phải cuộn ngang trong khung bảng (chấp nhận cho MVP admin; số cột ít). Điều kiện xem xét lại: nếu user phản hồi phone-UX bảng khó dùng → thêm card-list <sm (đã có sẵn primitive auto-fit ở DashboardView).
+- Reversibility: High (đổi template RoomsView). Ref: QR-AD-050; design §3.5/§3.8.
+
+### QR-TO-017 — Mock QR (DEV) = SVG placeholder "QR demo" vs QR giả quét-được
+- Chosen: mock `qr.png` (DEV-only + Playwright) trả **data-URL SVG "QR demo"** (khung + vài ô + chữ "QR demo") — KHÔNG phải mã QR quét được. (FE.3a, QR-AD-050.)
+- Provenance/Evidence: máy không backend/Docker (bối cảnh) → cần xem layout dialog QR không cần BE (khớp mock-mode QR-N-073). Real mode: `getRoomQrObjectUrl` fetch PNG THẬT từ BE (`QrCoderQrService`, QR-N-015).
+- Phía chọn (SVG placeholder): TRUNG THỰC — không giả một QR "như thật" gây hiểu nhầm quét được; đủ để kiểm bố cục dialog + nút Tải + responsive. Nhẹ (data-URL, không dep).
+- Phía QR-giả-quét-được (bỏ): sinh QR thật client-side cần thêm thư viện (qrcode) chỉ để mock DEV → thừa dep + có thể lệch QR thật của BE (URL {base}/r/{token}) → gây tin sai. Loại.
+- Chi phí chấp nhận: ảnh mock không phải QR thật (rõ ràng qua chữ "QR demo"). Điều kiện xem xét lại: khi có backend chạy local (Docker) → xem QR thật, mock chỉ dùng khi offline.
+- Reversibility: High (đổi hằng MOCK_QR_DATA_URL). Ref: QR-AD-050; QR-N-073; QR-N-015.

@@ -143,3 +143,52 @@ Mỗi slice dừng nếu: build FE lỗi/warning; Playwright fail (overflow/cons
 - [x] Bảo mật render (textContent cho chat — khớp QR-AD-043; nội quy/FAQ sanitize server QR-AD-031).
 - [x] Anti-drift FE = Playwright gate (song song INV BE); trung thực về môi trường thiếu Node ở máy hiện tại.
 - [ ] User review design FE (đặc biệt §3 responsive + §9 quyết định Tailwind/serve) trước FE.0.
+
+
+## FE.3 — Admin Rooms + QR (chi tiết triển khai, design-first bổ sung)
+
+> Bổ sung cho §8 slice 4. Chia đôi cho "từng bước chắc chắn": **FE.3a** (read-only: danh sách + xem QR, role Staff+) →
+> **FE.3b** (mutation Admin: tạo/sửa/đổi-trạng-thái/xoá/rotate-token + xác nhận). Mọi shape client dưới đây ĐỌC TỪ CODE
+> BE thật (KHÔNG bịa) — `starhill/src/Modules/Rooms/Rooms.Api/RoomsEndpointModule.cs` + `Rooms.Application/IRoomQueries.cs`
+> + `Rooms.Domain/RoomStatus.cs` + `Bedrock.Application/UseCases/Paging.cs` + `RoomsErrors.cs`.
+
+### FE.3.0 — API surface đã verify (nguồn: RoomsEndpointModule.cs)
+- `GET /v1/rooms?status=&page=&pageSize=` (RequireStaff) → `PagedResult<RoomListItem>`.
+- `GET /v1/rooms/{roomId}` (RequireStaff) → `RoomListItem` | ProblemDetails 404 (`not_found`).
+- `GET /v1/rooms/{roomId}/qr.png` (RequireStaff) → `image/png` (binary; CẦN header `Authorization: Bearer` → KHÔNG dùng `<img src>` trực tiếp, phải fetch blob).
+- `POST /v1/rooms` (RequireAdmin) body `{roomNumber, building?, floor?}` → 201 `{roomId, tokenPreview}` (FE.3b).
+- `PUT /v1/rooms/{roomId}` (RequireAdmin) body `{roomNumber, building?, floor?}` → 204 (FE.3b).
+- `PATCH /v1/rooms/{roomId}/status` (RequireAdmin) body `{status}` (string enum) → 204 (FE.3b).
+- `DELETE /v1/rooms/{roomId}` (RequireAdmin) → 204 (FE.3b).
+- `POST /v1/rooms/{roomId}/rotate-token` (RequireAdmin) body `{reason?}` → 200 `{tokenPreview}` (FE.3b).
+- **`RoomListItem`** = `{roomId: string, roomNumber: string, building: string|null, floor: number|null, status: RoomStatus, activeTokenPreview: string|null, activeTokenVersion: number, createdAt: string}`.
+- **`PagedResult<T>`** = `{items: T[], page: number, pageSize: number, total: number}` (verify Paging.cs — field name chính xác `Items/Page/PageSize/Total`; JSON camelCase).
+- **`RoomStatus`** = string enum `'Active' | 'Inactive' | 'Maintenance'` (Host JsonStringEnumConverter toàn cục — QR-AD-021).
+- **Mã lỗi** (RoomsErrors.cs, cho FE.3b): `validation_error` (trùng số phòng), `qr_generation_failed`, `not_found`, `resort_not_found`, `invalid_configuration`. (FE.3a read-only chủ yếu gặp auth/network → thông báo generic; FE.3b sẽ map từng mã sau khi verify tiền tố `code` trong ProblemDetails.)
+
+### FE.3a — Components (read-only)
+- **`RoomsView.vue`** (route `/rooms`, child AdminShell, guard auth sẵn): PrimeVue **DataTable** lazy-paged (`:lazy :value=items :totalRecords=total :rows=pageSize :first @page`) — cột: Số phòng · Toà/Tầng · Trạng thái (Tag màu theo status) · Mã QR (`activeTokenPreview` + `v{version}`, hoặc "—" nếu null) · Hành động ("Xem QR", disable khi `activeTokenPreview==null`). Bộ lọc trạng thái = PrimeVue **Select** (Tất cả/Active/Inactive/Maintenance) → đổi = reset page 1 + refetch. Bọc DataTable trong wrapper `overflow-x:auto; min-width:0` → bảng cuộn CỤC BỘ, KHÔNG đẩy tràn trang (giữ Playwright no-overflow gate — §3.5). Empty-state + error Message.
+- **`RoomQrDialog.vue`**: PrimeVue **Dialog** hiện QR của phòng. Fetch `qr.png` qua api-client (Bearer) → `blob` → `URL.createObjectURL` gán `<img>`; nút **Tải PNG** (`<a download>`); revoke objectURL khi đóng/unmount (chống rò bộ nhớ). Nhãn phòng + preview token.
+- **api-client** thêm: `listRooms(status,page,pageSize,token)` + `getRoomQrObjectUrl(roomId,token)`. **MOCK DEV-only** (khớp QR-N-073): sinh danh sách phòng tất định (demo 42 phòng ~ khớp dashboard activeRooms, đủ paging + đủ 3 trạng thái) + `qr.png` mock = **data-URL SVG placeholder "QR demo"** (TRUNG THỰC — không giả QR quét được; real mode trả PNG thật từ BE).
+- **NavList**: bật route thật cho mục `rooms` (`to:'/rooms'`), bỏ badge "Sắp có" cho phòng.
+- **i18n**: `rooms.*` (title, cột, trạng thái, lọc, xemQr, taiPng, empty, loadError).
+
+### FE.3a — Responsive (§3)
+- DataTable trong wrapper cuộn-ngang-cục-bộ (desktop dày; phone cuộn trong khung, không tràn trang). Dialog QR `max-width` + ảnh `width:100%` fluid. Toolbar (title + filter) flex-wrap. Chạm ≥44px.
+
+### FE.3a — Verification (Playwright = browser thật, anti-drift FE)
+- `e2e/tests/rooms.spec.ts` (mock `page.route` cho `**/v1/rooms*` + `**/v1/rooms/*/qr.png` — KHÔNG cần backend): (1) login→vào /rooms→bảng hiện đúng số dòng + preview token; (2) lọc status → refetch đúng; (3) mở dialog "Xem QR" → ảnh hiển thị; (4) no-horizontal-overflow @ phone-390/tablet-820/desktop-1280; (5) no-console-error; (6) screenshot rooms desktop+phone cho user XEM.
+- Gate build: `pnpm --filter @starhill/admin-web build` EXIT=0 (vue-tsc typecheck).
+
+### FE.3 — Quyết định/trade-off (ghi journal khi code)
+- **QR-AD-0xx (QR qua fetch-blob, không `<img src>`)**: endpoint qr.png RequireStaff → cần Bearer → `<img>` không đính header được → BẮT BUỘC fetch blob→objectURL. Lý do bản chất (không fix ngọn): bảo mật endpoint đúng (không mở ẩn danh chỉ để `<img>` tiện). Trade-off: quản objectURL (revoke) — chấp nhận, chuẩn web.
+- **QR-TO-0xx (DataTable cuộn-ngang-cục-bộ vs card-list <sm)**: chọn DataTable-in-scroll-wrapper (dày cho desktop admin, phone cuộn cục bộ) — nếu Playwright phone-390 lộ tràn thì pivot card-list <sm (đã nêu §3.8). Verify bằng gate, không đoán.
+- **QR-TO-0xx (mock QR = SVG placeholder)**: trung thực (không giả QR thật) để user xem layout dialog không cần backend; real mode PNG thật từ BE.
+
+### FE.3a — Self-validation trước code
+- [x] API shape đọc từ code BE thật (RoomsEndpointModule/IRoomQueries/RoomStatus/Paging/RoomsErrors) — không bịa.
+- [x] qr.png cần Bearer → fetch-blob (không `<img src>`); revoke objectURL.
+- [x] Route `/rooms` dưới AdminShell dùng guard auth sẵn có (router beforeEach); role BE-side RequireStaff (FE không tự phân quyền, chỉ hiển thị — BE là nguồn sự thật).
+- [x] No-overflow giữ bằng wrapper cuộn cục bộ + verify Playwright ma trận viewport.
+- [x] MOCK DEV-only (prod/real-fetch không đụng — khớp QR-N-073); mock QR trung thực (SVG demo).
+- [ ] getDiagnostics design = 0 (kiểm sau khi ghi) → rồi mới code.

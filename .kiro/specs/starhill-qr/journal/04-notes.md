@@ -968,3 +968,18 @@
   - `i18n`: +`app.menu/theme/env`, +`nav.section.*`/`nav.soon`, +`login.subtitle`, +`dashboard.welcome`.
 - **License ranh giới (ghi để sau kiểm chứng)**: ý tưởng bố cục KHÔNG bị bản quyền; code/CSS-class-string/asset/Figma BỊ bản quyền. Ta chỉ ở vế "ý tưởng" → an toàn tuyệt đối. Nếu tương lai muốn copy code chỉ được đụng repo HTML-free (MIT, giữ dòng bản quyền) — nhưng KHÔNG khuyến nghị (trộn 2-hệ-style xung đột).
 - **NEXT**: FE.3 (Admin Rooms+QR: DataTable + QR dialog + rotate token) hoặc bật dần các route "Sắp có" theo dependency. Dark-mode + token nền đã sẵn cho mọi trang admin sau. (Cân nhắc: guest-web polish tương tự nếu user muốn đồng bộ thị giác.)
+
+
+### QR-N-075 — Slice FE.3a XONG: Admin Rooms (danh sách + xem QR, read-only Staff+) — design-first
+- **Design-first**: append mục **§FE.3** vào `design-modules/08-frontend.md` (API surface đọc TỪ CODE BE thật + component + responsive + verification + quyết định) → **getDiagnostics = 0** → mới code.
+- **Đã build + verify** (máy có Node/pnpm):
+  - `pnpm --filter @starhill/admin-web build` **EXIT=0** (vue-tsc --noEmit sạch). Cảnh báo chunk-size >500KB (DataTable) = advisory Vite, KHÔNG lỗi → NEXT lazy route-import cắt initial chunk (design §3.10).
+  - **Playwright TOÀN SUITE 23/23 PASS**: rooms.spec 5/5 (list 3 phòng + lọc "Bảo trì" refetch + dialog QR hiện ảnh + no-overflow phone-390/tablet-820/desktop-1280 + no-console-error) + ảnh `admin-rooms-desktop`/`admin-rooms-phone`; admin.spec 6/6 + guest 12/12 KHÔNG hồi quy.
+- **API Rooms đã verify (đọc code, KHÔNG bịa)** — dùng cho cả FE.3b sau:
+  - `GET /v1/rooms?status=&page=&pageSize=` (RequireStaff) → `PagedResult<RoomListItem>{items,page,pageSize,total}`.
+  - `GET /v1/rooms/{id}/qr.png` (RequireStaff) → `image/png` binary **cần Bearer** → fetch-blob→objectURL (KHÔNG `<img src>`).
+  - `RoomListItem{roomId,roomNumber,building?,floor?,status,activeTokenPreview?,activeTokenVersion,createdAt}`; `status` string enum Active/Inactive/Maintenance (QR-AD-021).
+  - Mutation (FE.3b): POST `/rooms` (201 {roomId,tokenPreview}), PUT `/{id}` (204), PATCH `/{id}/status` (204), DELETE `/{id}` (204), POST `/{id}/rotate-token` (200 {tokenPreview}) — tất cả RequireAdmin. Mã lỗi: validation_error/qr_generation_failed/not_found/resort_not_found/invalid_configuration (**FE.3b cần verify tiền tố `code` trong ProblemDetails trước khi map** — login dùng `identity.invalid_credentials` có tiền tố module, Rooms khai bare code → PHẢI đọc ProblemDetailsBuilder lúc làm FE.3b, không đoán).
+- **Thay đổi (chỉ admin-web)**: `views/RoomsView.vue` (DataTable lazy-paged + Select lọc + Tag + nút Xem QR), `components/RoomQrDialog.vue` (fetch-blob→objectURL + revoke + Tải PNG), `api/client.ts` (+listRooms/+getRoomQrObjectUrl + mock 42 phòng + MOCK_QR_DATA_URL SVG), `router` (+route rooms), `NavList` (bật link rooms), `i18n` (+rooms.*/common.close).
+- **QUYẾT ĐỊNH BẢN CHẤT — QR qua fetch-blob**: qr.png RequireStaff cần Bearer → KHÔNG hạ bảo mật endpoint để `<img src>` tiện; fetch blob + objectURL + revoke là cách đúng (QR-AD-050 + QR-TO-016/017).
+- **NEXT — FE.3b**: mutation Admin (form tạo/sửa phòng + đổi trạng thái + xoá có xác nhận + rotate-token có xác nhận + hiện tokenPreview mới) + map mã lỗi RoomsErrors (verify tiền tố code trước). Cân nhắc lazy route-import (cắt chunk) gộp vào FE.3b.

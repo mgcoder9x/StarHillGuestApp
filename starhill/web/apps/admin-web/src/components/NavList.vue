@@ -26,7 +26,7 @@ const groups: NavGroup[] = [
   {
     label: 'operations',
     items: [
-      { key: 'rooms', icon: 'pi-qrcode', to: null },
+      { key: 'rooms', icon: 'pi-qrcode', to: '/rooms' },
       { key: 'inbox', icon: 'pi-comments', to: null },
       { key: 'housekeeping', icon: 'pi-sparkles', to: null },
     ],
