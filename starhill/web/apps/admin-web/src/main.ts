@@ -6,7 +6,11 @@ import 'primeicons/primeicons.css';
 import App from './App.vue';
 import { router } from './router';
 import { i18n } from './i18n';
+import { initTheme } from './composables/useTheme';
 import './style.css';
+
+// Áp theme (light/dark) TRƯỚC khi mount → không nháy màu (FOUC). Đọc localStorage + prefers-color-scheme.
+initTheme();
 
 // Pinia TRƯỚC router (guard beforeEach dùng useAuthStore). PrimeVue 4.x MIT (pin <5) styled Aura.
 createApp(App)

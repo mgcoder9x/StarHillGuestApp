@@ -950,3 +950,21 @@
 - **Cách người dùng XEM/tương tác UI KHÔNG cần backend**: `pnpm --filter @starhill/admin-web dev:mock` (hoặc `pnpm dev:admin:mock`) → http://localhost:5174 → đăng nhập BẤT KỲ user/pass → dashboard demo. (Guest home http://localhost:5173 vốn tĩnh, chạy `pnpm dev:guest` là xem được.)
 - **Quyết định (dev-tooling, prod-safe — tham chiếu QR-AD-047)**: mock qua `--mode mock` (KHÔNG default-on dev để không che lỗi tích hợp backend thật khi có Docker). Số mock khớp assertion Playwright (5/3/7/42/11) nên admin.spec pass ở CẢ mock lẫn non-mock (page.route). Không phải QR-AD riêng (dev-tooling nhỏ, không đụng kiến trúc/prod).
 - **NEXT**: khi có máy Docker → verify login+dashboard end-to-end THẬT (mock off). FE.1b Guest Web nối API / trang admin Rooms+QR kế tiếp.
+
+
+### QR-N-074 — Slice FE.2b XONG: admin layout polish (dark-mode token-system + shell chỉn chu) — tham chiếu thị giác license-clean
+- **Bối cảnh**: user gửi `vue-demo.tailadmin.com` thấy layout đẹp, hỏi có nên dùng. **Đánh giá + verify license file THẬT** (không bịa): demo đó = bản **PRO trả phí**; repo Vue `main` KHÔNG có LICENSE (raw 404, name=tailadmin-vue-pro); chỉ repo HTML-free có MIT. Chốt với user: **CHỈ tham chiếu thị giác** (học bố cục/style) rồi **tự dựng bằng PrimeVue + token** — KHÔNG copy code/asset (license-clean kể cả Pro). User duyệt "đồng ý triển khai".
+- **Đã build + verify** (máy có Node/pnpm):
+  - `pnpm --filter @starhill/admin-web build` **EXIT=0** (vue-tsc --noEmit sạch + vite v6.4.3, 288 modules).
+  - **Playwright `admin.spec.ts` 6/6 PASS**: login flow → 5 KPI đúng giá trị; no-horizontal-overflow @ phone-390/tablet-820/desktop-1280; no-console-error; regenerate ảnh `admin-login-desktop`/`admin-dashboard-desktop`/`admin-dashboard-phone`. (Dừng mock-server cũ terminal-4 trước để Playwright khởi dev-server thường → real-fetch + page.route intercept đúng.)
+- **Thay đổi (chỉ admin-web, KHÔNG đụng guest-web)**:
+  - `style.css` → **token-system dark/light**: `--sh-surface-*`/`--sh-border*`/`--sh-text*`/`--sh-primary*`/`--sh-shadow*`/`--sh-radius*` + override dưới `.dark` (khớp PrimeVue `darkModeSelector:'.dark'`). Body dùng token.
+  - `composables/useTheme.ts` (mới): singleton toggle `.dark` trên `<html>` + nhớ `localStorage['sh-admin-theme']` + init stored→prefers-color-scheme→light + try/catch (private-mode-safe). `initTheme()` gọi trong `main.ts` trước mount (không FOUC).
+  - `components/BrandMark.vue` (mới): logo-mark SVG ngôi sao tự vẽ inline (KHÔNG asset ngoài).
+  - `AdminShell.vue`: brand+BrandMark, sidebar flex (section qua NavList), topbar STICKY + backdrop-blur + nút dark-toggle (pi-moon/pi-sun) + user-avatar-initials (ẩn tên <560px), Drawer header brand.
+  - `NavList.vue`: gom 3 nhóm (overview/operations/content) + section-label + badge "Sắp có" cho mục chưa route (trung thực — chỉ dashboard có route thật). Token hover/active.
+  - `DashboardView.vue`: welcome-header (`Xin chào, {name}`) + KPI card `<article>` icon-tint accent + hover-lift. BỎ PrimeVue `Card` (dùng card token thuần — kiểm soát dark/light hoàn toàn). GIỮ `data-testid=kpi-*` giá trị số thuần (test không đổi).
+  - `LoginView.vue`: card branded (BrandMark + subtitle) + nền gradient radial token. GIỮ `#username`/`#password`/nút "Đăng nhập".
+  - `i18n`: +`app.menu/theme/env`, +`nav.section.*`/`nav.soon`, +`login.subtitle`, +`dashboard.welcome`.
+- **License ranh giới (ghi để sau kiểm chứng)**: ý tưởng bố cục KHÔNG bị bản quyền; code/CSS-class-string/asset/Figma BỊ bản quyền. Ta chỉ ở vế "ý tưởng" → an toàn tuyệt đối. Nếu tương lai muốn copy code chỉ được đụng repo HTML-free (MIT, giữ dòng bản quyền) — nhưng KHÔNG khuyến nghị (trộn 2-hệ-style xung đột).
+- **NEXT**: FE.3 (Admin Rooms+QR: DataTable + QR dialog + rotate token) hoặc bật dần các route "Sắp có" theo dependency. Dark-mode + token nền đã sẵn cho mọi trang admin sau. (Cân nhắc: guest-web polish tương tự nếu user muốn đồng bộ thị giác.)
