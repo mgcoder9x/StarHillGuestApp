@@ -62,10 +62,30 @@ async function request<T>(path: string, init: RequestInit, token?: string | null
   return (await response.json()) as T;
 }
 
-export const api = {
-  login: (username: string, password: string): Promise<LoginResult> =>
-    request<LoginResult>('/v1/token/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
+// Chế độ MOCK DEV-only (bật khi VITE_STARHILL_MOCK=1 — chỉ qua `vite --mode mock`, KHÔNG có trong prod/normal-dev).
+// Mục đích: xem/tương tác UI KHÔNG cần backend (máy không Docker). Prod build + Playwright real-fetch KHÔNG đụng nhánh này.
+const MOCK = import.meta.env.VITE_STARHILL_MOCK === '1';
 
-  getDashboardStats: (token: string | null): Promise<DashboardStats> =>
-    request<DashboardStats>('/v1/dashboard/stats', { method: 'GET' }, token),
+const mockDelay = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 200));
+
+export const api = {
+  login: async (username: string, password: string): Promise<LoginResult> => {
+    if (MOCK) {
+      await mockDelay();
+      return {
+        accessToken: 'mock.dev.token',
+        refreshToken: 'mock.dev.refresh',
+        refreshTokenExpiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+      };
+    }
+    return request<LoginResult>('/v1/token/login', { method: 'POST', body: JSON.stringify({ username, password }) });
+  },
+
+  getDashboardStats: async (token: string | null): Promise<DashboardStats> => {
+    if (MOCK) {
+      await mockDelay();
+      return { unreadConversations: 5, openConversations: 3, openHousekeepingTickets: 7, activeRooms: 42, rulesAcksToday: 11 };
+    }
+    return request<DashboardStats>('/v1/dashboard/stats', { method: 'GET' }, token);
+  },
 };
