@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/* Design tokens FLUID (§3.2) — nguồn duy nhất, đồng bộ PrimeVue + Tailwind. Chia sẻ khái niệm với guest-web. */
+:root {
+  --sh-space-page: clamp(1rem, 0.6rem + 2vw, 1.75rem);
+  --sh-gap: clamp(0.75rem, 0.5rem + 1.2vw, 1.25rem);
+  --sh-font-body: clamp(0.9rem, 0.86rem + 0.3vw, 1.05rem);
+  --sh-font-title: clamp(1.25rem, 1.05rem + 1.6vw, 1.75rem);
+  --sh-sidebar-w: 16rem;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  font-size: var(--sh-font-body);
+  line-height: 1.5;
+  background: var(--p-content-background, #f8fafc);
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+  height: auto;
+}
+
+* {
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -7,7 +7,10 @@
   },
   "scripts": {
     "dev:guest": "pnpm --filter @starhill/guest-web dev",
+    "dev:admin": "pnpm --filter @starhill/admin-web dev",
     "build:guest": "pnpm --filter @starhill/guest-web build",
+    "build:admin": "pnpm --filter @starhill/admin-web build",
+    "build": "pnpm -r build",
     "e2e": "pnpm --filter @starhill/e2e test"
   }
 }

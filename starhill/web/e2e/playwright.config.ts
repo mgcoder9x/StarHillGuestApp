@@ -12,11 +12,21 @@ export default defineConfig({
     baseURL: 'http://localhost:5173',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  webServer: {
-    command: 'pnpm --filter @starhill/guest-web dev',
-    url: 'http://localhost:5173',
-    cwd: '..',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  // Hai SPA: guest-web (5173) + admin-web (5174). Test admin dùng URL tuyệt đối :5174.
+  webServer: [
+    {
+      command: 'pnpm --filter @starhill/guest-web dev',
+      url: 'http://localhost:5173',
+      cwd: '..',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+    {
+      command: 'pnpm --filter @starhill/admin-web dev',
+      url: 'http://localhost:5174',
+      cwd: '..',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+  ],
 });

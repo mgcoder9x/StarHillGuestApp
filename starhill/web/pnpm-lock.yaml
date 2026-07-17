@@ -8,6 +8,49 @@ importers:
 
   .: {}
 
+  apps/admin-web:
+    dependencies:
+      '@primevue/themes':
+        specifier: ^4.5.4
+        version: 4.5.4
+      pinia:
+        specifier: ^4.0.0
+        version: 4.0.2(@vue/devtools-api@6.6.4)(typescript@5.9.3)(vue@3.5.40(typescript@5.9.3))
+      primeicons:
+        specifier: ^7.0.0
+        version: 7.0.0
+      primevue:
+        specifier: ^4.5.5
+        version: 4.5.5(vue@3.5.40(typescript@5.9.3))
+      vue:
+        specifier: ^3.5.13
+        version: 3.5.40(typescript@5.9.3)
+      vue-i18n:
+        specifier: ^11.0.0
+        version: 11.4.6(vue@3.5.40(typescript@5.9.3))
+      vue-router:
+        specifier: ^4.5.0
+        version: 4.6.4(vue@3.5.40(typescript@5.9.3))
+    devDependencies:
+      '@tailwindcss/vite':
+        specifier: ^4.0.0
+        version: 4.3.3(vite@6.4.3(jiti@2.7.0)(lightningcss@1.32.0))
+      '@vitejs/plugin-vue':
+        specifier: ^5.2.1
+        version: 5.2.4(vite@6.4.3(jiti@2.7.0)(lightningcss@1.32.0))(vue@3.5.40(typescript@5.9.3))
+      tailwindcss:
+        specifier: ^4.0.0
+        version: 4.3.3
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vite:
+        specifier: ^6.0.7
+        version: 6.4.3(jiti@2.7.0)(lightningcss@1.32.0)
+      vue-tsc:
+        specifier: ^2.2.0
+        version: 2.2.12(typescript@5.9.3)
+
   apps/guest-web:
     dependencies:
       '@primevue/themes':
@@ -741,6 +784,9 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
+  nostics@1.1.4:
+    resolution: {integrity: sha512-U4FApICSLCQ0dYiN59pxUCEZC053palQXi57yLaNdMaL6TBY4C4q3qZrJKUGcor2dGv8EhEwt8y5KvU2bo2kFg==}
+
   path-browserify@1.0.1:
     resolution: {integrity: sha512-b7uo2UCUOYZcnF/3ID0lulOJi/bafxa1xPe7ZPsammBSpjSWQkjNxlt635YGS2MiR9GjvuXCtz2emr3jbsz98g==}
 
@@ -750,6 +796,16 @@ packages:
   picomatch@4.0.5:
     resolution: {integrity: sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==}
     engines: {node: '>=12'}
+
+  pinia@4.0.2:
+    resolution: {integrity: sha512-yKVVA7bSj5oRZFp/Ab9wLlmyb5gPUYEiIm4ryiWTe/xe7PtkRdMVOp1X1ggvq0c6Uj7Q0Du1HnV2mtAwM0Ks1g==}
+    peerDependencies:
+      '@vue/devtools-api': ^8.1.5
+      typescript: '>=5.6.0'
+      vue: ^3.5.11
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   playwright-core@1.61.1:
     resolution: {integrity: sha512-h7Qlt6m4REp25qvIdvbDtVmD4LqVXfpRxhORv9L0jzETM05p4fuPJ3dKyuSXQxDSbXnmS79HAgi9589lGSpLkg==}
@@ -1396,11 +1452,21 @@ snapshots:
 
   nanoid@3.3.16: {}
 
+  nostics@1.1.4: {}
+
   path-browserify@1.0.1: {}
 
   picocolors@1.1.1: {}
 
   picomatch@4.0.5: {}
+
+  pinia@4.0.2(@vue/devtools-api@6.6.4)(typescript@5.9.3)(vue@3.5.40(typescript@5.9.3)):
+    dependencies:
+      '@vue/devtools-api': 6.6.4
+      nostics: 1.1.4
+      vue: 3.5.40(typescript@5.9.3)
+    optionalDependencies:
+      typescript: 5.9.3
 
   playwright-core@1.61.1: {}
 
