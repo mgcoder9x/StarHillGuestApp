@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Adapters.Messaging.RabbitMq;
 using Bedrock.Api;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Bedrock.Api.OpenApi;
 using Bedrock.Application.DependencyInjection;
 using Bedrock.Application.Messaging;
@@ -72,6 +73,30 @@ services.AddStarHillAuthorization();
 // minimal API (mọi module) để nhất quán. Base KHÔNG áp (giữ domain-agnostic) → là quyết định style của sản phẩm.
 services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
+// K-Con.4 (SignalR realtime): trình duyệt KHÔNG set được header Authorization trên WebSocket → nhân viên gửi JWT qua
+// query `access_token`. POST-CONFIGURE JwtBearerOptions (base) để đọc token từ query CHỈ cho path hub `/hubs/chat`
+// (KHÔNG ảnh hưởng API thường — vẫn header). Compose LÊN sự kiện base (giữ nguyên OnChallenge/OnForbidden ProblemDetails),
+// KHÔNG sửa Bedrock.Api (QR-N-002). Khách join hub bằng cookie `__Host-` (WebSocket cùng-origin tự gửi) → không dùng nhánh này.
+services.Configure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+{
+    options.Events ??= new JwtBearerEvents();
+    var priorOnMessageReceived = options.Events.OnMessageReceived;
+    options.Events.OnMessageReceived = async context =>
+    {
+        var accessToken = context.Request.Query["access_token"].ToString();
+        if (!string.IsNullOrEmpty(accessToken)
+            && context.HttpContext.Request.Path.StartsWithSegments("/hubs/chat", StringComparison.Ordinal))
+        {
+            context.Token = accessToken;
+        }
+
+        if (priorOnMessageReceived is not null)
+        {
+            await priorOnMessageReceived(context).ConfigureAwait(false);
+        }
+    };
+});
 
 // Posture DEFAULT AN TOÀN cho MỌI extension port (design §5.5/§6.1/§13 — "AddXxxCore luôn gọi"): mỗi port có
 // default degrade (NullAppCache) hoặc fail-loud (Throwing*). BẮT BUỘC vì pipeline behaviors (§8) phụ thuộc port
