@@ -49,6 +49,7 @@ public sealed class RulesAdminEndpointAuthTests
                 services.AddScoped<IUseCase<PublishRulesInput, PublishRulesResult>, FakePublishRules>();
                 services.AddScoped<IUseCase<GetDraftPreviewInput, GetDraftPreviewResult>, FakeGetDraftPreview>();
                 services.AddScoped<IUseCase<GetPublicationHistoryInput, GetPublicationHistoryResult>, FakeGetPublicationHistory>();
+                services.AddScoped<IUseCase<GetRuleAdminDraftInput, GetRuleAdminDraftResult>, FakeGetRuleAdminDraft>();
             });
             webHost.Configure(app =>
             {
@@ -85,17 +86,19 @@ public sealed class RulesAdminEndpointAuthTests
         Assert.Equal(HttpStatusCode.Created,
             (await client.PostAsync(Rel("/v1/rules/sections"), JsonContent.Create(new { key = "welcome", sortOrder = 1, isRequired = true, requireScrollEnd = false, minReadSeconds = 0 }))).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent,
-            (await client.PutAsync(Rel($"/v1/rules/sections/{SectionId}"), JsonContent.Create(new { sortOrder = 2, isRequired = true, requireScrollEnd = true, minReadSeconds = 5 }))).StatusCode);
+            (await client.PutAsync(Rel($"/v1/rules/sections/{SectionId}"), JsonContent.Create(new { sortOrder = 2, isRequired = true, requireScrollEnd = true, minReadSeconds = 5, expectedRowVersion = 0 }))).StatusCode);
         Assert.Equal(HttpStatusCode.OK,
-            (await client.PutAsync(Rel($"/v1/rules/sections/{SectionId}/translations/en"), JsonContent.Create(new { title = "Welcome", bodyHtml = "<p>hi</p>" }))).StatusCode);
+            (await client.PutAsync(Rel($"/v1/rules/sections/{SectionId}/translations/en"), JsonContent.Create(new { title = "Welcome", bodyHtml = "<p>hi</p>", expectedRowVersion = (uint?)null }))).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent,
-            (await client.DeleteAsync(Rel($"/v1/rules/sections/{SectionId}"))).StatusCode);
+            (await client.DeleteAsync(Rel($"/v1/rules/sections/{SectionId}?expectedRowVersion=0"))).StatusCode);
         Assert.Equal(HttpStatusCode.OK,
             (await client.PostAsync(Rel("/v1/rules/publish"), JsonContent.Create(new { changeNote = "first" }))).StatusCode);
         Assert.Equal(HttpStatusCode.OK,
             (await client.GetAsync(Rel("/v1/rules/preview?lang=en"))).StatusCode);
         Assert.Equal(HttpStatusCode.OK,
             (await client.GetAsync(Rel("/v1/rules/publications"))).StatusCode);
+        Assert.Equal(HttpStatusCode.OK,
+            (await client.GetAsync(Rel("/v1/rules/admin"))).StatusCode);
     }
 
     [Fact]
@@ -112,5 +115,7 @@ public sealed class RulesAdminEndpointAuthTests
             (await client.GetAsync(Rel("/v1/rules/preview?lang=en"))).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized,
             (await client.GetAsync(Rel("/v1/rules/publications"))).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await client.GetAsync(Rel("/v1/rules/admin"))).StatusCode);
     }
 }

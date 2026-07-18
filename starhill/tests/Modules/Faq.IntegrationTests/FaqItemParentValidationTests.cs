@@ -142,7 +142,7 @@ public sealed class FaqItemParentValidationTests
         await using var scope = provider.CreateAsyncScope();
         var uc = scope.ServiceProvider.GetRequiredService<ICommandUseCase<UpdateFaqItemInput>>();
         var result = await uc.ExecuteAsync(
-            new UpdateFaqItemInput(item.Value.ItemId, ParentId: item.Value.ItemId, SortOrder: 1, IsActive: true));
+            new UpdateFaqItemInput(item.Value.ItemId, ParentId: item.Value.ItemId, SortOrder: 1, IsActive: true, ExpectedRowVersion: 0));
 
         Assert.False(result.IsSuccess);
         Assert.Equal("faq_invalid_parent", result.Error.Code);
@@ -167,7 +167,7 @@ public sealed class FaqItemParentValidationTests
         await using var scope = provider.CreateAsyncScope();
         var uc = scope.ServiceProvider.GetRequiredService<ICommandUseCase<UpdateFaqItemInput>>();
         var result = await uc.ExecuteAsync(
-            new UpdateFaqItemInput(a.Value.ItemId, ParentId: b.Value.ItemId, SortOrder: 1, IsActive: true));
+            new UpdateFaqItemInput(a.Value.ItemId, ParentId: b.Value.ItemId, SortOrder: 1, IsActive: true, ExpectedRowVersion: 0));
 
         Assert.False(result.IsSuccess);
         Assert.Equal("faq_invalid_parent", result.Error.Code);

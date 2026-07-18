@@ -6,7 +6,7 @@
 
 Một **base/platform backend domain-agnostic, modular-monolith-ready** (.NET 10, C#): *lõi biết "cần gì" (port), adapter biết "làm bằng gì" (tech), module biết "nghiệp vụ gì", Host biết "bật cái nào" → thêm công nghệ/nghiệp vụ = thêm adapter/module, KHÔNG sửa lõi.*
 
-Cấu trúc 4 tầng: **Bedrock** (lõi) → **Adapters** (công nghệ) → **Modules** (nghiệp vụ) → **Host** (composition root). Code **sẽ** nằm ở thư mục `platform/` (solution `Platform.slnx`) — hiện chưa dựng (xem §4).
+Cấu trúc 4 tầng: **Bedrock** (lõi) → **Adapters** (công nghệ) → **Modules** (nghiệp vụ) → **Host** (composition root). Code hiện hành nằm ở thư mục `platform/` (solution `Platform.slnx`) — xem §4.
 
 > ✅ **Quyết định đã chốt:** (a) prefix lõi = **`Bedrock.*`** (một từ); (b) `Result` = **`sealed class`** + factory `Success()/Failure()` (design §4.4); (c) dead-letter = cột `dead_lettered_at` (không bảng DLQ riêng). Thư mục giải pháp giữ `platform/`.
 
@@ -35,13 +35,14 @@ Cấu trúc 4 tầng: **Bedrock** (lõi) → **Adapters** (công nghệ) → **M
 
 Thứ tự & song song hóa chi tiết: xem **Task Dependency Graph** + khối `json` waves trong `tasks.md`.
 
-## 4. Đang ở đâu (trạng thái hiện tại)
+## 4. Đang ở đâu (trạng thái hiện tại — 2026-07-18)
 
-- ⛔ **Greenfield — CHƯA có code trên đĩa.** Thư mục `platform/` **không tồn tại** (bản dựng thử trước đó đã bị hoàn tác bởi checkpoint restore — đã kiểm chứng).
-- ⛔ Chưa có: khung solution (`Platform.slnx`, config), `Bedrock.Domain/Application/Infrastructure/Api`, `Adapters.*`, `Modules.*`, `Host`, `tests/*`.
-- ℹ️ Chỉ tồn tại: bộ tài liệu spec này + các file nguồn `foundation/*.md`.
-
-→ **Điểm bắt đầu:** task 1 (khung solution `platform/`) → task 2 (Domain + test) → task 3 (Application) → task 4 (architecture tests). Các quyết định nền đã chốt (§1).
+- ✅ `platform/Platform.slnx` + đầy đủ `Bedrock.Domain/Application/Infrastructure/Api`, messaging contracts, RabbitMQ adapter, module Identity mẫu, Host và hệ test đã tồn tại.
+- ✅ Base đã qua nhiều vòng hardening: dependency guards, keyed persistence, domain-event atomicity/restore, outbox/inbox + retry/DLQ, security defaults, ProblemDetails, migrations, Testcontainers, journal consistency và CI.
+- ✅ `starhill/` dùng trực tiếp base duy nhất qua `$(PlatformSrc)`; không copy Bedrock sang product tree.
+- ⚠️ Audit 2026-07-18 phát hiện launcher local có thể **xanh giả khi thiếu `dotnet`**. AD-104 đã đổi gate sang fail-closed, chặn `--no-build` khi build fail, bỏ phụ thuộc PyYAML bắt buộc và đưa validator vào CI.
+- ✅ SDK portable .NET 10.0.301 đã restore/build/test local: `platform/tools/verify.ps1 all` + `journal` PASS, 0 warning/0 failure; test Docker-backed skip mềm vì daemon không khả dụng. GitHub CI vẫn là gate bắt buộc có Docker.
+- ℹ️ `foundation/` là lịch sử/rationale đã hấp thụ; không phải base thứ hai và không được sửa để phát triển tính năng mới. Báo cáo hiện trạng: `current-audit-2026-07-18.md`.
 
 ## 5. Kiểm tra / nghiệm thu như thế nào (3 lớp)
 
@@ -49,11 +50,14 @@ Thứ tự & song song hóa chi tiết: xem **Task Dependency Graph** + khối `
 2. **Đúng đắn kỹ thuật** → **Correctness Properties CP1–CP15** trong `design.md` (mỗi CP có `Validates: Requirements` + test tương ứng: architecture test hoặc integration test). Ví dụ: CP1 no-business-in-core, CP2 Api⊥Infrastructure, CP6 Outbox atomicity, CP7 rotation atomicity, CP8 Inbox idempotency, CP14 domain-event atomic, CP15 outbox exclusive claim.
 3. **Tiến độ & hoàn thành** → checklist `tasks.md` (mỗi task có dòng "Nghiệm thu") + **Definition of Done** (task 21, design §16).
 
-**Cổng chất lượng bất biến (mọi lát):** `dotnet test Platform.slnx` phải **build 0 warning + tất cả test xanh** (R31/I10). Cần Docker cho các test Postgres/adapter (Testcontainers) ở task 7.4/8.3/14 — không có Docker thì skip có điều kiện, KHÔNG xóa test.
+**Cổng chất lượng bất biến (mọi lát):** chạy `platform\scripts\vp.cmd all`. Launcher phải build trước, validate CI, rồi chỉ chạy test `--no-build` khi build thành công; thiếu toolchain/build lỗi phải FAIL, không được dùng artifact cũ. CI có Docker để Testcontainers Postgres/RabbitMQ chạy thật.
 
 ## 6. Lệnh nhanh
 
 ```powershell
-# Build + test toàn solution (chạy tại thư mục platform/)
-dotnet test Platform.slnx
+# Từ repo root: build + validate-ci + test, fail-closed
+platform\scripts\vp.cmd all
+
+# Chỉ validate workflow/anti-artifact, không cần .NET SDK
+python platform\tests\validate_ci.py
 ```

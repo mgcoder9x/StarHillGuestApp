@@ -19,10 +19,10 @@ public sealed record CreateRuleSectionRequest(string Key, int SortOrder, bool Is
 
 public sealed record CreateRuleSectionResponse(Guid SectionId);
 
-public sealed record UpdateRuleSectionRequest(int SortOrder, bool IsRequired, bool RequireScrollEnd, int MinReadSeconds);
+public sealed record UpdateRuleSectionRequest(int SortOrder, bool IsRequired, bool RequireScrollEnd, int MinReadSeconds, uint ExpectedRowVersion);
 
 /// <summary>Body upsert bản dịch — <c>Title</c>/<c>BodyHtml</c> THÔ; use case sanitize trước khi lưu (CP12).</summary>
-public sealed record UpsertRuleSectionTranslationRequest(string? Title, string? BodyHtml);
+public sealed record UpsertRuleSectionTranslationRequest(string? Title, string? BodyHtml, uint? ExpectedRowVersion);
 
 public sealed record UpsertRuleSectionTranslationResponse(Guid TranslationId);
 
@@ -35,7 +35,7 @@ public sealed record PublishRulesResponse(Guid PublicationId, int Version);
 /// snapshot. Tất cả <see cref="StarHillPolicies.RequireStaff"/> (Req 8/11.3 — nội quy thuộc quyền Staff; Admin superset).
 /// ResortId phân giải SERVER-SIDE qua <see cref="IResortSettingsQuery"/> (single-resort — client KHÔNG gửi ResortId);
 /// actor Publish = <see cref="ICurrentUser.UserId"/>. Map <c>Result</c>→HTTP qua <see cref="ProblemDetailsBuilder"/>
-/// (nguồn shape lỗi DUY NHẤT — N-041). Preview/history endpoint → khi có use case D-Rules.3b.
+/// (nguồn shape lỗi DUY NHẤT — N-041). Preview/history dùng read use case D-Rules.3b (Req 8.4).
 /// </summary>
 public sealed class RulesAdminEndpointModule : IEndpointModule
 {
@@ -81,6 +81,11 @@ public sealed class RulesAdminEndpointModule : IEndpointModule
             .RequireAuthorization(StarHillPolicies.RequireStaff)
             .MapToApiVersion(BedrockApiVersioning.V1)
             .WithName("RulesPublications");
+
+        group.MapGet("/admin", AdminDraftAsync)
+            .RequireAuthorization(StarHillPolicies.RequireStaff)
+            .MapToApiVersion(BedrockApiVersioning.V1)
+            .WithName("RulesAdminDraft");
     }
 
     private static async Task<IResult> CreateSectionAsync(
@@ -119,7 +124,8 @@ public sealed class RulesAdminEndpointModule : IEndpointModule
 
         var result = await useCase
             .ExecuteAsync(new UpdateRuleSectionInput(
-                sectionId, request.SortOrder, request.IsRequired, request.RequireScrollEnd, request.MinReadSeconds), ct)
+                sectionId, request.SortOrder, request.IsRequired, request.RequireScrollEnd, request.MinReadSeconds,
+                request.ExpectedRowVersion), ct)
             .ConfigureAwait(false);
 
         return result.IsSuccess ? Results.NoContent() : Problem(result.Error, http);
@@ -127,11 +133,12 @@ public sealed class RulesAdminEndpointModule : IEndpointModule
 
     private static async Task<IResult> DeleteSectionAsync(
         Guid sectionId,
+        uint expectedRowVersion,
         ICommandUseCase<DeleteRuleSectionInput> useCase,
         HttpContext http,
         CancellationToken ct)
     {
-        var result = await useCase.ExecuteAsync(new DeleteRuleSectionInput(sectionId), ct).ConfigureAwait(false);
+        var result = await useCase.ExecuteAsync(new DeleteRuleSectionInput(sectionId, expectedRowVersion), ct).ConfigureAwait(false);
         return result.IsSuccess ? Results.NoContent() : Problem(result.Error, http);
     }
 
@@ -146,7 +153,7 @@ public sealed class RulesAdminEndpointModule : IEndpointModule
         ArgumentNullException.ThrowIfNull(request);
 
         var result = await useCase
-            .ExecuteAsync(new UpsertRuleSectionTranslationInput(sectionId, lang, request.Title, request.BodyHtml), ct)
+            .ExecuteAsync(new UpsertRuleSectionTranslationInput(sectionId, lang, request.Title, request.BodyHtml, request.ExpectedRowVersion), ct)
             .ConfigureAwait(false);
 
         return result.IsSuccess
@@ -209,6 +216,22 @@ public sealed class RulesAdminEndpointModule : IEndpointModule
         }
 
         var result = await useCase.ExecuteAsync(new GetPublicationHistoryInput(resortId.Value), ct).ConfigureAwait(false);
+        return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error, http);
+    }
+
+    private static async Task<IResult> AdminDraftAsync(
+        IUseCase<GetRuleAdminDraftInput, GetRuleAdminDraftResult> useCase,
+        IResortSettingsQuery settingsQuery,
+        HttpContext http,
+        CancellationToken ct)
+    {
+        var resortId = await ResolveResortIdAsync(settingsQuery, http, ct).ConfigureAwait(false);
+        if (resortId is null)
+        {
+            return Problem(RulesErrors.ConfigurationUnavailable, http);
+        }
+
+        var result = await useCase.ExecuteAsync(new GetRuleAdminDraftInput(resortId.Value), ct).ConfigureAwait(false);
         return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error, http);
     }
 

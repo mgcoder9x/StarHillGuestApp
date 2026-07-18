@@ -25,6 +25,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate CI invariants
+        run: python tests/validate_ci.py
+        working-directory: platform
+
       - name: Setup .NET (pin theo global.json)
         uses: actions/setup-dotnet@v4
         with:

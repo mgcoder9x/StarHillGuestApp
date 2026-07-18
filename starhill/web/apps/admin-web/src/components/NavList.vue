@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 
-// Điều hướng IA admin (Req 9). FE.2a: chỉ 'dashboard' có route thật; các mục khác hiển thị (planned IA) nhưng CHƯA
-// route (render mờ, không click) — trung thực, không tạo route giả. Slice sau bật dần.
+// Điều hướng IA admin (Req 9). Chỉ bật link khi route đã có vertical slice thật; mục còn deferred hiển thị mờ để
+// không tạo màn hình giả hoặc che thiếu backend contract.
 // FE.2b polish: gom nhóm có nhãn section (bố cục học từ dashboard admin phổ biến, tự dựng bằng token).
 defineEmits<{ navigate: [] }>();
 
@@ -34,8 +34,8 @@ const groups: NavGroup[] = [
   {
     label: 'content',
     items: [
-      { key: 'rules', icon: 'pi-book', to: null },
-      { key: 'faq', icon: 'pi-question-circle', to: null },
+      { key: 'rules', icon: 'pi-book', to: '/rules' },
+      { key: 'faq', icon: 'pi-question-circle', to: '/faq' },
       { key: 'settings', icon: 'pi-cog', to: null },
     ],
   },

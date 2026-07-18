@@ -4,7 +4,7 @@ packages:
   - "e2e"
 
 allowBuilds:
-  esbuild: set this to true or false
+  esbuild: true
 
 # pnpm v11: settings sống ở đây (field "pnpm" trong package.json không còn đọc).
 # Cho phép postinstall của native binary cần build (esbuild cho Vite; oxide cho Tailwind v4).

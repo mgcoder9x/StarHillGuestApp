@@ -100,6 +100,8 @@ public sealed class UpdateFaqItemUseCase : ICommandUseCase<UpdateFaqItemInput>
             return Result.Failure(FaqErrors.ItemNotFound);
         }
 
+        ConcurrencyGuard.EnsureExpectedRowVersion(item.RowVersion, input.ExpectedRowVersion);
+
         var parentOk = await FaqItemParentValidator
             .IsValidParentAsync(_items, item.CategoryId, input.ParentId, selfId: item.Id, ct)
             .ConfigureAwait(false);
@@ -154,6 +156,8 @@ public sealed class DeleteFaqItemUseCase : ICommandUseCase<DeleteFaqItemInput>
         {
             return Result.Failure(FaqErrors.ItemNotFound);
         }
+
+        ConcurrencyGuard.EnsureExpectedRowVersion(item.RowVersion, input.ExpectedRowVersion);
 
         var hasChildren = await _items.AnyAsync(i => i.ParentId == input.ItemId, ct).ConfigureAwait(false);
         if (hasChildren)
@@ -212,11 +216,14 @@ public sealed class UpsertFaqItemTranslationUseCase
 
         if (existing is not null)
         {
+            ConcurrencyGuard.EnsureExpectedRowVersion(existing.RowVersion, input.ExpectedRowVersion);
             existing.Question = question;
             existing.AnswerHtmlSanitized = answer;
             await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
             return Result.Success(new UpsertFaqItemTranslationResult(existing.Id));
         }
+
+        ConcurrencyGuard.EnsureExpectedRowVersion(null, input.ExpectedRowVersion);
 
         var translation = new FaqItemTranslation
         {

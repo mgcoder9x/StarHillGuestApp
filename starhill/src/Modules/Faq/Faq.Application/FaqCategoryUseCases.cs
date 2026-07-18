@@ -89,6 +89,8 @@ public sealed class UpdateFaqCategoryUseCase : ICommandUseCase<UpdateFaqCategory
             return Result.Failure(FaqErrors.CategoryNotFound);
         }
 
+        ConcurrencyGuard.EnsureExpectedRowVersion(category.RowVersion, input.ExpectedRowVersion);
+
         category.SortOrder = input.SortOrder;
         category.IsActive = input.IsActive;
 
@@ -137,6 +139,8 @@ public sealed class DeleteFaqCategoryUseCase : ICommandUseCase<DeleteFaqCategory
         {
             return Result.Failure(FaqErrors.CategoryNotFound);
         }
+
+        ConcurrencyGuard.EnsureExpectedRowVersion(category.RowVersion, input.ExpectedRowVersion);
 
         var hasItems = await _items.AnyAsync(i => i.CategoryId == input.CategoryId, ct).ConfigureAwait(false);
         if (hasItems)
@@ -194,10 +198,13 @@ public sealed class UpsertFaqCategoryTranslationUseCase
 
         if (existing is not null)
         {
+            ConcurrencyGuard.EnsureExpectedRowVersion(existing.RowVersion, input.ExpectedRowVersion);
             existing.Name = name;
             await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
             return Result.Success(new UpsertFaqCategoryTranslationResult(existing.Id));
         }
+
+        ConcurrencyGuard.EnsureExpectedRowVersion(null, input.ExpectedRowVersion);
 
         var translation = new FaqCategoryTranslation
         {

@@ -101,7 +101,7 @@ public sealed class FaqSanitizeTests
             var uc = scope.ServiceProvider
                 .GetRequiredService<IUseCase<UpsertFaqItemTranslationInput, UpsertFaqItemTranslationResult>>();
             var result = await uc.ExecuteAsync(
-                new UpsertFaqItemTranslationInput(itemId, "vi", maliciousQuestion, maliciousAnswer));
+                new UpsertFaqItemTranslationInput(itemId, "vi", maliciousQuestion, maliciousAnswer, ExpectedRowVersion: null));
             Assert.True(result.IsSuccess);
             translationId = result.Value.TranslationId;
         }
@@ -141,7 +141,7 @@ public sealed class FaqSanitizeTests
             var uc = scope.ServiceProvider
                 .GetRequiredService<IUseCase<UpsertFaqCategoryTranslationInput, UpsertFaqCategoryTranslationResult>>();
             var result = await uc.ExecuteAsync(
-                new UpsertFaqCategoryTranslationInput(categoryId, "vi", "Nhận phòng<script>x()</script>"));
+                new UpsertFaqCategoryTranslationInput(categoryId, "vi", "Nhận phòng<script>x()</script>", ExpectedRowVersion: null));
             Assert.True(result.IsSuccess);
             translationId = result.Value.TranslationId;
         }
@@ -167,26 +167,32 @@ public sealed class FaqSanitizeTests
         var categoryId = await CreateCategoryAsync(provider, resortId);
         var itemId = await CreateItemAsync(provider, categoryId);
 
-        async Task<Guid> Upsert(string? question, string? answer)
+        async Task<(Guid Id, uint RowVersion)> Upsert(string? question, string? answer, uint? expectedRowVersion)
         {
             await using var scope = provider.CreateAsyncScope();
             var uc = scope.ServiceProvider
                 .GetRequiredService<IUseCase<UpsertFaqItemTranslationInput, UpsertFaqItemTranslationResult>>();
-            var result = await uc.ExecuteAsync(new UpsertFaqItemTranslationInput(itemId, "en", question, answer));
+            var result = await uc.ExecuteAsync(new UpsertFaqItemTranslationInput(
+                itemId, "en", question, answer, expectedRowVersion));
             Assert.True(result.IsSuccess);
-            return result.Value.TranslationId;
+            var db = scope.ServiceProvider.GetRequiredService<FaqDbContext>();
+            var rowVersion = await db.FaqItemTranslations
+                .Where(translation => translation.Id == result.Value.TranslationId)
+                .Select(translation => translation.RowVersion)
+                .SingleAsync();
+            return (result.Value.TranslationId, rowVersion);
         }
 
-        var first = await Upsert("   ", null);
-        var second = await Upsert("What time?", "<p>2 PM</p>");
+        var first = await Upsert("   ", null, expectedRowVersion: null);
+        var second = await Upsert("What time?", "<p>2 PM</p>", first.RowVersion);
 
-        Assert.Equal(first, second); // upsert cùng (item, lang) → cập nhật, không tạo trùng.
+        Assert.Equal(first.Id, second.Id); // upsert cùng (item, lang) → cập nhật, không tạo trùng.
 
         await using var readScope = provider.CreateAsyncScope();
         var db = readScope.ServiceProvider.GetRequiredService<FaqDbContext>();
         var count = await db.FaqItemTranslations.CountAsync(t => t.FaqItemId == itemId && t.LanguageCode == "en");
         Assert.Equal(1, count);
-        var stored = await db.FaqItemTranslations.SingleAsync(t => t.Id == second);
+        var stored = await db.FaqItemTranslations.SingleAsync(t => t.Id == second.Id);
         Assert.Contains("2 PM", stored.AnswerHtmlSanitized!, StringComparison.Ordinal);
     }
 }

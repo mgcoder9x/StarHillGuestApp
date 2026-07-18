@@ -19,7 +19,8 @@ param(
     [string]$Scope = 'all'
 )
 
-$ErrorActionPreference = 'Continue'
+$ErrorActionPreference = 'Stop'
+$OutputEncoding = [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 # $PSScriptRoot = platform\tools → Platform = platform\ ; RepoRoot = gốc checkout (chứa .github/, resort-qr/...).
 $Platform = Split-Path -Parent $PSScriptRoot
 $RepoRoot = Split-Path -Parent $Platform
@@ -36,22 +37,79 @@ function Invoke-Step {
     Write-Host ''
     Write-Host "==== [vp] $Name ====" -ForegroundColor Cyan
     $global:LASTEXITCODE = 0
-    & $Body
-    $code = $LASTEXITCODE
+    try {
+        & $Body
+        $code = if ($null -eq $LASTEXITCODE) { 0 } else { [int]$LASTEXITCODE }
+    }
+    catch {
+        $code = if ($_.Exception -is [System.Management.Automation.CommandNotFoundException]) { 127 } else { 1 }
+        Write-Host ("[vp] {0}: {1}" -f $Name, $_.Exception.Message) -ForegroundColor Red
+    }
     $ok = ($code -eq 0)
     $results.Add([pscustomobject]@{ Step = $Name; Ok = $ok; Code = $code })
     if ($ok) { Write-Host "[vp] $Name -> OK" -ForegroundColor Green }
     else { Write-Host "[vp] $Name -> FAILED (exit $code)" -ForegroundColor Red }
 }
 
-function Step-Build { dotnet build $Solution -clp:ErrorsOnly }
-function Step-Ci { python $ValidateCi }
-function Step-TestFull { dotnet test $Solution --nologo }
-function Step-TestNoBuild { dotnet test $Solution --no-build --nologo }
+function Add-BlockedStep {
+    param([string]$Name, [string]$Reason)
+    Write-Host ''
+    Write-Host "==== [vp] $Name ====" -ForegroundColor Cyan
+    Write-Host "[vp] $Name -> BLOCKED ($Reason)" -ForegroundColor Red
+    $results.Add([pscustomobject]@{ Step = $Name; Ok = $false; Code = 125 })
+}
+
+function Resolve-NativeCommand {
+    param([Parameter(Mandatory = $true)][string]$Name)
+
+    $command = Get-Command $Name -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($null -eq $command) {
+        throw [System.Management.Automation.CommandNotFoundException]::new(
+            "Native command '$Name' was not found in PATH; verification stops fail-closed.")
+    }
+
+    return $command.Source
+}
+
+function Step-Build {
+    $dotnet = Resolve-NativeCommand 'dotnet'
+    & $dotnet build $Solution -clp:ErrorsOnly
+}
+function Step-Ci {
+    $python = Get-Command python -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($null -ne $python) {
+        & $python.Source --version *> $null
+        if ($LASTEXITCODE -eq 0) {
+            & $python.Source $ValidateCi
+            return
+        }
+    }
+
+    $py = Get-Command py -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($null -ne $py) {
+        & $py.Source -3 --version *> $null
+        if ($LASTEXITCODE -eq 0) {
+            & $py.Source -3 $ValidateCi
+            return
+        }
+    }
+
+    throw [System.Management.Automation.CommandNotFoundException]::new(
+        "Python 3 was not found via 'python' or 'py -3'.")
+}
+function Step-TestFull {
+    $dotnet = Resolve-NativeCommand 'dotnet'
+    & $dotnet test $Solution --nologo
+}
+function Step-TestNoBuild {
+    $dotnet = Resolve-NativeCommand 'dotnet'
+    & $dotnet test $Solution --no-build --nologo
+}
 function Step-Journal {
     # D1-a: journal BASE (platform-base) do platform/ tự gác (Bedrock.ArchitectureTests ở platform/). starhill chỉ
     # gác journal QR (starhill-qr) — StarHill.ArchitectureTests.StarHillJournalConsistencyTests.
-    dotnet test $QrArchProj --nologo --filter 'FullyQualifiedName~JournalConsistencyTests'
+    $dotnet = Resolve-NativeCommand 'dotnet'
+    & $dotnet test $QrArchProj --nologo --filter 'FullyQualifiedName~JournalConsistencyTests'
 }
 
 switch ($Scope) {
@@ -61,8 +119,14 @@ switch ($Scope) {
     'journal' { Invoke-Step 'journal-consistency' ${function:Step-Journal} }
     'all' {
         Invoke-Step 'build (0-warning)' ${function:Step-Build}
+        $buildOk = $results[$results.Count - 1].Ok
         Invoke-Step 'validate-ci' ${function:Step-Ci}
-        Invoke-Step 'test (full suite, --no-build)' ${function:Step-TestNoBuild}
+        if ($buildOk) {
+            Invoke-Step 'test (full suite, --no-build)' ${function:Step-TestNoBuild}
+        }
+        else {
+            Add-BlockedStep 'test (full suite, --no-build)' 'build failed'
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 # Module design — Frontend (Wave FE): 2 SPA Vue 3 + responsive cực đỉnh mọi thiết bị
 
-> **Design-first, CHƯA triển khai code.** WHAT: `docs/resort-qr-portal/requirements.md` Req 2 (đa ngôn ngữ + auto-detect),
+> **Living design — FE.0 đến FE.4b đã triển khai.** WHAT: `docs/resort-qr-portal/requirements.md` Req 2 (đa ngôn ngữ + auto-detect),
 > Req 3 (force-read nội quy), Req 4/5/6/7/8/9 (FAQ cây / chat realtime / housekeeping / phòng+QR / nội quy Draft-Publish /
 > dashboard vận hành), Req 11 (role Staff/Admin), Req 12 (deploy same-origin nội bộ) + `tasks.md` task 12-18 (Guest Web +
 > Admin Dashboard). Stack đã CHỐT với user: **PrimeVue (MIT) + layout tự dựng** (không template dựng sẵn). Mọi kết luận
@@ -10,9 +10,9 @@
 
 - **PrimeVue = MIT** (verify raw `github.com/primefaces/primevue/master/LICENSE.md`: "The MIT License (MIT) Copyright (c) 2018-2025 PrimeTek" + cam kết "Existing MIT versions remain MIT, forever"). Element Plus/Naive UI cũng MIT (đã verify) — dự phòng.
 - **PrimeVue v4 theming** (verify primevue.org/theming/styled): styled mode = base (CSS-var placeholder) + preset design-token (Aura/Lara/Nora); tùy biến qua `definePreset` + Pass Through (`pt`) + unstyled option; cầu Tailwind chính thức `tailwindcss-primeui`.
-- **starhill chưa có FE** (grep `package.json|*.vue|vite.config` trong `starhill/` = 0 — chỉ có ở `Reference/EPS.Vuexy` [Vuexy — ThemeForest THƯƠNG MẠI, Bootstrap-Vue, KHÔNG dùng] và `resort-qr/frontend/apps/admin-web` [FE cũ pnpm — tham chiếu port logic]). FE StarHill là **greenfield**.
+- **Frontend hiện hành nằm ở `starhill/web/`**: pnpm workspace gồm `guest-web`, `admin-web`, shared package và Playwright e2e. `Reference/EPS.Vuexy` + `resort-qr/frontend` chỉ là nguồn lịch sử/tham khảo; KHÔNG phải runtime hiện hành và KHÔNG được copy template thương mại vào sản phẩm.
 - **Host KHÔNG cấu hình CORS** (grep `AddCors|UseCors|WithOrigins` Program.cs = 0) → chủ trương **same-origin** (guest + admin + api + hub cùng origin sau reverse proxy). Dev khác origin → dùng **Vite proxy** (không bật CORS).
-- **BE Api đã có** (đọc journal + code): Identity `/v1/token/*`; Rooms `/v1/rooms*` (+qr.png); ResortConfig settings/languages; GuestAccess `/v1/guest/resolve` (cookie `__Host-starhill_guest`); Rules guest+admin; Faq guest tree+admin; Housekeeping guest+admin board; Concierge guest `/v1/guest/conversation`+`/messages` & admin conversations/notes; SignalR hub `/hubs/chat` (JWT-qua-query cho staff, AllowAnonymous+per-method auth). **Dashboard stats `GET /dashboard/stats` (task 11) CHƯA có** → làm BE trước khi ráp trang KPI.
+- **BE Api đã có** (đọc journal + code): Identity `/v1/token/*`; Rooms `/v1/rooms*` (+qr.png); ResortConfig settings/languages; GuestAccess `/v1/guest/resolve` (cookie `__Host-starhill_guest`); Rules guest+admin; Faq guest tree+admin; Housekeeping guest+admin board; Concierge guest `/v1/guest/conversation`+`/messages` & admin conversations/notes; SignalR hub `/hubs/chat` (JWT-qua-query cho staff, AllowAnonymous+per-method auth); Dashboard stats `GET /v1/dashboard/stats` RequireStaff đã có (QR-AD-048).
 - **Realtime**: SignalR (client `@microsoft/signalr`). Guest join hội thoại của mình; staff join theo role + board. Fallback polling luôn có.
 
 ## 1. Mục tiêu và bất biến
@@ -40,7 +40,7 @@ starhill/web/                      (pnpm workspace — mirror resort-qr/frontend
   e2e/            Playwright (responsive matrix + no-overflow + a11y + console-error) — cổng anti-drift FE
 ```
 
-- **Stack CHỐT**: Vite 5 + Vue 3.5 (`<script setup>` TS) + PrimeVue 4 (styled Aura preset) + **Tailwind CSS v4** (layer LAYOUT/responsive: grid/flex/spacing/container-query/safe-area) qua `tailwindcss-primeui` (đồng bộ token) + Pinia (admin state) + vue-router + vue-i18n + `@microsoft/signalr`. Lý do Tailwind: tầng utility responsive mạnh nhất (container query, `dvh`, arbitrary value) + MIT + hòa PrimeVue token — layout tự dựng nhanh mà vẫn gọn/sở-hữu (xem §9 trade-off; có thể bỏ Tailwind, dùng CSS-token thuần nếu muốn ít dep hơn).
+- **Stack CHỐT**: Vite 6 + Vue 3.5 (`<script setup>` TS) + PrimeVue 4 (styled Aura preset) + **Tailwind CSS v4** (layer LAYOUT/responsive: grid/flex/spacing/container-query/safe-area) + Pinia (admin state) + vue-router + vue-i18n; SignalR client thêm ở slice chat. Lý do Tailwind: tầng utility responsive mạnh (container query, `dvh`, arbitrary value) + MIT + hòa PrimeVue token — layout tự dựng nhanh mà vẫn gọn/sở-hữu (xem §9 trade-off; có thể bỏ Tailwind, dùng CSS-token thuần nếu muốn ít dep hơn).
 - PrimeVue cấp: DataTable (phòng/housekeeping board, paging/sort/filter), Tree/TreeTable (FAQ cây), **Editor** rich-text (rule editor đa ngữ), Chart (KPI), Dialog/Drawer/Toast/Form/DatePicker/FileUpload — phủ gần hết nhu cầu từ MỘT thư viện MIT (ít dep → an toàn/bảo trì).
 
 ## 3. RESPONSIVE STRATEGY — cực sâu cho "vô số điện thoại khác nhau" (TRỌNG TÂM)
@@ -191,4 +191,84 @@ Mỗi slice dừng nếu: build FE lỗi/warning; Playwright fail (overflow/cons
 - [x] Route `/rooms` dưới AdminShell dùng guard auth sẵn có (router beforeEach); role BE-side RequireStaff (FE không tự phân quyền, chỉ hiển thị — BE là nguồn sự thật).
 - [x] No-overflow giữ bằng wrapper cuộn cục bộ + verify Playwright ma trận viewport.
 - [x] MOCK DEV-only (prod/real-fetch không đụng — khớp QR-N-073); mock QR trung thực (SVG demo).
-- [ ] getDiagnostics design = 0 (kiểm sau khi ghi) → rồi mới code.
+- [x] getDiagnostics design = 0 trước FE.3a (ghi nhận QR-N-075).
+
+### FE.3b — Admin mutations (đã triển khai 2026-07-18)
+
+- **Phân quyền hiển thị**: access-token được decode phần claim `role` chỉ để ẩn/hiện control (`admin` có mutation; `staff` read-only). Đây KHÔNG phải security boundary; mọi mutation vẫn bị backend `RequireAdmin` chặn.
+- **Create/Edit**: `RoomFormDialog.vue` dùng chung cho tạo/sửa, validate khớp backend (`roomNumber` required/max 20, `building` max 50, `floor` -10..200), gửi `null` cho field optional rỗng, map ProblemDetails theo `code` chính xác từ `ProblemDetailsBuilder` (`validation_error`, `not_found`, `resort_not_found`, `invalid_configuration`).
+- **Status/Delete/Rotate**: dialog đổi trạng thái dùng string enum; delete và rotate yêu cầu xác nhận; rotate nhận `reason` optional và chỉ bật khi phòng Active. QR view cũng chỉ bật khi Active. Sau command thành công luôn refetch read-model từ API — không tự phỏng đoán state server.
+- **Mock DEV-only có state**: collection phòng sống xuyên request create/update/status/delete/rotate trong một phiên dev; token mock là JWT-shaped có role để cùng UI kiểm tra Admin/Staff. Mock giữ trung thực: QR placeholder không quét được và mutation vẫn đi qua flow reload-after-command như API thật.
+- **ProblemDetails**: client đọc extension `code` trực tiếp, không thêm tiền tố module vì `RoomsErrors` khai bare code và `ProblemDetailsBuilder` giữ nguyên `Error.Code`.
+- **Responsive**: DataTable có `min-width:52rem`, cell `white-space:nowrap`, wrapper `overflow-x:auto`; phone đọc chữ theo hàng và cuộn NGANG CỤC BỘ trong card, có hint “Vuốt ngang trong bảng…”. Global page vẫn không overflow.
+- **Delivery gate**: route admin lazy-load (`LoginView`, `AdminShell`, `DashboardView`, `RoomsView`) để giảm initial bundle; CI có job frontend cài pnpm/Chromium, build cả hai SPA và chạy Playwright.
+- **Verification**: `pnpm --filter @starhill/admin-web build` PASS; toàn bộ Playwright **25/25 PASS** sau fix bảng mobile. `rooms.spec.ts` phủ read/filter/QR, full mutation flow, Staff read-only, no-overflow + no-console-error ở phone/tablet/desktop và screenshot desktop/phone.
+
+## FE.4a — Admin Rules preview + publication history (đã triển khai 2026-07-18)
+
+> FE.4 được tách theo hợp đồng backend thực tế. FE.4a chỉ đọc Draft preview và metadata publication; chưa dựng editor
+> mutation vì FAQ/Rules editor cần read-model admin đầy đủ (ID section, bản dịch thô, ngôn ngữ thiếu) để không ghi đè
+> mù. FAQ admin tree là E-Faq.4b và vẫn hoãn tới khi backend có shape tương ứng.
+
+### FE.4a — API surface đã verify
+
+- `GET /v1/rules/preview?lang=` (RequireStaff) trả `GetDraftPreviewResult`:
+  `{ language, sections[] }`. Mỗi section có key, sort order, cờ required/scroll, thời gian đọc, title/body đã
+  sanitize, `resolvedLanguage`, `isFallback`, `isMissing`.
+- `GET /v1/rules/publications` (RequireStaff) trả `{ publications[] }`, metadata giảm dần theo version:
+  `publicationId`, `version`, `publishedAt`, `publishedByUserId?`, `changeNote?`, `isCurrent`.
+- ResortId được backend resolve từ settings; frontend không gửi resortId. ProblemDetails đọc extension `code`, lỗi
+  cấu hình map về thông báo chung.
+
+### FE.4a — Components
+
+- `RulesView.vue` là route lazy `/rules`, dưới `AdminShell`, role Staff+ (backend là authority). Toolbar có chọn ngôn
+  ngữ xem (`Mặc định`, `vi`, `en`, `ko`, `zh`) nhưng luôn để server quyết định language/fallback; đổi ngôn ngữ sẽ gọi
+  lại preview, không tự dịch tại client.
+- Preview hiển thị các section theo thứ tự backend trả về; body dùng `v-html` **chỉ** vì backend contract là
+  `BodyHtmlSanitized` (không nhận HTML thô từ client). Cờ fallback/missing hiển thị rõ để Staff biết bản dịch chưa đủ.
+- Publication history là bảng metadata trong wrapper cuộn cục bộ trên phone; bản hiện hành có nhãn nổi bật; UUID actor
+  chỉ hiển thị dạng rút gọn, không coi là tên người dùng.
+- api-client thêm type/reader cho hai GET và MOCK DEV-only có preview/history deterministic để browser test không cần
+  backend. Prod/real-fetch không đụng nhánh mock.
+- NavList bật route thật `rules`; FAQ vẫn giữ trạng thái “Sắp có” vì E-Faq.4b chưa có admin read-tree.
+
+### FE.4a — Responsive + verification
+
+- Bố cục hai card dùng auto-fit grid; preview section và history table không đặt chiều rộng viewport cố định.
+- History wrapper cuộn ngang cục bộ; nội dung HTML dài được phép wrap; trang giữ no-horizontal-overflow ở phone 390,
+  tablet 820 và desktop 1280. Các nút/chọn ngôn ngữ giữ touch target PrimeVue mặc định.
+- `e2e/tests/rules.spec.ts`: mock hai endpoint + login SPA; kiểm tra preview render HTML đã sanitize, cờ fallback,
+  history version/current, đổi ngôn ngữ gọi lại API, no-overflow/no-console-error theo ba viewport và screenshot desktop
+  + phone.
+- Gate: `pnpm --filter @starhill/admin-web build` và full `pnpm e2e`.
+
+### FE.4a — Quyết định/trade-off
+
+- **QR-AD-052 (preview read-only trước editor)**: triển khai phần backend đã có hợp đồng, không bịa FAQ/Rules admin
+  read-tree. Trade-off là chưa có thao tác soạn/publish trên UI ở lát này, đổi lại không thể ghi đè Draft do thiếu ID/raw
+  translation; lát editor sẽ nối sau khi read-model admin hoàn tất.
+- **QR-TO-018 (server-authoritative language)**: client gửi language hint tùy chọn và hiển thị `resolvedLanguage` /
+  `isFallback`; không tự suy đoán enabled languages hoặc dịch tại browser.
+
+### FE.4a — Self-validation trước code
+
+- [x] API shape đọc từ `RulesAdminEndpointModule`, `RuleContracts`, `IRulePublicationReader` và use case thật.
+- [x] Body chỉ render từ trường backend đã sanitize; không dùng guest tree để giả làm admin editor.
+- [x] FAQ editor giữ deferred đúng E-Faq.4b; không tạo route giả.
+
+## FE.4b — Admin Rules editor + FAQ tree editor (đã triển khai 2026-07-18)
+
+- **Backend contract trước UI:** `GET /v1/rules/admin` và `GET /v1/faq/admin` trả IDs, raw translations, language config,
+  missing-language flags và `RowVersion`; mutation round-trip `ExpectedRowVersion` theo QR-AD-053.
+- **Rules:** `RuleEditorPanel` create/update/delete section, per-language translation, publish bằng dialog; sau command reload
+  admin draft + preview/history. Conflict/configuration hiển thị rõ; không dùng browser prompt/confirm.
+- **FAQ:** `FaqView` render category→item→child kể cả inactive; category/item CRUD, parent selection, per-language
+  translation, delete guards và reorder lên/xuống gửi batch `(id,sortOrder,expectedRowVersion)`. Chọn nút accessible thay
+  drag-drop dependency vì dữ liệu resort nhỏ và backend command đã nguyên tử.
+- **Responsive:** desktop hai cột tree/editor; ≤880px một cột; phone actions full-width, tree vẫn giữ hierarchy và không
+  overflow trang. HTML chỉ gửi backend sanitize; không coi client là security boundary.
+- **Verification:** `pnpm build` PASS cả hai SPA; `pnpm e2e` **42/42 PASS**; screenshot Rules/FAQ desktop+phone đã visual QA;
+  `FrontendDeliveryGuardTests` gác route/nav/client/spec browser trong C# architecture suite.
+- **Traceability:** QR-AD-053/054; QR-N-078; D-Rules.3c; E-Faq.4b.
+- [x] Design được cập nhật trước code; frontend typecheck/build + browser gate bắt hành vi, responsive và screenshot.

@@ -37,6 +37,8 @@ public sealed class DeleteRuleSectionUseCase : ICommandUseCase<DeleteRuleSection
             return Result.Failure(RulesErrors.RuleSectionNotFound);
         }
 
+        ConcurrencyGuard.EnsureExpectedRowVersion(section.RowVersion, input.ExpectedRowVersion);
+
         _sections.Remove(section);
         await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
         return Result.Success();

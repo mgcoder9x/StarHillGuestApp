@@ -18,9 +18,9 @@ public sealed record CreateFaqCategoryRequest(string Key, int SortOrder, bool Is
 
 public sealed record CreateFaqCategoryResponse(Guid CategoryId);
 
-public sealed record UpdateFaqCategoryRequest(int SortOrder, bool IsActive);
+public sealed record UpdateFaqCategoryRequest(int SortOrder, bool IsActive, uint ExpectedRowVersion);
 
-public sealed record UpsertFaqCategoryTranslationRequest(string? Name);
+public sealed record UpsertFaqCategoryTranslationRequest(string? Name, uint? ExpectedRowVersion);
 
 public sealed record UpsertFaqTranslationResponse(Guid TranslationId);
 
@@ -28,12 +28,12 @@ public sealed record CreateFaqItemRequest(Guid CategoryId, Guid? ParentId, int S
 
 public sealed record CreateFaqItemResponse(Guid ItemId);
 
-public sealed record UpdateFaqItemRequest(Guid? ParentId, int SortOrder, bool IsActive);
+public sealed record UpdateFaqItemRequest(Guid? ParentId, int SortOrder, bool IsActive, uint ExpectedRowVersion);
 
 /// <summary>Body upsert bản dịch item — <c>Question</c>/<c>AnswerHtml</c> THÔ; use case sanitize trước lưu (CP12).</summary>
-public sealed record UpsertFaqItemTranslationRequest(string? Question, string? AnswerHtml);
+public sealed record UpsertFaqItemTranslationRequest(string? Question, string? AnswerHtml, uint? ExpectedRowVersion);
 
-public sealed record FaqReorderEntryDto(Guid Id, int SortOrder);
+public sealed record FaqReorderEntryDto(Guid Id, int SortOrder, uint ExpectedRowVersion);
 
 public sealed record FaqReorderRequest(IReadOnlyList<FaqReorderEntryDto> Entries);
 
@@ -41,7 +41,7 @@ public sealed record FaqReorderRequest(IReadOnlyList<FaqReorderEntryDto> Entries
 /// Nửa-Api ADMIN module Faq (E-Faq.4): CRUD danh mục/mục + bản dịch (sanitize-on-save) + reorder. Tất cả
 /// <see cref="StarHillPolicies.RequireStaff"/> (Req 8.5 — FAQ thuộc quyền Staff; Admin superset). ResortId phân giải
 /// SERVER-SIDE qua <see cref="IResortSettingsQuery"/> (single-resort — client KHÔNG gửi ResortId). Map <c>Result</c>→HTTP
-/// qua <see cref="ProblemDetailsBuilder"/>. Admin READ-tree (editor + missing-langs) hoãn E-Faq.4b (pairs với admin FE).
+/// qua <see cref="ProblemDetailsBuilder"/>. Admin READ-tree E-Faq.4b trả full/inactive/raw-translations + xmin.
 /// </summary>
 public sealed class FaqAdminEndpointModule : IEndpointModule
 {
@@ -50,6 +50,9 @@ public sealed class FaqAdminEndpointModule : IEndpointModule
         ArgumentNullException.ThrowIfNull(endpoints);
 
         var group = endpoints.MapVersionedGroup("/faq", BedrockApiVersioning.V1);
+
+        group.MapGet("/admin", GetAdminTreeAsync)
+            .RequireAuthorization(StarHillPolicies.RequireStaff).MapToApiVersion(BedrockApiVersioning.V1).WithName("FaqAdminTree");
 
         group.MapPost("/categories", CreateCategoryAsync)
             .RequireAuthorization(StarHillPolicies.RequireStaff).MapToApiVersion(BedrockApiVersioning.V1).WithName("FaqCreateCategory");
@@ -98,6 +101,22 @@ public sealed class FaqAdminEndpointModule : IEndpointModule
             : Problem(result.Error, http);
     }
 
+    private static async Task<IResult> GetAdminTreeAsync(
+        IUseCase<GetFaqAdminTreeInput, GetFaqAdminTreeResult> useCase,
+        IResortSettingsQuery settingsQuery,
+        HttpContext http,
+        CancellationToken ct)
+    {
+        var resortId = await ResolveResortIdAsync(settingsQuery, ct).ConfigureAwait(false);
+        if (resortId is null)
+        {
+            return Problem(FaqErrors.ConfigurationUnavailable, http);
+        }
+
+        var result = await useCase.ExecuteAsync(new GetFaqAdminTreeInput(resortId.Value), ct).ConfigureAwait(false);
+        return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error, http);
+    }
+
     private static async Task<IResult> UpdateCategoryAsync(
         Guid categoryId,
         UpdateFaqCategoryRequest request,
@@ -107,18 +126,19 @@ public sealed class FaqAdminEndpointModule : IEndpointModule
     {
         ArgumentNullException.ThrowIfNull(request);
         var result = await useCase
-            .ExecuteAsync(new UpdateFaqCategoryInput(categoryId, request.SortOrder, request.IsActive), ct)
+            .ExecuteAsync(new UpdateFaqCategoryInput(categoryId, request.SortOrder, request.IsActive, request.ExpectedRowVersion), ct)
             .ConfigureAwait(false);
         return result.IsSuccess ? Results.NoContent() : Problem(result.Error, http);
     }
 
     private static async Task<IResult> DeleteCategoryAsync(
         Guid categoryId,
+        uint expectedRowVersion,
         ICommandUseCase<DeleteFaqCategoryInput> useCase,
         HttpContext http,
         CancellationToken ct)
     {
-        var result = await useCase.ExecuteAsync(new DeleteFaqCategoryInput(categoryId), ct).ConfigureAwait(false);
+        var result = await useCase.ExecuteAsync(new DeleteFaqCategoryInput(categoryId, expectedRowVersion), ct).ConfigureAwait(false);
         return result.IsSuccess ? Results.NoContent() : Problem(result.Error, http);
     }
 
@@ -132,7 +152,7 @@ public sealed class FaqAdminEndpointModule : IEndpointModule
     {
         ArgumentNullException.ThrowIfNull(request);
         var result = await useCase
-            .ExecuteAsync(new UpsertFaqCategoryTranslationInput(categoryId, lang, request.Name), ct)
+            .ExecuteAsync(new UpsertFaqCategoryTranslationInput(categoryId, lang, request.Name, request.ExpectedRowVersion), ct)
             .ConfigureAwait(false);
         return result.IsSuccess
             ? Results.Ok(new UpsertFaqTranslationResponse(result.Value.TranslationId))
@@ -163,18 +183,19 @@ public sealed class FaqAdminEndpointModule : IEndpointModule
     {
         ArgumentNullException.ThrowIfNull(request);
         var result = await useCase
-            .ExecuteAsync(new UpdateFaqItemInput(itemId, request.ParentId, request.SortOrder, request.IsActive), ct)
+            .ExecuteAsync(new UpdateFaqItemInput(itemId, request.ParentId, request.SortOrder, request.IsActive, request.ExpectedRowVersion), ct)
             .ConfigureAwait(false);
         return result.IsSuccess ? Results.NoContent() : Problem(result.Error, http);
     }
 
     private static async Task<IResult> DeleteItemAsync(
         Guid itemId,
+        uint expectedRowVersion,
         ICommandUseCase<DeleteFaqItemInput> useCase,
         HttpContext http,
         CancellationToken ct)
     {
-        var result = await useCase.ExecuteAsync(new DeleteFaqItemInput(itemId), ct).ConfigureAwait(false);
+        var result = await useCase.ExecuteAsync(new DeleteFaqItemInput(itemId, expectedRowVersion), ct).ConfigureAwait(false);
         return result.IsSuccess ? Results.NoContent() : Problem(result.Error, http);
     }
 
@@ -188,7 +209,7 @@ public sealed class FaqAdminEndpointModule : IEndpointModule
     {
         ArgumentNullException.ThrowIfNull(request);
         var result = await useCase
-            .ExecuteAsync(new UpsertFaqItemTranslationInput(itemId, lang, request.Question, request.AnswerHtml), ct)
+            .ExecuteAsync(new UpsertFaqItemTranslationInput(itemId, lang, request.Question, request.AnswerHtml, request.ExpectedRowVersion), ct)
             .ConfigureAwait(false);
         return result.IsSuccess
             ? Results.Ok(new UpsertFaqTranslationResponse(result.Value.TranslationId))
@@ -232,7 +253,7 @@ public sealed class FaqAdminEndpointModule : IEndpointModule
     }
 
     private static List<FaqReorderEntry> MapEntries(FaqReorderRequest request) =>
-        (request.Entries ?? []).Select(e => new FaqReorderEntry(e.Id, e.SortOrder)).ToList();
+        (request.Entries ?? []).Select(e => new FaqReorderEntry(e.Id, e.SortOrder, e.ExpectedRowVersion)).ToList();
 
     private static async Task<Guid?> ResolveResortIdAsync(IResortSettingsQuery settingsQuery, CancellationToken ct)
     {

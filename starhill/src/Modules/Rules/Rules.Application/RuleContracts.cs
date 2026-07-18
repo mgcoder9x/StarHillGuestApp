@@ -22,7 +22,8 @@ public sealed record UpdateRuleSectionInput(
     int SortOrder,
     bool IsRequired,
     bool RequireScrollEnd,
-    int MinReadSeconds);
+    int MinReadSeconds,
+    uint ExpectedRowVersion);
 
 // ---- Draft translation upsert (sanitize-on-save — CP12) ----
 
@@ -35,14 +36,15 @@ public sealed record UpsertRuleSectionTranslationInput(
     Guid SectionId,
     string LanguageCode,
     string? Title,
-    string? BodyHtml);
+    string? BodyHtml,
+    uint? ExpectedRowVersion);
 
 public sealed record UpsertRuleSectionTranslationResult(Guid TranslationId);
 
 // ---- Draft section delete ----
 // Dùng record RIÊNG (không Guid trần) để service type ICommandUseCase<DeleteRuleSectionInput> DUY NHẤT toàn Host —
 // tránh đụng ICommandUseCase<Guid> của module khác (vd DeleteRoom) khi cùng wire (last-registration-wins).
-public sealed record DeleteRuleSectionInput(Guid SectionId);
+public sealed record DeleteRuleSectionInput(Guid SectionId, uint ExpectedRowVersion);
 
 // ---- Publish snapshot (D-Rules.3, CP4) ----
 

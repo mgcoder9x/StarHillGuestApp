@@ -90,7 +90,7 @@ public sealed class ReorderFaqUseCaseTests
         {
             var uc = scope.ServiceProvider.GetRequiredService<ICommandUseCase<ReorderFaqCategoriesInput>>();
             var result = await uc.ExecuteAsync(new ReorderFaqCategoriesInput(
-                resortId, [new FaqReorderEntry(a, 10), new FaqReorderEntry(b, 5)]));
+                resortId, [new FaqReorderEntry(a, 10, 0), new FaqReorderEntry(b, 5, 0)]));
             Assert.True(result.IsSuccess);
         }
 
@@ -118,7 +118,7 @@ public sealed class ReorderFaqUseCaseTests
         var uc = scope.ServiceProvider.GetRequiredService<ICommandUseCase<ReorderFaqCategoriesInput>>();
         // catB thuộc resortB nhưng gửi kèm scope resortA → sai scope → not_found (chống sửa chéo resort).
         var result = await uc.ExecuteAsync(new ReorderFaqCategoriesInput(
-            resortA, [new FaqReorderEntry(catA, 2), new FaqReorderEntry(catB, 3)]));
+            resortA, [new FaqReorderEntry(catA, 2, 0), new FaqReorderEntry(catB, 3, 0)]));
 
         Assert.False(result.IsSuccess);
         Assert.Equal("faq_category_not_found", result.Error.Code);
@@ -140,7 +140,7 @@ public sealed class ReorderFaqUseCaseTests
         {
             var uc = scope.ServiceProvider.GetRequiredService<ICommandUseCase<ReorderFaqItemsInput>>();
             var result = await uc.ExecuteAsync(new ReorderFaqItemsInput(
-                categoryId, [new FaqReorderEntry(i1, 20), new FaqReorderEntry(i2, 10)]));
+                categoryId, [new FaqReorderEntry(i1, 20, 0), new FaqReorderEntry(i2, 10, 0)]));
             Assert.True(result.IsSuccess);
         }
 
@@ -168,7 +168,7 @@ public sealed class ReorderFaqUseCaseTests
         var uc = scope.ServiceProvider.GetRequiredService<ICommandUseCase<ReorderFaqItemsInput>>();
         // item thuộc cat1 nhưng gửi kèm scope cat2 → sai scope → not_found.
         var result = await uc.ExecuteAsync(new ReorderFaqItemsInput(
-            cat2, [new FaqReorderEntry(itemInCat1, 5)]));
+            cat2, [new FaqReorderEntry(itemInCat1, 5, 0)]));
 
         Assert.False(result.IsSuccess);
         Assert.Equal("faq_item_not_found", result.Error.Code);
@@ -183,7 +183,7 @@ public sealed class ReorderValidatorTests
     {
         var id = Guid.CreateVersion7();
         var result = new ReorderFaqCategoriesValidator().Validate(new ReorderFaqCategoriesInput(
-            Guid.CreateVersion7(), [new FaqReorderEntry(id, 1), new FaqReorderEntry(id, 2)]));
+            Guid.CreateVersion7(), [new FaqReorderEntry(id, 1, 0), new FaqReorderEntry(id, 2, 0)]));
         Assert.False(result.IsValid);
     }
 
@@ -198,7 +198,7 @@ public sealed class ReorderValidatorTests
     public void Items_validator_rejects_negative_sort_order()
     {
         var result = new ReorderFaqItemsValidator().Validate(new ReorderFaqItemsInput(
-            Guid.CreateVersion7(), [new FaqReorderEntry(Guid.CreateVersion7(), -1)]));
+            Guid.CreateVersion7(), [new FaqReorderEntry(Guid.CreateVersion7(), -1, 0)]));
         Assert.False(result.IsValid);
     }
 
@@ -206,7 +206,7 @@ public sealed class ReorderValidatorTests
     public void Items_validator_accepts_valid_input()
     {
         var result = new ReorderFaqItemsValidator().Validate(new ReorderFaqItemsInput(
-            Guid.CreateVersion7(), [new FaqReorderEntry(Guid.CreateVersion7(), 0), new FaqReorderEntry(Guid.CreateVersion7(), 1)]));
+            Guid.CreateVersion7(), [new FaqReorderEntry(Guid.CreateVersion7(), 0, 0), new FaqReorderEntry(Guid.CreateVersion7(), 1, 0)]));
         Assert.True(result.IsValid);
     }
 }

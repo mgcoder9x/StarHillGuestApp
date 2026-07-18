@@ -58,6 +58,7 @@ public sealed class FaqEndpointAuthTests
                 services.AddScoped<IUseCase<UpsertFaqItemTranslationInput, UpsertFaqItemTranslationResult>, FakeUpsertFaqItemTranslation>();
                 services.AddScoped<ICommandUseCase<ReorderFaqCategoriesInput>, FakeReorderFaqCategories>();
                 services.AddScoped<ICommandUseCase<ReorderFaqItemsInput>, FakeReorderFaqItems>();
+                services.AddScoped<IUseCase<GetFaqAdminTreeInput, GetFaqAdminTreeResult>, FakeGetFaqAdminTree>();
                 services.AddScoped<IUseCase<GetGuestFaqTreeInput, GetGuestFaqTreeResult>, FakeGetGuestFaqTree>();
             });
             webHost.Configure(app =>
@@ -108,23 +109,25 @@ public sealed class FaqEndpointAuthTests
         Assert.Equal(HttpStatusCode.Created,
             (await client.PostAsync(Rel("/v1/faq/categories"), JsonContent.Create(new { key = "arrival", sortOrder = 1, isActive = true }))).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent,
-            (await client.PutAsync(Rel($"/v1/faq/categories/{CategoryId}"), JsonContent.Create(new { sortOrder = 2, isActive = false }))).StatusCode);
+            (await client.PutAsync(Rel($"/v1/faq/categories/{CategoryId}"), JsonContent.Create(new { sortOrder = 2, isActive = false, expectedRowVersion = 0 }))).StatusCode);
         Assert.Equal(HttpStatusCode.OK,
-            (await client.PutAsync(Rel($"/v1/faq/categories/{CategoryId}/translations/en"), JsonContent.Create(new { name = "Arrival" }))).StatusCode);
+            (await client.PutAsync(Rel($"/v1/faq/categories/{CategoryId}/translations/en"), JsonContent.Create(new { name = "Arrival", expectedRowVersion = (uint?)null }))).StatusCode);
         Assert.Equal(HttpStatusCode.Created,
             (await client.PostAsync(Rel("/v1/faq/items"), JsonContent.Create(new { categoryId = CategoryId, parentId = (Guid?)null, sortOrder = 1, isActive = true }))).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent,
-            (await client.PutAsync(Rel($"/v1/faq/items/{ItemId}"), JsonContent.Create(new { parentId = (Guid?)null, sortOrder = 2, isActive = true }))).StatusCode);
+            (await client.PutAsync(Rel($"/v1/faq/items/{ItemId}"), JsonContent.Create(new { parentId = (Guid?)null, sortOrder = 2, isActive = true, expectedRowVersion = 0 }))).StatusCode);
         Assert.Equal(HttpStatusCode.OK,
-            (await client.PutAsync(Rel($"/v1/faq/items/{ItemId}/translations/en"), JsonContent.Create(new { question = "Q", answerHtml = "<p>A</p>" }))).StatusCode);
+            (await client.PutAsync(Rel($"/v1/faq/items/{ItemId}/translations/en"), JsonContent.Create(new { question = "Q", answerHtml = "<p>A</p>", expectedRowVersion = (uint?)null }))).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent,
-            (await client.PostAsync(Rel("/v1/faq/reorder/categories"), JsonContent.Create(new { entries = new[] { new { id = CategoryId, sortOrder = 1 } } }))).StatusCode);
+            (await client.PostAsync(Rel("/v1/faq/reorder/categories"), JsonContent.Create(new { entries = new[] { new { id = CategoryId, sortOrder = 1, expectedRowVersion = 0 } } }))).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent,
-            (await client.PostAsync(Rel($"/v1/faq/reorder/items/{CategoryId}"), JsonContent.Create(new { entries = new[] { new { id = ItemId, sortOrder = 1 } } }))).StatusCode);
+            (await client.PostAsync(Rel($"/v1/faq/reorder/items/{CategoryId}"), JsonContent.Create(new { entries = new[] { new { id = ItemId, sortOrder = 1, expectedRowVersion = 0 } } }))).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent,
-            (await client.DeleteAsync(Rel($"/v1/faq/items/{ItemId}"))).StatusCode);
+            (await client.DeleteAsync(Rel($"/v1/faq/items/{ItemId}?expectedRowVersion=0"))).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent,
-            (await client.DeleteAsync(Rel($"/v1/faq/categories/{CategoryId}"))).StatusCode);
+            (await client.DeleteAsync(Rel($"/v1/faq/categories/{CategoryId}?expectedRowVersion=0"))).StatusCode);
+        Assert.Equal(HttpStatusCode.OK,
+            (await client.GetAsync(Rel("/v1/faq/admin"))).StatusCode);
     }
 
     [Fact]
@@ -139,6 +142,8 @@ public sealed class FaqEndpointAuthTests
             (await client.PostAsync(Rel("/v1/faq/items"), JsonContent.Create(new { categoryId = CategoryId, parentId = (Guid?)null, sortOrder = 1, isActive = true }))).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized,
             (await client.PostAsync(Rel("/v1/faq/reorder/categories"), JsonContent.Create(new { entries = Array.Empty<object>() }))).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await client.GetAsync(Rel("/v1/faq/admin"))).StatusCode);
     }
 
     [Fact]

@@ -10,7 +10,7 @@
 | Base vật lý duy nhất | `platform/src/` | Bedrock domain-agnostic; `starhill/` reference trực tiếp qua `$(PlatformSrc)` |
 | Product tree | `starhill/` | Chỉ Host, module và test nghiệp vụ StarHill |
 | Legacy để port | `resort-qr/` | Nguồn tham khảo logic; không phải runtime/product tree hiện hành |
-| Journal | `journal/{01..05}.md` | AD/DV/TO/N + anti-drift INV-1..5 |
+| Journal | `journal/{01..05}.md` | AD/DV/TO/N + anti-drift INV-1..6 |
 
 ## Bất biến
 
@@ -21,18 +21,17 @@
 - Mỗi thay đổi: design trước, provenance thật, journal + `05-anti-drift`, rồi build/test/JournalConsistency.
 - Không chạm hoặc stage nested stale `StarHillGuestApp/StarHillGuestApp/`.
 
-## Trạng thái đã kiểm chứng
+## Trạng thái đã kiểm chứng (2026-07-18)
 
-- Base hardening và D1-a/P0 remediation đã hoàn tất; Identity, ResortConfig, Rooms đang ở product tree.
-- Rooms admin/query API và ResortConfig settings API đã hoàn tất (journal tới QR-AD-023).
-- GuestAccess C-GA.1..3 đã có trong `starhill/`: 5-project/schema/key riêng, resolve transaction hẹp + PostgreSQL
-  row-lock race guard, public POST/cookie/Host/compose/CI wiring (QR-N-024..027).
-- Reconciliation C-GA.3a đang xử lý: canonical input/log guard, response contract và migration history per-schema.
-- Design có hiệu lực: `design-modules/03-guestaccess.md`; Task 5 trong docs chỉ phản ánh legacy.
+- Backend StarHill có đủ **8/8 module**: Identity, ResortConfig, Rooms, GuestAccess, Rules, Faq, Housekeeping, Concierge; cascade GuestVisitEnded + SignalR + Dashboard stats đã có.
+- Frontend hiện hành ở `starhill/web/`: Guest Web nền + Admin login/shell/dashboard + Rooms read/mutations + Rules Draft editor/publish/preview/history + FAQ full-tree editor. FE.4b hoàn tất trên admin read-model thật và stale-edit token contract.
+- Browser gate thực: production build cả hai SPA PASS; Playwright toàn suite **42/42 PASS** sau visual QA Rules/FAQ mobile/desktop. CI có job frontend build hai SPA + Chromium + Playwright.
+- Cổng local/CI đã fail-closed: thiếu .NET SDK trả FAIL/127 và test BLOCKED, không còn xanh giả; hai Python workflow validator PASS không cần PyYAML.
+- Giới hạn phiên hiện tại: máy không có .NET SDK nên C# guard mới chỉ được source-review; CI phải compile/run `VerificationGateTests` + `FrontendDeliveryGuardTests`.
 
 ## Thứ tự tiếp theo
 
-1. Hoàn tất/verify C-GA.3a bằng build + full test Docker + Compose/DB + JournalConsistency.
-2. Thiết kế Rules trước code; khi Rules là consumer đầu, triển khai GuestAccess C-GA.4 current-context/sweeper.
-3. C-GA.5 cascade end-visit chỉ triển khai cùng consumer Concierge/Housekeeping, dùng outbox/inbox at-least-once.
-4. GPU không liên quan tới .NET/PostgreSQL/RabbitMQ.
+1. Tiếp tục Guest Web vertical slices thật (force-read Rules → FAQ → chat/housekeeping) trên các backend contracts đã có.
+2. Sau khi backend read shape đúng, triển khai Rules editor/publish + FAQ tree theo các vertical slice nhỏ có Playwright behavior test và screenshot.
+3. Khi môi trường có .NET SDK/CI chạy, xác nhận full `vp all` cả `platform/` và `starhill/` trước khi gọi baseline mới hoàn tất.
+4. `foundation/` + `resort-qr/` giữ archival/reference cho tới khi có quyết định xoá riêng; không phát triển tiếp ở hai cây này.

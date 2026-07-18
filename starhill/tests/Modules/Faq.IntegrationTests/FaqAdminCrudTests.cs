@@ -106,7 +106,7 @@ public sealed class FaqAdminCrudTests
 
         await using var scope = provider.CreateAsyncScope();
         var uc = scope.ServiceProvider.GetRequiredService<ICommandUseCase<DeleteFaqCategoryInput>>();
-        var result = await uc.ExecuteAsync(new DeleteFaqCategoryInput(categoryId));
+        var result = await uc.ExecuteAsync(new DeleteFaqCategoryInput(categoryId, ExpectedRowVersion: 0));
 
         Assert.False(result.IsSuccess);
         Assert.Equal("faq_category_not_empty", result.Error.Code);
@@ -126,7 +126,7 @@ public sealed class FaqAdminCrudTests
 
         await using var scope = provider.CreateAsyncScope();
         var uc = scope.ServiceProvider.GetRequiredService<ICommandUseCase<DeleteFaqItemInput>>();
-        var result = await uc.ExecuteAsync(new DeleteFaqItemInput(parentId));
+        var result = await uc.ExecuteAsync(new DeleteFaqItemInput(parentId, ExpectedRowVersion: 0));
 
         Assert.False(result.IsSuccess);
         Assert.Equal("faq_item_has_children", result.Error.Code);
@@ -146,13 +146,13 @@ public sealed class FaqAdminCrudTests
         await using (var scope = provider.CreateAsyncScope())
         {
             var uc = scope.ServiceProvider.GetRequiredService<ICommandUseCase<DeleteFaqItemInput>>();
-            Assert.True((await uc.ExecuteAsync(new DeleteFaqItemInput(itemId))).IsSuccess);
+            Assert.True((await uc.ExecuteAsync(new DeleteFaqItemInput(itemId, ExpectedRowVersion: 0))).IsSuccess);
         }
 
         await using (var scope = provider.CreateAsyncScope())
         {
             var uc = scope.ServiceProvider.GetRequiredService<ICommandUseCase<DeleteFaqCategoryInput>>();
-            Assert.True((await uc.ExecuteAsync(new DeleteFaqCategoryInput(categoryId))).IsSuccess);
+            Assert.True((await uc.ExecuteAsync(new DeleteFaqCategoryInput(categoryId, ExpectedRowVersion: 0))).IsSuccess);
         }
 
         await using (var scope = provider.CreateAsyncScope())
@@ -172,7 +172,8 @@ public sealed class FaqAdminCrudTests
 
         await using var scope = provider.CreateAsyncScope();
         var uc = scope.ServiceProvider.GetRequiredService<ICommandUseCase<UpdateFaqCategoryInput>>();
-        var result = await uc.ExecuteAsync(new UpdateFaqCategoryInput(Guid.CreateVersion7(), SortOrder: 2, IsActive: false));
+        var result = await uc.ExecuteAsync(new UpdateFaqCategoryInput(
+            Guid.CreateVersion7(), SortOrder: 2, IsActive: false, ExpectedRowVersion: 0));
 
         Assert.False(result.IsSuccess);
         Assert.Equal("faq_category_not_found", result.Error.Code);

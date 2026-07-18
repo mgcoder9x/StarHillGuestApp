@@ -52,6 +52,7 @@ public static class RulesInfrastructureExtensions
         // Read-model NỘI-MODULE cho Publish đọc Draft (CQRS-lite — F9 cấm IQueryable ở IRepository). DbContext cụ
         // thể (unkeyed, type riêng module) — mirror EfGuestSessionStore.
         services.AddScoped<IRuleDraftReader, EfRuleDraftReader>();
+        services.AddScoped<IRuleAdminReader, EfRuleAdminReader>();
 
         // Read-model guest đọc publication IsCurrent (D-Rules.4a).
         services.AddScoped<IRulePublicationReader, EfRulePublicationReader>();
@@ -106,6 +107,11 @@ public static class RulesInfrastructureExtensions
 
         services.AddScoped<IUseCase<GetPublicationHistoryInput, GetPublicationHistoryResult>>(sp =>
             new GetPublicationHistoryUseCase(sp.GetRequiredService<IRulePublicationReader>()));
+
+        services.AddScoped<IUseCase<GetRuleAdminDraftInput, GetRuleAdminDraftResult>>(sp => new GetRuleAdminDraftUseCase(
+            sp.GetRequiredService<IRuleAdminReader>(),
+            sp.GetRequiredService<ResortConfig.Contracts.Queries.IResortGuestConfigQuery>(),
+            sp.GetRequiredService<ResortConfig.Contracts.Localization.ITranslationResolver>()));
 
         // Guest acknowledge (D-Rules.4b, CP13): value-returning write, MỘT insert (mirror CreateRoom — không
         // ITransactionalUseCase). Server đọc IsCurrent + ghi ack idempotent (pre-check + unique backstop).

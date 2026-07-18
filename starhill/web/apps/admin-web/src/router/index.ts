@@ -1,18 +1,16 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
-import AdminShell from '../layouts/AdminShell.vue';
-import LoginView from '../views/LoginView.vue';
-import DashboardView from '../views/DashboardView.vue';
-import RoomsView from '../views/RoomsView.vue';
 
 const routes: RouteRecordRaw[] = [
-  { path: '/login', name: 'login', component: LoginView, meta: { public: true } },
+  { path: '/login', name: 'login', component: () => import('../views/LoginView.vue'), meta: { public: true } },
   {
     path: '/',
-    component: AdminShell,
+    component: () => import('../layouts/AdminShell.vue'),
     children: [
-      { path: '', name: 'dashboard', component: DashboardView },
-      { path: 'rooms', name: 'rooms', component: RoomsView },
+      { path: '', name: 'dashboard', component: () => import('../views/DashboardView.vue') },
+      { path: 'rooms', name: 'rooms', component: () => import('../views/RoomsView.vue') },
+      { path: 'rules', name: 'rules', component: () => import('../views/RulesView.vue') },
+      { path: 'faq', name: 'faq', component: () => import('../views/FaqView.vue') },
     ],
   },
 ];

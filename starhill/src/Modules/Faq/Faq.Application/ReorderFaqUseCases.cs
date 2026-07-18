@@ -39,6 +39,7 @@ public sealed class ReorderFaqCategoriesUseCase : ICommandUseCase<ReorderFaqCate
                 return Result.Failure(FaqErrors.CategoryNotFound);
             }
 
+            ConcurrencyGuard.EnsureExpectedRowVersion(category.RowVersion, entry.ExpectedRowVersion);
             category.SortOrder = entry.SortOrder;
         }
 
@@ -92,6 +93,7 @@ public sealed class ReorderFaqItemsUseCase : ICommandUseCase<ReorderFaqItemsInpu
                 return Result.Failure(FaqErrors.ItemNotFound);
             }
 
+            ConcurrencyGuard.EnsureExpectedRowVersion(item.RowVersion, entry.ExpectedRowVersion);
             item.SortOrder = entry.SortOrder;
         }
 

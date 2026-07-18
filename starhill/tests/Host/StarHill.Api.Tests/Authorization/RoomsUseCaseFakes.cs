@@ -153,6 +153,19 @@ internal sealed class FakeGetPublicationHistory
             })));
 }
 
+internal sealed class FakeGetRuleAdminDraft
+    : IUseCase<Rules.Application.GetRuleAdminDraftInput, Rules.Application.GetRuleAdminDraftResult>
+{
+    public Task<Result<Rules.Application.GetRuleAdminDraftResult>> ExecuteAsync(
+        Rules.Application.GetRuleAdminDraftInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Rules.Application.GetRuleAdminDraftResult(
+            Guid.Parse("77777777-7777-7777-7777-777777777778"),
+            1,
+            new List<string> { "en" },
+            "en",
+            [])));
+}
+
 // ---- Rules guest fakes (D-Rules.4c-2 endpoint test, KHÔNG DB) ----
 
 internal sealed class FakeCurrentGuestContextResolver : GuestAccess.Contracts.ICurrentGuestContextResolver
@@ -319,6 +332,17 @@ internal sealed class FakeGetGuestFaqTree : IUseCase<Faq.Application.GetGuestFaq
                         new(FakeCreateFaqItem.ItemId, 1, "Q", "<p>A</p>", "en", false, false, []),
                     }),
             })));
+}
+
+internal sealed class FakeGetFaqAdminTree
+    : IUseCase<Faq.Application.GetFaqAdminTreeInput, Faq.Application.GetFaqAdminTreeResult>
+{
+    public Task<Result<Faq.Application.GetFaqAdminTreeResult>> ExecuteAsync(
+        Faq.Application.GetFaqAdminTreeInput input, CancellationToken ct = default) =>
+        Task.FromResult(Result.Success(new Faq.Application.GetFaqAdminTreeResult(
+            new List<string> { "en" },
+            "en",
+            [])));
 }
 
 // ---- Housekeeping use case + reader fakes (H-Hk.3 endpoint auth guard, KHÔNG DB) ----

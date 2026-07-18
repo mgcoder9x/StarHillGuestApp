@@ -77,7 +77,7 @@ function initials(name: string | null): string {
           <span class="admin__avatar" aria-hidden="true">{{ initials(auth.username) }}</span>
           <span class="admin__user-name">{{ auth.username }}</span>
         </div>
-        <Button icon="pi pi-sign-out" :label="t('app.logout')" text @click="logout" />
+        <Button class="admin__logout" icon="pi pi-sign-out" :label="t('app.logout')" :aria-label="t('app.logout')" text @click="logout" />
       </header>
       <main class="admin__content">
         <RouterView />
@@ -194,6 +194,9 @@ function initials(name: string | null): string {
 /* <lg: ẩn tên user (giữ avatar) để topbar không chật trên phone. */
 @media (max-width: 559px) {
   .admin__user-name {
+    display: none;
+  }
+  .admin__logout :deep(.p-button-label) {
     display: none;
   }
 }

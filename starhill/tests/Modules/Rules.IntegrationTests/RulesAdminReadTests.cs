@@ -21,6 +21,9 @@ namespace Rules.IntegrationTests;
 /// </summary>
 public sealed class RulesAdminReadTests
 {
+    private static readonly string[] EnabledLanguages = ["en", "vi", "ko"];
+    private static readonly string[] MissingVietnameseAndKorean = ["vi", "ko"];
+
     private sealed class StubCurrentUser : ICurrentUser
     {
         public Guid? UserId => null;
@@ -166,6 +169,114 @@ public sealed class RulesAdminReadTests
         await using var scope = provider.CreateAsyncScope();
         var uc = scope.ServiceProvider.GetRequiredService<IUseCase<GetDraftPreviewInput, GetDraftPreviewResult>>();
         var result = await uc.ExecuteAsync(new GetDraftPreviewInput(Guid.CreateVersion7(), "en"));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("configuration_unavailable", result.Error.Code);
+    }
+
+    [Fact]
+    public async Task Admin_draft_preserves_ids_row_versions_and_raw_translations()
+    {
+        var (provider, connection, config) = await BuildAsync();
+        await using var _ = provider;
+        await using var __ = connection;
+
+        var resortId = Guid.CreateVersion7();
+        config.Config = ConfigFor(resortId, "en", "vi", "ko");
+
+        Guid ruleSetId;
+        Guid sectionId;
+        Guid englishTranslationId;
+        Guid emptyVietnameseTranslationId;
+        await using (var seedScope = provider.CreateAsyncScope())
+        {
+            var db = seedScope.ServiceProvider.GetRequiredService<RulesDbContext>();
+            var ruleSet = new RuleSet
+            {
+                ResortId = resortId,
+                UpdatedAt = DateTimeOffset.UnixEpoch,
+                RowVersion = 5,
+            };
+            var section = new RuleSection
+            {
+                RuleSetId = ruleSet.Id,
+                Key = "arrival",
+                SortOrder = 2,
+                IsRequired = true,
+                RequireScrollEnd = true,
+                MinReadSeconds = 15,
+                RowVersion = 7,
+            };
+            var english = new RuleSectionTranslation
+            {
+                RuleSectionId = section.Id,
+                LanguageCode = "en",
+                Title = "Arrival",
+                BodyHtmlSanitized = "<p>Welcome</p>",
+                RowVersion = 11,
+            };
+            var emptyVietnamese = new RuleSectionTranslation
+            {
+                RuleSectionId = section.Id,
+                LanguageCode = "vi",
+                RowVersion = 13,
+            };
+
+            db.AddRange(ruleSet, section, english, emptyVietnamese);
+            await db.SaveChangesAsync();
+            ruleSetId = ruleSet.Id;
+            sectionId = section.Id;
+            englishTranslationId = english.Id;
+            emptyVietnameseTranslationId = emptyVietnamese.Id;
+        }
+
+        await using var scope = provider.CreateAsyncScope();
+        var useCase = scope.ServiceProvider.GetRequiredService<IUseCase<GetRuleAdminDraftInput, GetRuleAdminDraftResult>>();
+        var result = await useCase.ExecuteAsync(new GetRuleAdminDraftInput(resortId));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ruleSetId, result.Value.RuleSetId);
+        Assert.Equal((uint)5, result.Value.RowVersion);
+        Assert.Equal(EnabledLanguages, result.Value.EnabledLanguageCodes);
+        Assert.Equal("en", result.Value.DefaultLanguageCode);
+
+        var sectionResult = Assert.Single(result.Value.Sections);
+        Assert.Equal(sectionId, sectionResult.SectionId);
+        Assert.Equal((uint)7, sectionResult.RowVersion);
+        Assert.Equal("arrival", sectionResult.Key);
+        Assert.Equal(MissingVietnameseAndKorean, sectionResult.MissingLanguages);
+
+        Assert.Collection(sectionResult.Translations,
+            english =>
+            {
+                Assert.Equal(englishTranslationId, english.TranslationId);
+                Assert.Equal((uint)11, english.RowVersion);
+                Assert.Equal("en", english.LanguageCode);
+                Assert.Equal("Arrival", english.Title);
+                Assert.Equal("<p>Welcome</p>", english.BodyHtmlSanitized);
+            },
+            vietnamese =>
+            {
+                Assert.Equal(emptyVietnameseTranslationId, vietnamese.TranslationId);
+                Assert.Equal((uint)13, vietnamese.RowVersion);
+                Assert.Equal("vi", vietnamese.LanguageCode);
+                Assert.Null(vietnamese.Title);
+                Assert.Null(vietnamese.BodyHtmlSanitized);
+            });
+    }
+
+    [Fact]
+    public async Task Admin_draft_missing_config_returns_configuration_unavailable()
+    {
+        var (provider, connection, config) = await BuildAsync();
+        await using var _ = provider;
+        await using var __ = connection;
+
+        config.Config = null;
+
+        await using var scope = provider.CreateAsyncScope();
+        var useCase = scope.ServiceProvider.GetRequiredService<IUseCase<GetRuleAdminDraftInput, GetRuleAdminDraftResult>>();
+        var result = await useCase.ExecuteAsync(new GetRuleAdminDraftInput(Guid.CreateVersion7()));
 
         Assert.False(result.IsSuccess);
         Assert.Equal("configuration_unavailable", result.Error.Code);

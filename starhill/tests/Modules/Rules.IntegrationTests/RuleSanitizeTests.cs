@@ -95,7 +95,7 @@ public sealed class RuleSanitizeTests
             var uc = scope.ServiceProvider
                 .GetRequiredService<IUseCase<UpsertRuleSectionTranslationInput, UpsertRuleSectionTranslationResult>>();
             var result = await uc.ExecuteAsync(
-                new UpsertRuleSectionTranslationInput(sectionId, "vi", maliciousTitle, maliciousBody));
+                new UpsertRuleSectionTranslationInput(sectionId, "vi", maliciousTitle, maliciousBody, ExpectedRowVersion: null));
             Assert.True(result.IsSuccess);
             translationId = result.Value.TranslationId;
         }
@@ -139,7 +139,7 @@ public sealed class RuleSanitizeTests
             var uc = scope.ServiceProvider
                 .GetRequiredService<IUseCase<UpsertRuleSectionTranslationInput, UpsertRuleSectionTranslationResult>>();
             var result = await uc.ExecuteAsync(
-                new UpsertRuleSectionTranslationInput(sectionId, "en", Title: "   ", BodyHtml: null));
+                new UpsertRuleSectionTranslationInput(sectionId, "en", Title: "   ", BodyHtml: null, ExpectedRowVersion: null));
             Assert.True(result.IsSuccess);
             translationId = result.Value.TranslationId;
         }
@@ -163,27 +163,32 @@ public sealed class RuleSanitizeTests
         var resortId = Guid.CreateVersion7();
         var sectionId = await CreateSectionAsync(provider, resortId);
 
-        async Task<Guid> Upsert(string body)
+        async Task<(Guid Id, uint RowVersion)> Upsert(string body, uint? expectedRowVersion)
         {
             await using var scope = provider.CreateAsyncScope();
             var uc = scope.ServiceProvider
                 .GetRequiredService<IUseCase<UpsertRuleSectionTranslationInput, UpsertRuleSectionTranslationResult>>();
             var result = await uc.ExecuteAsync(
-                new UpsertRuleSectionTranslationInput(sectionId, "vi", "T", body));
+                new UpsertRuleSectionTranslationInput(sectionId, "vi", "T", body, expectedRowVersion));
             Assert.True(result.IsSuccess);
-            return result.Value.TranslationId;
+            var db = scope.ServiceProvider.GetRequiredService<RulesDbContext>();
+            var rowVersion = await db.RuleSectionTranslations
+                .Where(translation => translation.Id == result.Value.TranslationId)
+                .Select(translation => translation.RowVersion)
+                .SingleAsync();
+            return (result.Value.TranslationId, rowVersion);
         }
 
-        var first = await Upsert("<p>một</p>");
-        var second = await Upsert("<p>hai</p>");
+        var first = await Upsert("<p>một</p>", expectedRowVersion: null);
+        var second = await Upsert("<p>hai</p>", first.RowVersion);
 
         // Cùng (section, lang) → UPSERT cập nhật đúng một bản ghi (không tạo trùng).
-        Assert.Equal(first, second);
+        Assert.Equal(first.Id, second.Id);
         await using var readScope = provider.CreateAsyncScope();
         var db = readScope.ServiceProvider.GetRequiredService<RulesDbContext>();
         var count = await db.RuleSectionTranslations.CountAsync(t => t.RuleSectionId == sectionId && t.LanguageCode == "vi");
         Assert.Equal(1, count);
-        var stored = await db.RuleSectionTranslations.SingleAsync(t => t.Id == second);
+        var stored = await db.RuleSectionTranslations.SingleAsync(t => t.Id == second.Id);
         Assert.Contains("hai", stored.BodyHtmlSanitized!, StringComparison.Ordinal);
     }
 }

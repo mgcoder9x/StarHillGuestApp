@@ -240,9 +240,14 @@ Docker daemon phải có cho test Postgres; không "skip mềm" làm bằng ch�
    RequireStaff, resortId server-side) + `AddFaqApi` + Host wire (conn Faq + migrate + AddFaqApi) + appsettings/compose/
    CI-bundle faq. Test `GuestFaqTreeUseCaseTests` (5) + `FaqEndpointAuthTests` (4) + `HostEndpointWiringSmokeTests` +4
    InlineData + `ErrorCodeSnapshotTests` +faq_disabled. `vp all` StarHill.Api.Tests 60, Faq.IntegrationTests 26 pass/5 skip.
-6. **E-Faq.4b — Admin READ-tree (editor):** ⏳ HOÃN (pairs admin FE — I10): full tree incl inactive + raw translations
-   mỗi ngôn ngữ + `MissingLanguages` (Req 8.7 "chỉ báo ngôn ngữ thiếu"). Cần reader shape riêng (activeOnly=false +
-   không resolve-một-ngôn-ngữ). Làm khi dựng admin FE.
+6. **E-Faq.4b — Admin READ-tree (editor):** ✅ XONG (QR-N-078/QR-AD-053; pairs FE.4b — I10): port RIÊNG
+   `IFaqAdminReader`/`EfFaqAdminReader` đọc full tree kể cả inactive, không tái dùng `IFaqReader` guest active-only.
+   `GET /v1/faq/admin` (RequireStaff) trả category/item ID + `RowVersion`, key/parent/sort/active, mọi translation raw
+   per-language (nội dung lưu đã sanitize) + `EnabledLanguageCodes/DefaultLanguageCode` + `MissingLanguages` (Req 8.7).
+   Use case dựng cây category→root item→children; reader vẫn trả snapshot phẳng để query đơn giản/F9-compliant.
+   Mutation editor round-trip `ExpectedRowVersion` cho category/item/reorder; translation upsert dùng nullable expected
+   token để phân biệt “đã quan sát chưa có row” với stale create/delete. `FaqStaleEditTests` khóa conflict tuần tự;
+   FE.4b đã bật route `/faq`, full tree/inactive/missing-language, CRUD/translation/parent/reorder accessible.
 
 Mỗi slice dừng nếu: build warning/error; JournalConsistency INV-1..6 fail; migration model drift; Docker unique/
 concurrency test fail; raw cookie/secret lọt log; **AD chuyển Implemented mà thiếu `Guard-Tests` (INV-6)**.

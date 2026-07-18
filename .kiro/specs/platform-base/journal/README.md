@@ -64,23 +64,24 @@
 
 ---
 
-## Snapshot hoàn tất (cập nhật 2026-07-10 — đã verify trong phiên)
+## Snapshot lịch sử 2026-07-10 (không thay thế current audit)
 
-> Ghi lại trạng thái ĐÃ KIỂM CHỨNG để người/AI đời sau đối chiếu nhanh. Mọi con số dưới đây lấy từ thao tác thật (`dotnet build`/`dotnet test` clean rebuild + Docker), KHÔNG phải trí nhớ.
+> Ghi lại baseline ĐÃ KIỂM CHỨNG tại thời điểm đó để đối chiếu. Trạng thái mới nhất đọc `../current-audit-2026-07-18.md` + N-083; không dùng số test lịch sử để tuyên bố diff hiện tại xanh.
 
 - **Tiến độ:** **21/21 task `[x]`** trong `tasks.md` (build order P0 → P1 → P1.5 → P2 hoàn tất, gồm cả các task Docker: 7.4, 8.3, 14, 21).
 - **Chất lượng build:** clean rebuild `Platform.slnx` → **0 warning** (`TreatWarningsAsErrors=true`).
 - **Test:** **227 test xanh · 0 fail · 0 skip** — Testcontainers **RabbitMQ + PostgreSQL chạy THẬT** với Docker (Server 29.5.2). Phân bố: Bedrock.UnitTests 54 · Identity.UnitTests 6 · Identity.IntegrationTests 1 · Bedrock.ContractTests 2 · Bedrock.ArchitectureTests 33 · Bedrock.Api.Tests 36 · StarHill.Api.Tests 3 · Bedrock.Infrastructure.Tests 78 · Adapters.Messaging.RabbitMq.Tests 14.
 - **Correctness Properties:** **CP1–CP15 đều ✅ ENFORCED** (bảng guard `05-anti-drift.md`). Không còn CP hay AD ở trạng thái `PARTIAL`/`PENDING`.
-- **ID mới nhất:** `AD-049` · `DV-016` · `TO-009` · `N-055` (liên tục 1..N, được `JournalConsistencyTests` INV-1 gác).
+- **ID mới nhất hiện tại:** `AD-104` · `DV-016` · `TO-014` · `N-083` (liên tục 1..N; AD-104/N-083 cập nhật 2026-07-18).
 - **Anti-drift:** `Bedrock.ArchitectureTests/JournalConsistencyTests` (INV-1..5) xanh trong mỗi `dotnet test`; `getDiagnostics` trên 4 file spec + journal: 0 lỗi.
 
-### Cách re-verify (một lệnh)
+### Cách re-verify hiện tại (một lệnh fail-closed)
 ```
-cd platform ; dotnet test Platform.slnx
+platform\scripts\vp.cmd all
 ```
-- **Có Docker** → chạy đủ 226 test (gồm integration RabbitMQ/Postgres).
-- **Không có Docker** → các integration `[SkippableFact]` tự **skip** (không fail suite); phần còn lại vẫn phải xanh + 0 warning. Đây là cơ chế N-012 (KHÔNG xoá test Docker, chỉ skip có điều kiện).
+- **Có .NET SDK + Docker** → build, validator, unit/architecture/integration/Testcontainers phải chạy.
+- **Thiếu .NET SDK** → build FAIL/127 và test BLOCKED; không được báo xanh hoặc chạy artifact cũ (AD-104).
+- **Không có Docker** → integration local có thể skip theo cơ chế N-012; CI có Docker phải chạy thật/fail-closed.
 
 ### Bằng chứng "base cực chất" (DoD §16 — mỗi mục có guard)
 - Thêm module = 5 project + Host ráp → CP4/CP5 (`ModuleBoundaryTests`) + module `Identity` thật.

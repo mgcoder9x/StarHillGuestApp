@@ -37,6 +37,8 @@ public sealed class UpdateRuleSectionUseCase : ICommandUseCase<UpdateRuleSection
             return Result.Failure(RulesErrors.RuleSectionNotFound);
         }
 
+        ConcurrencyGuard.EnsureExpectedRowVersion(section.RowVersion, input.ExpectedRowVersion);
+
         section.SortOrder = input.SortOrder;
         section.IsRequired = input.IsRequired;
         section.RequireScrollEnd = input.RequireScrollEnd;

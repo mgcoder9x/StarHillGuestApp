@@ -97,7 +97,7 @@ public sealed class GuestFaqTreeUseCaseTests
     {
         await using var scope = provider.CreateAsyncScope();
         var uc = scope.ServiceProvider.GetRequiredService<IUseCase<UpsertFaqCategoryTranslationInput, UpsertFaqCategoryTranslationResult>>();
-        Assert.True((await uc.ExecuteAsync(new UpsertFaqCategoryTranslationInput(categoryId, lang, name))).IsSuccess);
+        Assert.True((await uc.ExecuteAsync(new UpsertFaqCategoryTranslationInput(categoryId, lang, name, ExpectedRowVersion: null))).IsSuccess);
     }
 
     private static async Task<Guid> CreateItemAsync(ServiceProvider provider, Guid categoryId, Guid? parentId, bool isActive)
@@ -113,7 +113,7 @@ public sealed class GuestFaqTreeUseCaseTests
     {
         await using var scope = provider.CreateAsyncScope();
         var uc = scope.ServiceProvider.GetRequiredService<IUseCase<UpsertFaqItemTranslationInput, UpsertFaqItemTranslationResult>>();
-        Assert.True((await uc.ExecuteAsync(new UpsertFaqItemTranslationInput(itemId, lang, question, answer))).IsSuccess);
+        Assert.True((await uc.ExecuteAsync(new UpsertFaqItemTranslationInput(itemId, lang, question, answer, ExpectedRowVersion: null))).IsSuccess);
     }
 
     private static async Task<Result<GetGuestFaqTreeResult>> ReadTreeAsync(ServiceProvider provider, Guid resortId, string? lang)

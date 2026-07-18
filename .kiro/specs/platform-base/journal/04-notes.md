@@ -851,3 +851,18 @@
 - **CHỜ user chốt Q1/Q2/Q3 (mục §8 doc)** trước khi triển khai — vì đụng schema migration cross-tree (platform + starhill Identity) không Docker-verify đầy đủ được → design-first đúng process user.
 - Khi triển khai: theo §9 (6 increment), thêm AD mới (số kế tiếp) + guard-map + TO entries.
 - (Cập nhật) User đã DUYỆT cả Q1/Q2/Q3 → **ĐÃ TRIỂN KHAI: AD-102** (6 increment, migration cross-tree, guard tracestate). Design doc giữ làm hồ sơ.
+
+### N-083 — Current audit 2026-07-18: base mạnh, nhưng phát hiện cổng xanh giả và đóng tận gốc
+- **Nguồn sự thật hiện tại**: `platform/src` là Bedrock duy nhất; `foundation/` chỉ lịch sử/rationale, `resort-qr/` là product legacy. README “greenfield/chưa có platform” là stale và đã được sửa.
+- **Phát hiện thực nghiệm nghiêm trọng**: máy không có `dotnet`; `verify.ps1` cũ vẫn có thể ghi build/test OK do command-not-found không làm step fail và `$LASTEXITCODE` giữ 0. Đây không phải lỗi cosmetic — nó làm mất giá trị của toàn bộ anti-drift/test suite.
+- **Sau AD-104**: `platform\scripts\vp.cmd build` FAIL exit 127; `vp all` build FAIL + validator OK + test BLOCKED (không chạy artifact cũ). StarHill mirror cùng hành vi. Hai validator chạy PASS không cần PyYAML và được gọi thật từ workflow.
+- **Đánh giá base**: dependency/layering, module-scoped persistence, domain-event/outbox/inbox correctness, RabbitMQ retry/liveness, security defaults, ProblemDetails, migrations, Testcontainers và journal guards đều ở mức mạnh. Base đủ làm nền StarHill và sản phẩm mới; không cần quay về/revive `foundation`.
+- **Khoảng trống chiến lược còn thật** (không phải blocker StarHill 60–100 phòng): public API compatibility surface; runbook/SLO + oldest-pending/DLQ replay; supply-chain full pin (lockfile/action SHA/image digest/SBOM); module scaffolder; deep assembly discovery còn một phần hardcode; broker-restart/soak proof; idempotency fencing/replay khi có use case cần.
+- **Giới hạn kiểm chứng phiên này**: không có .NET SDK nên KHÔNG tuyên bố build/test C# mới đã pass local. Bằng chứng đã chạy: hai Python CI validator PASS, frontend build PASS, Playwright 25/25; C# guard sẽ được CI compile/run.
+
+### N-084 — SDK portable re-verification: AD-104 và toàn bộ base compile/run local thành công (2026-07-18)
+- Cài SDK portable .NET `10.0.301` ngoài repo tại `C:\Users\toann\.codex\runtimes\dotnet-10.0.301`; restore `platform/Platform.slnx` vì một số `project.assets.json` chưa tồn tại.
+- `platform` Release build PASS 0 warning/0 error; full solution test 0 failure. Test Postgres/RabbitMQ/Testcontainers skip mềm vì Docker daemon không khả dụng, đúng fixture contract; baseline Docker 401/0-skip N-078 vẫn là bằng chứng lịch sử riêng.
+- Chạy command governance thật bằng PowerShell process `-ExecutionPolicy Bypass` chỉ cho invocation (policy máy chặn script mặc định, không đổi policy hệ thống): `platform/tools/verify.ps1 all` PASS build + validator + full-test; `platform/tools/verify.ps1 journal` PASS.
+- `VerificationGateTests.AD104_verification_scripts_fail_closed_and_ci_runs_the_validator` compile/run local thành công. Do đó nhãn “SOURCE-ENFORCED/chờ CI” của AD-104 được nâng thành **ENFORCED local + CI**.
+- Đồng thời StarHill `verify.ps1 all`/`journal` PASS, frontend 42/42; audit hiện hành được cập nhật từ “chưa có SDK” sang bằng chứng executable hiện tại.

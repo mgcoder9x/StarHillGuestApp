@@ -9,8 +9,8 @@
     <PackageVersion Include="EFCore.NamingConventions" Version="10.0.1" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
-    <!-- HtmlSanitizer (Ganss.Xss) — sanitize HTML nội quy/FAQ (QR-AD-031/CP12). Version tái dùng từ resort-qr (verify build). -->
-    <PackageVersion Include="HtmlSanitizer" Version="9.0.892" />
+    <!-- 9.0.892 pins vulnerable AngleSharp 0.17.1 (GHSA-pgww-w46g-26qg); 9.1.949-beta moves to patched AngleSharp >= 1.5.1. -->
+    <PackageVersion Include="HtmlSanitizer" Version="9.1.949-beta" />
     <PackageVersion Include="Konscious.Security.Cryptography.Argon2" Version="1.3.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.9" />

@@ -243,6 +243,13 @@ Docker daemon phải có Server cho các test Postgres; không "skip mềm" làm
      `GetPublicationHistoryUseCase` (`IRulePublicationReader.ListHistoryAsync` — metadata Version giảm dần). Endpoint
      `GET /v1/rules/preview?lang=` + `GET /v1/rules/publications`. Test `RulesAdminReadTests` (SQLite, 5) + `RulesAdminEndpointAuthTests`
      +2 (GET Staff→200/no-token→401). `vp all` StarHill.Api.Tests 52/52, Rules.IntegrationTests 27 pass/9 skip. Mặt admin nội quy hoàn tất.
+   - **D-Rules.3c — Admin Draft read-model cho editor:** ✅ XONG (QR-N-078/QR-AD-053): port RIÊNG
+     `IRuleAdminReader`/`EfRuleAdminReader`, không tái dùng preview DTO. `GET /v1/rules/admin` (RequireStaff) trả
+     `RuleSetId/RowVersion`, từng section có `SectionId/RowVersion/Key/config`, mọi translation theo ngôn ngữ có
+     `TranslationId/RowVersion/Title/BodyHtmlSanitized`, cộng `EnabledLanguageCodes/DefaultLanguageCode` và
+     `MissingLanguages`. Mutation editor round-trip `ExpectedRowVersion`; translation upsert dùng nullable token
+     (`null` = editor đã quan sát chưa có row) để bắt cả stale edit tuần tự/create-race. `ConcurrencyGuard` dùng chung;
+     guard `RulesAdminReadTests` + `RuleStaleEditTests` + endpoint auth. FE Rules editor/publish hoàn tất ở FE.4b.
 5. **C-GA.4 — GuestAccess current-guest-context port** (§6.2): ✅ XONG (QR-N-037/QR-AD-032): `ICurrentGuestContextResolver`
    + `CurrentGuestContext` (Contracts, Result<T>) + `EfCurrentGuestContextResolver` (Resolve đọc-kiểm-window KHÔNG touch;
    Touch trượt+giữ idle-delta, no-op nếu không Active) + 2 mã lỗi `session_expired`/`guest_context_missing`. Test

@@ -40,6 +40,7 @@ public static class FaqInfrastructureExtensions
 
         // Read-model guest đọc cây FAQ active (E-Faq.4). DbContext cụ thể (unkeyed, type riêng module) — mirror EfFaqReader.
         services.AddScoped<IFaqReader, EfFaqReader>();
+        services.AddScoped<IFaqAdminReader, EfFaqAdminReader>();
 
         // Guest read cây (E-Faq.4, CP3/CP5): read-only, cross-module Contracts (config + i18n resolver + rule-gate).
         // Faq là consumer ĐẦU TIÊN của IRuleGate — gate đặt TRONG use case (defense-in-depth). Không transaction.
@@ -48,6 +49,11 @@ public static class FaqInfrastructureExtensions
             sp.GetRequiredService<ResortConfig.Contracts.Queries.IResortGuestConfigQuery>(),
             sp.GetRequiredService<ResortConfig.Contracts.Localization.ITranslationResolver>(),
             sp.GetRequiredService<Rules.Contracts.IRuleGate>()));
+
+        services.AddScoped<IUseCase<GetFaqAdminTreeInput, GetFaqAdminTreeResult>>(sp => new GetFaqAdminTreeUseCase(
+            sp.GetRequiredService<IFaqAdminReader>(),
+            sp.GetRequiredService<ResortConfig.Contracts.Queries.IResortGuestConfigQuery>(),
+            sp.GetRequiredService<ResortConfig.Contracts.Localization.ITranslationResolver>()));
 
         // Use case Admin CRUD (E-Faq.2): factory resolve repo/UoW bằng module key (mirror Rules). Value-returning
         // IUseCase tự quản một SaveChanges; void command ICommandUseCase khai PersistenceKey (decorator resolve keyed UoW).

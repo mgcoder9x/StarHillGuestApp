@@ -27,6 +27,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate CI invariants
+        run: python tests/validate_ci.py
+        working-directory: starhill
+
       - name: Setup .NET (pin theo starhill/global.json)
         uses: actions/setup-dotnet@v4
         with:
@@ -48,6 +52,42 @@ jobs:
       - name: Test (full suite)
         run: dotnet test Platform.slnx -c Release --no-build
         working-directory: starhill
+
+  frontend:
+    name: frontend build + Playwright browser gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: starhill/web/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: starhill/web
+
+      - name: Build both SPAs
+        run: pnpm build
+        working-directory: starhill/web
+
+      - name: Install Chromium
+        run: pnpm --filter @starhill/e2e exec playwright install --with-deps chromium
+        working-directory: starhill/web
+
+      - name: Run responsive browser gate
+        run: pnpm e2e
+        working-directory: starhill/web
 
   docker-image:
     name: docker build Host (StarHill.Api)

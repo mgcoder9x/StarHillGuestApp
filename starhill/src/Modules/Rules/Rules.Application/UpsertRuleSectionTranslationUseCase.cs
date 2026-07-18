@@ -62,11 +62,14 @@ public sealed class UpsertRuleSectionTranslationUseCase
 
         if (existing is not null)
         {
+            ConcurrencyGuard.EnsureExpectedRowVersion(existing.RowVersion, input.ExpectedRowVersion);
             existing.Title = title;
             existing.BodyHtmlSanitized = body;
             await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
             return Result.Success(new UpsertRuleSectionTranslationResult(existing.Id));
         }
+
+        ConcurrencyGuard.EnsureExpectedRowVersion(null, input.ExpectedRowVersion);
 
         var translation = new RuleSectionTranslation
         {
