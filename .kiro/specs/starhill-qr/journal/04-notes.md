@@ -1096,3 +1096,10 @@
 - **GUEST JOURNEY (kiến trúc B QR-AD-057) ĐỦ 4 CAPABILITY THẬT**: resolve→home shell gated→**Rules force-read** (FE.5a)→**FAQ cây** (FE.5b)→**Chat polling** (FE.5c)→**Housekeeping** (FE.5d). Tất cả nối 8 guest endpoint thật, rule-gate server-authoritative, session_expired→rescan tập trung ApiGateway. Mockup cũ ở /demo.
 - **CÒN LẠI**: **FE.5c-ii** SignalR realtime (accelerator, verify Docker/CI — QR-TO-020); dọn `SectionPlaceholderView.vue` (unused) nếu muốn; guest-web đổi ngôn ngữ ↔ refetch nội dung server đã có ở Rules/FAQ (INV5).
 - **NEXT**: FE.5c-ii (SignalR) HOẶC review tổng guest journey bằng ảnh Playwright + polish thị giác HomeShell/views (đồng bộ với admin đã polish). Tùy ưu tiên user.
+
+
+### QR-N-087 — FE.5e: chụp ảnh trọn hành trình guest (browser thật) + dọn SectionPlaceholderView (2026-07-18)
+- **Mục đích**: user muốn "xem giao diện" + "mở web bằng browser phát hiện lỗi" → sinh ảnh trọn hành trình guest THẬT để review.
+- **Đã làm + verify**: `guest-journey-screenshots.spec.ts` mock đủ 8 endpoint → chụp **7 ảnh** ở `starhill/web/screenshots/`: `guest-journey-{home,rules,faq,chat,housekeeping}-390.png` (phone) + `guest-journey-{home,faq}-1280.png` (desktop). Chat có hội thoại demo (guest+staff), housekeeping có ticket InProgress (timeline). Xoá `views/SectionPlaceholderView.vue` (không còn dùng — 4/4 capability có view thật). `pnpm build` guest EXIT=0; **Playwright toàn suite 65/65 PASS** (+2 screenshot). Journal INV 6/6.
+- **LƯU Ý (chưa làm — để user quyết)**: (a) ảnh là dữ liệu MOCK demo (nội dung thật đến từ backend khi chạy Docker); (b) UI guest strings flow mới (rulesFlow/faqFlow/chatFlow/housekeepingFlow/homeShell/rescan) hiện chỉ en+vi — ko/zh fallback en (Req 2 muốn 4 ngôn ngữ → cân nhắc bổ sung ko/zh cho UI flow); (c) FE.5c-ii SignalR realtime vẫn hoãn (verify Docker/CI).
+- **NEXT (user chọn)**: (1) bổ sung i18n ko/zh cho flow guest (hoàn tất Req 2 mặt UI); (2) polish thị giác guest đồng bộ token/dark như admin; (3) FE.5c-ii SignalR (Docker/CI). Tôi không tự chọn — báo cáo ảnh để user review trước.
