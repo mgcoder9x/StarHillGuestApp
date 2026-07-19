@@ -156,3 +156,28 @@
 - Phía QR-giả-quét-được (bỏ): sinh QR thật client-side cần thêm thư viện (qrcode) chỉ để mock DEV → thừa dep + có thể lệch QR thật của BE (URL {base}/r/{token}) → gây tin sai. Loại.
 - Chi phí chấp nhận: ảnh mock không phải QR thật (rõ ràng qua chữ "QR demo"). Điều kiện xem xét lại: khi có backend chạy local (Docker) → xem QR thật, mock chỉ dùng khi offline.
 - Reversibility: High (đổi hằng MOCK_QR_DATA_URL). Ref: QR-AD-050; QR-N-073; QR-N-015.
+
+
+### QR-TO-020 — Chat FE: giao POLLING trước (FE.5c) vs bó SignalR realtime cùng slice
+- Chosen: FE.5c = chat **polling** hoàn chỉnh (nguồn sự thật, `GET /guest/conversation` ~4s + refresh-sau-gửi); SignalR realtime tách **FE.5c-ii** (deferred, verify Docker/CI). (QR-N-085.)
+- Provenance/Evidence: backend thiết kế rõ (đọc `IConciergeRealtimeNotifier.cs`/`SignalRConciergeNotifier.cs`): "Realtime CHỈ tăng tốc — polling LUÔN là nguồn sự thật/fallback"; payload realtime = **Id trần** (`MessageReceived{conversationId,messageId}` → client GỌI GET để lấy nội dung). Req 5.5 "IF realtime không khả dụng THEN fallback polling".
+- Phía chọn (polling trước): satisfy Req 5 functionally (tin hiện trong 1 chu kỳ poll); test XANH được KHÔNG cần hub chạy; là đúng "nguồn sự thật" theo thiết kế BE. Realtime chỉ giảm độ trễ → bồi sau không phá gì.
+- Phía bó-SignalR-ngay (bỏ): thêm dep `@microsoft/signalr` + kết nối `/hubs/chat`; trong e2e KHÔNG có hub → **WebSocket-fail** dễ log console-error → phá gate no-console-error (hoặc buộc tắt gate = mất anti-drift). Chỉ verify đúng khi hub chạy (Docker/CI).
+- Chi phí chấp nhận: guest thấy tin lễ tân trễ tối đa ~chu kỳ poll cho tới khi FE.5c-ii bật realtime. Điều kiện xem xét lại: FE.5c-ii thêm SignalR lazy (LogLevel.None + catch → fail im lặng, poll fallback) verify negotiate 200 trên hub thật.
+- Reversibility: High (thêm lớp realtime, không đổi polling). Ref: QR-AD-057; QR-N-085; design-module 10 §6/§8.
+
+
+### QR-TO-018 — Role-gating UI: decode JWT `role` client-side vs endpoint whoami vs luôn-hiện-để-403
+- Chosen: decode `role` từ JWT access-token client-side (`decodeJwtRole` — admin-web), gate hiện/ẩn nút mutation; BE `RequireAdmin` là nguồn thực thi. (FE.3b-i, QR-AD-051.)
+- Provenance/Evidence: claim `role` verify từ `IdentityClaims.cs` (admin|staff lowercase). Verify: Playwright `staff role hides add + edit controls` (token role=staff → nút Thêm/Sửa count 0, vẫn Xem QR).
+- Phía chọn (decode JWT): 0 round-trip thêm, tức thời sau login; chuẩn ngành cho gating UI; KHÔNG verify chữ ký vì chỉ ẩn/hiện nút (không phải quyết định bảo mật) — BE 403 vẫn chặn nếu lách UI.
+- Phía whoami (bỏ): endpoint mới + round-trip mỗi lần cần role; thừa khi role đã nằm trong token. Phía luôn-hiện-để-403 (bỏ): Staff thấy nút bấm vào bị 403 = UX xấu.
+- Chi phí chấp nhận: FE tin payload JWT chưa-verify-chữ-ký cho GATING (không cho bảo mật) — an toàn vì BE thực thi. Điều kiện xem xét lại: nếu hiển thị thông tin nhạy cảm theo role (không chỉ nút) → whoami có kiểm chứng.
+- Reversibility: High. Ref: QR-AD-051; QR-AD-038 (role claim); QR-AD-019 (BE RequireAdmin).
+
+### QR-TO-019 — Admin Rooms mock create/update: STATELESS vs mock-store in-memory
+- Chosen: (ghi bổ sung hồi tố — quyết định ở FE.3b-i) mock tạo/sửa phòng ban đầu STATELESS; sau nâng thành mock-store in-memory (admin api-client `mockRooms` mutable) để UI dev tập luyện luồng reload-after-command giống API thật. (QR-AD-051; hoàn thiện ở bản admin api-client hiện tại.)
+- Provenance/Evidence: `admin-web/src/api/client.ts` mock branch giữ một collection `mockRooms` + create/update/status/delete/rotate thay đổi cùng collection (đọc code hiện tại).
+- Phía chọn (mock-store in-memory): dev demo mượt (phòng mới hiện sau tạo) không cần backend; phản ánh đúng luồng command→reload. Phía stateless (bỏ ở admin): tạo xong list không đổi → demo khó hiểu.
+- Chi phí chấp nhận: mock-store chỉ sống trong phiên tab (không persist) — đủ cho demo DEV; KHÔNG phải nguồn thật. Điều kiện xem xét lại: khi có backend chạy (Docker) dùng dữ liệu thật.
+- Reversibility: High. Ref: QR-AD-051; QR-N-073 (mock mode).

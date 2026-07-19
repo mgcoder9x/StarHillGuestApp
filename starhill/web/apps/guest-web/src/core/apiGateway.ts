@@ -80,6 +80,36 @@ export interface GuestFaqTree {
   categories: GuestFaqCategory[];
 }
 
+/** Tin nhắn guest-facing — khớp GuestMessageView. senderType string enum ('Guest'|'Staff'|'System'). body PLAIN TEXT (INV8: render textContent). */
+export interface GuestMessage {
+  messageId: string;
+  senderType: 'Guest' | 'Staff' | 'System';
+  body: string;
+  createdAt: string;
+  readByStaffAt: string | null;
+}
+
+/** Hội thoại guest-facing — khớp GuestConversationView. */
+export interface GuestConversation {
+  conversationId: string;
+  status: 'Open' | 'Closed';
+  lastMessageAt: string;
+  messages: GuestMessage[];
+}
+
+/** Khớp GetGuestConversationResult (conversation null nếu visit chưa mở hội thoại). */
+export interface GetGuestConversationResult {
+  conversation: GuestConversation | null;
+}
+
+/** Khớp SendGuestMessageResponse. */
+export interface SendGuestMessageResult {
+  conversationId: string;
+  messageId: string;
+  status: 'Open' | 'Closed';
+  reopened: boolean;
+}
+
 export class GuestApiError extends Error {
   public readonly status: number;
   public readonly code: string | undefined;
@@ -236,6 +266,11 @@ const MOCK_FAQ: GuestFaqTree = {
   ],
 };
 
+// MOCK conversation STATEFUL (DEV offline). KHÔNG seed tin STAFF giả (không bịa nhân viên) — bắt đầu rỗng,
+// guest gửi thì hiện. Real staff reply đến từ backend thật.
+let mockConversation: GuestConversation | null = null;
+let mockMsgSeq = 1;
+
 export const apiGateway = {
   resolve: async (token: string): Promise<GuestResolveResponse> => {
     if (MOCK) {
@@ -269,5 +304,29 @@ export const apiGateway = {
       return MOCK_FAQ;
     }
     return guestFetch<GuestFaqTree>('GET', '/v1/guest/faq', { query: { roomId, lang: lang ?? undefined } });
+  },
+
+  getConversation: async (roomId: string): Promise<GetGuestConversationResult> => {
+    if (MOCK) {
+      await mockDelay();
+      return { conversation: mockConversation };
+    }
+    return guestFetch<GetGuestConversationResult>('GET', '/v1/guest/conversation', { query: { roomId } });
+  },
+
+  sendMessage: async (roomId: string, body: string): Promise<SendGuestMessageResult> => {
+    if (MOCK) {
+      await mockDelay();
+      const now = new Date().toISOString();
+      if (!mockConversation) {
+        mockConversation = { conversationId: '30000000-0000-0000-0000-000000000001', status: 'Open', lastMessageAt: now, messages: [] };
+      }
+      const messageId = `40000000-0000-0000-0000-${String(mockMsgSeq++).padStart(12, '0')}`;
+      mockConversation.messages.push({ messageId, senderType: 'Guest', body, createdAt: now, readByStaffAt: null });
+      mockConversation.status = 'Open';
+      mockConversation.lastMessageAt = now;
+      return { conversationId: mockConversation.conversationId, messageId, status: 'Open', reopened: false };
+    }
+    return guestFetch<SendGuestMessageResult>('POST', '/v1/guest/messages', { body: { roomId, body } });
   },
 };
