@@ -1,6 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <!-- Domain → SharedKernel. KHÔNG EF/ASP.NET/Infrastructure/Api. -->
-  <ItemGroup>
-    <ProjectReference Include="..\ResortQr.SharedKernel\ResortQr.SharedKernel.csproj" />
-  </ItemGroup>
-</Project>

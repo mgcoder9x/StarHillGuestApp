@@ -75,7 +75,10 @@ function Step-Build {
     $dotnet = Resolve-NativeCommand 'dotnet'
     & $dotnet restore $Solution --locked-mode
     if ($LASTEXITCODE -ne 0) { return }
-    & $dotnet build $Solution --no-restore -clp:ErrorsOnly
+    # Build ĐÚNG `-c Release` để khớp Step-TestNoBuild (`test -c Release --no-build`). Trước đây build Debug (mặc
+    # định) còn test chạy Release → `--no-build` phải dựa vào artifact Release CŨ (stale); project mới chưa từng
+    # build Release (vd Bedrock.ReferenceHost.Tests) → "dll not found" = FAIL giả, gate không tất định. Fix tận gốc.
+    & $dotnet build $Solution --no-restore -c Release -clp:ErrorsOnly
 }
 function Step-Ci {
     $python = Get-Command python -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -102,11 +105,13 @@ function Step-Ci {
 
 function Step-Operations {
     $python = Resolve-NativeCommand 'python'
-    & $python tools/validate-operations.py
+    # Absolute path (Join-Path $Platform) — cwd-independent. Trước đây dùng relative `tools/...` nên chạy `vp all`
+    # từ repo-root resolve nhầm sang root `tools/` (rỗng) → FAIL giả. Khớp pattern Step-Scaffold/module-template.
+    & $python (Join-Path $Platform 'tools\validate-operations.py')
 }
 function Step-Release {
     $python = Resolve-NativeCommand 'python'
-    & $python tools/validate-release.py
+    & $python (Join-Path $Platform 'tools\validate-release.py')
 }
 function Step-TestFull {
     $dotnet = Resolve-NativeCommand 'dotnet'

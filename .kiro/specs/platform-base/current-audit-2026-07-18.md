@@ -24,6 +24,8 @@ Kết luận thực dụng:
 
 Khuyến nghị với `foundation/`: **chưa xoá trong lượt này**. Đầu tiên giữ nhãn archival ở root README; khi muốn dọn, làm một quyết định riêng gồm `rg` toàn repo, di chuyển rationale còn độc quyền vào spec và xác nhận CI/solution không reference rồi mới xoá recoverable/commit riêng.
 
+> **CẬP NHẬT 2026-07-18 (SUPERSEDED):** quyết định riêng đã thực hiện — `foundation/` + `resort-qr/` ĐÃ XOÁ theo đúng điều kiện trên (grep toàn repo xác nhận không project/CI/solution reference; rationale giữ ở `.kiro/specs/` + `docs/`; xoá recoverable qua git history + commit riêng). Chi tiết: `starhill-qr` journal QR-N-080. Repo nay một-phiên-bản: `platform/` + `starhill/`.
+
 ## 3. Bằng chứng phiên này
 
 | Gate | Kết quả | Ý nghĩa |
