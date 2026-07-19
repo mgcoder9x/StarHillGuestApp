@@ -3,6 +3,7 @@ import GuestResolveView from '../views/GuestResolveView.vue';
 import HomeShell from '../views/HomeShell.vue';
 import RulesView from '../views/RulesView.vue';
 import RescanView from '../views/RescanView.vue';
+import FaqView from '../views/FaqView.vue';
 import SectionPlaceholderView from '../views/SectionPlaceholderView.vue';
 import HomeView from '../views/HomeView.vue'; // MOCKUP tĩnh — chỉ dùng ở /demo (tham chiếu thị giác, QR-DV-008).
 import { useJourneyCore } from '../core/journeyCore';
@@ -12,7 +13,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/rescan', name: 'rescan', component: RescanView, meta: { entry: true } },
   { path: '/', name: 'home', component: HomeShell },
   { path: '/rules', name: 'rules', component: RulesView },
-  { path: '/faq', name: 'faq', component: SectionPlaceholderView, meta: { capability: 'faq' } },
+  { path: '/faq', name: 'faq', component: FaqView, meta: { capability: 'faq' } },
   { path: '/chat', name: 'chat', component: SectionPlaceholderView, meta: { capability: 'chat' } },
   { path: '/housekeeping', name: 'housekeeping', component: SectionPlaceholderView, meta: { capability: 'housekeeping' } },
   { path: '/demo', name: 'demo', component: HomeView, meta: { entry: true } },

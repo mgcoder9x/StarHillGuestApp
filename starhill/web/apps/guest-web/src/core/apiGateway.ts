@@ -50,6 +50,36 @@ export interface AcknowledgeRulesResponse {
   alreadyAcknowledged: boolean;
 }
 
+/** Item FAQ đã render — khớp RenderedFaqItem (đệ quy children). answerHtmlSanitized sanitize server (INV8). */
+export interface GuestFaqItem {
+  id: string;
+  sortOrder: number;
+  question: string | null;
+  answerHtmlSanitized: string | null;
+  resolvedLanguage: string;
+  isFallback: boolean;
+  isMissing: boolean;
+  children: GuestFaqItem[];
+}
+
+/** Category FAQ đã render — khớp RenderedFaqCategory. */
+export interface GuestFaqCategory {
+  id: string;
+  key: string;
+  sortOrder: number;
+  name: string | null;
+  resolvedLanguage: string;
+  isFallback: boolean;
+  isMissing: boolean;
+  items: GuestFaqItem[];
+}
+
+/** Khớp GetGuestFaqTreeResult. */
+export interface GuestFaqTree {
+  language: string;
+  categories: GuestFaqCategory[];
+}
+
 export class GuestApiError extends Error {
   public readonly status: number;
   public readonly code: string | undefined;
@@ -166,6 +196,46 @@ const MOCK_RULES: GuestRulesResponse = {
 };
 let mockAckedVersion = 0;
 
+const MOCK_FAQ: GuestFaqTree = {
+  language: 'vi',
+  categories: [
+    {
+      id: '21000000-0000-0000-0000-000000000001', key: 'arrival', sortOrder: 10, name: 'Nhận phòng & Tiện ích',
+      resolvedLanguage: 'vi', isFallback: false, isMissing: false,
+      items: [
+        {
+          id: '23000000-0000-0000-0000-000000000001', sortOrder: 10, question: 'Mật khẩu Wi-Fi là gì?',
+          answerHtmlSanitized: '<p>Wi-Fi: <strong>StarHill-Guest</strong>, mật khẩu <strong>welcome2026</strong>.</p>',
+          resolvedLanguage: 'vi', isFallback: false, isMissing: false, children: [],
+        },
+        {
+          id: '23000000-0000-0000-0000-000000000002', sortOrder: 20, question: 'Giờ ăn sáng?',
+          answerHtmlSanitized: '<p>Buffet sáng 06:30–10:00 tại nhà hàng tầng 1.</p>',
+          resolvedLanguage: 'vi', isFallback: false, isMissing: false,
+          children: [
+            {
+              id: '23000000-0000-0000-0000-000000000003', sortOrder: 10, question: 'Có phục vụ ăn chay không?',
+              answerHtmlSanitized: '<p>Có, vui lòng báo lễ tân trước 21:00 hôm trước.</p>',
+              resolvedLanguage: 'vi', isFallback: false, isMissing: false, children: [],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: '21000000-0000-0000-0000-000000000002', key: 'services', sortOrder: 20, name: 'Dịch vụ',
+      resolvedLanguage: 'vi', isFallback: false, isMissing: false,
+      items: [
+        {
+          id: '23000000-0000-0000-0000-000000000004', sortOrder: 10, question: 'Spa mở cửa mấy giờ?',
+          answerHtmlSanitized: '<p>Spa mở 09:00–21:00. Đặt lịch qua lễ tân.</p>',
+          resolvedLanguage: 'vi', isFallback: false, isMissing: false, children: [],
+        },
+      ],
+    },
+  ],
+};
+
 export const apiGateway = {
   resolve: async (token: string): Promise<GuestResolveResponse> => {
     if (MOCK) {
@@ -191,5 +261,13 @@ export const apiGateway = {
       return { rulePublicationId: MOCK_RULES.publicationId, version: MOCK_RULES.version, alreadyAcknowledged: already };
     }
     return guestFetch<AcknowledgeRulesResponse>('POST', '/v1/guest/rules/acknowledge', { body: { roomId, lang } });
+  },
+
+  getFaq: async (roomId: string, lang: string | null): Promise<GuestFaqTree> => {
+    if (MOCK) {
+      await mockDelay();
+      return MOCK_FAQ;
+    }
+    return guestFetch<GuestFaqTree>('GET', '/v1/guest/faq', { query: { roomId, lang: lang ?? undefined } });
   },
 };

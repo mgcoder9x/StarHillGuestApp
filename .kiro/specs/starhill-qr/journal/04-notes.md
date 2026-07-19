@@ -1067,3 +1067,15 @@
   - `GuestResolveView` refactor dùng core+apiGateway.
 - **Sửa drift GỐC (QR-AD-057/QR-DV-008)**: **XOÁ `stores/rules.ts`** (boolean client-only); real path dùng `core.ruleAck` server-authoritative. Mockup `HomeView.vue` chuyển route `/demo` + inline cờ `ruleConfirmed` cục bộ (demo-only), KHÔNG còn phụ thuộc rules.ts. Client-gate chỉ advisory; server 403 chốt (INV2).
 - **NEXT — FE.5b**: FaqView thật (GET /guest/faq cây + CTA→chat), Playwright gate. Rồi FE.5c (chat realtime+polling) + FE.5d (housekeeping). Mỗi slice nối endpoint thật + gate.
+
+
+### QR-N-084 — Slice FE.5b XONG: FaqView cây FAQ guest THẬT (GET /guest/faq) + CTA→chat (2026-07-18)
+- **Design-first**: append hợp đồng FAQ đã verify (`FaqContracts.cs`: `GetGuestFaqTreeResult{language,categories:RenderedFaqCategory[]}`, category chứa `items:RenderedFaqItem[]`, item đệ quy `children`) vào design-module 10 §8 FE.5b → getDiagnostics 0 → code.
+- **Đã build + verify**: `pnpm --filter @starhill/guest-web build` EXIT=0; **Playwright toàn suite 54/54 PASS** (+4 `guest-faq.spec`: cây render + expand cha→con + CTA "nhắn tin về vấn đề này"→/chat + **gating** ackRequiredForFaq chưa ack→guard /rules + no-overflow phone/desktop + no-console-error). Không hồi quy 50 test trước.
+- **Thành phần**:
+  - `core/apiGateway.ts` +types `GuestFaqTree/GuestFaqCategory/GuestFaqItem` (khớp Rendered* DTO) + `getFaq(roomId,lang)` + MOCK cây 2 category (có item con) DEV-only.
+  - `components/FaqItem.vue` — **đệ quy** (self-reference filename): câu hỏi=nút mở/đóng → đáp án `answerHtmlSanitized` (sanitize server, INV8, v-html có kiểm soát) + con đệ quy + CTA→chat (Req 4.6, chỉ hiện khi `core.canChat`).
+  - `views/FaqView.vue` — cây category (sort theo sortOrder) + fallback badge (INV5) + đổi ngôn ngữ refetch; lỗi rule_ack_required→/rules, session_expired→/rescan (ApiGateway intercept + view guard-thân).
+  - `router` `/faq`→FaqView (giữ guard capability='faq': canFaq false→/rules). i18n +`faqFlow` en/vi.
+- **CTA→chat prefill**: `router.push({name:'chat', query:{prefill: question}})` — FE.5c sẽ tiêu thụ `query.prefill` (hiện /chat còn placeholder). Linkage FAQ→chat theo Req 4.6 đã đặt seam.
+- **NEXT — FE.5c**: ChatView thật (POST /guest/messages + GET /guest/conversation polling + SignalR /hubs/chat lazy, plain-text INV8, tiêu thụ prefill từ FAQ CTA), Playwright gate (polling path + gating). Rồi FE.5d housekeeping.

@@ -50,6 +50,14 @@ const messages = {
       title: 'Please scan the QR code again',
       body: 'Your portal window has expired. Scan the room QR code to continue where you left off.',
     },
+    faqFlow: {
+      title: 'FAQ',
+      back: 'Back',
+      askAboutThis: 'Message us about this',
+      fallback: 'Shown in {lang}',
+      empty: 'No FAQ available yet.',
+      loadError: 'Could not load the FAQ. Please try again.',
+    },
     guestEntry: {
       loadingTitle: 'Opening your room portal',
       loadingBody: 'Connecting this QR code to your stay…',
@@ -199,6 +207,14 @@ const messages = {
     rescan: {
       title: 'Vui lòng quét lại mã QR',
       body: 'Cửa sổ thao tác đã hết hạn. Quét lại mã QR trong phòng để tiếp tục.',
+    },
+    faqFlow: {
+      title: 'Hỏi đáp',
+      back: 'Quay lại',
+      askAboutThis: 'Nhắn tin về vấn đề này',
+      fallback: 'Hiển thị bằng {lang}',
+      empty: 'Chưa có câu hỏi nào.',
+      loadError: 'Không tải được FAQ. Vui lòng thử lại.',
     },
     guestEntry: {
       loadingTitle: 'Đang mở cổng phòng của bạn',
