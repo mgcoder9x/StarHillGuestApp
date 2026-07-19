@@ -110,6 +110,30 @@ export interface SendGuestMessageResult {
   reopened: boolean;
 }
 
+export type HousekeepingStatus = 'Requested' | 'InProgress' | 'Done' | 'Cancelled';
+
+/** Ticket dọn phòng guest-facing — khớp HousekeepingTicketView. */
+export interface HousekeepingTicket {
+  ticketId: string;
+  roomId: string;
+  status: HousekeepingStatus;
+  createdAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+/** Khớp GetRoomHousekeepingStatusResult (ticket null nếu phòng chưa từng có ticket). */
+export interface HousekeepingStatusResult {
+  ticket: HousekeepingTicket | null;
+}
+
+/** Khớp RequestHousekeepingResponse. */
+export interface RequestHousekeepingResult {
+  ticketId: string;
+  status: HousekeepingStatus;
+  alreadyOpen: boolean;
+}
+
 export class GuestApiError extends Error {
   public readonly status: number;
   public readonly code: string | undefined;
@@ -270,6 +294,7 @@ const MOCK_FAQ: GuestFaqTree = {
 // guest gửi thì hiện. Real staff reply đến từ backend thật.
 let mockConversation: GuestConversation | null = null;
 let mockMsgSeq = 1;
+let mockTicket: HousekeepingTicket | null = null;
 
 export const apiGateway = {
   resolve: async (token: string): Promise<GuestResolveResponse> => {
@@ -328,5 +353,27 @@ export const apiGateway = {
       return { conversationId: mockConversation.conversationId, messageId, status: 'Open', reopened: false };
     }
     return guestFetch<SendGuestMessageResult>('POST', '/v1/guest/messages', { body: { roomId, body } });
+  },
+
+  getHousekeepingStatus: async (roomId: string): Promise<HousekeepingStatusResult> => {
+    if (MOCK) {
+      await mockDelay();
+      return { ticket: mockTicket };
+    }
+    return guestFetch<HousekeepingStatusResult>('GET', '/v1/guest/housekeeping', { query: { roomId } });
+  },
+
+  requestHousekeeping: async (roomId: string): Promise<RequestHousekeepingResult> => {
+    if (MOCK) {
+      await mockDelay();
+      const now = new Date().toISOString();
+      const open = mockTicket && (mockTicket.status === 'Requested' || mockTicket.status === 'InProgress');
+      if (open && mockTicket) {
+        return { ticketId: mockTicket.ticketId, status: mockTicket.status, alreadyOpen: true };
+      }
+      mockTicket = { ticketId: `50000000-0000-0000-0000-${String(Date.now() % 1_000_000_000_000).padStart(12, '0')}`, roomId, status: 'Requested', createdAt: now, startedAt: null, completedAt: null };
+      return { ticketId: mockTicket.ticketId, status: 'Requested', alreadyOpen: false };
+    }
+    return guestFetch<RequestHousekeepingResult>('POST', '/v1/guest/housekeeping', { body: { roomId } });
   },
 };
