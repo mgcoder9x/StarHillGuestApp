@@ -1042,3 +1042,10 @@
 - **Drift THẬT phát hiện + cam kết sửa gốc (QR-AD-057)**: `guest-web/src/stores/rules.ts` = boolean client-only, KHÔNG phản ánh ack server per-visit+version → sẽ XOÁ ở FE.5a, thay bằng `core.ruleAck` server-authoritative (client-gate advisory, server 403 chốt — INV2).
 - **CHƯA code** (design-first). Không chạy subagent design (sẽ ghi đè design.md master) — thiết kế đặt ở design-module đúng pattern dự án.
 - **NEXT**: user duyệt kiến trúc B + design-module 10 → code **FE.5a** (core refactor + rules force-read + xoá rules.ts) trước (slice sửa drift gốc), Playwright gate, rồi FE.5b/c/d.
+
+
+### QR-N-082 — Phát hiện trước FE.5a: guest UI là MOCKUP tĩnh (chưa nối backend) → xác nhận phạm vi rewrite (2026-07-18)
+- **Chuẩn bị code FE.5a**, đọc guest-web thật → phát hiện `HomeView.vue` (~900 dòng) là **demo tĩnh**: nội quy/FAQ/chat/housekeeping hardcode i18n JSON, chat auto-reply + housekeeping timeline GIẢ (setTimeout), 40+ ngôn ngữ + theme switcher, `ruleConfirmed` boolean. **0 call** tới 8 guest endpoint thật. Router 4 mục đều trỏ HomeView (tab nội bộ). Ghi QR-DV-008.
+- **Ý nghĩa**: FE.5 không phải "thêm force-read vào app đã nối" mà là **thay mockup bằng journey nối backend thật** (kiến trúc B QR-AD-057). Lớn hơn drift `rules.ts` đơn lẻ. Đã cập nhật design-module 10 §8 FE.5a phản ánh điều này.
+- **Chưa code** — theo nguyên tắc "không phá bừa thứ đang dùng + design-first": rewrite lớn + xoá demo cần user xác nhận phạm vi trước. Mockup vẫn còn trong git nếu muốn giữ tham chiếu thị giác.
+- **NEXT (chờ user chốt phạm vi)**: FE.5a thay HomeView mockup = shell thật (giữ bố cục thẻ mobile + 4-locale) + `core/{journeyCore,apiGateway,sessionPersistence}` + RulesView force-read nối `GET /guest/rules`+`acknowledge` + xoá `rules.ts` + router guard đọc core; Playwright gate. Rồi FE.5b/c/d (FAQ/chat/housekeeping thật).
