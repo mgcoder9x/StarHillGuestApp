@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { api } from '../api/client';
+import { api, configureAuthSession, type LoginResult } from '../api/client';
 
 export type UserRole = 'admin' | 'staff';
 
@@ -21,28 +21,44 @@ function roleFromAccessToken(token: string): UserRole | null {
   }
 }
 
-// Auth store: access-token GIỮ TRONG BỘ NHỚ (không localStorage — an toàn XSS, QR-AD-047). Refresh qua cookie
-// httpOnly là bước sau (FE.2b). Mất token khi reload = quay lại login (chấp nhận cho MVP nội bộ).
+// Tokens stay in memory (never localStorage). A 401 rotates the refresh token and retries once; concurrent 401s
+// share one refresh request so the backend's single-use refresh-token semantics remain intact.
 export const useAuthStore = defineStore('auth', () => {
   const accessToken = ref<string | null>(null);
+  const refreshToken = ref<string | null>(null);
+  const refreshTokenExpiresAt = ref<string | null>(null);
   const username = ref<string | null>(null);
   const role = ref<UserRole | null>(null);
 
   const isAuthenticated = computed(() => accessToken.value !== null);
   const isAdmin = computed(() => role.value === 'admin');
 
+  function applyTokens(result: LoginResult): void {
+    accessToken.value = result.accessToken;
+    refreshToken.value = result.refreshToken;
+    refreshTokenExpiresAt.value = result.refreshTokenExpiresAt;
+    role.value = roleFromAccessToken(result.accessToken);
+  }
+
   async function login(user: string, password: string): Promise<void> {
     const result = await api.login(user, password);
-    accessToken.value = result.accessToken;
+    applyTokens(result);
     username.value = user;
-    role.value = roleFromAccessToken(result.accessToken);
   }
 
   function logout(): void {
     accessToken.value = null;
+    refreshToken.value = null;
+    refreshTokenExpiresAt.value = null;
     username.value = null;
     role.value = null;
   }
+
+  configureAuthSession({
+    getRefreshToken: () => refreshToken.value,
+    onTokensRefreshed: applyTokens,
+    onSessionInvalid: logout,
+  });
 
   return { accessToken, username, role, isAdmin, isAuthenticated, login, logout };
 });

@@ -83,7 +83,7 @@ async function mockApi(page: Page): Promise<MockState> {
     { publicationId: '10000000-0000-0000-0000-000000000002', version: 2, publishedAt: '2026-06-10T08:30:00Z', publishedByUserId: null, changeNote: null, isCurrent: false },
   ];
 
-  await page.route('**/v1/token/login', (route) => json(route, { accessToken: STAFF_TOKEN, refreshToken: 'fake.refresh', refreshTokenExpiresAt: '2026-07-19T00:00:00Z' }));
+  await page.route('**/v1/identity/token/login', (route) => json(route, { accessToken: STAFF_TOKEN, refreshToken: 'fake.refresh', refreshTokenExpiresAt: '2026-07-19T00:00:00Z' }));
   await page.route('**/v1/dashboard/stats', (route) => json(route, { unreadConversations: 5, openConversations: 3, openHousekeepingTickets: 7, activeRooms: 42, rulesAcksToday: 11 }));
   await page.route('**/v1/rules/admin', (route) => json(route, draft));
   await page.route(/\/v1\/rules\/sections\/[^/]+\/translations\/[^/]+$/, async (route) => {

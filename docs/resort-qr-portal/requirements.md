@@ -189,7 +189,7 @@ Công nghệ: Backend ASP.NET Core + EF Core; Frontend Vue 3 (2 SPA riêng: Gues
 2. THE hệ thống SHALL cung cấp health check cơ bản (`/health/live`, `/health/ready`).
 3. THE hệ thống SHALL KHÔNG yêu cầu backup/restore tự động ở giai đoạn MVP; tuy nhiên trước khi lên **production thật**, SHALL có tối thiểu một **script dump DB thủ công** (khuyến nghị) để phòng mất dữ liệu.
 4. THE hệ thống SHALL có seed data khởi tạo: resort, `ResortSettings`, tài khoản admin, ngôn ngữ (`ResortLanguage`, mặc định `en`).
-5. THE hệ thống SHALL chạy trên **HTTPS với chứng chỉ hợp lệ** (secure context) sau reverse proxy, DNS nội bộ trỏ về server resort — bắt buộc để camera (StaffScan/QR) hoạt động trên điện thoại và tránh cảnh báo self-signed.
+5. THE Guest Web SHALL chạy trên **HTTPS với hostname thật và chứng chỉ từ CA công khai được browser tin cậy** sau reverse proxy/managed edge — bắt buộc để điện thoại khách không hiện cảnh báo. Nếu server ở LAN, hệ thống SHALL dùng split-horizon DNS + ACME DNS-01 hoặc named managed tunnel; internal CA chỉ áp dụng cho thiết bị Staff được quản lý, self-signed chỉ dùng dev.
 
 ### Requirement 13: Hiệu năng & trải nghiệm mobile
 

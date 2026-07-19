@@ -635,6 +635,30 @@
 - Reversibility: Medium (UI/component dễ đổi; bỏ CI browser gate không được khuyến nghị). Traceability: `design-modules/08-frontend.md` §FE.3b; QR-AD-019/021/022/047/050; QR-N-076.
 - Guard-Tests: `FrontendDeliveryGuardTests`
 
+### QR-AD-055 — Guest QR entry is a real route: resolve by POST body, scrub the capability URL, and never render a blank page
+- Status: Accepted/Implemented (2026-07-18; FE.1b QR entry completed)
+- Date: 2026-07-18
+- Decider: user (reported the real phone scan opened a blank page) + AI (root-cause analysis and implementation).
+- Provenance/Evidence: the physical QR opens `/r/{token}`, but Guest Web previously had no `/r/:token` route. `GuestResolveView.vue` now validates the 43-character token, calls `POST /v1/guest/resolve` through `guestApi.ts`, stores only non-secret room/resort/feature context in session memory, and replaces the browser URL with `/`. `guest-resolve.spec.ts` covers success and invalid-token recovery; `FrontendDeliveryGuardTests` locks the route/client/spec in CI. Guest production build passes and a live browser run resolved real room `01` without console/page errors.
+- Decision/Change: (1) `/r/:token` is a first-class Guest Web route. (2) The raw capability token is sent to the API only in the POST body, never an API path/query. (3) After success the route is replaced with `/`, so the token is removed from browser history/address bar. (4) Resolve errors render a branded retry/reception message; a blank page is never an accepted error state. (5) Home reads the real resolved room, resort, language, and feature flags instead of demo-only identity data.
+- Rationale (verifiable): the blank screen was a missing frontend route, not a QR encoding or API failure. POST-body exchange plus immediate URL scrubbing reduces token leakage while preserving the physical QR contract.
+- Alternatives: (a) redirect every `/r/*` to static home (rejected: loses room identity and silently accepts invalid QR); (b) call `GET /resolve/{token}` (rejected: leaks the token into API request targets/logs); (c) keep token in localStorage (rejected: unnecessary persistent capability exposure).
+- Consequences: the first page is always loading, resolved home, or recoverable error. The physical QR remains `/r/{token}`, so the reverse proxy must avoid request/referrer logging for this public entry path.
+- Reversibility: Medium. Traceability: `design.md` resolve flow; `design-modules/08-frontend.md` FE.1b; QR-DV-006; QR-N-079.
+- Guard-Tests: `FrontendDeliveryGuardTests`
+
+### QR-AD-056 — Arbitrary guest phones require a publicly trusted CA; internal/self-signed CA is limited to managed devices
+- Status: Accepted/Implemented (2026-07-18; policy corrected, restricted Nginx guest edge and trusted HTTPS runtime proven; permanent owned-domain rollout remains deployment configuration)
+- Date: 2026-07-18
+- Decider: user (explicitly rejected any certificate warning for guests) + AI (deployment/security analysis and runtime proof).
+- Provenance/Evidence: a self-signed certificate for `192.168.120.108` produced the real phone warning; Nginx alone cannot make an untrusted certificate trusted. `deploy/nginx/guest-gateway.conf.template` serves the production Guest Web and proxies only exact `POST /v1/guest/resolve`, while `/v1/*`, `/admin`, and `/hubs/*` are blocked on the public guest edge. `start-guest-gateway.ps1` pins Nginx `1.28.3` by SHA-256 and runs `nginx -t`. Runtime evidence: Cloudflare Tunnel `2026.7.2` matched the published SHA-256, public HTTPS returned 200 with security headers, admin login API returned 404, QR decoded to the trusted HTTPS host, and Playwright with normal certificate validation rendered room `01` and a Secure+HttpOnly `__Host-` cookie.
+- Decision/Change: (1) Production guest QR URLs MUST use a real hostname and a certificate chaining to a public browser trust store. (2) Preferred permanent topology is owned public hostname + ACME certificate; if the server remains LAN-only, use split-horizon/internal DNS and ACME DNS-01. (3) Internal CA is acceptable only for centrally managed staff devices where the root is installed by policy; it is never the guest-phone default. (4) Self-signed leaf certificates are dev-only. (5) A Cloudflare Quick Tunnel is a temporary demonstration/recovery path, not the production identity or uptime solution. (6) Public guest edge exposes the minimum guest API surface; Admin remains LAN/VPN/Access protected.
+- Rationale (verifiable): browsers trust issuers, not reverse-proxy brands. Nginx terminates/routes TLS but cannot remove a warning unless the served certificate is trusted. Public CA avoids asking guests to install a root certificate or click through a dangerous warning.
+- Alternatives: (a) self-signed IP certificate (rejected: warning remains); (b) internal CA for every guest (rejected: unrealistic and unsafe onboarding); (c) publish all `/v1` and Admin through a temporary tunnel (rejected: unnecessarily exposes privileged surfaces); (d) plain HTTP (rejected: no secure context and no Secure guest cookie).
+- Consequences: permanent deployment requires an owned domain/DNS provider or a managed edge tunnel. The account-less tunnel URL is ephemeral and must not be printed on durable room cards. Guest access logs are disabled at the temporary edge because the initial request path contains the capability token.
+- Reversibility: Medium. Traceability: `design.md` deployment table; `design-modules/08-frontend.md` FE.1b/FE.6; `docs/resort-qr-portal/design.md` Deployment; QR-AD-003; QR-N-079.
+- Guard-Tests: `FrontendDeliveryGuardTests`
+
 ### QR-AD-052 — FE.4a Admin Rules đọc-trước: Draft preview + publication history trước editor mutation; không bịa admin read-model
 - Status: Accepted/Implemented (2026-07-18; FE.4a. INV-6 nối qua `FrontendDeliveryGuardTests`; hành vi UI do Playwright `rules.spec.ts` gác).
 - Date: 2026-07-18

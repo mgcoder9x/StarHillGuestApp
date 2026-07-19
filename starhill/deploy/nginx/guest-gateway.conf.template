@@ -1,0 +1,81 @@
+worker_processes 1;
+
+error_log logs/starhill-guest-error.log error;
+pid logs/starhill-guest.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include mime.types;
+    default_type application/octet-stream;
+    sendfile on;
+    server_tokens off;
+
+    upstream starhill_api {
+        server __STARHILL_API_UPSTREAM__;
+        keepalive 8;
+    }
+
+    map $http_x_forwarded_proto $starhill_forwarded_proto {
+        default $http_x_forwarded_proto;
+        "" $scheme;
+    }
+
+    server {
+        listen 127.0.0.1:__STARHILL_LISTEN_PORT__;
+        server_name _;
+        root __STARHILL_GUEST_ROOT__;
+        index index.html;
+
+        # The QR token is part of the first browser path, so the public gateway does not persist access logs.
+        access_log off;
+
+        add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; connect-src 'self' wss:; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; img-src 'self' data: blob: https:; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'" always;
+        add_header Permissions-Policy "camera=(self), geolocation=(), microphone=()" always;
+        add_header Referrer-Policy "no-referrer" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+
+        location = /healthz {
+            default_type text/plain;
+            return 200 "ok\n";
+        }
+
+        # Public demo surface: only the endpoint required to exchange a QR token for a guest session.
+        location = /v1/guest/resolve {
+            limit_except POST { deny all; }
+            client_max_body_size 1k;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Forwarded-Proto $starhill_forwarded_proto;
+            proxy_pass http://starhill_api/v1/guest/resolve;
+        }
+
+        # Do not expose admin, settings, identity, or operational API routes through the guest tunnel.
+        location ^~ /v1/ {
+            return 404;
+        }
+
+        location ^~ /hubs/ {
+            return 404;
+        }
+
+        location ^~ /admin {
+            return 404;
+        }
+
+        location /assets/ {
+            expires 1y;
+            try_files $uri =404;
+        }
+
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+    }
+}

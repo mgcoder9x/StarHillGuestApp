@@ -7,6 +7,7 @@
   },
   "scripts": {
     "dev:guest": "pnpm --filter @starhill/guest-web dev",
+    "dev:guest:mock": "pnpm --filter @starhill/guest-web dev:mock",
     "dev:admin": "pnpm --filter @starhill/admin-web dev",
     "dev:admin:mock": "pnpm --filter @starhill/admin-web dev:mock",
     "build:guest": "pnpm --filter @starhill/guest-web build",

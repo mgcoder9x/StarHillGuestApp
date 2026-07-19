@@ -2,7 +2,7 @@
 
 Bộ tài liệu đặc tả cho hệ thống **Resort QR Portal** (Star Hill Guest App): khách quét QR tại phòng → mở web hiển thị nội quy (bắt buộc đọc hết), FAQ do lễ tân tự soạn, nhắn tin với lễ tân, và tạo yêu cầu dọn phòng; kèm dashboard quản trị (tạo phòng, sinh QR, quản lý nội quy Draft/Publish, FAQ, inbox theo phòng, ghi chú, housekeeping).
 
-Hệ thống chạy trong **WiFi nội bộ resort, không public internet**. Tài liệu này là Markdown thuần để nhiều agent/developer cùng đọc và triển khai (không phụ thuộc cơ chế spec của Kiro).
+Hệ thống và dữ liệu vẫn chạy trên hạ tầng resort; Guest Web có thể đi qua một public-CA edge/tunnel tối thiểu để điện thoại khách không gặp cảnh báo chứng chỉ. Admin/API privileged không mặc định public. Tài liệu này là Markdown thuần để nhiều agent/developer cùng đọc và triển khai (không phụ thuộc cơ chế spec của Kiro).
 
 ## Mục lục
 
@@ -26,7 +26,7 @@ Hệ thống chạy trong **WiFi nội bộ resort, không public internet**. T�
 - Frontend: Vue 3 + TypeScript + Vite + Pinia + Vue Router + vue-i18n (2 SPA riêng); guest mặc định tiếng Anh, admin tiếng Việt; admin dùng PrimeVue/Element Plus; StaffScan dùng html5-qrcode.
 - Database: **PostgreSQL**.
 - Realtime: SignalR (fallback polling).
-- Triển khai: **HTTPS với cert hợp lệ** + DNS nội bộ trỏ về server resort (bắt buộc để camera/QR hoạt động trên điện thoại; tránh self-signed).
+- Triển khai: Guest Web dùng **HTTPS với CA công khai được browser tin cậy** + hostname thật; nếu server vẫn LAN-only thì dùng split-horizon DNS + ACME DNS-01 hoặc named managed tunnel. Internal CA chỉ dành cho thiết bị Staff được quản lý; tránh self-signed cho khách.
 
 ## Mô hình phiên khách (chốt)
 
@@ -53,7 +53,7 @@ Hệ thống chạy trong **WiFi nội bộ resort, không public internet**. T�
 ## Quyết định còn mở (chốt trước Task 1)
 
 - [ ] Deploy cùng domain hay tách subdomain (MVP nên cùng origin, ví dụ `portal.starhill.local`).
-- [ ] Nguồn cert HTTPS: cert nội bộ (internal CA) hay cert công khai qua DNS nội bộ.
+- [x] Chính sách cert HTTPS: public CA cho Guest Web; internal CA chỉ cho Staff managed devices; self-signed chỉ dev. Còn mở: domain/DNS provider cụ thể cho production.
 
 ## Quy trình làm việc cho agent
 

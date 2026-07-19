@@ -1,10 +1,11 @@
 import { test, expect, type Page } from '@playwright/test';
 
-// FE.3a Admin Rooms (SPA :5174). Backend KHÔNG chạy → mock /v1/token/login + /v1/dashboard/stats + /v1/rooms +
+// FE.3a Admin Rooms (SPA :5174). Backend KHÔNG chạy → mock /v1/identity/token/login + /v1/dashboard/stats + /v1/rooms +
 // /v1/rooms/{id}/qr.png bằng page.route (chặn trước network). Verify: vào /rooms → bảng đúng + lọc trạng thái +
 // mở dialog QR + no-overflow đa-viewport + no-console-error. Browser-substitute cho FE admin (anti-drift FE).
 const ADMIN = 'http://localhost:5174';
 const ADMIN_TOKEN = 'eyJhbGciOiJub25lIn0.eyJyb2xlIjoiYWRtaW4ifQ.test';
+const REFRESHED_ADMIN_TOKEN = 'eyJhbGciOiJub25lIn0.eyJyb2xlIjoiYWRtaW4ifQ.refreshed';
 const STAFF_TOKEN = 'eyJhbGciOiJub25lIn0.eyJyb2xlIjoic3RhZmYifQ.test';
 
 interface MockRoom {
@@ -29,7 +30,7 @@ const QR_SVG =
 
 async function mockApi(page: Page, role: 'admin' | 'staff' = 'admin'): Promise<void> {
   const rooms = ALL_ROOMS.map((room) => ({ ...room }));
-  await page.route('**/v1/token/login', (route) =>
+  await page.route('**/v1/identity/token/login', (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -142,6 +143,44 @@ test('rooms list renders + filter by status + QR dialog', async ({ page }) => {
   await page.getByRole('option', { name: 'Bảo trì' }).click();
   await expect(page.getByText('102', { exact: true })).toBeVisible();
   await expect(page.getByText('101', { exact: true })).toHaveCount(0);
+});
+
+test('expired access token is refreshed before retrying the QR request', async ({ page }) => {
+  await mockApi(page);
+  let qrRequests = 0;
+  let refreshRequests = 0;
+
+  await page.route('**/v1/identity/token/refresh', (route) => {
+    refreshRequests += 1;
+    expect(route.request().postDataJSON()).toEqual({ refreshToken: 'fake.refresh' });
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        accessToken: REFRESHED_ADMIN_TOKEN,
+        refreshToken: 'fake.refresh.rotated',
+        refreshTokenExpiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+      }),
+    });
+  });
+  await page.route(/\/v1\/rooms\/[^/]+\/qr\.png/, (route) => {
+    qrRequests += 1;
+    const authorization = route.request().headers().authorization;
+    if (qrRequests === 1) {
+      expect(authorization).toBe(`Bearer ${ADMIN_TOKEN}`);
+      return route.fulfill({ status: 401, contentType: 'application/problem+json', body: '{}' });
+    }
+
+    expect(authorization).toBe(`Bearer ${REFRESHED_ADMIN_TOKEN}`);
+    return route.fulfill({ status: 200, contentType: 'image/svg+xml', body: QR_SVG });
+  });
+
+  await loginToRooms(page);
+  await page.locator('button:has(.pi-qrcode)').first().click();
+
+  await expect(page.getByTestId('room-qr-img')).toBeVisible();
+  expect(refreshRequests).toBe(1);
+  expect(qrRequests).toBe(2);
 });
 
 test('admin can create, edit, rotate, change status and delete a room', async ({ page }) => {

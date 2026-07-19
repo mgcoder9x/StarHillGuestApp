@@ -16,6 +16,19 @@ export interface LoginResult {
   refreshTokenExpiresAt: string;
 }
 
+export interface AuthSessionHooks {
+  getRefreshToken: () => string | null;
+  onTokensRefreshed: (result: LoginResult) => void;
+  onSessionInvalid: () => void;
+}
+
+let authSessionHooks: AuthSessionHooks | null = null;
+let refreshInFlight: Promise<string | null> | null = null;
+
+export function configureAuthSession(hooks: AuthSessionHooks): void {
+  authSessionHooks = hooks;
+}
+
 /** Trạng thái phòng — khớp Rooms.Domain/RoomStatus (Host serialize string enum, QR-AD-021). */
 export type RoomStatus = 'Active' | 'Inactive' | 'Maintenance';
 
@@ -178,17 +191,76 @@ async function parseError(response: Response): Promise<ApiError> {
   return new ApiError(response.status, code, detail);
 }
 
+async function refreshAccessToken(): Promise<string | null> {
+  if (refreshInFlight) {
+    return refreshInFlight;
+  }
+
+  const hooks = authSessionHooks;
+  const refreshToken = hooks?.getRefreshToken();
+  if (!hooks || !refreshToken) {
+    return null;
+  }
+
+  const operation = (async (): Promise<string | null> => {
+    try {
+      const response = await fetch('/v1/identity/token/refresh', {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!response.ok) {
+        hooks.onSessionInvalid();
+        return null;
+      }
+
+      const result = (await response.json()) as LoginResult;
+      hooks.onTokensRefreshed(result);
+      return result.accessToken;
+    } catch {
+      hooks.onSessionInvalid();
+      return null;
+    }
+  })();
+
+  refreshInFlight = operation;
+  try {
+    return await operation;
+  } finally {
+    if (refreshInFlight === operation) {
+      refreshInFlight = null;
+    }
+  }
+}
+
+async function fetchWithAuth(path: string, init: RequestInit, token?: string | null): Promise<Response> {
+  const headers = new Headers(init.headers);
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  const response = await fetch(path, { ...init, headers });
+  if (response.status !== 401 || !token) {
+    return response;
+  }
+
+  const refreshedToken = await refreshAccessToken();
+  if (!refreshedToken) {
+    return response;
+  }
+
+  const retryHeaders = new Headers(headers);
+  retryHeaders.set('Authorization', `Bearer ${refreshedToken}`);
+  return fetch(path, { ...init, headers: retryHeaders });
+}
+
 async function request<T>(path: string, init: RequestInit, token?: string | null): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set('Accept', 'application/json');
   if (init.body !== undefined) {
     headers.set('Content-Type', 'application/json');
   }
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
-
-  const response = await fetch(path, { ...init, headers });
+  const response = await fetchWithAuth(path, { ...init, headers }, token);
   if (!response.ok) {
     throw await parseError(response);
   }
@@ -413,22 +485,27 @@ function buildMockRulePreview(requestedLanguage: string | null): RuleDraftPrevie
   };
 }
 
-// QR mock = SVG placeholder TRUNG THỰC ("QR demo") — KHÔNG giả mã quét được. Real mode trả PNG thật từ BE.
-const MOCK_QR_DATA_URL =
-  'data:image/svg+xml;utf8,' +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="260" viewBox="0 0 240 260">' +
-      '<rect width="240" height="260" fill="#ffffff"/>' +
-      '<rect x="20" y="20" width="200" height="200" fill="none" stroke="#0f172a" stroke-width="4" rx="12"/>' +
-      '<g fill="#0f172a">' +
-      '<rect x="36" y="36" width="48" height="48"/><rect x="156" y="36" width="48" height="48"/>' +
-      '<rect x="36" y="156" width="48" height="48"/><rect x="104" y="104" width="32" height="32"/>' +
-      '<rect x="156" y="120" width="16" height="16"/><rect x="188" y="156" width="16" height="16"/>' +
-      '<rect x="120" y="188" width="16" height="16"/><rect x="156" y="188" width="48" height="16"/>' +
-      '</g>' +
-      '<text x="120" y="245" text-anchor="middle" font-family="system-ui,sans-serif" font-size="16" fill="#64748b">QR demo</text>' +
-      '</svg>',
-  );
+function mockGuestToken(roomId: string): string {
+  const sequence = Number.parseInt(roomId.slice(-12), 10);
+  const roomCode = (Number.isFinite(sequence) ? sequence : 101).toString().padStart(4, '0').slice(-4);
+  return `D${roomCode}${'A'.repeat(38)}`;
+}
+
+async function buildMockQrDataUrl(roomId: string): Promise<string> {
+  const guestUrl = new URL(window.location.href);
+  guestUrl.port = '5173';
+  guestUrl.pathname = `/r/${mockGuestToken(roomId)}`;
+  guestUrl.search = '';
+  guestUrl.hash = '';
+
+  const { toDataURL } = await import('qrcode');
+  return toDataURL(guestUrl.toString(), {
+    errorCorrectionLevel: 'H',
+    width: 720,
+    margin: 3,
+    color: { dark: '#10231d', light: '#ffffff' },
+  });
+}
 
 export const api = {
   login: async (username: string, password: string): Promise<LoginResult> => {
@@ -440,7 +517,7 @@ export const api = {
         refreshTokenExpiresAt: new Date(Date.now() + 3_600_000).toISOString(),
       };
     }
-    return request<LoginResult>('/v1/token/login', { method: 'POST', body: JSON.stringify({ username, password }) });
+    return request<LoginResult>('/v1/identity/token/login', { method: 'POST', body: JSON.stringify({ username, password }) });
   },
 
   getDashboardStats: async (token: string | null): Promise<DashboardStats> => {
@@ -478,13 +555,10 @@ export const api = {
   getRoomQrObjectUrl: async (roomId: string, token: string | null): Promise<string> => {
     if (MOCK) {
       await mockDelay();
-      return MOCK_QR_DATA_URL;
+      return buildMockQrDataUrl(roomId);
     }
     const headers = new Headers({ Accept: 'image/png' });
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-    const response = await fetch(`/v1/rooms/${roomId}/qr.png`, { method: 'GET', headers });
+    const response = await fetchWithAuth(`/v1/rooms/${roomId}/qr.png`, { method: 'GET', headers }, token);
     if (!response.ok) {
       throw await parseError(response);
     }

@@ -272,3 +272,13 @@ Mỗi slice dừng nếu: build FE lỗi/warning; Playwright fail (overflow/cons
   `FrontendDeliveryGuardTests` gác route/nav/client/spec browser trong C# architecture suite.
 - **Traceability:** QR-AD-053/054; QR-N-078; D-Rules.3c; E-Faq.4b.
 - [x] Design được cập nhật trước code; frontend typecheck/build + browser gate bắt hành vi, responsive và screenshot.
+
+## FE.1b — Guest QR entry + trusted guest edge (đã triển khai 2026-07-18)
+
+- **Entry route:** Guest Web có route `/r/:token`. `GuestResolveView` validate token 43 ký tự, gọi `POST /v1/guest/resolve` với token trong JSON body, lưu room/resort/language/feature context không bí mật trong session memory, rồi `router.replace('/')` để xóa capability token khỏi URL/history.
+- **Không blank page:** trạng thái đầu vào là loading card; lỗi QR/config/session/network hiển thị recovery message + retry/reception guidance. Home dùng context thật của phòng/resort và feature flags; không lấy room identity từ dữ liệu demo khi resolve thành công.
+- **Browser gate:** `guest-resolve.spec.ts` khóa hai nhánh success/invalid; `FrontendDeliveryGuardTests` khóa route/client/spec. Live public smoke phải chạy với certificate validation bình thường, assert URL đã scrub, room/resort hiển thị, không console/page error, và cookie `__Host-` là Secure+HttpOnly.
+- **Guest HTTPS policy:** điện thoại khách tùy ý bắt buộc hostname thật + public CA. Internal CA chỉ dùng cho Staff managed devices đã được cài root bằng policy; self-signed leaf chỉ dùng dev. Nginx/Caddy/IIS là TLS/router component, không phải trust issuer.
+- **Restricted Nginx edge:** production Guest Web tĩnh + exact `POST /v1/guest/resolve`; public edge chặn `/v1/*` còn lại, `/admin`, `/hubs/*`, tắt access log và đặt `Referrer-Policy: no-referrer` vì request đầu tiên chứa capability token trong `/r/{token}`. Admin tiếp tục nằm sau LAN/VPN/Access.
+- **Permanent topology:** `https://portal.<owned-domain>` + ACME certificate. LAN-only dùng split-horizon DNS + DNS-01; named managed tunnel là phương án khác. Account-less Quick Tunnel chỉ dùng demo, URL ephemeral không được in lên thẻ phòng lâu dài.
+- **Traceability:** QR-AD-055/056; QR-DV-006; QR-N-079; Req 1.2/1.6/11.2/11.6/12.5.

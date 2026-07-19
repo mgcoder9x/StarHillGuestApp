@@ -53,12 +53,49 @@ public sealed class FrontendDeliveryGuardTests
         Assert.Contains("{ key: 'faq', icon: 'pi-question-circle', to: '/faq' }", nav);
         Assert.Contains("getRuleAdminDraft", rulesView);
         Assert.Contains("updateRuleSection", rulesEditor);
+        Assert.Contains("'/v1/identity/token/login'", client);
+        Assert.DoesNotContain("request<LoginResult>('/v1/token/login'", client);
         Assert.Contains("getFaqAdminTree", client);
         Assert.Contains("reorderFaqItems", client);
         Assert.Contains("getFaqAdminTree", faqView);
         Assert.Contains("editor sends row versions", rulesE2e);
         Assert.Contains("item update, missing translation", faqE2e);
         Assert.Contains("no horizontal overflow", faqE2e);
+    }
+
+    [Fact]
+    public void QR_AD055_guest_qr_entry_resolves_the_token_and_has_browser_coverage()
+    {
+        var root = FindRepositoryRoot();
+        var router = File.ReadAllText(Path.Combine(root, "starhill", "web", "apps", "guest-web", "src", "router", "index.ts"));
+        var entryView = File.ReadAllText(Path.Combine(root, "starhill", "web", "apps", "guest-web", "src", "views", "GuestResolveView.vue"));
+        var client = File.ReadAllText(Path.Combine(root, "starhill", "web", "apps", "guest-web", "src", "api", "guestApi.ts"));
+        var e2e = File.ReadAllText(Path.Combine(root, "starhill", "web", "e2e", "tests", "guest-resolve.spec.ts"));
+
+        Assert.Contains("path: '/r/:token'", router);
+        Assert.Contains("resolveGuestToken", entryView);
+        Assert.Contains("'/v1/guest/resolve'", client);
+        Assert.Contains("never renders a blank page", e2e);
+        Assert.Contains("recovery message instead of a blank page", e2e);
+    }
+
+    [Fact]
+    public void QR_AD056_public_guest_gateway_uses_a_pinned_reverse_proxy_and_blocks_admin_surfaces()
+    {
+        var root = FindRepositoryRoot();
+        var template = File.ReadAllText(Path.Combine(root, "starhill", "deploy", "nginx", "guest-gateway.conf.template"));
+        var startScript = File.ReadAllText(Path.Combine(root, "starhill", "scripts", "start-guest-gateway.ps1"));
+
+        Assert.Contains("listen 127.0.0.1:__STARHILL_LISTEN_PORT__", template);
+        Assert.Contains("location = /v1/guest/resolve", template);
+        Assert.Contains("location ^~ /v1/", template);
+        Assert.Contains("location ^~ /admin", template);
+        Assert.Contains("access_log off", template);
+        Assert.Contains("Referrer-Policy \"no-referrer\"", template);
+        Assert.Contains("$nginxVersion = '1.28.3'", startScript);
+        Assert.Contains("$nginxSha256 = 'aad7bf75d669ece7671688bfdf35f1093d6a30d2e62469405f4d55d8d82d5fd3'", startScript);
+        Assert.Contains("Get-FileHash", startScript);
+        Assert.Contains("-t -p", startScript);
     }
 
     private static string FindRepositoryRoot()

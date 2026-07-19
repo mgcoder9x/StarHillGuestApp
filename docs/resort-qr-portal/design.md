@@ -485,10 +485,11 @@ C-305                              A-102
 
 ## Deployment (mạng nội bộ + HTTPS)
 
-- Chạy sau reverse proxy (Nginx/Caddy/IIS): `/` → guest-web tĩnh, `/admin` → admin-web tĩnh, `/api` → API, `/hubs` → SignalR. MVP nên **cùng origin** (ví dụ `https://portal.starhill.local`).
-- **Bắt buộc HTTPS với cert hợp lệ**: camera của trình duyệt (`getUserMedia`, dùng cho html5-qrcode ở StaffScan) và nhiều API web chỉ chạy trong **secure context**. Trên `http://` hoặc cert self-signed, điện thoại sẽ cảnh báo/chặn.
-  - Dùng **domain nội bộ thật + cert hợp lệ** (cert công khai qua DNS nội bộ, hoặc internal CA đã cài root vào thiết bị). Tránh self-signed lẻ.
-  - **DNS nội bộ** trỏ domain về server resort; QR chứa URL theo `ResortSettings.GuestWebBaseUrl`.
+- Chạy sau reverse proxy (Nginx/Caddy/IIS): `/` → guest-web tĩnh, `/admin` → admin-web tĩnh, `/v1` → API, `/hubs` → SignalR. MVP nên **cùng origin** trên hostname thật (ví dụ `https://portal.<owned-domain>`).
+- **Guest Web bắt buộc dùng chứng chỉ từ CA công khai được browser tin cậy**. Camera/secure context và cookie `Secure` không đủ nếu điện thoại vẫn hiện cảnh báo issuer. Nginx chỉ terminate/route TLS; nó không biến self-signed thành trusted.
+  - Nếu server chỉ ở LAN: dùng hostname thuộc domain sở hữu + ACME DNS-01, kết hợp split-horizon DNS trỏ hostname về IP nội bộ; hoặc dùng named managed tunnel/edge.
+  - Internal CA chỉ dành cho thiết bị Staff được quản lý và đã cài root bằng policy. Không yêu cầu khách cài root CA; self-signed chỉ dùng dev.
+  - Public guest edge chỉ mở API guest cần thiết; Admin đặt sau LAN/VPN/Access. QR chứa URL theo `ResortSettings.GuestWebBaseUrl`.
 - HSTS bật khi đã ổn định cert.
 
 ## Ràng buộc dữ liệu (DB constraints)

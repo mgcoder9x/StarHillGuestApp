@@ -148,7 +148,7 @@ async function mockApi(page: Page): Promise<MockState> {
     return collect(category.items);
   });
 
-  await page.route('**/v1/token/login', (route) => json(route, { accessToken: STAFF_TOKEN, refreshToken: 'fake.refresh', refreshTokenExpiresAt: '2026-07-19T00:00:00Z' }));
+  await page.route('**/v1/identity/token/login', (route) => json(route, { accessToken: STAFF_TOKEN, refreshToken: 'fake.refresh', refreshTokenExpiresAt: '2026-07-19T00:00:00Z' }));
   await page.route('**/v1/dashboard/stats', (route) => json(route, { unreadConversations: 5, openConversations: 3, openHousekeepingTickets: 7, activeRooms: 42, rulesAcksToday: 11 }));
   await page.route('**/v1/faq/admin', (route) => json(route, tree));
 

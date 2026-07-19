@@ -280,8 +280,8 @@ Chuẩn lỗi kế thừa Bedrock: mọi `Result.Error` → HTTP **chỉ** qua `
 
 | Vấn đề | Chốt (mặc định) | Lý do (chính xác) | Journal |
 |---|---|---|---|
-| Cùng-origin vs subdomain | **Cùng-origin** `https://portal.starhill.local` (`/`→guest, `/admin`→admin, `/v1`→API, `/hubs`→SignalR) | Design QR khuyến nghị MVP cùng-origin (đơn giản cookie/CORS; guest cookie SameSite=Lax đủ). Tách subdomain để dành khi cần. | QR-AD-003 |
-| Nguồn cert HTTPS | **Internal CA** (root cài vào thiết bị) trên **DNS nội bộ thật** | Secure-context bắt buộc cho camera StaffScan (getUserMedia). Internal CA kiểm soát được, tránh self-signed lẻ (điện thoại chặn). Cert công khai qua DNS nội bộ là phương án thay thế nếu resort có domain thật. | QR-AD-003 |
+| Cùng-origin vs subdomain | **Cùng-origin** `https://portal.<owned-domain>` (`/`→guest, `/admin`→admin, `/v1`→API, `/hubs`→SignalR) | Cùng-origin đơn giản cookie/CORS. Khi server vẫn ở LAN, dùng split-horizon DNS hoặc managed tunnel; Admin phải nằm sau LAN/VPN/Access thay vì công khai mặc định. | QR-AD-003, QR-AD-056 |
+| Nguồn cert HTTPS | **Publicly trusted CA cho Guest Web**; internal CA chỉ cho thiết bị Staff được quản lý | Khách dùng điện thoại tùy ý không thể được yêu cầu cài root CA. Nginx/Caddy/IIS chỉ terminate TLS, không loại bỏ cảnh báo nếu issuer không được browser tin cậy. Production dùng hostname thật + ACME (ưu tiên DNS-01 nếu LAN-only); self-signed chỉ dùng dev. | QR-AD-056 |
 | Cascade đóng visit | **Outbox/inbox at-least-once khi consumer tồn tại** | Multi-DbContext không có shared transaction mặc định; local visit+outbox atomic, consumer idempotent, guest bị chặn ngay theo visit status. | QR-AD-027/QR-TO-006 |
 | Tên module messaging | **Concierge** | Tránh đụng `Bedrock.Messaging.Contracts`. | QR-AD-004 |
 

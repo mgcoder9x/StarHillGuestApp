@@ -94,3 +94,5 @@
 
 - design.md pha QR và `design-modules/*.md`: chạy diagnostics mỗi lần sửa; GuestAccess C-GA.0 phải diagnostics 0 trước code.
 - QR-AD-003 (deploy) + QR-AD-004 (tên Concierge): không code-enforceable trực tiếp — enforce bằng review + naming khi tạo project.
+| QR-AD-055 Guest QR entry resolves `/r/:token`, POSTs the token in the body, scrubs the URL, and renders recovery UI | `FrontendDeliveryGuardTests` + `web/e2e/tests/guest-resolve.spec.ts` | ✅ ENFORCED: route/client/browser source guard; success and invalid QR browser coverage; production build and live real-room browser smoke PASS |
+| QR-AD-056 Public guest TLS trust + restricted Nginx guest edge | `FrontendDeliveryGuardTests` (pinned Nginx/hash/config-test + exact guest endpoint + admin/API blocks) + `web/e2e/tests/guest-resolve.spec.ts` | ✅ ENFORCED: Nginx `-t` PASS; public HTTPS browser smoke with normal cert validation PASS; `/v1/identity/*` public probe returns 404; QR decodes to trusted HTTPS host |

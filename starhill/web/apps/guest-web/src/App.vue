@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Shell mỏng: router-view (transition tôn trọng prefers-reduced-motion qua CSS §3.9).
+// Thin wrapper shell rendering RouterView
 </script>
 
 <template>

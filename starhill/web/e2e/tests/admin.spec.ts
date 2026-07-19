@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 
-// Admin Dashboard (SPA :5174). Backend KHÔNG chạy ở máy này → MOCK /v1/token/login + /v1/dashboard/stats bằng
+// Admin Dashboard (SPA :5174). Backend KHÔNG chạy ở máy này → MOCK /v1/identity/token/login + /v1/dashboard/stats bằng
 // page.route (chặn trước network, bất kể Vite proxy). Verify: login flow → KPI hiển thị đúng + no-overflow đa-viewport
 // + không lỗi console. Đây là browser-substitute cho FE admin (song song BE test).
 const ADMIN = 'http://localhost:5174';
@@ -14,7 +14,7 @@ const STATS = {
 };
 
 async function mockApi(page: Page): Promise<void> {
-  await page.route('**/v1/token/login', (route) =>
+  await page.route('**/v1/identity/token/login', (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
