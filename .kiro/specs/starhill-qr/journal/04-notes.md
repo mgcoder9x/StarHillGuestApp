@@ -1049,3 +1049,21 @@
 - **Ý nghĩa**: FE.5 không phải "thêm force-read vào app đã nối" mà là **thay mockup bằng journey nối backend thật** (kiến trúc B QR-AD-057). Lớn hơn drift `rules.ts` đơn lẻ. Đã cập nhật design-module 10 §8 FE.5a phản ánh điều này.
 - **Chưa code** — theo nguyên tắc "không phá bừa thứ đang dùng + design-first": rewrite lớn + xoá demo cần user xác nhận phạm vi trước. Mockup vẫn còn trong git nếu muốn giữ tham chiếu thị giác.
 - **NEXT (chờ user chốt phạm vi)**: FE.5a thay HomeView mockup = shell thật (giữ bố cục thẻ mobile + 4-locale) + `core/{journeyCore,apiGateway,sessionPersistence}` + RulesView force-read nối `GET /guest/rules`+`acknowledge` + xoá `rules.ts` + router guard đọc core; Playwright gate. Rồi FE.5b/c/d (FAQ/chat/housekeeping thật).
+
+
+### QR-N-083 — Slice FE.5a XONG: Guest core (JourneyCore+ApiGateway) + Rules force-read THẬT + xoá drift rules.ts + mockup→/demo (2026-07-18)
+- **User chốt phạm vi** (userInput): thay thật + giữ mockup ở route `/demo`. Kiến trúc B (QR-AD-057) triển khai phần core + rules.
+- **Đã build + verify**:
+  - `pnpm -r build` (guest+admin) **EXIT=0** (vue-tsc sạch).
+  - **Playwright TOÀN SUITE 50/50 PASS**: `guest-journey.spec` mới (resolve→home gated → force-read: Next disabled tới hết MinReadSeconds [countdown] + scroll-end [IntersectionObserver] → checkbox → acknowledge → home unlock; +no-overflow phone/tablet/desktop; +no-console-error; +ảnh guest-home-shell/guest-rules-force-read) + guest-resolve 2/2 + responsive 7/7 + admin/rooms/rules không hồi quy. 2 lỗi test đã sửa (đều là lỗi MOCK test, KHÔNG phải impl: (1) assert `confirm count 0` sai vì nội dung ngắn thoả scroll-end ngay — hành vi đúng; (2) regex mock không khớp `/rules/acknowledge` → broaden `/\/v1\/guest\/rules/` dispatch theo method).
+- **Thành phần dựng** (kiến trúc B ánh xạ Vue, KHÔNG thêm Pinia — reactive singleton khớp style guest-web):
+  - `core/apiGateway.ts` — điểm fetch DUY NHẤT (DI-1): resolve/getRules/acknowledgeRules + tiêm roomId/lang + credentials + map ProblemDetails→GuestApiError(code) + **intercept tập trung** (session_expired/guest_context_missing→onRescanNeeded; 403 rule_ack_required→onAckRequired) + MOCK DEV-only. Hợp đồng đọc-từ-code (§0 design 10).
+  - `core/journeyCore.ts` — nguồn sự thật (DI-2 chỉ session/ack/flags/window): derived canFaq/canChat/canHousekeeping/mustReadRules/mustRescan/roomId (INV1); ruleAck SERVER-authoritative (DI-4/INV2); setContext reset khi visit đổi (DI-5/INV4); wire hook cho gateway.
+  - `core/sessionPersistence.ts` — boundary sessionStorage (context + ackedVersion theo visit.id).
+  - `views/RulesView.vue` — force-read stepper (§3/INV6): per-section RequireScrollEnd (IntersectionObserver sentinel) + MinReadSeconds (countdown) → Next; checkbox→acknowledge; chế độ xem-lại nếu đã ack current (Req 3.10); render bodyHtmlSanitized (INV8).
+  - `views/HomeShell.vue` — landing thật, thẻ capability theo core derived (khoá→/rules).
+  - `views/RescanView.vue` — màn quét-lại (INV3, không nút giả).
+  - `router/index.ts` — guard đọc core: mustRescan→/rescan; capability chưa mở→/rules; entry routes (resolve/rescan/demo) qua.
+  - `GuestResolveView` refactor dùng core+apiGateway.
+- **Sửa drift GỐC (QR-AD-057/QR-DV-008)**: **XOÁ `stores/rules.ts`** (boolean client-only); real path dùng `core.ruleAck` server-authoritative. Mockup `HomeView.vue` chuyển route `/demo` + inline cờ `ruleConfirmed` cục bộ (demo-only), KHÔNG còn phụ thuộc rules.ts. Client-gate chỉ advisory; server 403 chốt (INV2).
+- **NEXT — FE.5b**: FaqView thật (GET /guest/faq cây + CTA→chat), Playwright gate. Rồi FE.5c (chat realtime+polling) + FE.5d (housekeeping). Mỗi slice nối endpoint thật + gate.

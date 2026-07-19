@@ -5,15 +5,15 @@ import { useRoute, useRouter } from 'vue-router';
 import Button from 'primevue/button';
 import Message from 'primevue/message';
 import ProgressSpinner from 'primevue/progressspinner';
-import { GuestApiError, resolveGuestToken } from '../api/guestApi';
+import { GuestApiError } from '../core/apiGateway';
+import { useJourneyCore, apiGateway } from '../core/journeyCore';
 import { SUPPORTED_LOCALES } from '../i18n';
-import { useGuestSession } from '../stores/guestSession';
 
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 const route = useRoute();
 const router = useRouter();
 const { t, locale } = useI18n();
-const session = useGuestSession();
+const core = useJourneyCore();
 const loading = ref(true);
 const errorCode = ref<string | undefined>();
 const errorMessage = ref<string | undefined>();
@@ -42,8 +42,8 @@ async function resolve(): Promise<void> {
   }
 
   try {
-    const resolved = await resolveGuestToken(token);
-    session.setContext(resolved);
+    const resolved = await apiGateway.resolve(token);
+    core.setContext(resolved);
     if (SUPPORTED_LOCALES.includes(resolved.defaultLanguage as (typeof SUPPORTED_LOCALES)[number])) {
       locale.value = resolved.defaultLanguage;
     }

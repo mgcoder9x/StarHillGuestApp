@@ -3,8 +3,14 @@ import { computed, onMounted, ref, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useGuestSession } from '../stores/guestSession';
-import { ruleConfirmed, confirmRules } from '../stores/rules';
 import { toastVisible, toastMessage, showToast } from '../stores/toast';
+
+// Demo-only cờ nội quy cục bộ (mockup ở /demo). Real path dùng JourneyCore.ruleAck server-authoritative (QR-AD-057);
+// stores/rules.ts (boolean drift) đã bị xoá — QR-DV-008/FE.5a.
+const ruleConfirmed = ref(false);
+function confirmRules(): void {
+  ruleConfirmed.value = true;
+}
 
 const route = useRoute();
 const router = useRouter();
