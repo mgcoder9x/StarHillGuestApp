@@ -98,6 +98,10 @@ namespace Identity.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_outbox_message");
 
+                    b.HasIndex("DeadLetteredAt")
+                        .HasDatabaseName("ix_outbox_dead_letter")
+                        .HasFilter("dead_lettered_at IS NOT NULL");
+
                     b.HasIndex("OccurredAt")
                         .HasDatabaseName("ix_outbox_pending")
                         .HasFilter("processed_at IS NULL AND dead_lettered_at IS NULL");
@@ -127,6 +131,96 @@ namespace Identity.Infrastructure.Persistence.Migrations
                         .HasName("pk_inbox_message");
 
                     b.ToTable("inbox_message", "identity");
+                });
+
+            modelBuilder.Entity("Bedrock.Infrastructure.Persistence.Messaging.OutboxReplayAudit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("DeadLetteredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("dead_lettered_at");
+
+                    b.Property<int>("ErrorCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("error_count");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("event_type");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("last_error");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("message_id");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid>("OperationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("operation_id");
+
+                    b.Property<DateTimeOffset>("ReplayedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("replayed_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_outbox_replay_audit");
+
+                    b.HasIndex("MessageId", "ReplayedAt")
+                        .HasDatabaseName("ix_outbox_replay_message_time");
+
+                    b.HasIndex("OperationId", "MessageId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_outbox_replay_operation_message");
+
+                    b.ToTable("outbox_replay_audit", "identity");
+                });
+
+            modelBuilder.Entity("Bedrock.Infrastructure.Persistence.Messaging.OutboxReplayOperation", b =>
+                {
+                    b.Property<Guid>("OperationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("operation_id");
+
+                    b.Property<string>("Actor")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("actor");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTimeOffset>("ReplayedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("replayed_at");
+
+                    b.Property<int>("ReplayedCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("replayed_count");
+
+                    b.HasKey("OperationId")
+                        .HasName("pk_outbox_replay_operation");
+
+                    b.HasIndex("ReplayedAt")
+                        .HasDatabaseName("ix_outbox_replay_operation_time");
+
+                    b.ToTable("outbox_replay_operation", "identity");
                 });
 
             modelBuilder.Entity("Bedrock.Infrastructure.Persistence.Security.RefreshTokenRecord", b =>
@@ -184,6 +278,16 @@ namespace Identity.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_refresh_user");
 
                     b.ToTable("refresh_token", "identity");
+                });
+
+            modelBuilder.Entity("Bedrock.Infrastructure.Persistence.Messaging.OutboxReplayAudit", b =>
+                {
+                    b.HasOne("Bedrock.Infrastructure.Persistence.Messaging.OutboxReplayOperation", null)
+                        .WithMany()
+                        .HasForeignKey("OperationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_outbox_replay_audit_outbox_replay_operation_operation_id");
                 });
 #pragma warning restore 612, 618
         }

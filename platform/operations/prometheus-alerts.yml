@@ -1,0 +1,68 @@
+groups:
+  - name: bedrock-platform-slo
+    interval: 30s
+    rules:
+      - alert: BedrockApiErrorBudgetBurning
+        expr: |
+          (
+            sum(rate(http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_server_request_duration_seconds_count[5m])), 1)
+          ) > 0.0144
+        for: 5m
+        labels:
+          severity: page
+          service: bedrock
+        annotations:
+          summary: "Bedrock API error budget is burning rapidly"
+          runbook: "operations/RUNBOOK.md#http"
+
+      - alert: BedrockOutboxOldestPendingWarning
+        expr: bedrock_outbox_oldest_pending_age_seconds > 120
+        for: 10m
+        labels:
+          severity: ticket
+          service: bedrock
+        annotations:
+          summary: "Outbox oldest pending message exceeds two minutes"
+          runbook: "operations/RUNBOOK.md#broker-outage"
+
+      - alert: BedrockOutboxOldestPendingCritical
+        expr: bedrock_outbox_oldest_pending_age_seconds > 600
+        for: 5m
+        labels:
+          severity: page
+          service: bedrock
+        annotations:
+          summary: "Outbox oldest pending message exceeds ten minutes"
+          runbook: "operations/RUNBOOK.md#broker-outage"
+
+      - alert: BedrockOutboxDeadLettered
+        expr: bedrock_outbox_dead_letter_depth > 0
+        for: 10m
+        labels:
+          severity: ticket
+          service: bedrock
+        annotations:
+          summary: "Outbox contains dead-lettered messages requiring operator review"
+          runbook: "operations/RUNBOOK.md#dead-letter-replay"
+
+      - alert: BedrockOutboxBacklogGrowing
+        expr: deriv(bedrock_outbox_pending[15m]) > 0 and bedrock_outbox_oldest_pending_age_seconds > 120
+        for: 15m
+        labels:
+          severity: page
+          service: bedrock
+        annotations:
+          summary: "Outbox backlog is growing while messages remain pending"
+          runbook: "operations/RUNBOOK.md#broker-outage"
+
+      - alert: BedrockOutboxPublishStalled
+        expr: bedrock_outbox_pending > 0 and increase(bedrock_outbox_published_total[10m]) == 0
+        for: 10m
+        labels:
+          severity: page
+          service: bedrock
+        annotations:
+          summary: "Outbox has pending work but no publish progress"
+          runbook: "operations/RUNBOOK.md#broker-outage"

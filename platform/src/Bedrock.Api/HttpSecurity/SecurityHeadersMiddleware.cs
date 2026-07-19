@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 namespace Bedrock.Api.HttpSecurity;
 
 /// <summary>
-/// Slot #5 pipeline (§3.5): áp security headers phòng thủ cho MỌI response (guest/admin/internal — mọi bề mặt
+/// Slot #5 pipeline (§3.5): áp security headers phòng thủ cho MỌI response (public/authenticated/internal — mọi bề mặt
 /// công khai). Set trước khi response bắt đầu. HSTS/HTTPS redirect là slot #4 riêng (task 11). Giá trị cụ thể
 /// (CSP...) có thể mở rộng qua options ở task 11; đây là bộ header an toàn tối thiểu, trung lập nghiệp vụ.
 /// </summary>

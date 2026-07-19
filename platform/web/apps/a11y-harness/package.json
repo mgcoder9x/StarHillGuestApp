@@ -1,0 +1,16 @@
+{
+  "name": "@bedrock/a11y-harness",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test:a11y": "playwright test -c playwright.config.ts"
+  },
+  "dependencies": {
+    "@bedrock/ui-primitives": "workspace:*"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.10.2",
+    "@playwright/test": "1.55.0"
+  }
+}

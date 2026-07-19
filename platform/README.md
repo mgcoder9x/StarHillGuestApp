@@ -1,79 +1,80 @@
 # Bedrock Platform Base
 
-Reusable .NET modular-monolith foundation. The base owns mechanisms and neutral contracts; business policy stays
-inside modules. `src/Host` is the only composition root allowed to connect API, Infrastructure, modules, and adapters.
+Bedrock is a domain-agnostic .NET platform base for large modular systems. It owns reusable mechanisms, architecture
+boundaries and executable quality gates. Product routes, business entities, roles, workflows and visual identity stay
+outside the base.
 
-## Dependency Rules
-
-- `Bedrock.Domain` has no dependency on other Bedrock layers.
-- `Bedrock.Application` owns ports, use-case contracts, and decorators; it does not reference EF, ASP.NET, or adapters.
-- `Bedrock.Infrastructure` implements Application ports and does not reference `Bedrock.Api`.
-- Module-to-module references may target only `*.Contracts`.
-- Module `Api` projects cannot reference Infrastructure; module `Infrastructure` projects cannot reference API.
-- Adapters may reference only `Bedrock.Application`, `Bedrock.Domain`, and `Bedrock.Messaging.Contracts`.
-- `DiscoveredProjectBoundaryTests` scans every module and adapter project from disk, including newly added projects.
-
-## Use Cases And Transactions
-
-Use the semantic interface that matches the operation:
-
-- `IQueryUseCase<TInput,TOutput>` for read-only operations.
-- `ICommandUseCase<TInput,TOutput>` for writes returning a value.
-- `ICommandUseCase<TInput>` for writes returning only success/failure.
-
-Value-returning commands expose an `ITransactionalUseCase.PersistenceKey`. The key belongs to the implementation,
-not the request DTO, so callers cannot select another module's DbContext. The transaction decorator resolves a keyed
-`IUnitOfWork`; queries pass through without opening a transaction. A null key is supported only by legacy single-
-DbContext hosts. Empty or whitespace keys fail fast.
-
-Register all module use cases before calling `AddBedrockCore`. The pipeline order is:
+## Architecture
 
 ```text
-Logging -> Authorization -> Validation -> Idempotency -> Transaction -> UseCase
+Host (composition root)
+  -> Module.Api + Module.Infrastructure
+  -> Bedrock.Api + Bedrock.Infrastructure
+
+Module.Api -> Module.Application + Module.Contracts + Bedrock.Api
+Module.Infrastructure -> Module.Application + Module.Domain + Bedrock.Infrastructure
+Module.Application -> Module.Domain + Module.Contracts + Bedrock.Application
+Module.Domain -> Bedrock.Domain
 ```
 
-## Persistence Capabilities
+Architecture tests discover module and adapter projects from disk and inspect compiled assembly references. A new
+module cannot silently bypass the dependency-direction gate.
 
-`AddBedrockPersistence<TContext>` registers only the persistence foundation: DbContext, clock, domain-event dispatcher,
-Unit of Work, resolver, repository foundation, and database readiness. Schema-dependent capabilities are explicit:
+## Runtime Capabilities
 
-```csharp
-services.AddBedrockPersistence<IdentityDbContext>(IdentityModule.PersistenceKey, configureDbContext);
-services.AddBedrockOutbox<IdentityDbContext>(IdentityModule.PersistenceKey);
-services.AddBedrockInbox<IdentityDbContext>(IdentityModule.PersistenceKey);
-services.AddBedrockRefreshTokens<IdentityDbContext>(IdentityModule.PersistenceKey);
-```
+- Result/error contracts, validation, authorization, idempotency, transactions and structured logging pipeline.
+- EF Core persistence conventions, soft delete, audit metadata, optimistic concurrency and keyed module UoW.
+- Transactional outbox/inbox, bounded retries, lease ownership, DLQ quarantine and duplicate-effect fencing.
+- Audited outbox replay with dry-run preview, single-use operation IDs and immutable message snapshots.
+- JWT verification/signing seams, startup validation, Problem Details, HTTP hardening and versioned endpoints.
+- OpenTelemetry traces, metrics and logs plus neutral SLO, Prometheus alerts and Grafana dashboard templates.
 
-Only call a capability when the same DbContext maps its tables through `AddOutboxInbox` or `AddRefreshTokens`.
-Capability registration validates the context/key pair and is idempotent for an identical registration.
+The reference host exposes replay under `/v1/operations/outbox/replay` only to authenticated principals carrying the
+`platform.outbox.replay` permission. Applications may replace that policy at their composition boundary.
 
-## Messaging Guarantees
+## Frontend Base
 
-Outbox publishing is at-least-once. A dispatcher renews ownership before each publish and finalizes only while its
-claim id still matches. Lost ownership records `bedrock.outbox.lease_lost`; consumers must retain Inbox deduplication.
+`web/` contains framework-neutral packages:
 
-RabbitMQ retry and dead-letter exchanges default to queue-specific names:
+- `@bedrock/web-core`: runtime config, safe HTTP transport, Problem Details and cancellation.
+- `@bedrock/design-tokens`: semantic tokens and WCAG contrast guards.
+- `@bedrock/web-adapter`: async external-store lifecycle for framework wrappers.
+- `@bedrock/ui-primitives`: accessible focus and ARIA mechanisms.
+- `apps/a11y-harness`: Playwright + axe verification on desktop and mobile Chromium.
 
-```text
-{queue}.retry
-{queue}.dead-letter
-```
+## Module Scaffolding
 
-Each registered consumer gets a `rabbitmq-consumer:{queue}` readiness check. It is healthy only after topology setup
-and broker consumer registration have produced a consumer tag. Recovery, startup, fault, and shutdown states are not
-ready. Shutdown cancels broker consumption and waits for in-flight handlers before disposing channels.
-
-## Startup Safety
-
-JWT signing and verify-only hosts use the same key-ring validator from `Bedrock.Application`. Both paths register
-`ValidateOnStart`, so an empty ring, unknown active key, duplicate key id, malformed Base64 secret, weak HS256 secret,
-or missing issuer/audience prevents startup.
-
-Run the complete verification gate from the platform directory:
+Create a neutral five-layer module with:
 
 ```powershell
-.\tools\verify.ps1 all
+powershell -File tools/new-module.ps1 -Name Billing -ModuleKey billing
 ```
 
-The CI validator selects a working `python` command or Windows `py -3` launcher automatically. Docker-backed tests
-skip locally when Docker is unavailable and run as required in CI.
+The command generates Contracts, Domain, Application, Infrastructure, Api and UnitTests projects, registers them in
+`Platform.slnx`, then can restore/build the result. Persistence and business policy remain explicit module decisions.
+
+## Verification
+
+```powershell
+$env:DOTNET_ROOT = (Resolve-Path '..\.tmp-dotnet')
+$env:PATH = "$env:DOTNET_ROOT;$env:PATH"
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/verify.ps1 all
+```
+
+Browser accessibility is a separate executable gate:
+
+```powershell
+cd web
+pnpm install --frozen-lockfile
+pnpm --filter @bedrock/a11y-harness exec playwright install chromium
+pnpm a11y
+```
+
+Docker-backed PostgreSQL/RabbitMQ tests skip on local machines without Docker and fail closed when `CI=true`. The
+scheduled workflow additionally runs the ten-minute broker soak.
+
+## Release
+
+Supported public packages are the six assemblies listed in `contracts/PUBLIC_API_POLICY.md` and the four frontend
+packages above. See `RELEASE.md` and `CHANGELOG.md`. A `v<semver>` tag builds packages, verifies the public API
+baseline, generates an SPDX SBOM and attests the artifact set; it does not package the reference host or modules.

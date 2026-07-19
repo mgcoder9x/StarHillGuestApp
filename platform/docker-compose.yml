@@ -6,19 +6,19 @@
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: starhill_identity
+      POSTGRES_DB: bedrock_reference_identity
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d starhill_identity"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bedrock_reference_identity"]
       interval: 3s
       timeout: 3s
       retries: 20
 
   rabbitmq:
-    image: rabbitmq:3.13
+    image: rabbitmq:3.13@sha256:87178a0ee3e2f52980ba356d38646ed1056705ff2d5ff281f8965456eaa0c1e3
     environment:
       # Dùng user RIÊNG (không 'guest'): 'guest' của RabbitMQ chỉ connect được qua LOOPBACK → từ container `host`
       # (non-loopback qua mạng compose) sẽ bị TỪ CHỐI. Đây là chi tiết deployment thật mà compose-với-image phơi
@@ -34,7 +34,7 @@ services:
   host:
     build:
       context: .
-      dockerfile: src/Host/StarHill.Api/Dockerfile
+      dockerfile: src/Host/Bedrock.ReferenceHost/Dockerfile
     depends_on:
       postgres:
         condition: service_healthy
@@ -43,7 +43,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       # Connection string trỏ service `postgres` trong mạng compose.
-      ConnectionStrings__Identity: "Host=postgres;Port=5432;Database=starhill_identity;Username=postgres;Password=postgres"
+      ConnectionStrings__Identity: "Host=postgres;Port=5432;Database=bedrock_reference_identity;Username=postgres;Password=postgres"
       # DEV placeholder secret (base64 ≥32B). Prod nạp qua secret store (F35).
       Jwt__Keys__0__Secret: "ZGV2LXBsYWNlaG9sZGVyLWp3dC1zaWduaW5nLWtleS0wMTIzNDU2Nzg5YWJjZGVm"
       # CHỈ dev/compose single-instance: Host tự áp migration lúc start. Prod đa-instance KHÔNG bật (AD-050).

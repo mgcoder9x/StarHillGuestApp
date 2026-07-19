@@ -9,24 +9,26 @@
     ci       -> Python 3 platform\tests\validate_ci.py (tự chọn python hoặc Windows py -3)
     test     -> dotnet test Platform.slnx (test Docker SKIP mềm khi thiếu Docker — fixture lazy-build N-067)
     journal  -> JournalConsistencyTests (anti-drift INV-1..5)
-    all      -> build + ci + test  (mặc định)
+    scaffold -> generate/restore/build/test the module template in a disposable tree
+    all      -> build + ci + scaffold + web + test  (mặc định)
 
   Exit code: 0 = mọi bước OK; 1 = có bước fail.
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('all', 'build', 'ci', 'test', 'journal')]
+    [ValidateSet('all', 'build', 'ci', 'scaffold', 'test', 'web', 'journal', 'ops', 'release')]
     [string]$Scope = 'all'
 )
 
 $ErrorActionPreference = 'Stop'
 $OutputEncoding = [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
-# $PSScriptRoot = platform\tools → Platform = platform\ ; RepoRoot = gốc checkout (chứa .github/, resort-qr/...).
+# $PSScriptRoot = platform\tools → Platform = platform\ ; RepoRoot = gốc checkout chứa `.github/`.
 $Platform = Split-Path -Parent $PSScriptRoot
 $RepoRoot = Split-Path -Parent $Platform
 $Solution = Join-Path $Platform 'Platform.slnx'
 $ArchProj = Join-Path $Platform 'tests\Bedrock.ArchitectureTests\Bedrock.ArchitectureTests.csproj'
 $ValidateCi = Join-Path $Platform 'tests\validate_ci.py'
+$Web = Join-Path $Platform 'web'
 
 $results = [System.Collections.Generic.List[object]]::new()
 
@@ -71,7 +73,9 @@ function Resolve-NativeCommand {
 
 function Step-Build {
     $dotnet = Resolve-NativeCommand 'dotnet'
-    & $dotnet build $Solution -clp:ErrorsOnly
+    & $dotnet restore $Solution --locked-mode
+    if ($LASTEXITCODE -ne 0) { return }
+    & $dotnet build $Solution --no-restore -clp:ErrorsOnly
 }
 function Step-Ci {
     $python = Get-Command python -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -95,13 +99,50 @@ function Step-Ci {
     throw [System.Management.Automation.CommandNotFoundException]::new(
         "Python 3 was not found via 'python' or 'py -3'.")
 }
+
+function Step-Operations {
+    $python = Resolve-NativeCommand 'python'
+    & $python tools/validate-operations.py
+}
+function Step-Release {
+    $python = Resolve-NativeCommand 'python'
+    & $python tools/validate-release.py
+}
 function Step-TestFull {
     $dotnet = Resolve-NativeCommand 'dotnet'
-    & $dotnet test $Solution --nologo
+    & $dotnet test $Solution -c Release --nologo -p:RestoreLockedMode=true
+}
+function Step-Web {
+    $pnpm = Resolve-NativeCommand 'pnpm'
+    Push-Location $Web
+    try {
+        & $pnpm install --frozen-lockfile
+        if ($LASTEXITCODE -ne 0) { return }
+        & $pnpm verify
+    }
+    finally {
+        Pop-Location
+    }
+}
+function Step-Scaffold {
+    $python = Get-Command python -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($null -ne $python) {
+        & $python.Source (Join-Path $Platform 'tools\verify-module-template.py')
+        return
+    }
+
+    $py = Get-Command py -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($null -ne $py) {
+        & $py.Source -3 (Join-Path $Platform 'tools\verify-module-template.py')
+        return
+    }
+
+    throw [System.Management.Automation.CommandNotFoundException]::new(
+        "Python 3 was not found via 'python' or 'py -3'.")
 }
 function Step-TestNoBuild {
     $dotnet = Resolve-NativeCommand 'dotnet'
-    & $dotnet test $Solution --no-build --nologo
+    & $dotnet test $Solution -c Release --no-build --nologo
 }
 function Step-Journal {
     $dotnet = Resolve-NativeCommand 'dotnet'
@@ -111,12 +152,20 @@ function Step-Journal {
 switch ($Scope) {
     'build' { Invoke-Step 'build (0-warning)' ${function:Step-Build} }
     'ci' { Invoke-Step 'validate-ci' ${function:Step-Ci} }
+    'scaffold' { Invoke-Step 'module-scaffold' ${function:Step-Scaffold} }
+    'ops' { Invoke-Step 'operations (alerts + dashboard)' ${function:Step-Operations} }
+    'release' { Invoke-Step 'release contract' ${function:Step-Release} }
     'test' { Invoke-Step 'test (full suite)' ${function:Step-TestFull} }
+    'web' { Invoke-Step 'web (frontend base)' ${function:Step-Web} }
     'journal' { Invoke-Step 'journal-consistency' ${function:Step-Journal} }
     'all' {
         Invoke-Step 'build (0-warning)' ${function:Step-Build}
         $buildOk = $results[$results.Count - 1].Ok
         Invoke-Step 'validate-ci' ${function:Step-Ci}
+        Invoke-Step 'module-scaffold' ${function:Step-Scaffold}
+        Invoke-Step 'operations (alerts + dashboard)' ${function:Step-Operations}
+        Invoke-Step 'release contract' ${function:Step-Release}
+        Invoke-Step 'web (frontend base)' ${function:Step-Web}
         if ($buildOk) {
             Invoke-Step 'test (full suite, --no-build)' ${function:Step-TestNoBuild}
         }

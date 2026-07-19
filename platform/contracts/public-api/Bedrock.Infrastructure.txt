@@ -1,0 +1,217 @@
+T:public:class:sealed:Bedrock.Infrastructure.Cryptography.Argon2idPasswordHasher
+I:Bedrock.Infrastructure.Cryptography.Argon2idPasswordHasher:Bedrock.Application.Ports.Security.IPasswordHasher
+C:Bedrock.Infrastructure.Cryptography.Argon2idPasswordHasher(Bedrock.Infrastructure.Cryptography.PasswordHashingOptions options):public
+M:Bedrock.Infrastructure.Cryptography.Argon2idPasswordHasher.Hash(System.String password):System.String:public:virtual+final+newslot
+M:Bedrock.Infrastructure.Cryptography.Argon2idPasswordHasher.Verify(System.String password,System.String hash):System.Boolean:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Cryptography.PasswordHashingOptions
+C:Bedrock.Infrastructure.Cryptography.PasswordHashingOptions():public
+M:Bedrock.Infrastructure.Cryptography.PasswordHashingOptions.Validate(Bedrock.Infrastructure.Cryptography.PasswordHashingOptions options):System.Void:public:static
+P:Bedrock.Infrastructure.Cryptography.PasswordHashingOptions.DegreeOfParallelism:System.Int32:get=public:set=public
+P:Bedrock.Infrastructure.Cryptography.PasswordHashingOptions.HashSize:System.Int32:get=public:set=public
+P:Bedrock.Infrastructure.Cryptography.PasswordHashingOptions.Iterations:System.Int32:get=public:set=public
+P:Bedrock.Infrastructure.Cryptography.PasswordHashingOptions.MemoryKib:System.Int32:get=public:set=public
+P:Bedrock.Infrastructure.Cryptography.PasswordHashingOptions.SaltSize:System.Int32:get=public:set=public
+F:Bedrock.Infrastructure.Cryptography.PasswordHashingOptions.SectionName:System.String:public:const:value="PasswordHashing"
+T:public:class:static:Bedrock.Infrastructure.DependencyInjection.BedrockExtensionArchitectureExtensions
+M:Bedrock.Infrastructure.DependencyInjection.BedrockExtensionArchitectureExtensions.AddCacheCore(Microsoft.Extensions.DependencyInjection.IServiceCollection services):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+M:Bedrock.Infrastructure.DependencyInjection.BedrockExtensionArchitectureExtensions.AddEmailCore(Microsoft.Extensions.DependencyInjection.IServiceCollection services):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+M:Bedrock.Infrastructure.DependencyInjection.BedrockExtensionArchitectureExtensions.AddExternalAuthCore(Microsoft.Extensions.DependencyInjection.IServiceCollection services):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+M:Bedrock.Infrastructure.DependencyInjection.BedrockExtensionArchitectureExtensions.AddMessagingCore(Microsoft.Extensions.DependencyInjection.IServiceCollection services):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+M:Bedrock.Infrastructure.DependencyInjection.BedrockExtensionArchitectureExtensions.AddSearchCore(Microsoft.Extensions.DependencyInjection.IServiceCollection services):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+M:Bedrock.Infrastructure.DependencyInjection.BedrockExtensionArchitectureExtensions.AddStorageCore(Microsoft.Extensions.DependencyInjection.IServiceCollection services):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+T:public:class:static:Bedrock.Infrastructure.DependencyInjection.BedrockPersistenceExtensions
+M:Bedrock.Infrastructure.DependencyInjection.BedrockPersistenceExtensions.AddBedrockInbox`1(Microsoft.Extensions.DependencyInjection.IServiceCollection services):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension:where[!!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+M:Bedrock.Infrastructure.DependencyInjection.BedrockPersistenceExtensions.AddBedrockInbox`1(Microsoft.Extensions.DependencyInjection.IServiceCollection services,System.String moduleKey):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension:where[!!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+M:Bedrock.Infrastructure.DependencyInjection.BedrockPersistenceExtensions.AddBedrockOutbox`1(Microsoft.Extensions.DependencyInjection.IServiceCollection services):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension:where[!!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+M:Bedrock.Infrastructure.DependencyInjection.BedrockPersistenceExtensions.AddBedrockOutbox`1(Microsoft.Extensions.DependencyInjection.IServiceCollection services,System.String moduleKey):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension:where[!!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+M:Bedrock.Infrastructure.DependencyInjection.BedrockPersistenceExtensions.AddBedrockPersistence`1(Microsoft.Extensions.DependencyInjection.IServiceCollection services,System.Action<Microsoft.EntityFrameworkCore.DbContextOptionsBuilder> configureDbContext):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension:where[!!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+M:Bedrock.Infrastructure.DependencyInjection.BedrockPersistenceExtensions.AddBedrockPersistence`1(Microsoft.Extensions.DependencyInjection.IServiceCollection services,System.String moduleKey,System.Action<Microsoft.EntityFrameworkCore.DbContextOptionsBuilder> configureDbContext):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension:where[!!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+M:Bedrock.Infrastructure.DependencyInjection.BedrockPersistenceExtensions.AddBedrockRefreshTokens`1(Microsoft.Extensions.DependencyInjection.IServiceCollection services):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension:where[!!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+M:Bedrock.Infrastructure.DependencyInjection.BedrockPersistenceExtensions.AddBedrockRefreshTokens`1(Microsoft.Extensions.DependencyInjection.IServiceCollection services,System.String moduleKey):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension:where[!!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+M:Bedrock.Infrastructure.DependencyInjection.BedrockPersistenceExtensions.AddBedrockRepository`2(Microsoft.Extensions.DependencyInjection.IServiceCollection services,System.String moduleKey):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension:where[!!0:Bedrock.Infrastructure.Persistence.PlatformDbContext;!!1:Bedrock.Domain.Entities.Entity]
+T:public:class:static:Bedrock.Infrastructure.DependencyInjection.BedrockSecurityExtensions
+M:Bedrock.Infrastructure.DependencyInjection.BedrockSecurityExtensions.AddBedrockSecurity(Microsoft.Extensions.DependencyInjection.IServiceCollection services,Microsoft.Extensions.Configuration.IConfiguration configuration):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+T:public:class:static:Bedrock.Infrastructure.DependencyInjection.BedrockStartupValidationExtensions
+M:Bedrock.Infrastructure.DependencyInjection.BedrockStartupValidationExtensions.AddBedrockStartupValidation(Microsoft.Extensions.DependencyInjection.IServiceCollection services):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+T:public:class:static:Bedrock.Infrastructure.DependencyInjection.OutboxDispatcherExtensions
+M:Bedrock.Infrastructure.DependencyInjection.OutboxDispatcherExtensions.AddIntegrationEventConsumer(Microsoft.Extensions.DependencyInjection.IServiceCollection services):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+M:Bedrock.Infrastructure.DependencyInjection.OutboxDispatcherExtensions.AddIntegrationEventConsumer`1(Microsoft.Extensions.DependencyInjection.IServiceCollection services,System.String moduleKey):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension:where[!!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+M:Bedrock.Infrastructure.DependencyInjection.OutboxDispatcherExtensions.AddIntegrationEventRegistry(Microsoft.Extensions.DependencyInjection.IServiceCollection services,params System.Reflection.Assembly[] contractsAssemblies):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+M:Bedrock.Infrastructure.DependencyInjection.OutboxDispatcherExtensions.AddOutboxDispatcherWorker`1(Microsoft.Extensions.DependencyInjection.IServiceCollection services,System.Action<Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherWorkerOptions>? configure=null):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension:where[!!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+M:Bedrock.Infrastructure.DependencyInjection.OutboxDispatcherExtensions.AddOutboxDispatcher`1(Microsoft.Extensions.DependencyInjection.IServiceCollection services,System.Action<Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherOptions>? configure=null):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension:where[!!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+M:Bedrock.Infrastructure.DependencyInjection.OutboxDispatcherExtensions.AddOutboxDispatcher`1(Microsoft.Extensions.DependencyInjection.IServiceCollection services,System.String moduleKey,System.Action<Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherOptions>? configure=null):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension:where[!!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+M:Bedrock.Infrastructure.DependencyInjection.OutboxDispatcherExtensions.AddOutboxReplay`1(Microsoft.Extensions.DependencyInjection.IServiceCollection services):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension:where[!!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+M:Bedrock.Infrastructure.DependencyInjection.OutboxDispatcherExtensions.AddOutboxReplay`1(Microsoft.Extensions.DependencyInjection.IServiceCollection services,System.String moduleKey):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension:where[!!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+M:Bedrock.Infrastructure.DependencyInjection.OutboxDispatcherExtensions.AddOutboxRetention`1(Microsoft.Extensions.DependencyInjection.IServiceCollection services,System.Action<Bedrock.Infrastructure.Persistence.Messaging.OutboxRetentionOptions>? configure=null):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension:where[!!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+T:public:class:sealed:Bedrock.Infrastructure.Extensions.Defaults.NullAppCache
+I:Bedrock.Infrastructure.Extensions.Defaults.NullAppCache:Bedrock.Application.Ports.Caching.IAppCache
+C:Bedrock.Infrastructure.Extensions.Defaults.NullAppCache():public
+M:Bedrock.Infrastructure.Extensions.Defaults.NullAppCache.GetAsync`1(System.String key,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<!!0?>:public:virtual+final+newslot
+M:Bedrock.Infrastructure.Extensions.Defaults.NullAppCache.RemoveAsync(System.String key,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:virtual+final+newslot
+M:Bedrock.Infrastructure.Extensions.Defaults.NullAppCache.SetAsync`1(System.String key,!!0? value,Bedrock.Application.Ports.Caching.CacheEntryOptions options,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Extensions.Defaults.ThrowingDistributedLock
+I:Bedrock.Infrastructure.Extensions.Defaults.ThrowingDistributedLock:Bedrock.Application.Ports.Caching.IDistributedLock
+C:Bedrock.Infrastructure.Extensions.Defaults.ThrowingDistributedLock():public
+M:Bedrock.Infrastructure.Extensions.Defaults.ThrowingDistributedLock.AcquireAsync(System.String key,System.TimeSpan ttl,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Application.Ports.Caching.ILockHandle?>:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Extensions.Defaults.ThrowingEmailSender
+I:Bedrock.Infrastructure.Extensions.Defaults.ThrowingEmailSender:Bedrock.Application.Ports.Email.IEmailSender
+C:Bedrock.Infrastructure.Extensions.Defaults.ThrowingEmailSender():public
+M:Bedrock.Infrastructure.Extensions.Defaults.ThrowingEmailSender.SendAsync(Bedrock.Application.Ports.Email.EmailMessage message,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Extensions.Defaults.ThrowingEventBusPublisher
+I:Bedrock.Infrastructure.Extensions.Defaults.ThrowingEventBusPublisher:Bedrock.Application.Messaging.Dispatch.IEventBusPublisher
+C:Bedrock.Infrastructure.Extensions.Defaults.ThrowingEventBusPublisher():public
+M:Bedrock.Infrastructure.Extensions.Defaults.ThrowingEventBusPublisher.PublishAsync(Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage message,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Extensions.Defaults.ThrowingFileStorage
+I:Bedrock.Infrastructure.Extensions.Defaults.ThrowingFileStorage:Bedrock.Application.Ports.Storage.IFileStorage
+C:Bedrock.Infrastructure.Extensions.Defaults.ThrowingFileStorage():public
+M:Bedrock.Infrastructure.Extensions.Defaults.ThrowingFileStorage.OpenAsync(System.String key,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<System.IO.Stream>:public:virtual+final+newslot
+M:Bedrock.Infrastructure.Extensions.Defaults.ThrowingFileStorage.SaveAsync(Bedrock.Application.Ports.Storage.FileBlob blob,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<System.String>:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Extensions.Defaults.ThrowingIdempotencyStore
+I:Bedrock.Infrastructure.Extensions.Defaults.ThrowingIdempotencyStore:Bedrock.Application.Ports.Caching.IIdempotencyStore
+C:Bedrock.Infrastructure.Extensions.Defaults.ThrowingIdempotencyStore():public
+M:Bedrock.Infrastructure.Extensions.Defaults.ThrowingIdempotencyStore.AbortAsync(System.String idempotencyKey,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:virtual+final+newslot
+M:Bedrock.Infrastructure.Extensions.Defaults.ThrowingIdempotencyStore.CompleteAsync(System.String idempotencyKey,System.TimeSpan ttl,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:virtual+final+newslot
+M:Bedrock.Infrastructure.Extensions.Defaults.ThrowingIdempotencyStore.TryBeginAsync(System.String idempotencyKey,System.TimeSpan ttl,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<System.Boolean>:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Extensions.Defaults.ThrowingRateLimitStore
+I:Bedrock.Infrastructure.Extensions.Defaults.ThrowingRateLimitStore:Bedrock.Application.Ports.Caching.IRateLimitStore
+C:Bedrock.Infrastructure.Extensions.Defaults.ThrowingRateLimitStore():public
+M:Bedrock.Infrastructure.Extensions.Defaults.ThrowingRateLimitStore.TryAcquireAsync(System.String partition,System.Int32 limit,System.TimeSpan window,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<System.Boolean>:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Extensions.Defaults.ThrowingSearchIndex<!0>
+I:Bedrock.Infrastructure.Extensions.Defaults.ThrowingSearchIndex<!0>:Bedrock.Application.Ports.Search.ISearchIndex<!0>
+C:Bedrock.Infrastructure.Extensions.Defaults.ThrowingSearchIndex<!0>():public
+M:Bedrock.Infrastructure.Extensions.Defaults.ThrowingSearchIndex<!0>.DeleteAsync(System.String id,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:virtual+final+newslot
+M:Bedrock.Infrastructure.Extensions.Defaults.ThrowingSearchIndex<!0>.IndexAsync(!0? document,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Extensions.Defaults.ThrowingSearchQuery<!0>
+I:Bedrock.Infrastructure.Extensions.Defaults.ThrowingSearchQuery<!0>:Bedrock.Application.Ports.Search.ISearchQuery<!0>
+C:Bedrock.Infrastructure.Extensions.Defaults.ThrowingSearchQuery<!0>():public
+M:Bedrock.Infrastructure.Extensions.Defaults.ThrowingSearchQuery<!0>.SearchAsync(Bedrock.Application.Ports.Search.SearchRequest request,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Application.Ports.Search.SearchResult<!0?>>:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Extensions.ExternalAuthProviderRegistry
+I:Bedrock.Infrastructure.Extensions.ExternalAuthProviderRegistry:Bedrock.Application.Ports.ExternalAuth.IExternalAuthProviderRegistry
+C:Bedrock.Infrastructure.Extensions.ExternalAuthProviderRegistry(System.Collections.Generic.IEnumerable<Bedrock.Application.Ports.ExternalAuth.IExternalAuthProvider> providers):public
+M:Bedrock.Infrastructure.Extensions.ExternalAuthProviderRegistry.Resolve(System.String name):Bedrock.Application.Ports.ExternalAuth.IExternalAuthProvider:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Persistence.DomainEventDispatcher
+I:Bedrock.Infrastructure.Persistence.DomainEventDispatcher:Bedrock.Application.DependencyInjection.IScopedService
+I:Bedrock.Infrastructure.Persistence.DomainEventDispatcher:Bedrock.Application.Events.IDomainEventDispatcher
+C:Bedrock.Infrastructure.Persistence.DomainEventDispatcher(System.IServiceProvider serviceProvider):public
+M:Bedrock.Infrastructure.Persistence.DomainEventDispatcher.DispatchAsync(System.Collections.Generic.IReadOnlyCollection<Bedrock.Domain.Events.IDomainEvent> events,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Persistence.EfRepository<!0>:where[!0:Bedrock.Domain.Entities.Entity]
+I:Bedrock.Infrastructure.Persistence.EfRepository<!0>:Bedrock.Application.Ports.Persistence.IRepository<!0>
+C:Bedrock.Infrastructure.Persistence.EfRepository<!0>(Bedrock.Infrastructure.Persistence.PlatformDbContext context):public
+M:Bedrock.Infrastructure.Persistence.EfRepository<!0>.Add(!0 entity):System.Void:public:virtual+final+newslot
+M:Bedrock.Infrastructure.Persistence.EfRepository<!0>.AnyAsync(System.Linq.Expressions.Expression<System.Func<!0,System.Boolean>> predicate,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<System.Boolean>:public:virtual+final+newslot
+M:Bedrock.Infrastructure.Persistence.EfRepository<!0>.FindByIdAsync(System.Guid id,System.Threading.CancellationToken ct=null):System.Threading.Tasks.ValueTask<!0?>:public:virtual+final+newslot
+M:Bedrock.Infrastructure.Persistence.EfRepository<!0>.FirstOrDefaultAsync(System.Linq.Expressions.Expression<System.Func<!0,System.Boolean>> predicate,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<!0?>:public:virtual+final+newslot
+M:Bedrock.Infrastructure.Persistence.EfRepository<!0>.Remove(!0 entity):System.Void:public:virtual+final+newslot
+M:Bedrock.Infrastructure.Persistence.EfRepository<!0>.Update(!0 entity):System.Void:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Persistence.EfUnitOfWork
+I:Bedrock.Infrastructure.Persistence.EfUnitOfWork:Bedrock.Application.Ports.Persistence.IUnitOfWork
+C:Bedrock.Infrastructure.Persistence.EfUnitOfWork(Bedrock.Infrastructure.Persistence.PlatformDbContext context):public
+M:Bedrock.Infrastructure.Persistence.EfUnitOfWork.ExecuteInTransactionAsync`1(System.Func<System.Threading.CancellationToken,System.Threading.Tasks.Task<!!0?>> action,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<!!0?>:public:virtual+final+newslot
+M:Bedrock.Infrastructure.Persistence.EfUnitOfWork.SaveChangesAsync(System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<System.Int32>:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Persistence.Messaging.EfInboxStore
+I:Bedrock.Infrastructure.Persistence.Messaging.EfInboxStore:Bedrock.Application.Messaging.Dispatch.IInboxStore
+C:Bedrock.Infrastructure.Persistence.Messaging.EfInboxStore(Bedrock.Infrastructure.Persistence.PlatformDbContext context,Bedrock.Application.Ports.Time.IClock clock):public
+M:Bedrock.Infrastructure.Persistence.Messaging.EfInboxStore.TryMarkProcessedAsync(System.Guid messageId,System.String consumer,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<System.Boolean>:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Persistence.Messaging.EfIntegrationEventDispatcher
+I:Bedrock.Infrastructure.Persistence.Messaging.EfIntegrationEventDispatcher:Bedrock.Application.Messaging.Dispatch.IIntegrationEventDispatcher
+C:Bedrock.Infrastructure.Persistence.Messaging.EfIntegrationEventDispatcher(Bedrock.Application.Ports.Persistence.IUnitOfWork unitOfWork,Bedrock.Application.Messaging.Dispatch.IInboxStore inboxStore,Bedrock.Application.Messaging.Dispatch.IIntegrationEventTypeRegistry registry,System.IServiceProvider serviceProvider,System.Object? handlerServiceKey=null):public
+M:Bedrock.Infrastructure.Persistence.Messaging.EfIntegrationEventDispatcher.DispatchAsync(Bedrock.Application.Messaging.Dispatch.IncomingIntegrationMessage message,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Application.Messaging.Dispatch.InboxDispatchOutcome>:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Persistence.Messaging.EfOutboxDispatcher<!0>:where[!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+I:Bedrock.Infrastructure.Persistence.Messaging.EfOutboxDispatcher<!0>:Bedrock.Application.Messaging.Dispatch.IOutboxDispatcher
+C:Bedrock.Infrastructure.Persistence.Messaging.EfOutboxDispatcher<!0>(!0 context,Bedrock.Application.Messaging.Dispatch.IEventBusPublisher publisher,Bedrock.Application.Ports.Time.IClock clock,Microsoft.Extensions.Options.IOptionsMonitor<Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherOptions> optionsMonitor,Microsoft.Extensions.Logging.ILogger<Bedrock.Infrastructure.Persistence.Messaging.EfOutboxDispatcher<!0>>? logger=null):public
+M:Bedrock.Infrastructure.Persistence.Messaging.EfOutboxDispatcher<!0>.DispatchPendingAsync(System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Persistence.Messaging.EfOutboxReplayService<!0>:where[!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+I:Bedrock.Infrastructure.Persistence.Messaging.EfOutboxReplayService<!0>:Bedrock.Application.Messaging.Dispatch.IOutboxReplayAuditReader
+I:Bedrock.Infrastructure.Persistence.Messaging.EfOutboxReplayService<!0>:Bedrock.Application.Messaging.Dispatch.IOutboxReplayService
+C:Bedrock.Infrastructure.Persistence.Messaging.EfOutboxReplayService<!0>(!0 context,Bedrock.Application.Ports.Time.IClock clock):public
+M:Bedrock.Infrastructure.Persistence.Messaging.EfOutboxReplayService<!0>.ExecuteAsync(Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest request,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Application.Messaging.Dispatch.OutboxReplayResult>:public:virtual+final+newslot
+M:Bedrock.Infrastructure.Persistence.Messaging.EfOutboxReplayService<!0>.GetAsync(System.Guid operationId,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditRecord?>:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Persistence.Messaging.EfOutboxRetention<!0>:where[!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+C:Bedrock.Infrastructure.Persistence.Messaging.EfOutboxRetention<!0>(!0 context,Bedrock.Application.Ports.Time.IClock clock,Microsoft.Extensions.Options.IOptionsMonitor<Bedrock.Infrastructure.Persistence.Messaging.OutboxRetentionOptions> optionsMonitor):public
+M:Bedrock.Infrastructure.Persistence.Messaging.EfOutboxRetention<!0>.PurgeAsync(System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<System.Int32>:public:none
+T:public:class:sealed:Bedrock.Infrastructure.Persistence.Messaging.EfOutboxWriter
+I:Bedrock.Infrastructure.Persistence.Messaging.EfOutboxWriter:Bedrock.Application.Messaging.IOutboxWriter
+C:Bedrock.Infrastructure.Persistence.Messaging.EfOutboxWriter(Bedrock.Infrastructure.Persistence.PlatformDbContext context):public
+M:Bedrock.Infrastructure.Persistence.Messaging.EfOutboxWriter.EnqueueAsync(Bedrock.Messaging.Contracts.IntegrationEvent integrationEvent,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Persistence.Messaging.InboxMessage
+A:T:Bedrock.Infrastructure.Persistence.Messaging.InboxMessage:RequiredMember
+C:Bedrock.Infrastructure.Persistence.Messaging.InboxMessage():public
+A:C:Bedrock.Infrastructure.Persistence.Messaging.InboxMessage():Obsolete(error=true,message="Constructors of types with required members are not supported in this version of your compiler.",diagnostic=null,url=null)
+P:Bedrock.Infrastructure.Persistence.Messaging.InboxMessage.Consumer:System.String:get=public:init=public
+A:P:Bedrock.Infrastructure.Persistence.Messaging.InboxMessage.Consumer:RequiredMember
+P:Bedrock.Infrastructure.Persistence.Messaging.InboxMessage.MessageId:System.Guid:get=public:init=public
+A:P:Bedrock.Infrastructure.Persistence.Messaging.InboxMessage.MessageId:RequiredMember
+P:Bedrock.Infrastructure.Persistence.Messaging.InboxMessage.ProcessedAt:System.DateTimeOffset:get=public:set=public
+T:public:class:sealed:Bedrock.Infrastructure.Persistence.Messaging.IntegrationEventTypeRegistry
+I:Bedrock.Infrastructure.Persistence.Messaging.IntegrationEventTypeRegistry:Bedrock.Application.Messaging.Dispatch.IIntegrationEventTypeRegistry
+C:Bedrock.Infrastructure.Persistence.Messaging.IntegrationEventTypeRegistry(System.Collections.Generic.IEnumerable<System.Reflection.Assembly> contractsAssemblies):public
+M:Bedrock.Infrastructure.Persistence.Messaging.IntegrationEventTypeRegistry.Resolve(System.String eventType):System.Type?:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherHostedService<!0>:where[!0:Bedrock.Infrastructure.Persistence.PlatformDbContext]
+B:Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherHostedService<!0>:Microsoft.Extensions.Hosting.BackgroundService
+I:Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherHostedService<!0>:Microsoft.Extensions.Hosting.IHostedService
+I:Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherHostedService<!0>:System.IDisposable
+C:Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherHostedService<!0>(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory scopeFactory,Microsoft.Extensions.Options.IOptionsMonitor<Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherWorkerOptions> optionsMonitor,Microsoft.Extensions.Logging.ILogger<Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherHostedService<!0>> logger):public
+M:Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherHostedService<!0>.ExecuteAsync(System.Threading.CancellationToken stoppingToken):System.Threading.Tasks.Task:protected:virtual+override
+T:public:class:sealed:Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherOptions
+C:Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherOptions():public
+P:Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherOptions.BaseDelay:System.TimeSpan:get=public:set=public
+P:Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherOptions.BatchSize:System.Int32:get=public:set=public
+P:Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherOptions.ClaimLease:System.TimeSpan:get=public:set=public
+P:Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherOptions.MaxAttempts:System.Int32:get=public:set=public
+P:Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherOptions.MaxDelay:System.TimeSpan:get=public:set=public
+P:Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherOptions.OperationalMetricsRefreshInterval:System.TimeSpan:get=public:set=public
+P:Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherOptions.TelemetryName:System.String?:get=public:set=public
+T:public:class:sealed:Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherWorkerOptions
+C:Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherWorkerOptions():public
+P:Bedrock.Infrastructure.Persistence.Messaging.OutboxDispatcherWorkerOptions.PollInterval:System.TimeSpan:get=public:set=public
+T:public:class:static:Bedrock.Infrastructure.Persistence.Messaging.OutboxErrorFormatter
+M:Bedrock.Infrastructure.Persistence.Messaging.OutboxErrorFormatter.Redact(System.Exception exception):System.String:public:static
+T:public:class:static:Bedrock.Infrastructure.Persistence.Messaging.OutboxInboxModelBuilderExtensions
+M:Bedrock.Infrastructure.Persistence.Messaging.OutboxInboxModelBuilderExtensions.AddOutboxInbox(Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder,System.Boolean isNpgsql,System.String? schema=null):Microsoft.EntityFrameworkCore.ModelBuilder:public:static+extension
+T:public:class:sealed:Bedrock.Infrastructure.Persistence.Messaging.OutboxRetentionOptions
+C:Bedrock.Infrastructure.Persistence.Messaging.OutboxRetentionOptions():public
+P:Bedrock.Infrastructure.Persistence.Messaging.OutboxRetentionOptions.DeadLetterRetention:System.Nullable<System.TimeSpan>:get=public:set=public
+P:Bedrock.Infrastructure.Persistence.Messaging.OutboxRetentionOptions.ProcessedRetention:System.TimeSpan:get=public:set=public
+T:public:class:abstract:Bedrock.Infrastructure.Persistence.PlatformDbContext
+B:Bedrock.Infrastructure.Persistence.PlatformDbContext:Microsoft.EntityFrameworkCore.DbContext
+I:Bedrock.Infrastructure.Persistence.PlatformDbContext:Microsoft.EntityFrameworkCore.Infrastructure.IInfrastructure<System.IServiceProvider>
+I:Bedrock.Infrastructure.Persistence.PlatformDbContext:Microsoft.EntityFrameworkCore.Infrastructure.IResettableService
+I:Bedrock.Infrastructure.Persistence.PlatformDbContext:Microsoft.EntityFrameworkCore.Internal.IDbContextDependencies
+I:Bedrock.Infrastructure.Persistence.PlatformDbContext:Microsoft.EntityFrameworkCore.Internal.IDbContextPoolable
+I:Bedrock.Infrastructure.Persistence.PlatformDbContext:Microsoft.EntityFrameworkCore.Internal.IDbSetCache
+I:Bedrock.Infrastructure.Persistence.PlatformDbContext:System.IAsyncDisposable
+I:Bedrock.Infrastructure.Persistence.PlatformDbContext:System.IDisposable
+C:Bedrock.Infrastructure.Persistence.PlatformDbContext(Microsoft.EntityFrameworkCore.DbContextOptions options,Bedrock.Application.Ports.Time.IClock clock,Bedrock.Application.Ports.Users.ICurrentUser currentUser,Bedrock.Application.Events.IDomainEventDispatcher domainEventDispatcher):protected
+M:Bedrock.Infrastructure.Persistence.PlatformDbContext.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder):System.Void:protected:virtual+override
+M:Bedrock.Infrastructure.Persistence.PlatformDbContext.SaveChangesAsync(System.Boolean acceptAllChangesOnSuccess,System.Threading.CancellationToken cancellationToken=null):System.Threading.Tasks.Task<System.Int32>:public:virtual+override
+M:Bedrock.Infrastructure.Persistence.PlatformDbContext.SaveChanges(System.Boolean acceptAllChangesOnSuccess):System.Int32:public:virtual+override
+P:Bedrock.Infrastructure.Persistence.PlatformDbContext.MaxDomainEventDispatchDepth:System.Int32:get=protected:set=none
+F:Bedrock.Infrastructure.Persistence.PlatformDbContext.SoftDeleteFilterName:System.String:public:const:value="SoftDelete"
+T:public:class:sealed:Bedrock.Infrastructure.Persistence.Security.EfRefreshTokenStore
+I:Bedrock.Infrastructure.Persistence.Security.EfRefreshTokenStore:Bedrock.Application.Ports.Security.IRefreshTokenStore
+C:Bedrock.Infrastructure.Persistence.Security.EfRefreshTokenStore(Bedrock.Infrastructure.Persistence.PlatformDbContext context,Bedrock.Application.Ports.Time.IClock clock):public
+M:Bedrock.Infrastructure.Persistence.Security.EfRefreshTokenStore.AddAsync(Bedrock.Application.Ports.Security.RefreshTokenSnapshot newToken,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:virtual+final+newslot
+M:Bedrock.Infrastructure.Persistence.Security.EfRefreshTokenStore.GetByHashAsync(System.String tokenHash,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Application.Ports.Security.RefreshTokenSnapshot?>:public:virtual+final+newslot
+M:Bedrock.Infrastructure.Persistence.Security.EfRefreshTokenStore.RevokeFamilyAsync(System.Guid familyId,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:virtual+final+newslot
+M:Bedrock.Infrastructure.Persistence.Security.EfRefreshTokenStore.TryConsumeAsync(System.Guid tokenId,System.DateTimeOffset now,System.String reason,System.Guid replacedByTokenId,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<System.Boolean>:public:virtual+final+newslot
+T:public:class:static:Bedrock.Infrastructure.Persistence.Security.RefreshTokenModelBuilderExtensions
+M:Bedrock.Infrastructure.Persistence.Security.RefreshTokenModelBuilderExtensions.AddRefreshTokens(Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder,System.String? schema=null):Microsoft.EntityFrameworkCore.ModelBuilder:public:static+extension
+T:public:class:sealed:Bedrock.Infrastructure.Startup.RequiredPortsValidator
+I:Bedrock.Infrastructure.Startup.RequiredPortsValidator:Microsoft.Extensions.Hosting.IHostedService
+C:Bedrock.Infrastructure.Startup.RequiredPortsValidator(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory scopeFactory,Bedrock.Application.DependencyInjection.StartupValidationOptions options,Microsoft.Extensions.Configuration.IConfiguration configuration):public
+M:Bedrock.Infrastructure.Startup.RequiredPortsValidator.StartAsync(System.Threading.CancellationToken cancellationToken):System.Threading.Tasks.Task:public:virtual+final+newslot
+M:Bedrock.Infrastructure.Startup.RequiredPortsValidator.StopAsync(System.Threading.CancellationToken cancellationToken):System.Threading.Tasks.Task:public:virtual+final+newslot
+F:Bedrock.Infrastructure.Startup.RequiredPortsValidator.AllowOutboxWithoutDispatcherKey:System.String:public:const:value="Bedrock:Messaging:AllowOutboxWithoutDispatcher"
+T:public:class:sealed:Bedrock.Infrastructure.Time.SystemClock
+I:Bedrock.Infrastructure.Time.SystemClock:Bedrock.Application.DependencyInjection.ISingletonService
+I:Bedrock.Infrastructure.Time.SystemClock:Bedrock.Application.Ports.Time.IClock
+C:Bedrock.Infrastructure.Time.SystemClock():public
+P:Bedrock.Infrastructure.Time.SystemClock.UtcNow:System.DateTimeOffset:get=public:set=none
+T:public:class:sealed:Bedrock.Infrastructure.Tokens.CryptoTokenGenerator
+I:Bedrock.Infrastructure.Tokens.CryptoTokenGenerator:Bedrock.Application.Ports.Security.ITokenGenerator
+C:Bedrock.Infrastructure.Tokens.CryptoTokenGenerator():public
+M:Bedrock.Infrastructure.Tokens.CryptoTokenGenerator.NewToken(System.Int32 byteLength=32):System.String:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Infrastructure.Tokens.JwtTokenService
+I:Bedrock.Infrastructure.Tokens.JwtTokenService:Bedrock.Application.Ports.Security.IJwtTokenService
+C:Bedrock.Infrastructure.Tokens.JwtTokenService(Bedrock.Application.Ports.Security.JwtKeyRingOptions options,Bedrock.Application.Ports.Time.IClock clock):public
+M:Bedrock.Infrastructure.Tokens.JwtTokenService.Issue(System.Security.Claims.ClaimsIdentity identity):System.String:public:virtual+final+newslot

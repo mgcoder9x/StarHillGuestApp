@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Bedrock.Messaging.Contracts\Bedrock.Messaging.Contracts.csproj" />
+  </ItemGroup>
+</Project>

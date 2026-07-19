@@ -12,7 +12,7 @@ public sealed class RabbitMqConsumerOptionsTests
 {
     private static RabbitMqConsumerOptions Valid()
     {
-        var options = new RabbitMqConsumerOptions { QueueName = "starhill.identity" };
+        var options = new RabbitMqConsumerOptions { QueueName = "bedrock-reference.identity" };
         options.RoutingKeys.Add("identity.#");
         return options;
     }
@@ -67,7 +67,7 @@ public sealed class RabbitMqConsumerOptionsTests
     public void Effective_dead_letter_queue_defaults_to_queue_suffix()
     {
         var options = Valid();
-        Assert.Equal("starhill.identity.dead-letter", options.EffectiveDeadLetterQueueName);
+        Assert.Equal("bedrock-reference.identity.dead-letter", options.EffectiveDeadLetterQueueName);
 
         options.DeadLetterQueueName = "custom.dlq";
         Assert.Equal("custom.dlq", options.EffectiveDeadLetterQueueName);
@@ -77,7 +77,7 @@ public sealed class RabbitMqConsumerOptionsTests
     public void Effective_consumer_name_defaults_to_queue_name()
     {
         var options = Valid();
-        Assert.Equal("starhill.identity", options.EffectiveConsumerName); // ổn định qua restart → khoá idempotency inbox
+        Assert.Equal("bedrock-reference.identity", options.EffectiveConsumerName); // ổn định qua restart → khoá idempotency inbox
 
         options.ConsumerName = "identity-worker";
         Assert.Equal("identity-worker", options.EffectiveConsumerName);
@@ -87,11 +87,11 @@ public sealed class RabbitMqConsumerOptionsTests
     public void Default_dead_letter_exchange_is_derived_per_queue()
     {
         var identity = Valid();
-        var billing = new RabbitMqConsumerOptions { QueueName = "starhill.billing" };
+        var billing = new RabbitMqConsumerOptions { QueueName = "bedrock-reference.billing" };
         billing.RoutingKeys.Add("billing.#");
 
-        Assert.Equal("starhill.identity.dead-letter", identity.EffectiveDeadLetterExchangeName);
-        Assert.Equal("starhill.billing.dead-letter", billing.EffectiveDeadLetterExchangeName);
+        Assert.Equal("bedrock-reference.identity.dead-letter", identity.EffectiveDeadLetterExchangeName);
+        Assert.Equal("bedrock-reference.billing.dead-letter", billing.EffectiveDeadLetterExchangeName);
         Assert.NotEqual(identity.EffectiveDeadLetterExchangeName, billing.EffectiveDeadLetterExchangeName);
     }
 
@@ -131,7 +131,7 @@ public sealed class RabbitMqConsumerOptionsTests
     public void Effective_retry_queue_defaults_to_queue_suffix()
     {
         var options = Valid();
-        Assert.Equal("starhill.identity.retry", options.EffectiveRetryQueueName);
+        Assert.Equal("bedrock-reference.identity.retry", options.EffectiveRetryQueueName);
 
         options.RetryQueueName = "custom.retry";
         Assert.Equal("custom.retry", options.EffectiveRetryQueueName);
@@ -143,7 +143,7 @@ public sealed class RabbitMqConsumerOptionsTests
         var options = Valid();
         Assert.Equal(5, options.MaxDeliveryAttempts);
         Assert.Equal(TimeSpan.FromSeconds(5), options.RetryDelay);
-        Assert.Equal("starhill.identity.retry", options.EffectiveRetryExchangeName);
+        Assert.Equal("bedrock-reference.identity.retry", options.EffectiveRetryExchangeName);
         Assert.Equal("x-bedrock-attempt", RabbitMqConsumerOptions.AttemptHeader);
     }
 
@@ -151,7 +151,7 @@ public sealed class RabbitMqConsumerOptionsTests
     public void Two_queues_get_isolated_retry_topology_by_default()
     {
         var identity = Valid();
-        var billing = new RabbitMqConsumerOptions { QueueName = "starhill.billing" };
+        var billing = new RabbitMqConsumerOptions { QueueName = "bedrock-reference.billing" };
         billing.RoutingKeys.Add("billing.#");
 
         Assert.NotEqual(identity.EffectiveRetryExchangeName, billing.EffectiveRetryExchangeName);

@@ -8,3 +8,4 @@ obj/
 
 # EF migration bundle = artifact deploy (sinh ở CI/local, KHÔNG commit — có thể ~100MB self-contained).
 efbundle*
+artifacts/

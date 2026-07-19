@@ -97,7 +97,7 @@ public sealed class MultiModulePersistenceTests
     }
 
     [Fact]
-    public async Task Foundation_does_not_register_schema_dependent_capabilities()
+    public async Task Core_registration_does_not_register_schema_dependent_capabilities()
     {
         var services = new ServiceCollection();
         services.AddLogging();

@@ -43,12 +43,46 @@ public static class OutboxInboxModelBuilderExtensions
             entity.HasIndex(m => new { m.ClaimedUntil, m.NextAttemptAt, m.OccurredAt })
                 .HasDatabaseName("ix_outbox_claimable")
                 .HasFilter("processed_at IS NULL AND dead_lettered_at IS NULL");
+            entity.HasIndex(m => m.DeadLetteredAt)
+                .HasDatabaseName("ix_outbox_dead_letter")
+                .HasFilter("dead_lettered_at IS NOT NULL");
         });
 
         modelBuilder.Entity<InboxMessage>(entity =>
         {
             entity.ToTable("inbox_message", schema);
             entity.HasKey(m => new { m.MessageId, m.Consumer }); // idempotency chống xử lý trùng
+        });
+
+        modelBuilder.Entity<OutboxReplayOperation>(entity =>
+        {
+            entity.ToTable("outbox_replay_operation", schema);
+            entity.HasKey(operation => operation.OperationId);
+            entity.Property(operation => operation.Actor)
+                .HasMaxLength(OutboxReplayOperation.MaxActorLength)
+                .IsRequired();
+            entity.Property(operation => operation.Reason)
+                .HasMaxLength(OutboxReplayOperation.MaxReasonLength)
+                .IsRequired();
+            entity.HasIndex(operation => operation.ReplayedAt)
+                .HasDatabaseName("ix_outbox_replay_operation_time");
+        });
+
+        modelBuilder.Entity<OutboxReplayAudit>(entity =>
+        {
+            entity.ToTable("outbox_replay_audit", schema);
+            entity.HasKey(audit => audit.Id);
+            entity.Property(audit => audit.EventType).IsRequired();
+            entity.Property(audit => audit.LastError).HasMaxLength(OutboxMessage.MaxLastErrorLength);
+            entity.HasOne<OutboxReplayOperation>()
+                .WithMany()
+                .HasForeignKey(audit => audit.OperationId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(audit => new { audit.OperationId, audit.MessageId })
+                .HasDatabaseName("ux_outbox_replay_operation_message")
+                .IsUnique();
+            entity.HasIndex(audit => new { audit.MessageId, audit.ReplayedAt })
+                .HasDatabaseName("ix_outbox_replay_message_time");
         });
 
         return modelBuilder;

@@ -4,7 +4,11 @@ name: CI
 on:
   push:
     branches: [main, master, develop]
+    tags: ["v*"]
   pull_request:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
 
 # Hủy run cũ khi có push mới trên CÙNG ref → tiết kiệm runner + tránh nhiều run e2e chạy song song tranh
 # tài nguyên Docker/Testcontainers (đúng lớp flaky đã ghi N-053/N-064). Group theo ref → nhánh khác không hủy nhau.
@@ -23,14 +27,14 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Validate CI invariants
         run: python tests/validate_ci.py
         working-directory: platform
 
       - name: Setup .NET (pin theo global.json)
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           global-json-file: platform/global.json
 
@@ -39,15 +43,19 @@ jobs:
         run: dotnet tool restore
         working-directory: platform
 
+      - name: Restore NuGet packages (locked)
+        run: dotnet restore Platform.slnx --locked-mode
+        working-directory: platform
+
       # TreatWarningsAsErrors=true → build Release là cổng "0 warning".
       - name: Build (Release)
-        run: dotnet build Platform.slnx -c Release
+        run: dotnet build Platform.slnx -c Release --no-restore
         working-directory: platform
 
       # Toàn bộ suite: unit + architecture + contract + integration + Testcontainers (Docker có sẵn trên runner).
       # Gồm JournalConsistencyTests (anti-drift INV-1..5) → journal lệch = fail CI.
       - name: Test (full suite)
-        run: dotnet test Platform.slnx -c Release --no-build
+        run: dotnet test Platform.slnx -c Release --no-build -p:RestoreLockedMode=true
         working-directory: platform
 
   docker-image:
@@ -56,11 +64,11 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       # Kiểm chứng Dockerfile Host build được (multi-stage .NET 10). Không push registry ở job này.
       - name: Build Host image
-        run: docker build -f src/Host/StarHill.Api/Dockerfile -t starhill-api:ci .
+        run: docker build -f src/Host/Bedrock.ReferenceHost/Dockerfile -t bedrock-reference-host:ci .
         working-directory: platform
 
   migration-bundle:
@@ -72,15 +80,19 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Setup .NET (pin theo global.json)
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           global-json-file: platform/global.json
 
       - name: Restore local tools
         run: dotnet tool restore
+        working-directory: platform
+
+      - name: Restore NuGet packages (locked)
+        run: dotnet restore Platform.slnx --locked-mode
         working-directory: platform
 
       - name: Build Identity migration bundle (linux-x64, self-contained)
@@ -92,7 +104,262 @@ jobs:
         working-directory: platform
 
       - name: Upload bundle artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: efbundle-identity
           path: platform/efbundle-identity
+
+  frontend-base:
+    name: frontend base (typecheck + tests + build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.12.0
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install frontend base dependencies (locked)
+        run: pnpm install --frozen-lockfile
+        working-directory: platform/web
+
+      - name: Verify frontend base
+        run: pnpm verify
+        working-directory: platform/web
+
+  frontend-a11y:
+    name: frontend browser accessibility (Playwright + axe)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.12.0
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install frontend base dependencies (locked)
+        run: pnpm install --frozen-lockfile
+        working-directory: platform/web
+
+      - name: Build UI primitives
+        run: pnpm build
+        working-directory: platform/web
+
+      - name: Install Chromium
+        run: pnpm --filter @bedrock/a11y-harness exec playwright install --with-deps chromium
+        working-directory: platform/web
+
+      - name: Run browser accessibility harness
+        run: pnpm a11y
+        working-directory: platform/web
+
+  module-scaffold:
+    name: module scaffold (generate + compile)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup .NET (pin theo global.json)
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: platform/global.json
+
+      - name: Verify module template
+        run: python tools/verify_module_template.py
+        working-directory: platform
+
+  operations:
+    name: operational bundle (alerts + dashboard)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Validate operational bundle
+        run: python tools/validate-operations.py
+        working-directory: platform
+
+  fault-soak:
+    name: nightly broker fault soak
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup .NET (pin by global.json)
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: platform/global.json
+
+      - name: Restore NuGet packages (locked)
+        run: dotnet restore Platform.slnx --locked-mode
+        working-directory: platform
+
+      - name: Build messaging fault suite
+        run: dotnet build tests/Messaging.IntegrationTests/Messaging.IntegrationTests.csproj -c Release --no-restore
+        working-directory: platform
+
+      - name: Run ten-minute broker soak
+        run: dotnet test tests/Messaging.IntegrationTests/Messaging.IntegrationTests.csproj -c Release --no-build --filter Category=Soak
+        working-directory: platform
+        env:
+          CI: "true"
+          BEDROCK_RUN_SOAK: "true"
+          BEDROCK_SOAK_SECONDS: "600"
+
+  release-artifacts:
+    name: tag release packages + SBOM + provenance
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Resolve tag version
+        shell: bash
+        run: echo "BEDROCK_PACKAGE_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Setup .NET (pin by global.json)
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: platform/global.json
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.12.0
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Validate release metadata
+        run: python tools/validate-release.py
+        working-directory: platform
+
+      - name: Restore NuGet packages (locked)
+        run: dotnet restore Platform.slnx --locked-mode
+        working-directory: platform
+
+      - name: Build release assemblies
+        run: dotnet build Platform.slnx -c Release --no-restore
+        working-directory: platform
+
+      - name: Verify public API baseline
+        run: dotnet test tests/Bedrock.ArchitectureTests/Bedrock.ArchitectureTests.csproj -c Release --no-build --filter FullyQualifiedName~PublicApiCompatibilityTests
+        working-directory: platform
+
+      - name: Pack supported .NET assemblies
+        shell: bash
+        working-directory: platform
+        run: |
+          mkdir -p artifacts/nuget
+          for project in \
+            src/Bedrock.Domain/Bedrock.Domain.csproj \
+            src/Bedrock.Messaging.Contracts/Bedrock.Messaging.Contracts.csproj \
+            src/Bedrock.Application/Bedrock.Application.csproj \
+            src/Bedrock.Api/Bedrock.Api.csproj \
+            src/Bedrock.Infrastructure/Bedrock.Infrastructure.csproj \
+            src/Adapters/Messaging.RabbitMq/Adapters.Messaging.RabbitMq.csproj; do
+            dotnet pack "$project" -c Release --no-build --no-restore \
+              -p:Version="$BEDROCK_PACKAGE_VERSION" -o artifacts/nuget
+          done
+
+      - name: Install frontend dependencies (locked)
+        run: pnpm install --frozen-lockfile
+        working-directory: platform/web
+
+      - name: Verify frontend packages
+        run: pnpm verify
+        working-directory: platform/web
+
+      - name: Pack frontend packages
+        shell: bash
+        working-directory: platform/web
+        run: |
+          mkdir -p ../artifacts/npm
+          pnpm --filter @bedrock/web-core pack --pack-destination ../artifacts/npm
+          pnpm --filter @bedrock/design-tokens pack --pack-destination ../artifacts/npm
+          pnpm --filter @bedrock/web-adapter pack --pack-destination ../artifacts/npm
+          pnpm --filter @bedrock/ui-primitives pack --pack-destination ../artifacts/npm
+
+      - name: Generate release SPDX SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          path: platform/artifacts
+          format: spdx-json
+          output-file: platform/artifacts/bedrock-release.spdx.json
+          upload-artifact: false
+
+      - name: Upload release package set
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: bedrock-platform-${{ env.BEDROCK_PACKAGE_VERSION }}
+          path: platform/artifacts
+
+      - name: Attest release package provenance
+        uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661 # v3
+        with:
+          subject-path: platform/artifacts/**/*
+
+  supply-chain:
+    name: SBOM + vulnerability policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          path: platform
+          format: spdx-json
+          output-file: platform/bedrock-platform.spdx.json
+          artifact-name: bedrock-platform-sbom.spdx.json
+          upload-artifact: false
+
+      - name: Scan SBOM (high/critical fail policy)
+        uses: anchore/scan-action@1638637db639e0ade3258b51db49a9a137574c3e # v6
+        with:
+          sbom: platform/bedrock-platform.spdx.json
+          fail-build: true
+          severity-cutoff: high
+          output-format: table
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: bedrock-platform-sbom
+          path: platform/bedrock-platform.spdx.json
+
+      - name: Attest SBOM provenance
+        if: github.event_name == 'push'
+        uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661 # v3
+        with:
+          subject-path: platform/bedrock-platform.spdx.json

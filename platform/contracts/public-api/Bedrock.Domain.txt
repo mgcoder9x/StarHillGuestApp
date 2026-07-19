@@ -1,0 +1,118 @@
+T:public:class:abstract:Bedrock.Domain.Entities.AuditableEntity
+B:Bedrock.Domain.Entities.AuditableEntity:Bedrock.Domain.Entities.Entity
+I:Bedrock.Domain.Entities.AuditableEntity:Bedrock.Domain.Entities.IAuditable
+I:Bedrock.Domain.Entities.AuditableEntity:System.IEquatable<Bedrock.Domain.Entities.Entity>
+C:Bedrock.Domain.Entities.AuditableEntity():protected
+C:Bedrock.Domain.Entities.AuditableEntity(System.Guid id):protected
+P:Bedrock.Domain.Entities.AuditableEntity.CreatedAt:System.DateTimeOffset:get=public:set=public
+P:Bedrock.Domain.Entities.AuditableEntity.CreatedByUserId:System.Nullable<System.Guid>:get=public:set=public
+P:Bedrock.Domain.Entities.AuditableEntity.UpdatedAt:System.Nullable<System.DateTimeOffset>:get=public:set=public
+P:Bedrock.Domain.Entities.AuditableEntity.UpdatedByUserId:System.Nullable<System.Guid>:get=public:set=public
+T:public:class:abstract:Bedrock.Domain.Entities.Entity
+I:Bedrock.Domain.Entities.Entity:System.IEquatable<Bedrock.Domain.Entities.Entity>
+C:Bedrock.Domain.Entities.Entity():protected
+C:Bedrock.Domain.Entities.Entity(System.Guid id):protected
+M:Bedrock.Domain.Entities.Entity.ClearDomainEvents():System.Void:public:none
+M:Bedrock.Domain.Entities.Entity.Equals(Bedrock.Domain.Entities.Entity? other):System.Boolean:public:virtual+final+newslot
+M:Bedrock.Domain.Entities.Entity.Equals(System.Object? obj):System.Boolean:public:virtual+override
+M:Bedrock.Domain.Entities.Entity.GetHashCode():System.Int32:public:virtual+override
+M:Bedrock.Domain.Entities.Entity.RaiseDomainEvent(Bedrock.Domain.Events.IDomainEvent domainEvent):System.Void:protected:none
+M:Bedrock.Domain.Entities.Entity.RestoreDomainEvents(System.Collections.Generic.IReadOnlyCollection<Bedrock.Domain.Events.IDomainEvent> domainEvents):System.Void:public:none
+P:Bedrock.Domain.Entities.Entity.DomainEvents:System.Collections.Generic.IReadOnlyCollection<Bedrock.Domain.Events.IDomainEvent>:get=public:set=none
+P:Bedrock.Domain.Entities.Entity.Id:System.Guid:get=public:init=protected
+T:public:interface:abstract:Bedrock.Domain.Entities.IAuditable
+P:Bedrock.Domain.Entities.IAuditable.CreatedAt:System.DateTimeOffset:get=public:set=public
+P:Bedrock.Domain.Entities.IAuditable.CreatedByUserId:System.Nullable<System.Guid>:get=public:set=public
+P:Bedrock.Domain.Entities.IAuditable.UpdatedAt:System.Nullable<System.DateTimeOffset>:get=public:set=public
+P:Bedrock.Domain.Entities.IAuditable.UpdatedByUserId:System.Nullable<System.Guid>:get=public:set=public
+T:public:interface:abstract:Bedrock.Domain.Entities.IHasConcurrencyToken
+P:Bedrock.Domain.Entities.IHasConcurrencyToken.RowVersion:System.UInt32:get=public:set=public
+T:public:interface:abstract:Bedrock.Domain.Entities.ISoftDeletable
+P:Bedrock.Domain.Entities.ISoftDeletable.DeletedAt:System.Nullable<System.DateTimeOffset>:get=public:set=public
+P:Bedrock.Domain.Entities.ISoftDeletable.IsDeleted:System.Boolean:get=public:set=public
+T:public:interface:abstract:Bedrock.Domain.Events.IDomainEvent
+T:public:class:static:Bedrock.Domain.Guards.Guard
+M:Bedrock.Domain.Guards.Guard.AgainstEmpty(System.Guid value,System.String? paramName=null):System.Guid:public:static
+M:Bedrock.Domain.Guards.Guard.AgainstNegativeOrZero(System.Int32 value,System.String? paramName=null):System.Int32:public:static
+M:Bedrock.Domain.Guards.Guard.AgainstNullOrWhiteSpace(System.String? value,System.String? paramName=null):System.String:public:static
+M:Bedrock.Domain.Guards.Guard.AgainstNull`1(!!0? value,System.String? paramName=null):!!0?:public:static:where[!!0:class]
+T:public:class:abstract:Bedrock.Domain.Primitives.ValueObject
+I:Bedrock.Domain.Primitives.ValueObject:System.IEquatable<Bedrock.Domain.Primitives.ValueObject>
+C:Bedrock.Domain.Primitives.ValueObject():protected
+M:Bedrock.Domain.Primitives.ValueObject.Equals(Bedrock.Domain.Primitives.ValueObject? other):System.Boolean:public:virtual+final+newslot
+M:Bedrock.Domain.Primitives.ValueObject.Equals(System.Object? obj):System.Boolean:public:virtual+override
+M:Bedrock.Domain.Primitives.ValueObject.GetEqualityComponents():System.Collections.Generic.IEnumerable<System.Object?>:protected:abstract+virtual+newslot
+M:Bedrock.Domain.Primitives.ValueObject.GetHashCode():System.Int32:public:virtual+override
+M:Bedrock.Domain.Primitives.ValueObject.op_Equality(Bedrock.Domain.Primitives.ValueObject? left,Bedrock.Domain.Primitives.ValueObject? right):System.Boolean:public:static
+M:Bedrock.Domain.Primitives.ValueObject.op_Inequality(Bedrock.Domain.Primitives.ValueObject? left,Bedrock.Domain.Primitives.ValueObject? right):System.Boolean:public:static
+T:public:class:static:Bedrock.Domain.Results.CommonErrors
+M:Bedrock.Domain.Results.CommonErrors.Conflict(System.String message="The resource state conflicts with the request."):Bedrock.Domain.Results.Error:public:static
+M:Bedrock.Domain.Results.CommonErrors.Forbidden(System.String message="You do not have permission to perform this action."):Bedrock.Domain.Results.Error:public:static
+M:Bedrock.Domain.Results.CommonErrors.NotFoundGeneric(System.String message="The requested resource was not found."):Bedrock.Domain.Results.Error:public:static
+M:Bedrock.Domain.Results.CommonErrors.NotFound(System.String entity):Bedrock.Domain.Results.Error:public:static
+M:Bedrock.Domain.Results.CommonErrors.RateLimited(System.String message="Too many requests. Please try again later."):Bedrock.Domain.Results.Error:public:static
+M:Bedrock.Domain.Results.CommonErrors.Unauthorized(System.String message="Authentication is required."):Bedrock.Domain.Results.Error:public:static
+M:Bedrock.Domain.Results.CommonErrors.Unexpected(System.String message="An unexpected error occurred."):Bedrock.Domain.Results.Error:public:static
+M:Bedrock.Domain.Results.CommonErrors.Validation(System.String message="One or more validation errors occurred."):Bedrock.Domain.Results.Error:public:static
+F:Bedrock.Domain.Results.CommonErrors.Concurrency:Bedrock.Domain.Results.Error:public:static+readonly
+T:public:class:sealed:Bedrock.Domain.Results.ConcurrencyConflictException
+B:Bedrock.Domain.Results.ConcurrencyConflictException:System.Exception
+I:Bedrock.Domain.Results.ConcurrencyConflictException:System.Runtime.Serialization.ISerializable
+C:Bedrock.Domain.Results.ConcurrencyConflictException():public
+C:Bedrock.Domain.Results.ConcurrencyConflictException(System.String message):public
+C:Bedrock.Domain.Results.ConcurrencyConflictException(System.String message,System.Exception innerException):public
+T:public:class:sealed:Bedrock.Domain.Results.Error
+I:Bedrock.Domain.Results.Error:System.IEquatable<Bedrock.Domain.Results.Error>
+C:Bedrock.Domain.Results.Error(System.String code,System.String message,Bedrock.Domain.Results.ErrorType type):public
+M:Bedrock.Domain.Results.Error.Conflict(System.String code,System.String message):Bedrock.Domain.Results.Error:public:static
+M:Bedrock.Domain.Results.Error.Forbidden(System.String code,System.String message):Bedrock.Domain.Results.Error:public:static
+M:Bedrock.Domain.Results.Error.NotFound(System.String code,System.String message):Bedrock.Domain.Results.Error:public:static
+M:Bedrock.Domain.Results.Error.RateLimited(System.String code,System.String message):Bedrock.Domain.Results.Error:public:static
+M:Bedrock.Domain.Results.Error.Unauthorized(System.String code,System.String message):Bedrock.Domain.Results.Error:public:static
+M:Bedrock.Domain.Results.Error.Unexpected(System.String code,System.String message):Bedrock.Domain.Results.Error:public:static
+M:Bedrock.Domain.Results.Error.Validation(System.String code,System.String message):Bedrock.Domain.Results.Error:public:static
+M:Bedrock.Domain.Results.Error.WithDetails(System.Collections.Generic.IReadOnlyDictionary<System.String,System.String[]> details):Bedrock.Domain.Results.Error:public:none
+P:Bedrock.Domain.Results.Error.Code:System.String:get=public:set=none
+P:Bedrock.Domain.Results.Error.Details:System.Collections.Generic.IReadOnlyDictionary<System.String,System.String[]>?:get=public:init=public
+P:Bedrock.Domain.Results.Error.Message:System.String:get=public:set=none
+P:Bedrock.Domain.Results.Error.Type:Bedrock.Domain.Results.ErrorType:get=public:set=none
+F:Bedrock.Domain.Results.Error.None:Bedrock.Domain.Results.Error:public:static+readonly
+T:public:enum:none:Bedrock.Domain.Results.ErrorType
+B:Bedrock.Domain.Results.ErrorType:System.Enum
+I:Bedrock.Domain.Results.ErrorType:System.IComparable
+I:Bedrock.Domain.Results.ErrorType:System.IConvertible
+I:Bedrock.Domain.Results.ErrorType:System.IFormattable
+I:Bedrock.Domain.Results.ErrorType:System.ISpanFormattable
+F:Bedrock.Domain.Results.ErrorType.Conflict:Bedrock.Domain.Results.ErrorType:public:const:value=2
+F:Bedrock.Domain.Results.ErrorType.Failure:Bedrock.Domain.Results.ErrorType:public:const:value=6
+F:Bedrock.Domain.Results.ErrorType.Forbidden:Bedrock.Domain.Results.ErrorType:public:const:value=4
+F:Bedrock.Domain.Results.ErrorType.NotFound:Bedrock.Domain.Results.ErrorType:public:const:value=1
+F:Bedrock.Domain.Results.ErrorType.RateLimited:Bedrock.Domain.Results.ErrorType:public:const:value=5
+F:Bedrock.Domain.Results.ErrorType.Unauthorized:Bedrock.Domain.Results.ErrorType:public:const:value=3
+F:Bedrock.Domain.Results.ErrorType.Validation:Bedrock.Domain.Results.ErrorType:public:const:value=0
+F:Bedrock.Domain.Results.ErrorType.value__:System.Int32:public:none
+T:public:class:sealed:Bedrock.Domain.Results.Result
+M:Bedrock.Domain.Results.Result.Failure(Bedrock.Domain.Results.Error error):Bedrock.Domain.Results.Result:public:static
+M:Bedrock.Domain.Results.Result.Failure`1(Bedrock.Domain.Results.Error error):Bedrock.Domain.Results.Result<!!0?>:public:static
+M:Bedrock.Domain.Results.Result.Success():Bedrock.Domain.Results.Result:public:static
+M:Bedrock.Domain.Results.Result.Success`1(!!0? value):Bedrock.Domain.Results.Result<!!0?>:public:static
+P:Bedrock.Domain.Results.Result.Error:Bedrock.Domain.Results.Error:get=public:set=none
+P:Bedrock.Domain.Results.Result.IsFailure:System.Boolean:get=public:set=none
+P:Bedrock.Domain.Results.Result.IsSuccess:System.Boolean:get=public:set=none
+T:public:class:sealed:Bedrock.Domain.Results.Result<!0>
+M:Bedrock.Domain.Results.Result<!0>.Failure(Bedrock.Domain.Results.Error error):Bedrock.Domain.Results.Result<!0?>:public:static
+M:Bedrock.Domain.Results.Result<!0>.Match`1(System.Func<!0?,!!0?> onSuccess,System.Func<Bedrock.Domain.Results.Error,!!0?> onFailure):!!0?:public:none
+M:Bedrock.Domain.Results.Result<!0>.Success(!0? value):Bedrock.Domain.Results.Result<!0?>:public:static
+M:Bedrock.Domain.Results.Result<!0>.op_Implicit(!0? value):Bedrock.Domain.Results.Result<!0?>:public:static
+M:Bedrock.Domain.Results.Result<!0>.op_Implicit(Bedrock.Domain.Results.Error error):Bedrock.Domain.Results.Result<!0?>:public:static
+P:Bedrock.Domain.Results.Result<!0>.Error:Bedrock.Domain.Results.Error:get=public:set=none
+P:Bedrock.Domain.Results.Result<!0>.IsFailure:System.Boolean:get=public:set=none
+P:Bedrock.Domain.Results.Result<!0>.IsSuccess:System.Boolean:get=public:set=none
+P:Bedrock.Domain.Results.Result<!0>.Value:!0?:get=public:set=none
+T:public:class:sealed:Bedrock.Domain.Results.UniqueConstraintViolationException
+B:Bedrock.Domain.Results.UniqueConstraintViolationException:System.Exception
+I:Bedrock.Domain.Results.UniqueConstraintViolationException:System.Runtime.Serialization.ISerializable
+C:Bedrock.Domain.Results.UniqueConstraintViolationException():public
+C:Bedrock.Domain.Results.UniqueConstraintViolationException(System.String? message):public
+C:Bedrock.Domain.Results.UniqueConstraintViolationException(System.String? message,System.Exception innerException):public
+P:Bedrock.Domain.Results.UniqueConstraintViolationException.ConstraintName:System.String?:get=public:init=public

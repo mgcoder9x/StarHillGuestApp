@@ -1,0 +1,25 @@
+{
+  "name": "@bedrock/ui-primitives",
+  "version": "0.1.0",
+  "description": "Accessible, framework-neutral DOM primitives for focus and ARIA behavior.",
+  "license": "MIT",
+  "publishConfig": { "access": "public" },
+  "type": "module",
+  "sideEffects": false,
+  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "5.7.3",
+    "vitest": "3.2.4"
+  }
+}

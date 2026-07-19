@@ -1,0 +1,9 @@
+T:public:class:abstract:Bedrock.Messaging.Contracts.IntegrationEvent
+I:Bedrock.Messaging.Contracts.IntegrationEvent:System.IEquatable<Bedrock.Messaging.Contracts.IntegrationEvent>
+C:Bedrock.Messaging.Contracts.IntegrationEvent(Bedrock.Messaging.Contracts.IntegrationEvent original):protected
+C:Bedrock.Messaging.Contracts.IntegrationEvent(System.Guid Id,System.DateTimeOffset OccurredAt):protected
+P:Bedrock.Messaging.Contracts.IntegrationEvent.EqualityContract:System.Type:get=protected:set=none
+P:Bedrock.Messaging.Contracts.IntegrationEvent.EventType:System.String:get=public:set=none
+P:Bedrock.Messaging.Contracts.IntegrationEvent.Id:System.Guid:get=public:init=public
+P:Bedrock.Messaging.Contracts.IntegrationEvent.OccurredAt:System.DateTimeOffset:get=public:init=public
+P:Bedrock.Messaging.Contracts.IntegrationEvent.SchemaVersion:System.Int32:get=public:set=none

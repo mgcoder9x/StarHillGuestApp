@@ -4,7 +4,7 @@ namespace Bedrock.Application.Ports.Users;
 /// Ngữ cảnh người dùng hiện tại (từ JWT/claims). Dùng cho audit (actor) + authorization.
 /// Trả null/empty khi request ẩn danh — KHÔNG ném. Mở rộng cho hệ lớn (F23): permission-based authz,
 /// multi-tenant, session tracking — KHÔNG chỉ role. Base cung cấp CƠ CHẾ; role/permission cụ thể do
-/// app/module khai (F3 — lõi không hardcode Admin/Staff).
+/// app/module khai (F3 — lõi không hardcode role hay permission sản phẩm).
 /// </summary>
 public interface ICurrentUser
 {

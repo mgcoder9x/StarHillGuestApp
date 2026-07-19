@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Reflection;
+using Bedrock.Application.Behaviors;
 
 namespace Bedrock.Application.Authorization;
 

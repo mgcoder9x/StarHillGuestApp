@@ -1,0 +1,56 @@
+{
+  "uid": "bedrock-platform-operations",
+  "title": "Bedrock Platform Operations",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "module",
+        "type": "query",
+        "label": "Module",
+        "query": "label_values(bedrock_outbox_pending, module)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": ["$__all"] }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Oldest pending age",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [{ "expr": "max(bedrock_outbox_oldest_pending_age_seconds{module=~\"$module\"})", "legendFormat": "seconds" }],
+      "fieldConfig": { "defaults": { "unit": "s", "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 120 }, { "color": "red", "value": 600 }] } } },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Outbox pending and dead-letter depth",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "sum by (module) (bedrock_outbox_pending{module=~\"$module\"})", "legendFormat": "pending {{module}}" },
+        { "expr": "sum by (module) (bedrock_outbox_dead_letter_depth{module=~\"$module\"})", "legendFormat": "dead-letter {{module}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 0 }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Publish rate and lag",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "sum(rate(bedrock_outbox_published_total{module=~\"$module\"}[5m]))", "legendFormat": "published/s" },
+        { "expr": "histogram_quantile(0.99, sum by (le) (rate(bedrock_outbox_publish_lag_seconds_bucket{module=~\"$module\"}[5m])))", "legendFormat": "p99 lag" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 }
+    }
+  ]
+}

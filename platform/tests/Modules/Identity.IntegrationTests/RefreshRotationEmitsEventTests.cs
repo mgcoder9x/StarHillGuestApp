@@ -37,7 +37,7 @@ public sealed class RefreshRotationEmitsEventTests : IAsyncLifetime
         try
         {
             // Build() validate Docker và NÉM nếu thiếu → phải nằm TRONG try để catch → skip (thiếu Docker, N-012). Root-cause N-067.
-            _container = new PostgreSqlBuilder("postgres:16-alpine").Build();
+            _container = new PostgreSqlBuilder("postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777").Build();
             await _container.StartAsync().ConfigureAwait(false);
             _available = true;
         }

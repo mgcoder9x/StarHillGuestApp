@@ -1,0 +1,26 @@
+{
+  "name": "@bedrock/design-tokens",
+  "version": "0.1.0",
+  "description": "Semantic design tokens with WCAG contrast validation.",
+  "license": "MIT",
+  "publishConfig": { "access": "public" },
+  "type": "module",
+  "sideEffects": ["./dist/theme.css"],
+  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./theme.css": "./dist/theme.css"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node scripts/copy-css.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "5.7.3",
+    "vitest": "3.2.4"
+  }
+}

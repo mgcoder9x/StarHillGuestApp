@@ -1,0 +1,86 @@
+T:public:class:static:Bedrock.Api.Authentication.BedrockAuthExtensions
+M:Bedrock.Api.Authentication.BedrockAuthExtensions.AddBedrockAuthCore(Microsoft.Extensions.DependencyInjection.IServiceCollection services,Microsoft.Extensions.Configuration.IConfiguration configuration):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+T:public:class:sealed:Bedrock.Api.Authentication.HttpContextCurrentUser
+I:Bedrock.Api.Authentication.HttpContextCurrentUser:Bedrock.Application.Ports.Users.ICurrentUser
+C:Bedrock.Api.Authentication.HttpContextCurrentUser(Microsoft.AspNetCore.Http.IHttpContextAccessor accessor):public
+M:Bedrock.Api.Authentication.HttpContextCurrentUser.HasPermission(System.String permission):System.Boolean:public:virtual+final+newslot
+M:Bedrock.Api.Authentication.HttpContextCurrentUser.IsInRole(System.String role):System.Boolean:public:virtual+final+newslot
+P:Bedrock.Api.Authentication.HttpContextCurrentUser.IsAuthenticated:System.Boolean:get=public:set=none
+P:Bedrock.Api.Authentication.HttpContextCurrentUser.Permissions:System.Collections.Generic.IReadOnlyCollection<System.String>:get=public:set=none
+P:Bedrock.Api.Authentication.HttpContextCurrentUser.Roles:System.Collections.Generic.IReadOnlyCollection<System.String>:get=public:set=none
+P:Bedrock.Api.Authentication.HttpContextCurrentUser.SessionId:System.Nullable<System.Guid>:get=public:set=none
+P:Bedrock.Api.Authentication.HttpContextCurrentUser.TenantId:System.Nullable<System.Guid>:get=public:set=none
+P:Bedrock.Api.Authentication.HttpContextCurrentUser.UserId:System.Nullable<System.Guid>:get=public:set=none
+T:public:class:static:Bedrock.Api.BedrockApiExtensions
+M:Bedrock.Api.BedrockApiExtensions.AddBedrockApi(Microsoft.Extensions.DependencyInjection.IServiceCollection services,Microsoft.Extensions.Configuration.IConfiguration configuration):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+M:Bedrock.Api.BedrockApiExtensions.UseBedrockApi(Microsoft.AspNetCore.Builder.IApplicationBuilder app):Microsoft.AspNetCore.Builder.IApplicationBuilder:public:static+extension
+T:public:interface:abstract:Bedrock.Api.Endpoints.IEndpointModule
+M:Bedrock.Api.Endpoints.IEndpointModule.MapEndpoints(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints):System.Void:public:abstract+virtual+newslot
+T:public:class:static:Bedrock.Api.ErrorHandling.ErrorTypeToHttp
+M:Bedrock.Api.ErrorHandling.ErrorTypeToHttp.ToStatusCode(Bedrock.Domain.Results.ErrorType type):System.Int32:public:static
+T:public:class:sealed:Bedrock.Api.ErrorHandling.ExceptionHandlingMiddleware
+C:Bedrock.Api.ErrorHandling.ExceptionHandlingMiddleware(Microsoft.AspNetCore.Http.RequestDelegate next,Microsoft.Extensions.Logging.ILogger<Bedrock.Api.ErrorHandling.ExceptionHandlingMiddleware> logger,Bedrock.Api.Observability.PathMasker masker):public
+M:Bedrock.Api.ErrorHandling.ExceptionHandlingMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext context):System.Threading.Tasks.Task:public:none
+T:public:class:static:Bedrock.Api.ErrorHandling.ProblemDetailsBuilder
+M:Bedrock.Api.ErrorHandling.ProblemDetailsBuilder.Build(Bedrock.Domain.Results.Error error,System.String traceId):Microsoft.AspNetCore.Mvc.ProblemDetails:public:static
+T:public:class:static:Bedrock.Api.ErrorHandling.ProblemDetailsWriter
+M:Bedrock.Api.ErrorHandling.ProblemDetailsWriter.WriteAsync(Microsoft.AspNetCore.Http.HttpContext http,Bedrock.Domain.Results.Error error):System.Threading.Tasks.Task:public:static
+T:public:class:static:Bedrock.Api.Health.HealthEndpoints
+M:Bedrock.Api.Health.HealthEndpoints.MapBedrockHealth(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints):System.Void:public:static+extension
+F:Bedrock.Api.Health.HealthEndpoints.ReadyTag:System.String:public:const:value="ready"
+T:public:class:static:Bedrock.Api.HttpSecurity.BedrockHttpSecurityExtensions
+M:Bedrock.Api.HttpSecurity.BedrockHttpSecurityExtensions.AddBedrockHttpSecurity(Microsoft.Extensions.DependencyInjection.IServiceCollection services,Microsoft.Extensions.Configuration.IConfiguration configuration):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+T:public:enum:none:Bedrock.Api.HttpSecurity.CookieSameSiteMode
+B:Bedrock.Api.HttpSecurity.CookieSameSiteMode:System.Enum
+I:Bedrock.Api.HttpSecurity.CookieSameSiteMode:System.IComparable
+I:Bedrock.Api.HttpSecurity.CookieSameSiteMode:System.IConvertible
+I:Bedrock.Api.HttpSecurity.CookieSameSiteMode:System.IFormattable
+I:Bedrock.Api.HttpSecurity.CookieSameSiteMode:System.ISpanFormattable
+F:Bedrock.Api.HttpSecurity.CookieSameSiteMode.CrossSite:Bedrock.Api.HttpSecurity.CookieSameSiteMode:public:const:value=1
+F:Bedrock.Api.HttpSecurity.CookieSameSiteMode.SameSite:Bedrock.Api.HttpSecurity.CookieSameSiteMode:public:const:value=0
+F:Bedrock.Api.HttpSecurity.CookieSameSiteMode.value__:System.Int32:public:none
+T:public:class:static:Bedrock.Api.HttpSecurity.CookieSecurityDefaults
+M:Bedrock.Api.HttpSecurity.CookieSecurityDefaults.CreateCookieOptions(Bedrock.Api.HttpSecurity.CookieSameSiteMode mode):Microsoft.AspNetCore.Http.CookieOptions:public:static
+M:Bedrock.Api.HttpSecurity.CookieSecurityDefaults.RequiresCsrf(Bedrock.Api.HttpSecurity.CookieSameSiteMode mode):System.Boolean:public:static
+T:public:class:sealed:Bedrock.Api.HttpSecurity.HttpSecurityOptions
+C:Bedrock.Api.HttpSecurity.HttpSecurityOptions():public
+M:Bedrock.Api.HttpSecurity.HttpSecurityOptions.Validate(Bedrock.Api.HttpSecurity.HttpSecurityOptions options):System.Void:public:static
+P:Bedrock.Api.HttpSecurity.HttpSecurityOptions.CookieSameSiteMode:Bedrock.Api.HttpSecurity.CookieSameSiteMode:get=public:set=public
+P:Bedrock.Api.HttpSecurity.HttpSecurityOptions.CorsAllowedOrigins:System.Collections.Generic.IList<System.String>:get=public:set=none
+P:Bedrock.Api.HttpSecurity.HttpSecurityOptions.CorsPolicyName:System.String:get=public:set=public
+P:Bedrock.Api.HttpSecurity.HttpSecurityOptions.ForwardLimit:System.Int32:get=public:set=public
+P:Bedrock.Api.HttpSecurity.HttpSecurityOptions.KnownNetworks:System.Collections.Generic.IList<System.String>:get=public:set=none
+P:Bedrock.Api.HttpSecurity.HttpSecurityOptions.KnownProxies:System.Collections.Generic.IList<System.String>:get=public:set=none
+P:Bedrock.Api.HttpSecurity.HttpSecurityOptions.RateLimitPermitLimit:System.Int32:get=public:set=public
+P:Bedrock.Api.HttpSecurity.HttpSecurityOptions.RateLimitQueueLimit:System.Int32:get=public:set=public
+P:Bedrock.Api.HttpSecurity.HttpSecurityOptions.RateLimitWindowSeconds:System.Int32:get=public:set=public
+F:Bedrock.Api.HttpSecurity.HttpSecurityOptions.SectionName:System.String:public:const:value="HttpSecurity"
+T:public:class:sealed:Bedrock.Api.HttpSecurity.SecurityHeadersMiddleware
+C:Bedrock.Api.HttpSecurity.SecurityHeadersMiddleware(Microsoft.AspNetCore.Http.RequestDelegate next):public
+M:Bedrock.Api.HttpSecurity.SecurityHeadersMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext context):System.Threading.Tasks.Task:public:none
+T:public:class:static:Bedrock.Api.Observability.BedrockObservabilityExtensions
+M:Bedrock.Api.Observability.BedrockObservabilityExtensions.AddBedrockObservability(Microsoft.Extensions.DependencyInjection.IServiceCollection services,Microsoft.Extensions.Configuration.IConfiguration configuration):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+T:public:class:static:Bedrock.Api.Observability.CorrelationContext
+M:Bedrock.Api.Observability.CorrelationContext.Resolve(Microsoft.AspNetCore.Http.HttpContext context):System.String:public:static
+F:Bedrock.Api.Observability.CorrelationContext.HeaderName:System.String:public:const:value="X-Correlation-Id"
+T:public:class:sealed:Bedrock.Api.Observability.CorrelationIdMiddleware
+C:Bedrock.Api.Observability.CorrelationIdMiddleware(Microsoft.AspNetCore.Http.RequestDelegate next):public
+M:Bedrock.Api.Observability.CorrelationIdMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext context):System.Threading.Tasks.Task:public:none
+T:public:class:sealed:Bedrock.Api.Observability.ObservabilityOptions
+C:Bedrock.Api.Observability.ObservabilityOptions():public
+P:Bedrock.Api.Observability.ObservabilityOptions.MaskPlaceholder:System.String:get=public:set=public
+P:Bedrock.Api.Observability.ObservabilityOptions.MaskedPathPrefixes:System.Collections.Generic.IList<System.String>:get=public:set=none
+F:Bedrock.Api.Observability.ObservabilityOptions.SectionName:System.String:public:const:value="Observability"
+T:public:class:sealed:Bedrock.Api.Observability.PathMasker
+C:Bedrock.Api.Observability.PathMasker(Bedrock.Api.Observability.ObservabilityOptions options):public
+M:Bedrock.Api.Observability.PathMasker.Mask(System.String? path):System.String:public:none
+T:public:class:sealed:Bedrock.Api.Observability.RequestLoggingMiddleware
+C:Bedrock.Api.Observability.RequestLoggingMiddleware(Microsoft.AspNetCore.Http.RequestDelegate next,Microsoft.Extensions.Logging.ILogger<Bedrock.Api.Observability.RequestLoggingMiddleware> logger,Bedrock.Api.Observability.PathMasker masker):public
+M:Bedrock.Api.Observability.RequestLoggingMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext context):System.Threading.Tasks.Task:public:none
+T:public:class:static:Bedrock.Api.OpenApi.BedrockOpenApiExtensions
+M:Bedrock.Api.OpenApi.BedrockOpenApiExtensions.AddBedrockOpenApi(Microsoft.Extensions.DependencyInjection.IServiceCollection services):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+M:Bedrock.Api.OpenApi.BedrockOpenApiExtensions.MapBedrockOpenApi(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints):Microsoft.AspNetCore.Routing.IEndpointRouteBuilder:public:static+extension
+T:public:class:static:Bedrock.Api.Versioning.BedrockApiVersioning
+M:Bedrock.Api.Versioning.BedrockApiVersioning.AddBedrockApiVersioning(Microsoft.Extensions.DependencyInjection.IServiceCollection services):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+M:Bedrock.Api.Versioning.BedrockApiVersioning.MapVersionedGroup(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints,System.String prefix,params Asp.Versioning.ApiVersion[] versions):Microsoft.AspNetCore.Routing.RouteGroupBuilder:public:static+extension
+F:Bedrock.Api.Versioning.BedrockApiVersioning.V1:Asp.Versioning.ApiVersion:public:static+readonly

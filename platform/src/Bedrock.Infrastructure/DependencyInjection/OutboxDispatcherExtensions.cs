@@ -15,6 +15,43 @@ namespace Bedrock.Infrastructure.DependencyInjection;
 public static class OutboxDispatcherExtensions
 {
     /// <summary>
+    /// Registers the audited operator replay service for a single-context Host. The DbContext must map
+    /// <c>AddOutboxInbox</c>, which includes both the outbox and replay-audit tables.
+    /// </summary>
+    public static IServiceCollection AddOutboxReplay<TContext>(this IServiceCollection services)
+        where TContext : PlatformDbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.AddScoped<EfOutboxReplayService<TContext>>();
+        services.AddScoped<IOutboxReplayService>(provider => provider.GetRequiredService<EfOutboxReplayService<TContext>>());
+        services.AddScoped<IOutboxReplayAuditReader>(
+            provider => provider.GetRequiredService<EfOutboxReplayService<TContext>>());
+        return services;
+    }
+
+    /// <summary>Registers the audited replay service under the owning module key.</summary>
+    public static IServiceCollection AddOutboxReplay<TContext>(
+        this IServiceCollection services,
+        string moduleKey)
+        where TContext : PlatformDbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentException.ThrowIfNullOrWhiteSpace(moduleKey);
+        services.AddKeyedScoped<EfOutboxReplayService<TContext>>(
+            moduleKey,
+            (provider, _) => new EfOutboxReplayService<TContext>(
+                provider.GetRequiredService<TContext>(),
+                provider.GetRequiredService<Bedrock.Application.Ports.Time.IClock>()));
+        services.AddKeyedScoped<IOutboxReplayService>(
+            moduleKey,
+            (provider, _) => provider.GetRequiredKeyedService<EfOutboxReplayService<TContext>>(moduleKey));
+        services.AddKeyedScoped<IOutboxReplayAuditReader>(
+            moduleKey,
+            (provider, _) => provider.GetRequiredKeyedService<EfOutboxReplayService<TContext>>(moduleKey));
+        return services;
+    }
+
+    /// <summary>
     /// Đăng ký dispatcher outbox cho DbContext <typeparamref name="TContext"/> (per-module).
     /// Yêu cầu <see cref="IEventBusPublisher"/> đã đăng ký (adapter, vd RabbitMQ) — nếu không, resolve sẽ
     /// fail-fast khi worker chạy. Named-options theo context cho phép mỗi module tinh chỉnh riêng.

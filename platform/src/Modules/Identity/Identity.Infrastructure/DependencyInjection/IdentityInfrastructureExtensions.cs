@@ -30,7 +30,7 @@ public static class IdentityInfrastructureExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configureDbContext);
 
-        // Foundation và capability phải khớp IdentityDbContext.OnModelCreating (schema "identity").
+        // Base persistence mechanism và capability phải khớp IdentityDbContext.OnModelCreating (schema "identity").
         services.AddBedrockPersistence<IdentityDbContext>(PersistenceKey, configureDbContext);
         services.AddBedrockOutbox<IdentityDbContext>(PersistenceKey);
         services.AddBedrockInbox<IdentityDbContext>(PersistenceKey);

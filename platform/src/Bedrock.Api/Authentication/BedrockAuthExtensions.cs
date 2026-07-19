@@ -14,7 +14,7 @@ namespace Bedrock.Api.Authentication;
 /// <summary>
 /// Đăng ký CƠ CHẾ xác thực (KHÔNG policy nghiệp vụ — F3): JWT bearer verify theo key-ring (<see cref="JwtKeyRingOptions"/>,
 /// F22), bind <see cref="ICurrentUser"/> từ claims, và trả 401/403 dưới dạng ProblemDetails (F20). Role/permission
-/// cụ thể do module Identity/Host khai bằng authorization policy riêng — base KHÔNG khai Admin/Staff.
+/// cụ thể do module Identity/Host khai bằng authorization policy riêng — base KHÔNG khai role sản phẩm.
 /// </summary>
 public static class BedrockAuthExtensions
 {

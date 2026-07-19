@@ -39,8 +39,8 @@ public sealed class OutboxDispatcherWorkerEndToEndTests : IAsyncLifetime
         try
         {
             // Build() validate Docker và NÉM nếu thiếu → phải nằm TRONG try để catch → skip (N-012). Root-cause N-067.
-            _postgres = new PostgreSqlBuilder("postgres:16-alpine").Build();
-            _rabbit = new RabbitMqBuilder("rabbitmq:3.13").Build();
+            _postgres = new PostgreSqlBuilder("postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777").Build();
+            _rabbit = new RabbitMqBuilder("rabbitmq:3.13@sha256:87178a0ee3e2f52980ba356d38646ed1056705ff2d5ff281f8965456eaa0c1e3").Build();
             await _postgres.StartAsync().ConfigureAwait(false);
             await _rabbit.StartAsync().ConfigureAwait(false);
             _available = true;

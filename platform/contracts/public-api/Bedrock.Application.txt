@@ -1,0 +1,422 @@
+T:public:class:static:Bedrock.Application.Authorization.PermissionMetadata
+M:Bedrock.Application.Authorization.PermissionMetadata.For(System.Type inputType):System.String[]:public:static
+T:public:class:sealed:Bedrock.Application.Authorization.RequirePermissionAttribute
+B:Bedrock.Application.Authorization.RequirePermissionAttribute:System.Attribute
+C:Bedrock.Application.Authorization.RequirePermissionAttribute(System.String permission):public
+P:Bedrock.Application.Authorization.RequirePermissionAttribute.Permission:System.String:get=public:set=none
+T:public:class:sealed:Bedrock.Application.Behaviors.AuthorizationCommandUseCaseDecorator<!0>
+I:Bedrock.Application.Behaviors.AuthorizationCommandUseCaseDecorator<!0>:Bedrock.Application.UseCases.ICommandUseCase<!0>
+I:Bedrock.Application.Behaviors.AuthorizationCommandUseCaseDecorator<!0>:Bedrock.Application.UseCases.ITransactionalUseCase
+I:Bedrock.Application.Behaviors.AuthorizationCommandUseCaseDecorator<!0>:Bedrock.Application.UseCases.IUseCase
+C:Bedrock.Application.Behaviors.AuthorizationCommandUseCaseDecorator<!0>(Bedrock.Application.UseCases.ICommandUseCase<!0?> inner,Bedrock.Application.Ports.Users.ICurrentUser currentUser):public
+M:Bedrock.Application.Behaviors.AuthorizationCommandUseCaseDecorator<!0>.ExecuteAsync(!0? input,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Domain.Results.Result>:public:virtual+final+newslot
+P:Bedrock.Application.Behaviors.AuthorizationCommandUseCaseDecorator<!0>.PersistenceKey:System.String?:get=public:set=none
+T:public:class:sealed:Bedrock.Application.Behaviors.AuthorizationUseCaseDecorator<!0,!1>
+I:Bedrock.Application.Behaviors.AuthorizationUseCaseDecorator<!0,!1>:Bedrock.Application.UseCases.IUseCase
+I:Bedrock.Application.Behaviors.AuthorizationUseCaseDecorator<!0,!1>:Bedrock.Application.UseCases.IUseCase<!0,!1>
+C:Bedrock.Application.Behaviors.AuthorizationUseCaseDecorator<!0,!1>(Bedrock.Application.UseCases.IUseCase<!0?,!1?> inner,Bedrock.Application.Ports.Users.ICurrentUser currentUser):public
+M:Bedrock.Application.Behaviors.AuthorizationUseCaseDecorator<!0,!1>.ExecuteAsync(!0? input,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Domain.Results.Result<!1?>>:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Application.Behaviors.IdempotencyCommandUseCaseDecorator<!0>
+I:Bedrock.Application.Behaviors.IdempotencyCommandUseCaseDecorator<!0>:Bedrock.Application.UseCases.ICommandUseCase<!0>
+I:Bedrock.Application.Behaviors.IdempotencyCommandUseCaseDecorator<!0>:Bedrock.Application.UseCases.ITransactionalUseCase
+I:Bedrock.Application.Behaviors.IdempotencyCommandUseCaseDecorator<!0>:Bedrock.Application.UseCases.IUseCase
+C:Bedrock.Application.Behaviors.IdempotencyCommandUseCaseDecorator<!0>(Bedrock.Application.UseCases.ICommandUseCase<!0?> inner,Bedrock.Application.Ports.Caching.IIdempotencyStore store,Bedrock.Application.Ports.Users.ICurrentUser currentUser):public
+M:Bedrock.Application.Behaviors.IdempotencyCommandUseCaseDecorator<!0>.ExecuteAsync(!0? input,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Domain.Results.Result>:public:virtual+final+newslot
+P:Bedrock.Application.Behaviors.IdempotencyCommandUseCaseDecorator<!0>.PersistenceKey:System.String?:get=public:set=none
+T:public:class:static:Bedrock.Application.Behaviors.IdempotencyDefaults
+F:Bedrock.Application.Behaviors.IdempotencyDefaults.Conflict:Bedrock.Domain.Results.Error:public:static+readonly
+F:Bedrock.Application.Behaviors.IdempotencyDefaults.Ttl:System.TimeSpan:public:static+readonly
+T:public:class:sealed:Bedrock.Application.Behaviors.IdempotencyUseCaseDecorator<!0,!1>
+I:Bedrock.Application.Behaviors.IdempotencyUseCaseDecorator<!0,!1>:Bedrock.Application.UseCases.IUseCase
+I:Bedrock.Application.Behaviors.IdempotencyUseCaseDecorator<!0,!1>:Bedrock.Application.UseCases.IUseCase<!0,!1>
+C:Bedrock.Application.Behaviors.IdempotencyUseCaseDecorator<!0,!1>(Bedrock.Application.UseCases.IUseCase<!0?,!1?> inner,Bedrock.Application.Ports.Caching.IIdempotencyStore store,Bedrock.Application.Ports.Users.ICurrentUser currentUser):public
+M:Bedrock.Application.Behaviors.IdempotencyUseCaseDecorator<!0,!1>.ExecuteAsync(!0? input,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Domain.Results.Result<!1?>>:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Application.Behaviors.LoggingCommandUseCaseDecorator<!0>
+I:Bedrock.Application.Behaviors.LoggingCommandUseCaseDecorator<!0>:Bedrock.Application.UseCases.ICommandUseCase<!0>
+I:Bedrock.Application.Behaviors.LoggingCommandUseCaseDecorator<!0>:Bedrock.Application.UseCases.ITransactionalUseCase
+I:Bedrock.Application.Behaviors.LoggingCommandUseCaseDecorator<!0>:Bedrock.Application.UseCases.IUseCase
+C:Bedrock.Application.Behaviors.LoggingCommandUseCaseDecorator<!0>(Bedrock.Application.UseCases.ICommandUseCase<!0?> inner,Microsoft.Extensions.Logging.ILogger<Bedrock.Application.Behaviors.LoggingCommandUseCaseDecorator<!0?>> logger):public
+M:Bedrock.Application.Behaviors.LoggingCommandUseCaseDecorator<!0>.ExecuteAsync(!0? input,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Domain.Results.Result>:public:virtual+final+newslot
+P:Bedrock.Application.Behaviors.LoggingCommandUseCaseDecorator<!0>.PersistenceKey:System.String?:get=public:set=none
+T:public:class:sealed:Bedrock.Application.Behaviors.LoggingUseCaseDecorator<!0,!1>
+I:Bedrock.Application.Behaviors.LoggingUseCaseDecorator<!0,!1>:Bedrock.Application.UseCases.IUseCase
+I:Bedrock.Application.Behaviors.LoggingUseCaseDecorator<!0,!1>:Bedrock.Application.UseCases.IUseCase<!0,!1>
+C:Bedrock.Application.Behaviors.LoggingUseCaseDecorator<!0,!1>(Bedrock.Application.UseCases.IUseCase<!0?,!1?> inner,Microsoft.Extensions.Logging.ILogger<Bedrock.Application.Behaviors.LoggingUseCaseDecorator<!0?,!1?>> logger):public
+M:Bedrock.Application.Behaviors.LoggingUseCaseDecorator<!0,!1>.ExecuteAsync(!0? input,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Domain.Results.Result<!1?>>:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Application.Behaviors.TransactionCommandUseCaseDecorator<!0>
+I:Bedrock.Application.Behaviors.TransactionCommandUseCaseDecorator<!0>:Bedrock.Application.UseCases.ICommandUseCase<!0>
+I:Bedrock.Application.Behaviors.TransactionCommandUseCaseDecorator<!0>:Bedrock.Application.UseCases.ITransactionalUseCase
+I:Bedrock.Application.Behaviors.TransactionCommandUseCaseDecorator<!0>:Bedrock.Application.UseCases.IUseCase
+C:Bedrock.Application.Behaviors.TransactionCommandUseCaseDecorator<!0>(Bedrock.Application.UseCases.ICommandUseCase<!0?> inner,Bedrock.Application.Ports.Persistence.IUnitOfWorkResolver unitOfWorkResolver):public
+M:Bedrock.Application.Behaviors.TransactionCommandUseCaseDecorator<!0>.ExecuteAsync(!0? input,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Domain.Results.Result>:public:virtual+final+newslot
+P:Bedrock.Application.Behaviors.TransactionCommandUseCaseDecorator<!0>.PersistenceKey:System.String?:get=public:set=none
+T:public:class:sealed:Bedrock.Application.Behaviors.TransactionUseCaseDecorator<!0,!1>
+I:Bedrock.Application.Behaviors.TransactionUseCaseDecorator<!0,!1>:Bedrock.Application.UseCases.IUseCase
+I:Bedrock.Application.Behaviors.TransactionUseCaseDecorator<!0,!1>:Bedrock.Application.UseCases.IUseCase<!0,!1>
+C:Bedrock.Application.Behaviors.TransactionUseCaseDecorator<!0,!1>(Bedrock.Application.UseCases.IUseCase<!0?,!1?> inner,Bedrock.Application.Ports.Persistence.IUnitOfWorkResolver unitOfWorkResolver):public
+M:Bedrock.Application.Behaviors.TransactionUseCaseDecorator<!0,!1>.ExecuteAsync(!0? input,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Domain.Results.Result<!1?>>:public:virtual+final+newslot
+T:public:class:sealed:Bedrock.Application.Behaviors.ValidationCommandUseCaseDecorator<!0>
+I:Bedrock.Application.Behaviors.ValidationCommandUseCaseDecorator<!0>:Bedrock.Application.UseCases.ICommandUseCase<!0>
+I:Bedrock.Application.Behaviors.ValidationCommandUseCaseDecorator<!0>:Bedrock.Application.UseCases.ITransactionalUseCase
+I:Bedrock.Application.Behaviors.ValidationCommandUseCaseDecorator<!0>:Bedrock.Application.UseCases.IUseCase
+C:Bedrock.Application.Behaviors.ValidationCommandUseCaseDecorator<!0>(Bedrock.Application.UseCases.ICommandUseCase<!0?> inner,System.Collections.Generic.IEnumerable<FluentValidation.IValidator<!0?>> validators):public
+M:Bedrock.Application.Behaviors.ValidationCommandUseCaseDecorator<!0>.ExecuteAsync(!0? input,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Domain.Results.Result>:public:virtual+final+newslot
+P:Bedrock.Application.Behaviors.ValidationCommandUseCaseDecorator<!0>.PersistenceKey:System.String?:get=public:set=none
+T:public:class:sealed:Bedrock.Application.Behaviors.ValidationUseCaseDecorator<!0,!1>
+I:Bedrock.Application.Behaviors.ValidationUseCaseDecorator<!0,!1>:Bedrock.Application.UseCases.IUseCase
+I:Bedrock.Application.Behaviors.ValidationUseCaseDecorator<!0,!1>:Bedrock.Application.UseCases.IUseCase<!0,!1>
+C:Bedrock.Application.Behaviors.ValidationUseCaseDecorator<!0,!1>(Bedrock.Application.UseCases.IUseCase<!0?,!1?> inner,System.Collections.Generic.IEnumerable<FluentValidation.IValidator<!0?>> validators):public
+M:Bedrock.Application.Behaviors.ValidationUseCaseDecorator<!0,!1>.ExecuteAsync(!0? input,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Domain.Results.Result<!1?>>:public:virtual+final+newslot
+T:public:class:static:Bedrock.Application.DependencyInjection.BedrockCoreExtensions
+M:Bedrock.Application.DependencyInjection.BedrockCoreExtensions.AddBedrockCore(Microsoft.Extensions.DependencyInjection.IServiceCollection services,params System.Reflection.Assembly[] assemblies):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+T:public:class:static:Bedrock.Application.DependencyInjection.BedrockRegistrationExtensions
+M:Bedrock.Application.DependencyInjection.BedrockRegistrationExtensions.AddBedrockConventions(Microsoft.Extensions.DependencyInjection.IServiceCollection services,params System.Reflection.Assembly[] assemblies):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+M:Bedrock.Application.DependencyInjection.BedrockRegistrationExtensions.AddRequiredPort`1(Microsoft.Extensions.DependencyInjection.IServiceCollection services):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension:where[!!0:class]
+M:Bedrock.Application.DependencyInjection.BedrockRegistrationExtensions.AllowMultipleImplementations`1(Microsoft.Extensions.DependencyInjection.IServiceCollection services):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension:where[!!0:class]
+M:Bedrock.Application.DependencyInjection.BedrockRegistrationExtensions.BedrockStartupValidation(Microsoft.Extensions.DependencyInjection.IServiceCollection services):Bedrock.Application.DependencyInjection.StartupValidationOptions:public:static+extension
+M:Bedrock.Application.DependencyInjection.BedrockRegistrationExtensions.ValidateSingleImplementationPorts(Microsoft.Extensions.DependencyInjection.IServiceCollection services):System.Void:public:static+extension
+T:public:interface:abstract:Bedrock.Application.DependencyInjection.IManualRegistration
+T:public:interface:abstract:Bedrock.Application.DependencyInjection.IScopedService
+T:public:interface:abstract:Bedrock.Application.DependencyInjection.ISingletonService
+T:public:interface:abstract:Bedrock.Application.DependencyInjection.ITransientService
+T:public:class:sealed:Bedrock.Application.DependencyInjection.StartupValidationOptions
+C:Bedrock.Application.DependencyInjection.StartupValidationOptions():public
+M:Bedrock.Application.DependencyInjection.StartupValidationOptions.AllowMultipleImplementations(System.Type portType):Bedrock.Application.DependencyInjection.StartupValidationOptions:public:none
+M:Bedrock.Application.DependencyInjection.StartupValidationOptions.AllowOutboxWithoutDispatcher():Bedrock.Application.DependencyInjection.StartupValidationOptions:public:none
+M:Bedrock.Application.DependencyInjection.StartupValidationOptions.RegisterOutboxDrainer(System.Type contextType):Bedrock.Application.DependencyInjection.StartupValidationOptions:public:none
+M:Bedrock.Application.DependencyInjection.StartupValidationOptions.RegisterOutboxProducer(System.Type contextType):Bedrock.Application.DependencyInjection.StartupValidationOptions:public:none
+M:Bedrock.Application.DependencyInjection.StartupValidationOptions.RequirePort(System.Type portType):Bedrock.Application.DependencyInjection.StartupValidationOptions:public:none
+P:Bedrock.Application.DependencyInjection.StartupValidationOptions.MultiImplementationPorts:System.Collections.Generic.IReadOnlyCollection<System.Type>:get=public:set=none
+P:Bedrock.Application.DependencyInjection.StartupValidationOptions.OutboxDrainerContexts:System.Collections.Generic.IReadOnlyCollection<System.Type>:get=public:set=none
+P:Bedrock.Application.DependencyInjection.StartupValidationOptions.OutboxProducerContexts:System.Collections.Generic.IReadOnlyCollection<System.Type>:get=public:set=none
+P:Bedrock.Application.DependencyInjection.StartupValidationOptions.OutboxWithoutDispatcherAllowed:System.Boolean:get=public:set=none
+P:Bedrock.Application.DependencyInjection.StartupValidationOptions.RequiredPorts:System.Collections.Generic.IReadOnlyCollection<System.Type>:get=public:set=none
+T:public:interface:abstract:Bedrock.Application.Events.IDomainEventDispatcher
+M:Bedrock.Application.Events.IDomainEventDispatcher.DispatchAsync(System.Collections.Generic.IReadOnlyCollection<Bedrock.Domain.Events.IDomainEvent> events,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Events.IDomainEventHandler<!0>:where[!0:in&Bedrock.Domain.Events.IDomainEvent]
+M:Bedrock.Application.Events.IDomainEventHandler<!0>.HandleAsync(!0 domainEvent,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Messaging.Dispatch.IEventBusPublisher
+M:Bedrock.Application.Messaging.Dispatch.IEventBusPublisher.PublishAsync(Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage message,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Messaging.Dispatch.IInboxStore
+M:Bedrock.Application.Messaging.Dispatch.IInboxStore.TryMarkProcessedAsync(System.Guid messageId,System.String consumer,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<System.Boolean>:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Messaging.Dispatch.IIntegrationEventDispatcher
+M:Bedrock.Application.Messaging.Dispatch.IIntegrationEventDispatcher.DispatchAsync(Bedrock.Application.Messaging.Dispatch.IncomingIntegrationMessage message,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Application.Messaging.Dispatch.InboxDispatchOutcome>:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Messaging.Dispatch.IIntegrationEventTypeRegistry
+M:Bedrock.Application.Messaging.Dispatch.IIntegrationEventTypeRegistry.Resolve(System.String eventType):System.Type?:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Messaging.Dispatch.IOutboxDispatcher
+M:Bedrock.Application.Messaging.Dispatch.IOutboxDispatcher.DispatchPendingAsync(System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Messaging.Dispatch.IOutboxReplayAuditReader
+M:Bedrock.Application.Messaging.Dispatch.IOutboxReplayAuditReader.GetAsync(System.Guid operationId,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditRecord?>:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Messaging.Dispatch.IOutboxReplayService
+M:Bedrock.Application.Messaging.Dispatch.IOutboxReplayService.ExecuteAsync(Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest request,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Application.Messaging.Dispatch.OutboxReplayResult>:public:abstract+virtual+newslot
+T:public:enum:none:Bedrock.Application.Messaging.Dispatch.InboxDispatchOutcome
+B:Bedrock.Application.Messaging.Dispatch.InboxDispatchOutcome:System.Enum
+I:Bedrock.Application.Messaging.Dispatch.InboxDispatchOutcome:System.IComparable
+I:Bedrock.Application.Messaging.Dispatch.InboxDispatchOutcome:System.IConvertible
+I:Bedrock.Application.Messaging.Dispatch.InboxDispatchOutcome:System.IFormattable
+I:Bedrock.Application.Messaging.Dispatch.InboxDispatchOutcome:System.ISpanFormattable
+F:Bedrock.Application.Messaging.Dispatch.InboxDispatchOutcome.DeadLettered:Bedrock.Application.Messaging.Dispatch.InboxDispatchOutcome:public:const:value=2
+F:Bedrock.Application.Messaging.Dispatch.InboxDispatchOutcome.Duplicate:Bedrock.Application.Messaging.Dispatch.InboxDispatchOutcome:public:const:value=1
+F:Bedrock.Application.Messaging.Dispatch.InboxDispatchOutcome.Handled:Bedrock.Application.Messaging.Dispatch.InboxDispatchOutcome:public:const:value=0
+F:Bedrock.Application.Messaging.Dispatch.InboxDispatchOutcome.value__:System.Int32:public:none
+T:public:class:sealed:Bedrock.Application.Messaging.Dispatch.IncomingIntegrationMessage
+I:Bedrock.Application.Messaging.Dispatch.IncomingIntegrationMessage:System.IEquatable<Bedrock.Application.Messaging.Dispatch.IncomingIntegrationMessage>
+C:Bedrock.Application.Messaging.Dispatch.IncomingIntegrationMessage(System.Guid MessageId,System.String Consumer,System.String EventType,System.ReadOnlyMemory<System.Byte> Payload):public
+P:Bedrock.Application.Messaging.Dispatch.IncomingIntegrationMessage.Consumer:System.String:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.IncomingIntegrationMessage.ContentType:System.String?:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.IncomingIntegrationMessage.CorrelationId:System.String?:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.IncomingIntegrationMessage.EventType:System.String:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.IncomingIntegrationMessage.MessageId:System.Guid:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.IncomingIntegrationMessage.Payload:System.ReadOnlyMemory<System.Byte>:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.IncomingIntegrationMessage.SchemaVersion:System.Int32:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.IncomingIntegrationMessage.TraceParent:System.String?:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.IncomingIntegrationMessage.TraceState:System.String?:get=public:init=public
+T:public:class:sealed:Bedrock.Application.Messaging.Dispatch.OutboxMessage
+A:T:Bedrock.Application.Messaging.Dispatch.OutboxMessage:RequiredMember
+C:Bedrock.Application.Messaging.Dispatch.OutboxMessage():public
+A:C:Bedrock.Application.Messaging.Dispatch.OutboxMessage():Obsolete(error=true,message="Constructors of types with required members are not supported in this version of your compiler.",diagnostic=null,url=null)
+P:Bedrock.Application.Messaging.Dispatch.OutboxMessage.ClaimId:System.Nullable<System.Guid>:get=public:set=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxMessage.ClaimedUntil:System.Nullable<System.DateTimeOffset>:get=public:set=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxMessage.CorrelationId:System.String?:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxMessage.DeadLetteredAt:System.Nullable<System.DateTimeOffset>:get=public:set=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxMessage.ErrorCount:System.Int32:get=public:set=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxMessage.EventType:System.String:get=public:init=public
+A:P:Bedrock.Application.Messaging.Dispatch.OutboxMessage.EventType:RequiredMember
+P:Bedrock.Application.Messaging.Dispatch.OutboxMessage.Id:System.Guid:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxMessage.LastAttemptAt:System.Nullable<System.DateTimeOffset>:get=public:set=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxMessage.LastError:System.String?:get=public:set=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxMessage.NextAttemptAt:System.Nullable<System.DateTimeOffset>:get=public:set=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxMessage.OccurredAt:System.DateTimeOffset:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxMessage.Payload:System.String:get=public:init=public
+A:P:Bedrock.Application.Messaging.Dispatch.OutboxMessage.Payload:RequiredMember
+P:Bedrock.Application.Messaging.Dispatch.OutboxMessage.ProcessedAt:System.Nullable<System.DateTimeOffset>:get=public:set=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxMessage.SchemaVersion:System.Int32:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxMessage.TraceParent:System.String?:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxMessage.TraceState:System.String?:get=public:init=public
+F:Bedrock.Application.Messaging.Dispatch.OutboxMessage.MaxLastErrorLength:System.Int32:public:const:value=1024
+F:Bedrock.Application.Messaging.Dispatch.OutboxMessage.MaxTraceParentLength:System.Int32:public:const:value=512
+F:Bedrock.Application.Messaging.Dispatch.OutboxMessage.MaxTraceStateLength:System.Int32:public:const:value=1024
+T:public:class:sealed:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditMessage
+I:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditMessage:System.IEquatable<Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditMessage>
+C:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditMessage(System.Guid MessageId,System.String EventType,System.DateTimeOffset OccurredAt,System.DateTimeOffset DeadLetteredAt,System.Int32 ErrorCount,System.String? LastError,System.DateTimeOffset ReplayedAt):public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditMessage.DeadLetteredAt:System.DateTimeOffset:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditMessage.ErrorCount:System.Int32:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditMessage.EventType:System.String:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditMessage.LastError:System.String?:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditMessage.MessageId:System.Guid:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditMessage.OccurredAt:System.DateTimeOffset:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditMessage.ReplayedAt:System.DateTimeOffset:get=public:init=public
+T:public:class:sealed:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditRecord
+I:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditRecord:System.IEquatable<Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditRecord>
+C:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditRecord(System.Guid OperationId,System.String Actor,System.String Reason,System.DateTimeOffset ReplayedAt,System.Int32 ReplayedCount,System.Collections.Generic.IReadOnlyList<Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditMessage> Messages):public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditRecord.Actor:System.String:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditRecord.Messages:System.Collections.Generic.IReadOnlyList<Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditMessage>:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditRecord.OperationId:System.Guid:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditRecord.Reason:System.String:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditRecord.ReplayedAt:System.DateTimeOffset:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayAuditRecord.ReplayedCount:System.Int32:get=public:init=public
+T:public:class:sealed:Bedrock.Application.Messaging.Dispatch.OutboxReplayCandidate
+I:Bedrock.Application.Messaging.Dispatch.OutboxReplayCandidate:System.IEquatable<Bedrock.Application.Messaging.Dispatch.OutboxReplayCandidate>
+C:Bedrock.Application.Messaging.Dispatch.OutboxReplayCandidate(System.Guid MessageId,System.String EventType,System.DateTimeOffset OccurredAt,System.DateTimeOffset DeadLetteredAt,System.Int32 ErrorCount,System.String? LastError):public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayCandidate.DeadLetteredAt:System.DateTimeOffset:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayCandidate.ErrorCount:System.Int32:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayCandidate.EventType:System.String:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayCandidate.LastError:System.String?:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayCandidate.MessageId:System.Guid:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayCandidate.OccurredAt:System.DateTimeOffset:get=public:init=public
+T:public:class:sealed:Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest
+I:Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest:System.IEquatable<Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest>
+A:T:Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest:RequiredMember
+C:Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest():public
+A:C:Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest():Obsolete(error=true,message="Constructors of types with required members are not supported in this version of your compiler.",diagnostic=null,url=null)
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest.Actor:System.String:get=public:init=public
+A:P:Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest.Actor:RequiredMember
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest.DryRun:System.Boolean:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest.EventType:System.String?:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest.MaxMessages:System.Int32:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest.MessageIds:System.Collections.Generic.IReadOnlyCollection<System.Guid>:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest.OccurredFrom:System.Nullable<System.DateTimeOffset>:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest.OccurredTo:System.Nullable<System.DateTimeOffset>:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest.OperationId:System.Guid:get=public:init=public
+A:P:Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest.OperationId:RequiredMember
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest.Reason:System.String:get=public:init=public
+A:P:Bedrock.Application.Messaging.Dispatch.OutboxReplayRequest.Reason:RequiredMember
+T:public:class:sealed:Bedrock.Application.Messaging.Dispatch.OutboxReplayResult
+I:Bedrock.Application.Messaging.Dispatch.OutboxReplayResult:System.IEquatable<Bedrock.Application.Messaging.Dispatch.OutboxReplayResult>
+C:Bedrock.Application.Messaging.Dispatch.OutboxReplayResult(System.Guid OperationId,System.Boolean DryRun,System.Collections.Generic.IReadOnlyList<Bedrock.Application.Messaging.Dispatch.OutboxReplayCandidate> Candidates,System.Int32 ReplayedCount):public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayResult.Candidates:System.Collections.Generic.IReadOnlyList<Bedrock.Application.Messaging.Dispatch.OutboxReplayCandidate>:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayResult.DryRun:System.Boolean:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayResult.OperationId:System.Guid:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutboxReplayResult.ReplayedCount:System.Int32:get=public:init=public
+T:public:class:sealed:Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage
+I:Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage:System.IEquatable<Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage>
+A:T:Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage:RequiredMember
+C:Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage():public
+A:C:Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage():Obsolete(error=true,message="Constructors of types with required members are not supported in this version of your compiler.",diagnostic=null,url=null)
+P:Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage.CorrelationId:System.String?:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage.EventType:System.String:get=public:init=public
+A:P:Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage.EventType:RequiredMember
+P:Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage.Id:System.Guid:get=public:init=public
+A:P:Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage.Id:RequiredMember
+P:Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage.OccurredAt:System.DateTimeOffset:get=public:init=public
+A:P:Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage.OccurredAt:RequiredMember
+P:Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage.Payload:System.String:get=public:init=public
+A:P:Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage.Payload:RequiredMember
+P:Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage.SchemaVersion:System.Int32:get=public:init=public
+A:P:Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage.SchemaVersion:RequiredMember
+P:Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage.TraceParent:System.String?:get=public:init=public
+P:Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage.TraceState:System.String?:get=public:init=public
+T:public:interface:abstract:Bedrock.Application.Messaging.IIntegrationEventHandler<!0>:where[!0:in&Bedrock.Messaging.Contracts.IntegrationEvent]
+M:Bedrock.Application.Messaging.IIntegrationEventHandler<!0>.HandleAsync(!0 integrationEvent,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Messaging.IOutboxWriter
+M:Bedrock.Application.Messaging.IOutboxWriter.EnqueueAsync(Bedrock.Messaging.Contracts.IntegrationEvent integrationEvent,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:abstract+virtual+newslot
+T:public:class:static:Bedrock.Application.Observability.BedrockTelemetry
+F:Bedrock.Application.Observability.BedrockTelemetry.ActivitySource:System.Diagnostics.ActivitySource:public:static+readonly
+F:Bedrock.Application.Observability.BedrockTelemetry.Meter:System.Diagnostics.Metrics.Meter:public:static+readonly
+F:Bedrock.Application.Observability.BedrockTelemetry.Name:System.String:public:const:value="Bedrock"
+T:public:class:sealed:Bedrock.Application.Ports.Caching.CacheEntryOptions
+I:Bedrock.Application.Ports.Caching.CacheEntryOptions:System.IEquatable<Bedrock.Application.Ports.Caching.CacheEntryOptions>
+C:Bedrock.Application.Ports.Caching.CacheEntryOptions(System.Nullable<System.TimeSpan> AbsoluteTtl=null,System.Nullable<System.TimeSpan> SlidingTtl=null):public
+P:Bedrock.Application.Ports.Caching.CacheEntryOptions.AbsoluteTtl:System.Nullable<System.TimeSpan>:get=public:init=public
+P:Bedrock.Application.Ports.Caching.CacheEntryOptions.SlidingTtl:System.Nullable<System.TimeSpan>:get=public:init=public
+T:public:interface:abstract:Bedrock.Application.Ports.Caching.IAppCache
+M:Bedrock.Application.Ports.Caching.IAppCache.GetAsync`1(System.String key,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<!!0?>:public:abstract+virtual+newslot
+M:Bedrock.Application.Ports.Caching.IAppCache.RemoveAsync(System.String key,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:abstract+virtual+newslot
+M:Bedrock.Application.Ports.Caching.IAppCache.SetAsync`1(System.String key,!!0? value,Bedrock.Application.Ports.Caching.CacheEntryOptions options,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Ports.Caching.IDistributedLock
+M:Bedrock.Application.Ports.Caching.IDistributedLock.AcquireAsync(System.String key,System.TimeSpan ttl,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Application.Ports.Caching.ILockHandle?>:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Ports.Caching.IIdempotencyStore
+M:Bedrock.Application.Ports.Caching.IIdempotencyStore.AbortAsync(System.String idempotencyKey,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:abstract+virtual+newslot
+M:Bedrock.Application.Ports.Caching.IIdempotencyStore.CompleteAsync(System.String idempotencyKey,System.TimeSpan ttl,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:abstract+virtual+newslot
+M:Bedrock.Application.Ports.Caching.IIdempotencyStore.TryBeginAsync(System.String idempotencyKey,System.TimeSpan ttl,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<System.Boolean>:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Ports.Caching.ILockHandle
+I:Bedrock.Application.Ports.Caching.ILockHandle:System.IAsyncDisposable
+T:public:interface:abstract:Bedrock.Application.Ports.Caching.IRateLimitStore
+M:Bedrock.Application.Ports.Caching.IRateLimitStore.TryAcquireAsync(System.String partition,System.Int32 limit,System.TimeSpan window,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<System.Boolean>:public:abstract+virtual+newslot
+T:public:class:sealed:Bedrock.Application.Ports.Email.EmailMessage
+I:Bedrock.Application.Ports.Email.EmailMessage:System.IEquatable<Bedrock.Application.Ports.Email.EmailMessage>
+C:Bedrock.Application.Ports.Email.EmailMessage(System.String To,System.String Subject,System.String HtmlBody,System.String? TextBody=null):public
+P:Bedrock.Application.Ports.Email.EmailMessage.HtmlBody:System.String:get=public:init=public
+P:Bedrock.Application.Ports.Email.EmailMessage.Subject:System.String:get=public:init=public
+P:Bedrock.Application.Ports.Email.EmailMessage.TextBody:System.String?:get=public:init=public
+P:Bedrock.Application.Ports.Email.EmailMessage.To:System.String:get=public:init=public
+T:public:interface:abstract:Bedrock.Application.Ports.Email.IEmailSender
+M:Bedrock.Application.Ports.Email.IEmailSender.SendAsync(Bedrock.Application.Ports.Email.EmailMessage message,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:abstract+virtual+newslot
+T:public:class:sealed:Bedrock.Application.Ports.ExternalAuth.ExternalAuthCallback
+I:Bedrock.Application.Ports.ExternalAuth.ExternalAuthCallback:System.IEquatable<Bedrock.Application.Ports.ExternalAuth.ExternalAuthCallback>
+C:Bedrock.Application.Ports.ExternalAuth.ExternalAuthCallback(System.String State,System.String Code):public
+P:Bedrock.Application.Ports.ExternalAuth.ExternalAuthCallback.Code:System.String:get=public:init=public
+P:Bedrock.Application.Ports.ExternalAuth.ExternalAuthCallback.State:System.String:get=public:init=public
+T:public:class:sealed:Bedrock.Application.Ports.ExternalAuth.ExternalAuthChallenge
+I:Bedrock.Application.Ports.ExternalAuth.ExternalAuthChallenge:System.IEquatable<Bedrock.Application.Ports.ExternalAuth.ExternalAuthChallenge>
+C:Bedrock.Application.Ports.ExternalAuth.ExternalAuthChallenge(System.Uri RedirectUri,System.String State):public
+P:Bedrock.Application.Ports.ExternalAuth.ExternalAuthChallenge.RedirectUri:System.Uri:get=public:init=public
+P:Bedrock.Application.Ports.ExternalAuth.ExternalAuthChallenge.State:System.String:get=public:init=public
+T:public:class:sealed:Bedrock.Application.Ports.ExternalAuth.ExternalAuthRequest
+I:Bedrock.Application.Ports.ExternalAuth.ExternalAuthRequest:System.IEquatable<Bedrock.Application.Ports.ExternalAuth.ExternalAuthRequest>
+C:Bedrock.Application.Ports.ExternalAuth.ExternalAuthRequest(System.String ReturnUrl):public
+P:Bedrock.Application.Ports.ExternalAuth.ExternalAuthRequest.ReturnUrl:System.String:get=public:init=public
+T:public:class:sealed:Bedrock.Application.Ports.ExternalAuth.ExternalUserProfile
+I:Bedrock.Application.Ports.ExternalAuth.ExternalUserProfile:System.IEquatable<Bedrock.Application.Ports.ExternalAuth.ExternalUserProfile>
+C:Bedrock.Application.Ports.ExternalAuth.ExternalUserProfile(System.String Provider,System.String ProviderUserId,System.String? Email,System.Nullable<System.Boolean> EmailVerified,System.String? DisplayName):public
+P:Bedrock.Application.Ports.ExternalAuth.ExternalUserProfile.DisplayName:System.String?:get=public:init=public
+P:Bedrock.Application.Ports.ExternalAuth.ExternalUserProfile.Email:System.String?:get=public:init=public
+P:Bedrock.Application.Ports.ExternalAuth.ExternalUserProfile.EmailVerified:System.Nullable<System.Boolean>:get=public:init=public
+P:Bedrock.Application.Ports.ExternalAuth.ExternalUserProfile.Provider:System.String:get=public:init=public
+P:Bedrock.Application.Ports.ExternalAuth.ExternalUserProfile.ProviderUserId:System.String:get=public:init=public
+T:public:interface:abstract:Bedrock.Application.Ports.ExternalAuth.IExternalAuthProvider
+M:Bedrock.Application.Ports.ExternalAuth.IExternalAuthProvider.CompleteAsync(Bedrock.Application.Ports.ExternalAuth.ExternalAuthCallback callback,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Application.Ports.ExternalAuth.ExternalUserProfile>:public:abstract+virtual+newslot
+M:Bedrock.Application.Ports.ExternalAuth.IExternalAuthProvider.CreateChallengeAsync(Bedrock.Application.Ports.ExternalAuth.ExternalAuthRequest request,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Application.Ports.ExternalAuth.ExternalAuthChallenge>:public:abstract+virtual+newslot
+P:Bedrock.Application.Ports.ExternalAuth.IExternalAuthProvider.Name:System.String:get=public:set=none
+T:public:interface:abstract:Bedrock.Application.Ports.ExternalAuth.IExternalAuthProviderRegistry
+M:Bedrock.Application.Ports.ExternalAuth.IExternalAuthProviderRegistry.Resolve(System.String name):Bedrock.Application.Ports.ExternalAuth.IExternalAuthProvider:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Ports.Html.IHtmlSanitizer
+M:Bedrock.Application.Ports.Html.IHtmlSanitizer.Sanitize(System.String html):System.String:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Ports.Persistence.IRepository<!0>:where[!0:Bedrock.Domain.Entities.Entity]
+M:Bedrock.Application.Ports.Persistence.IRepository<!0>.Add(!0 entity):System.Void:public:abstract+virtual+newslot
+M:Bedrock.Application.Ports.Persistence.IRepository<!0>.AnyAsync(System.Linq.Expressions.Expression<System.Func<!0,System.Boolean>> predicate,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<System.Boolean>:public:abstract+virtual+newslot
+M:Bedrock.Application.Ports.Persistence.IRepository<!0>.FindByIdAsync(System.Guid id,System.Threading.CancellationToken ct=null):System.Threading.Tasks.ValueTask<!0?>:public:abstract+virtual+newslot
+M:Bedrock.Application.Ports.Persistence.IRepository<!0>.FirstOrDefaultAsync(System.Linq.Expressions.Expression<System.Func<!0,System.Boolean>> predicate,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<!0?>:public:abstract+virtual+newslot
+M:Bedrock.Application.Ports.Persistence.IRepository<!0>.Remove(!0 entity):System.Void:public:abstract+virtual+newslot
+M:Bedrock.Application.Ports.Persistence.IRepository<!0>.Update(!0 entity):System.Void:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Ports.Persistence.IUnitOfWork
+M:Bedrock.Application.Ports.Persistence.IUnitOfWork.ExecuteInTransactionAsync`1(System.Func<System.Threading.CancellationToken,System.Threading.Tasks.Task<!!0?>> action,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<!!0?>:public:abstract+virtual+newslot
+M:Bedrock.Application.Ports.Persistence.IUnitOfWork.SaveChangesAsync(System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<System.Int32>:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Ports.Persistence.IUnitOfWorkResolver
+M:Bedrock.Application.Ports.Persistence.IUnitOfWorkResolver.Resolve(System.String? persistenceKey):Bedrock.Application.Ports.Persistence.IUnitOfWork:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Ports.Search.ISearchIndex<!0>
+M:Bedrock.Application.Ports.Search.ISearchIndex<!0>.DeleteAsync(System.String id,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:abstract+virtual+newslot
+M:Bedrock.Application.Ports.Search.ISearchIndex<!0>.IndexAsync(!0? document,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Ports.Search.ISearchQuery<!0>
+M:Bedrock.Application.Ports.Search.ISearchQuery<!0>.SearchAsync(Bedrock.Application.Ports.Search.SearchRequest request,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Application.Ports.Search.SearchResult<!0?>>:public:abstract+virtual+newslot
+T:public:class:sealed:Bedrock.Application.Ports.Search.SearchRequest
+I:Bedrock.Application.Ports.Search.SearchRequest:System.IEquatable<Bedrock.Application.Ports.Search.SearchRequest>
+C:Bedrock.Application.Ports.Search.SearchRequest(System.String Query,System.Int32 Page=1,System.Int32 PageSize=20,System.Collections.Generic.IReadOnlyDictionary<System.String,System.String>? Filters=null):public
+P:Bedrock.Application.Ports.Search.SearchRequest.Filters:System.Collections.Generic.IReadOnlyDictionary<System.String,System.String>?:get=public:init=public
+P:Bedrock.Application.Ports.Search.SearchRequest.Page:System.Int32:get=public:init=public
+P:Bedrock.Application.Ports.Search.SearchRequest.PageSize:System.Int32:get=public:init=public
+P:Bedrock.Application.Ports.Search.SearchRequest.Query:System.String:get=public:init=public
+T:public:class:sealed:Bedrock.Application.Ports.Search.SearchResult<!0>
+I:Bedrock.Application.Ports.Search.SearchResult<!0>:System.IEquatable<Bedrock.Application.Ports.Search.SearchResult<!0>>
+C:Bedrock.Application.Ports.Search.SearchResult<!0>(System.Collections.Generic.IReadOnlyList<!0?> Hits,System.Int64 Total):public
+P:Bedrock.Application.Ports.Search.SearchResult<!0>.Hits:System.Collections.Generic.IReadOnlyList<!0?>:get=public:init=public
+P:Bedrock.Application.Ports.Search.SearchResult<!0>.Total:System.Int64:get=public:init=public
+T:public:interface:abstract:Bedrock.Application.Ports.Security.IJwtTokenService
+M:Bedrock.Application.Ports.Security.IJwtTokenService.Issue(System.Security.Claims.ClaimsIdentity identity):System.String:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Ports.Security.IPasswordHasher
+M:Bedrock.Application.Ports.Security.IPasswordHasher.Hash(System.String password):System.String:public:abstract+virtual+newslot
+M:Bedrock.Application.Ports.Security.IPasswordHasher.Verify(System.String password,System.String hash):System.Boolean:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Ports.Security.IRefreshTokenStore
+M:Bedrock.Application.Ports.Security.IRefreshTokenStore.AddAsync(Bedrock.Application.Ports.Security.RefreshTokenSnapshot newToken,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:abstract+virtual+newslot
+M:Bedrock.Application.Ports.Security.IRefreshTokenStore.GetByHashAsync(System.String tokenHash,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Application.Ports.Security.RefreshTokenSnapshot?>:public:abstract+virtual+newslot
+M:Bedrock.Application.Ports.Security.IRefreshTokenStore.RevokeFamilyAsync(System.Guid familyId,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:abstract+virtual+newslot
+M:Bedrock.Application.Ports.Security.IRefreshTokenStore.TryConsumeAsync(System.Guid tokenId,System.DateTimeOffset now,System.String reason,System.Guid replacedByTokenId,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<System.Boolean>:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Ports.Security.ITokenGenerator
+M:Bedrock.Application.Ports.Security.ITokenGenerator.NewToken(System.Int32 byteLength=32):System.String:public:abstract+virtual+newslot
+T:public:class:sealed:Bedrock.Application.Ports.Security.JwtKeyRingOptions
+C:Bedrock.Application.Ports.Security.JwtKeyRingOptions():public
+P:Bedrock.Application.Ports.Security.JwtKeyRingOptions.AccessTokenLifetimeMinutes:System.Int32:get=public:set=public
+P:Bedrock.Application.Ports.Security.JwtKeyRingOptions.ActiveKid:System.String:get=public:set=public
+P:Bedrock.Application.Ports.Security.JwtKeyRingOptions.Audience:System.String:get=public:set=public
+P:Bedrock.Application.Ports.Security.JwtKeyRingOptions.Issuer:System.String:get=public:set=public
+P:Bedrock.Application.Ports.Security.JwtKeyRingOptions.Keys:System.Collections.Generic.IList<Bedrock.Application.Ports.Security.JwtSigningKey>:get=public:set=none
+F:Bedrock.Application.Ports.Security.JwtKeyRingOptions.SectionName:System.String:public:const:value="Jwt"
+T:public:class:sealed:Bedrock.Application.Ports.Security.JwtKeyRingOptionsValidator
+I:Bedrock.Application.Ports.Security.JwtKeyRingOptionsValidator:Microsoft.Extensions.Options.IValidateOptions<Bedrock.Application.Ports.Security.JwtKeyRingOptions>
+C:Bedrock.Application.Ports.Security.JwtKeyRingOptionsValidator():public
+M:Bedrock.Application.Ports.Security.JwtKeyRingOptionsValidator.Validate(System.String? name,Bedrock.Application.Ports.Security.JwtKeyRingOptions options):Microsoft.Extensions.Options.ValidateOptionsResult:public:virtual+final+newslot
+T:public:class:static:Bedrock.Application.Ports.Security.JwtKeyRingValidation
+M:Bedrock.Application.Ports.Security.JwtKeyRingValidation.Validate(Bedrock.Application.Ports.Security.JwtKeyRingOptions options):System.Void:public:static
+T:public:class:sealed:Bedrock.Application.Ports.Security.JwtSigningKey
+C:Bedrock.Application.Ports.Security.JwtSigningKey():public
+P:Bedrock.Application.Ports.Security.JwtSigningKey.Kid:System.String:get=public:set=public
+P:Bedrock.Application.Ports.Security.JwtSigningKey.Secret:System.String:get=public:set=public
+T:public:class:sealed:Bedrock.Application.Ports.Security.RefreshTokenSnapshot
+I:Bedrock.Application.Ports.Security.RefreshTokenSnapshot:System.IEquatable<Bedrock.Application.Ports.Security.RefreshTokenSnapshot>
+C:Bedrock.Application.Ports.Security.RefreshTokenSnapshot(System.Guid Id,System.Guid UserId,System.Guid FamilyId,System.String TokenHash,System.DateTimeOffset ExpiresAt,System.Nullable<System.DateTimeOffset> RevokedAt):public
+P:Bedrock.Application.Ports.Security.RefreshTokenSnapshot.ExpiresAt:System.DateTimeOffset:get=public:init=public
+P:Bedrock.Application.Ports.Security.RefreshTokenSnapshot.FamilyId:System.Guid:get=public:init=public
+P:Bedrock.Application.Ports.Security.RefreshTokenSnapshot.Id:System.Guid:get=public:init=public
+P:Bedrock.Application.Ports.Security.RefreshTokenSnapshot.RevokedAt:System.Nullable<System.DateTimeOffset>:get=public:init=public
+P:Bedrock.Application.Ports.Security.RefreshTokenSnapshot.TokenHash:System.String:get=public:init=public
+P:Bedrock.Application.Ports.Security.RefreshTokenSnapshot.UserId:System.Guid:get=public:init=public
+T:public:class:sealed:Bedrock.Application.Ports.Storage.FileBlob
+I:Bedrock.Application.Ports.Storage.FileBlob:System.IEquatable<Bedrock.Application.Ports.Storage.FileBlob>
+C:Bedrock.Application.Ports.Storage.FileBlob(System.String FileName,System.String ContentType,System.IO.Stream Content):public
+P:Bedrock.Application.Ports.Storage.FileBlob.Content:System.IO.Stream:get=public:init=public
+P:Bedrock.Application.Ports.Storage.FileBlob.ContentType:System.String:get=public:init=public
+P:Bedrock.Application.Ports.Storage.FileBlob.FileName:System.String:get=public:init=public
+T:public:interface:abstract:Bedrock.Application.Ports.Storage.IFileStorage
+M:Bedrock.Application.Ports.Storage.IFileStorage.OpenAsync(System.String key,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<System.IO.Stream>:public:abstract+virtual+newslot
+M:Bedrock.Application.Ports.Storage.IFileStorage.SaveAsync(Bedrock.Application.Ports.Storage.FileBlob blob,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<System.String>:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.Ports.Time.IClock
+P:Bedrock.Application.Ports.Time.IClock.UtcNow:System.DateTimeOffset:get=public:set=none
+T:public:interface:abstract:Bedrock.Application.Ports.Users.ICurrentUser
+M:Bedrock.Application.Ports.Users.ICurrentUser.HasPermission(System.String permission):System.Boolean:public:abstract+virtual+newslot
+M:Bedrock.Application.Ports.Users.ICurrentUser.IsInRole(System.String role):System.Boolean:public:abstract+virtual+newslot
+P:Bedrock.Application.Ports.Users.ICurrentUser.IsAuthenticated:System.Boolean:get=public:set=none
+P:Bedrock.Application.Ports.Users.ICurrentUser.Permissions:System.Collections.Generic.IReadOnlyCollection<System.String>:get=public:set=none
+P:Bedrock.Application.Ports.Users.ICurrentUser.Roles:System.Collections.Generic.IReadOnlyCollection<System.String>:get=public:set=none
+P:Bedrock.Application.Ports.Users.ICurrentUser.SessionId:System.Nullable<System.Guid>:get=public:set=none
+P:Bedrock.Application.Ports.Users.ICurrentUser.TenantId:System.Nullable<System.Guid>:get=public:set=none
+P:Bedrock.Application.Ports.Users.ICurrentUser.UserId:System.Nullable<System.Guid>:get=public:set=none
+T:public:class:static:Bedrock.Application.UseCases.ConcurrencyGuard
+M:Bedrock.Application.UseCases.ConcurrencyGuard.EnsureExpectedRowVersion(System.Nullable<System.UInt32> actualRowVersion,System.Nullable<System.UInt32> expectedRowVersion):System.Void:public:static
+T:public:interface:abstract:Bedrock.Application.UseCases.ICommandUseCase<!0,!1>:where[!0:in]
+I:Bedrock.Application.UseCases.ICommandUseCase<!0,!1>:Bedrock.Application.UseCases.ITransactionalUseCase
+I:Bedrock.Application.UseCases.ICommandUseCase<!0,!1>:Bedrock.Application.UseCases.IUseCase
+I:Bedrock.Application.UseCases.ICommandUseCase<!0,!1>:Bedrock.Application.UseCases.IUseCase<!0,!1>
+T:public:interface:abstract:Bedrock.Application.UseCases.ICommandUseCase<!0>:where[!0:in]
+I:Bedrock.Application.UseCases.ICommandUseCase<!0>:Bedrock.Application.UseCases.ITransactionalUseCase
+I:Bedrock.Application.UseCases.ICommandUseCase<!0>:Bedrock.Application.UseCases.IUseCase
+M:Bedrock.Application.UseCases.ICommandUseCase<!0>.ExecuteAsync(!0? input,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Domain.Results.Result>:public:abstract+virtual+newslot
+T:public:interface:abstract:Bedrock.Application.UseCases.IIdempotentCommand
+P:Bedrock.Application.UseCases.IIdempotentCommand.IdempotencyKey:System.String:get=public:set=none
+T:public:interface:abstract:Bedrock.Application.UseCases.IQueryUseCase<!0,!1>:where[!0:in]
+I:Bedrock.Application.UseCases.IQueryUseCase<!0,!1>:Bedrock.Application.UseCases.IUseCase
+I:Bedrock.Application.UseCases.IQueryUseCase<!0,!1>:Bedrock.Application.UseCases.IUseCase<!0,!1>
+T:public:interface:abstract:Bedrock.Application.UseCases.ITransactionalUseCase
+I:Bedrock.Application.UseCases.ITransactionalUseCase:Bedrock.Application.UseCases.IUseCase
+P:Bedrock.Application.UseCases.ITransactionalUseCase.PersistenceKey:System.String?:get=public:set=none
+T:public:interface:abstract:Bedrock.Application.UseCases.IUseCase
+T:public:interface:abstract:Bedrock.Application.UseCases.IUseCase<!0,!1>:where[!0:in]
+I:Bedrock.Application.UseCases.IUseCase<!0,!1>:Bedrock.Application.UseCases.IUseCase
+M:Bedrock.Application.UseCases.IUseCase<!0,!1>.ExecuteAsync(!0? input,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task<Bedrock.Domain.Results.Result<!1?>>:public:abstract+virtual+newslot
+T:public:class:sealed:Bedrock.Application.UseCases.PagedRequest
+I:Bedrock.Application.UseCases.PagedRequest:System.IEquatable<Bedrock.Application.UseCases.PagedRequest>
+C:Bedrock.Application.UseCases.PagedRequest(System.Int32 Page=1,System.Int32 PageSize=20):public
+P:Bedrock.Application.UseCases.PagedRequest.Page:System.Int32:get=public:init=public
+P:Bedrock.Application.UseCases.PagedRequest.PageSize:System.Int32:get=public:init=public
+P:Bedrock.Application.UseCases.PagedRequest.SafePage:System.Int32:get=public:set=none
+P:Bedrock.Application.UseCases.PagedRequest.SafePageSize:System.Int32:get=public:set=none
+P:Bedrock.Application.UseCases.PagedRequest.Skip:System.Int32:get=public:set=none
+T:public:class:sealed:Bedrock.Application.UseCases.PagedResult<!0>
+I:Bedrock.Application.UseCases.PagedResult<!0>:System.IEquatable<Bedrock.Application.UseCases.PagedResult<!0>>
+C:Bedrock.Application.UseCases.PagedResult<!0>(System.Collections.Generic.IReadOnlyList<!0?> Items,System.Int32 Page,System.Int32 PageSize,System.Int64 Total):public
+P:Bedrock.Application.UseCases.PagedResult<!0>.HasNext:System.Boolean:get=public:set=none
+P:Bedrock.Application.UseCases.PagedResult<!0>.HasPrevious:System.Boolean:get=public:set=none
+P:Bedrock.Application.UseCases.PagedResult<!0>.Items:System.Collections.Generic.IReadOnlyList<!0?>:get=public:init=public
+P:Bedrock.Application.UseCases.PagedResult<!0>.Page:System.Int32:get=public:init=public
+P:Bedrock.Application.UseCases.PagedResult<!0>.PageSize:System.Int32:get=public:init=public
+P:Bedrock.Application.UseCases.PagedResult<!0>.Total:System.Int64:get=public:init=public
+P:Bedrock.Application.UseCases.PagedResult<!0>.TotalPages:System.Int32:get=public:set=none

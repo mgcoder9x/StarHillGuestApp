@@ -8,7 +8,7 @@ namespace Bedrock.Domain.Results;
 /// <para>
 /// Bản chất: song song <see cref="ConcurrencyConflictException"/> — giữ Domain/Application/Api sạch, contract
 /// KHÔNG rò rỉ chi tiết EF/Npgsql (design §5.1/persistence §3/§7). <see cref="ConstraintName"/> (nếu provider
-/// cung cấp) cho phép use case phân biệt ràng buộc nào bị vi phạm (vd <c>ux_room_number</c> vs <c>ux_qr_active</c>).
+/// cung cấp) cho phép use case phân biệt ràng buộc nào bị vi phạm (vd <c>ux_external_id</c> vs <c>ux_active_token</c>).
 /// </para>
 /// </summary>
 public sealed class UniqueConstraintViolationException : Exception

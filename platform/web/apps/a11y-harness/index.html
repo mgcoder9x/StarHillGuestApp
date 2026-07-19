@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bedrock accessibility harness</title>
+    <style>
+      :root { color: #17231b; background: #f4f1e8; font-family: "Source Sans 3", sans-serif; }
+      body { margin: 0; }
+      .skip { position: fixed; left: 1rem; top: -4rem; padding: .75rem 1rem; background: #17231b; color: white; z-index: 2; }
+      .skip:focus { top: 1rem; }
+      main { width: min(42rem, calc(100% - 2rem)); margin: 4rem auto; padding: 2rem; background: #fffdf7; border: 1px solid #c9d0c8; border-radius: 1.25rem; }
+      button { min-height: 44px; padding: .7rem 1rem; border: 0; border-radius: .5rem; color: white; background: #146b4f; font: inherit; }
+      button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid #b55d00; outline-offset: 3px; }
+      label { display: block; font-weight: 700; margin-top: 1.5rem; }
+      input { display: block; width: 100%; box-sizing: border-box; min-height: 44px; margin-top: .4rem; padding: .7rem; font: inherit; }
+      dialog { max-width: min(30rem, calc(100% - 2rem)); border: 0; border-radius: 1rem; box-shadow: 0 24px 70px rgb(23 35 27 / .22); }
+      dialog::backdrop { background: rgb(23 35 27 / .55); }
+      @media (prefers-reduced-motion: no-preference) { dialog[open] { animation: reveal 160ms ease-out; } @keyframes reveal { from { opacity: 0; transform: translateY(12px); } } }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#content">Skip to content</a>
+    <main id="content" tabindex="-1">
+      <h1>Accessible platform primitives</h1>
+      <p>Framework-neutral behavior with product-owned styling and content.</p>
+      <button id="open-dialog" type="button">Review operation</button>
+      <label for="operator-reason">Reason</label>
+      <p id="reason-hint">Explain why this operation is safe.</p>
+      <input id="operator-reason" aria-describedby="reason-hint" autocomplete="off">
+      <p role="status" aria-live="polite" id="status"></p>
+    </main>
+    <dialog id="review-dialog" aria-labelledby="dialog-title" aria-describedby="dialog-description">
+      <h2 id="dialog-title">Review operation</h2>
+      <p id="dialog-description">Confirm the bounded operation before continuing.</p>
+      <button id="confirm" type="button">Confirm</button>
+      <button id="cancel" type="button">Cancel</button>
+    </dialog>
+    <script type="module">
+      import { createDialogController } from '/packages/ui-primitives/dist/index.js';
+      const dialog = document.querySelector('#review-dialog');
+      const trigger = document.querySelector('#open-dialog');
+      const controller = createDialogController(dialog, () => document.querySelector('#confirm'));
+      trigger.addEventListener('click', () => controller.open(trigger));
+      document.querySelector('#cancel').addEventListener('click', () => controller.close('cancel'));
+      document.querySelector('#confirm').addEventListener('click', () => controller.close('confirm'));
+    </script>
+  </body>
+</html>

@@ -20,7 +20,7 @@
 
 ## Trạng thái nguồn sự thật (đọc trước khi tin bất cứ gì)
 
-- **`design.md`** = nguồn thiết kế CHUẨN DUY NHẤT (HOW). Lệch với nó → sửa theo nó.
+- **`design.md`** = nguồn thiết kế nền tảng (HOW); `../current-audit-2026-07-19.md` là delta hiện hành cho các lát cắt productization/operability/FE mới triển khai.
 - **`requirements.md`** = CÁI GÌ + TẠI SAO (EARS R1–R34).
 - **`tasks.md`** = kế hoạch + checklist (21 task).
 - **`README.md`** (thư mục spec) = bản đồ định hướng.
@@ -72,7 +72,7 @@
 - **Chất lượng build:** clean rebuild `Platform.slnx` → **0 warning** (`TreatWarningsAsErrors=true`).
 - **Test:** **227 test xanh · 0 fail · 0 skip** — Testcontainers **RabbitMQ + PostgreSQL chạy THẬT** với Docker (Server 29.5.2). Phân bố: Bedrock.UnitTests 54 · Identity.UnitTests 6 · Identity.IntegrationTests 1 · Bedrock.ContractTests 2 · Bedrock.ArchitectureTests 33 · Bedrock.Api.Tests 36 · StarHill.Api.Tests 3 · Bedrock.Infrastructure.Tests 78 · Adapters.Messaging.RabbitMq.Tests 14.
 - **Correctness Properties:** **CP1–CP15 đều ✅ ENFORCED** (bảng guard `05-anti-drift.md`). Không còn CP hay AD ở trạng thái `PARTIAL`/`PENDING`.
-- **ID mới nhất hiện tại:** `AD-104` · `DV-016` · `TO-014` · `N-083` (liên tục 1..N; AD-104/N-083 cập nhật 2026-07-18).
+- **ID mới nhất hiện tại:** `AD-119` · `DV-016` · `TO-014` · `N-083` (liên tục 1..N; audit base-only hiện hành cập nhật 2026-07-19).
 - **Anti-drift:** `Bedrock.ArchitectureTests/JournalConsistencyTests` (INV-1..5) xanh trong mỗi `dotnet test`; `getDiagnostics` trên 4 file spec + journal: 0 lỗi.
 
 ### Cách re-verify hiện tại (một lệnh fail-closed)

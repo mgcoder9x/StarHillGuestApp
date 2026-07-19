@@ -52,6 +52,8 @@ public sealed partial class EfOutboxDispatcher<TContext>(
         {
             await TryPublishAndFinalizeAsync(message, claimId, options, ct).ConfigureAwait(false);
         }
+
+        await TryRefreshOperationalMetricsAsync(options, ct).ConfigureAwait(false);
     }
 
     private async Task<List<OutboxMessage>> ClaimBatchWithLeaseAsync(
@@ -177,7 +179,7 @@ public sealed partial class EfOutboxDispatcher<TContext>(
                 .ConfigureAwait(false);
             if (affected == 1)
             {
-                OutboxMetrics.RecordPublished(processedAt - message.OccurredAt);
+                OutboxMetrics.RecordPublished(TelemetryName(options), processedAt - message.OccurredAt);
             }
             else
             {
@@ -205,7 +207,7 @@ public sealed partial class EfOutboxDispatcher<TContext>(
                     .ConfigureAwait(false);
                 if (affected == 1)
                 {
-                    OutboxMetrics.RecordDeadLettered();
+                    OutboxMetrics.RecordDeadLettered(TelemetryName(options));
                 }
                 else
                 {
@@ -256,9 +258,84 @@ public sealed partial class EfOutboxDispatcher<TContext>(
 
     private void RecordLeaseLost(Guid messageId, Guid claimId, string phase)
     {
-        OutboxMetrics.RecordLeaseLost();
+        var options = optionsMonitor.Get(OutboxDispatcherOptions.KeyFor<TContext>());
+        OutboxMetrics.RecordLeaseLost(TelemetryName(options));
         Log.LeaseLost(_logger, messageId, claimId, phase);
     }
+
+    private async Task TryRefreshOperationalMetricsAsync(OutboxDispatcherOptions options, CancellationToken ct)
+    {
+        var now = clock.UtcNow;
+        var telemetryName = TelemetryName(options);
+        if (!OutboxMetricsRefreshState<TContext>.TryAcquire(
+                telemetryName,
+                now,
+                options.OperationalMetricsRefreshInterval))
+        {
+            return;
+        }
+
+#pragma warning disable CA1031 // Telemetry must not break publishing; log and retry after the refresh interval.
+        try
+        {
+            var snapshot = context.Database.IsNpgsql()
+                ? await ReadNpgsqlOperationalSnapshotAsync(ct).ConfigureAwait(false)
+                : await ReadProviderAgnosticOperationalSnapshotAsync(ct).ConfigureAwait(false);
+
+            var oldestAge = snapshot.OldestPendingAt is null
+                ? TimeSpan.Zero
+                : now - snapshot.OldestPendingAt.Value;
+            OutboxMetrics.RecordSnapshot(
+                telemetryName,
+                snapshot.PendingCount,
+                oldestAge,
+                snapshot.DeadLetterDepth);
+        }
+        catch (Exception ex) when (!ct.IsCancellationRequested)
+        {
+            Log.MetricsRefreshFailed(_logger, typeof(TContext).Name, ex);
+        }
+#pragma warning restore CA1031
+    }
+
+    private async Task<OperationalSnapshot> ReadNpgsqlOperationalSnapshotAsync(CancellationToken ct)
+    {
+        var snapshot = await context.Set<OutboxMessage>()
+            .GroupBy(_ => 1)
+            .Select(group => new OperationalSnapshot(
+                group.LongCount(message => message.ProcessedAt == null && message.DeadLetteredAt == null),
+                group
+                    .Where(message => message.ProcessedAt == null && message.DeadLetteredAt == null)
+                    .Min(message => (DateTimeOffset?)message.OccurredAt),
+                group.LongCount(message => message.DeadLetteredAt != null)))
+            .SingleOrDefaultAsync(ct)
+            .ConfigureAwait(false);
+        return snapshot ?? new OperationalSnapshot(0, null, 0);
+    }
+
+    private async Task<OperationalSnapshot> ReadProviderAgnosticOperationalSnapshotAsync(CancellationToken ct)
+    {
+        // SQLite cannot translate Min/OrderBy for DateTimeOffset. Non-Npgsql providers are supported for tests/dev.
+        var messages = await context.Set<OutboxMessage>()
+            .Select(message => new { message.OccurredAt, message.ProcessedAt, message.DeadLetteredAt })
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+        var pending = messages
+            .Where(message => message.ProcessedAt is null && message.DeadLetteredAt is null)
+            .ToArray();
+        return new OperationalSnapshot(
+            pending.LongLength,
+            pending.Length == 0 ? null : pending.Min(message => message.OccurredAt),
+            messages.LongCount(message => message.DeadLetteredAt is not null));
+    }
+
+    private static string TelemetryName(OutboxDispatcherOptions options) =>
+        OutboxDispatcherOptions.TelemetryNameFor<TContext>(options);
+
+    private sealed record OperationalSnapshot(
+        long PendingCount,
+        DateTimeOffset? OldestPendingAt,
+        long DeadLetterDepth);
 
     private static partial class Log
     {
@@ -267,5 +344,11 @@ public sealed partial class EfOutboxDispatcher<TContext>(
             Level = LogLevel.Warning,
             Message = "Outbox lease ownership lost (messageId={MessageId}, claimId={ClaimId}, phase={Phase}).")]
         public static partial void LeaseLost(ILogger logger, Guid messageId, Guid claimId, string phase);
+
+        [LoggerMessage(
+            EventId = 2,
+            Level = LogLevel.Warning,
+            Message = "Outbox operational metrics refresh failed for context {ContextName}.")]
+        public static partial void MetricsRefreshFailed(ILogger logger, string contextName, Exception exception);
     }
 }

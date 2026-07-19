@@ -64,7 +64,7 @@ public sealed class ErrorCodeSnapshotTests
                 }
 
                 // P1-11: catalog dạng static get-only PROPERTY trả Error — hằng ổn định (thu để không lọt lưới,
-                // mirror starhill; base hiện dùng field/method nên tập không đổi, nhưng collector nay robust cả 2 kiểu).
+                // mirror bedrock-reference; base hiện dùng field/method nên tập không đổi, nhưng collector nay robust cả 2 kiểu).
                 foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Static))
                 {
                     if (property.PropertyType == typeof(Error)

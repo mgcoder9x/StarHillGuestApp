@@ -1,0 +1,46 @@
+:root {
+  color-scheme: light;
+  --bedrock-color-canvas: #f4f1e8;
+  --bedrock-color-surface: #fffdf7;
+  --bedrock-color-surface-raised: #ffffff;
+  --bedrock-color-text: #17231b;
+  --bedrock-color-text-muted: #536158;
+  --bedrock-color-border: #c9d0c8;
+  --bedrock-color-accent: #146b4f;
+  --bedrock-color-on-accent: #ffffff;
+  --bedrock-color-danger: #a72b20;
+  --bedrock-color-on-danger: #ffffff;
+  --bedrock-color-focus: #b55d00;
+  --bedrock-typography-display: "Fraunces", "Iowan Old Style", serif;
+  --bedrock-typography-body: "Source Sans 3", "Segoe UI", sans-serif;
+  --bedrock-typography-mono: "IBM Plex Mono", "Cascadia Code", monospace;
+  --bedrock-radius-small: 0.375rem;
+  --bedrock-radius-medium: 0.75rem;
+  --bedrock-radius-large: 1.25rem;
+  --bedrock-radius-pill: 999px;
+  --bedrock-space-x1: 0.25rem;
+  --bedrock-space-x2: 0.5rem;
+  --bedrock-space-x3: 0.75rem;
+  --bedrock-space-x4: 1rem;
+  --bedrock-space-x6: 1.5rem;
+  --bedrock-space-x8: 2rem;
+  --bedrock-space-x12: 3rem;
+  --bedrock-shadow-raised: 0 10px 30px rgb(23 35 27 / 0.10);
+  --bedrock-shadow-overlay: 0 24px 70px rgb(23 35 27 / 0.22);
+}
+
+:focus-visible {
+  outline: 3px solid var(--bedrock-color-focus);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

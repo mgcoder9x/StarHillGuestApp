@@ -1,49 +1,86 @@
+using System.Collections.Concurrent;
 using System.Diagnostics.Metrics;
 using Bedrock.Application.Observability;
 
 namespace Bedrock.Infrastructure.Persistence.Messaging;
 
 /// <summary>
-/// Metric quan sát Outbox (R24.3/§7.2) phát dưới Meter chung <c>Bedrock</c> (<see cref="BedrockTelemetry.Meter"/>):
-/// <list type="bullet">
-///   <item><c>bedrock.outbox.published</c> — counter: số event publish thành công tới bus.</item>
-///   <item><c>bedrock.outbox.dead_lettered</c> — counter: số event bị dead-letter (vượt MaxAttempts). = "dead-letter count".</item>
-///   <item><c>bedrock.outbox.lease_lost</c> — counter: dispatcher mất ownership trước khi finalize.</item>
-///   <item><c>bedrock.outbox.publish.lag</c> — histogram (s): tuổi message lúc publish (<c>now - occurred_at</c>) → proxy "outbox lag".</item>
-/// </list>
-/// <para>
-/// Đo INLINE trong dispatcher (không DB-poll): tránh gauge callback sync-over-async + scoped-DbContext-trong-gauge.
-/// "Publish lag" (tuổi-lúc-publish) là tín hiệu trễ end-to-end thực dụng; "oldest pending age" tuyệt đối cần query
-/// pending riêng → hoãn (tradeoff TO-011). Instrument tĩnh (Meter sống theo process).
-/// </para>
+/// Process-local outbox metrics. Counters and histograms are emitted inline; backlog gauges are refreshed by the
+/// dispatcher into an in-memory snapshot so observable callbacks never perform async database work.
+/// Every measurement carries a stable module tag, allowing multiple module DbContexts to share one Meter safely.
 /// </summary>
 internal static class OutboxMetrics
 {
+    private static readonly ConcurrentDictionary<string, Snapshot> Snapshots = new(StringComparer.Ordinal);
+
     private static readonly Counter<long> PublishedCounter = BedrockTelemetry.Meter.CreateCounter<long>(
         "bedrock.outbox.published", unit: "{message}",
-        description: "Số integration event outbox publish thành công tới bus.");
+        description: "Successful integration-event publishes by module.");
 
     private static readonly Counter<long> DeadLetteredCounter = BedrockTelemetry.Meter.CreateCounter<long>(
         "bedrock.outbox.dead_lettered", unit: "{message}",
-        description: "Số integration event outbox bị dead-letter (vượt MaxAttempts) — R24.3.");
+        description: "Integration events quarantined after the retry limit by module.");
 
     private static readonly Counter<long> LeaseLostCounter = BedrockTelemetry.Meter.CreateCounter<long>(
         "bedrock.outbox.lease_lost", unit: "{message}",
-        description: "Số integration event outbox mất lease ownership trước khi finalize.");
+        description: "Outbox messages whose claim ownership was lost before finalize.");
 
     private static readonly Histogram<double> PublishLagHistogram = BedrockTelemetry.Meter.CreateHistogram<double>(
         "bedrock.outbox.publish.lag", unit: "s",
-        description: "Độ trễ outbox: giây từ occurred_at tới lúc publish thành công (proxy outbox lag) — R24.3.");
+        description: "Seconds from event occurrence to successful outbox publish.");
 
-    /// <summary>Ghi nhận một event publish thành công + độ trễ (giây, kẹp >= 0 chống lệch clock).</summary>
-    public static void RecordPublished(TimeSpan lag)
+    private static readonly ObservableGauge<long> PendingGauge = BedrockTelemetry.Meter.CreateObservableGauge(
+        "bedrock.outbox.pending",
+        ObservePending,
+        unit: "{message}",
+        description: "Pending outbox messages by module.");
+
+    private static readonly ObservableGauge<double> OldestPendingAgeGauge = BedrockTelemetry.Meter.CreateObservableGauge(
+        "bedrock.outbox.oldest_pending.age",
+        ObserveOldestPendingAge,
+        unit: "s",
+        description: "Age of the oldest pending outbox message by module.");
+
+    private static readonly ObservableGauge<long> DeadLetterDepthGauge = BedrockTelemetry.Meter.CreateObservableGauge(
+        "bedrock.outbox.dead_letter.depth",
+        ObserveDeadLetterDepth,
+        unit: "{message}",
+        description: "Dead-lettered outbox messages retained for operator action by module.");
+
+    public static void RecordPublished(string module, TimeSpan lag)
     {
-        PublishedCounter.Add(1);
-        PublishLagHistogram.Record(Math.Max(0, lag.TotalSeconds));
+        var tag = ModuleTag(module);
+        PublishedCounter.Add(1, tag);
+        PublishLagHistogram.Record(Math.Max(0, lag.TotalSeconds), tag);
     }
 
-    /// <summary>Ghi nhận một event bị dead-letter (R24.3 dead-letter count).</summary>
-    public static void RecordDeadLettered() => DeadLetteredCounter.Add(1);
+    public static void RecordDeadLettered(string module) => DeadLetteredCounter.Add(1, ModuleTag(module));
 
-    public static void RecordLeaseLost() => LeaseLostCounter.Add(1);
+    public static void RecordLeaseLost(string module) => LeaseLostCounter.Add(1, ModuleTag(module));
+
+    public static void RecordSnapshot(
+        string module,
+        long pendingCount,
+        TimeSpan oldestPendingAge,
+        long deadLetterDepth)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(module);
+        Snapshots[module] = new Snapshot(
+            Math.Max(0, pendingCount),
+            Math.Max(0, oldestPendingAge.TotalSeconds),
+            Math.Max(0, deadLetterDepth));
+    }
+
+    private static Measurement<long>[] ObservePending() =>
+        [.. Snapshots.Select(pair => new Measurement<long>(pair.Value.PendingCount, ModuleTag(pair.Key)))];
+
+    private static Measurement<double>[] ObserveOldestPendingAge() =>
+        [.. Snapshots.Select(pair => new Measurement<double>(pair.Value.OldestPendingAgeSeconds, ModuleTag(pair.Key)))];
+
+    private static Measurement<long>[] ObserveDeadLetterDepth() =>
+        [.. Snapshots.Select(pair => new Measurement<long>(pair.Value.DeadLetterDepth, ModuleTag(pair.Key)))];
+
+    private static KeyValuePair<string, object?> ModuleTag(string module) => new("module", module);
+
+    private sealed record Snapshot(long PendingCount, double OldestPendingAgeSeconds, long DeadLetterDepth);
 }

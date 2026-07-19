@@ -38,7 +38,7 @@ public static class BedrockPersistenceExtensions
         var registrations = GetOrCreatePersistenceRegistrations(services);
         registrations.AddUnkeyed(typeof(TContext));
 
-        AddPersistenceFoundation<TContext>(services, configureDbContext);
+        AddPersistenceCore<TContext>(services, configureDbContext);
 
         // PlatformDbContext (base) resolve về CHÍNH instance TContext trong scope → repo/UoW dùng chung ChangeTracker.
         services.AddScoped<PlatformDbContext>(sp => sp.GetRequiredService<TContext>());
@@ -69,7 +69,7 @@ public static class BedrockPersistenceExtensions
         var registrations = GetOrCreatePersistenceRegistrations(services);
         registrations.AddKeyed(moduleKey, typeof(TContext));
 
-        AddPersistenceFoundation<TContext>(services, configureDbContext);
+        AddPersistenceCore<TContext>(services, configureDbContext);
 
         services.AddKeyedScoped<IUnitOfWork>(
             moduleKey,
@@ -218,7 +218,7 @@ public static class BedrockPersistenceExtensions
         return services;
     }
 
-    private static void AddPersistenceFoundation<TContext>(
+    private static void AddPersistenceCore<TContext>(
         IServiceCollection services,
         Action<DbContextOptionsBuilder> configureDbContext)
         where TContext : PlatformDbContext

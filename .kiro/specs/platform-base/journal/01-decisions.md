@@ -1557,3 +1557,200 @@
 - Consequences: máy thiếu .NET nay đỏ trung thực thay vì xanh giả; developer vẫn nhận kết quả validator độc lập trong cùng run. Guard đã compile/run local bằng SDK portable và vẫn được GitHub CI chạy bắt buộc. Parser stdlib cố ý chỉ hiểu contract workflow hiện tại, không tuyên bố là YAML parser tổng quát.
 - Reversibility: High về code, nhưng không nên đảo vì sẽ tái mở false-green.
 - Traceability: AD-061/062 (CI + command governance), AD-090 (tracked-artifact guard), current audit 2026-07-18, N-083.
+
+---
+
+### AD-105 — Reference Host phải trung tính về sản phẩm
+- Status: Confirmed
+- Date: 2026-07-19
+- Decider: user (yêu cầu đánh giá base độc lập, bỏ mọi liên hệ nghiệp vụ sản phẩm) + AI triển khai.
+- Provenance/Evidence: đổi `src/Host/StarHill.Api` thành `src/Host/Bedrock.ReferenceHost`, đổi test host tương ứng, cập nhật `Platform.slnx`, Docker, compose và CI; `rg -i "starhill|star hill" platform .github/workflows/ci.yml` không còn kết quả trong source/workflow.
+- Context: một reference host mang tên sản phẩm làm mờ ranh giới giữa reusable platform và consumer, dù code bên trong có thể trung tính.
+- Decision/Change: Host mẫu mang identity `Bedrock.ReferenceHost`; nó chỉ chứng minh composition root, module wiring, migrations và adapter opt-in. Không dùng tên, route, queue, database hoặc image mang identity sản phẩm.
+- Rationale (verifiable): product-neutral naming làm dependency intent rõ ngay từ project graph, artifact name và deployment example; consumer không hiểu nhầm Host mẫu là sản phẩm chuẩn phải fork.
+- Alternatives: giữ tên cũ nhưng thêm README (loại: artifact/namespace vẫn phát tín hiệu sai); bỏ Host mẫu hoàn toàn (loại: mất executable composition proof).
+- Consequences: solution và container artifacts đổi tên; historical journal giữ provenance cũ, còn source hiện hành trung tính.
+- Reversibility: High, nhưng không nên đảo vì tái trộn platform với consumer identity.
+- Traceability: `current-audit-2026-07-19.md`; platform boundary và composition-root policy.
+
+### AD-106 — Outbox operability dùng module-tagged gauges và refresh có throttle
+- Status: Confirmed
+- Date: 2026-07-19
+- Decider: AI theo yêu cầu operability/recovery của platform product.
+- Provenance/Evidence: `OutboxMetrics`, `OutboxMetricsRefreshState`, `EfOutboxDispatcher` phát `bedrock.outbox.pending`, `bedrock.outbox.oldest_pending.age`, `bedrock.outbox.dead_letter.depth`; Npgsql aggregate query phía server; `OutboxMetricsTests` kiểm gauge/module tag và `OptionsValidationTests` kiểm refresh interval.
+- Context: counter publish/failure không trả lời được backlog hiện tại, tuổi message già nhất hoặc độ sâu quarantine — ba tín hiệu cần cho SLO và recovery decision.
+- Decision/Change: mỗi dispatcher refresh snapshot operational theo module với interval cấu hình; ObservableGauge chỉ đọc cache, không query database trong scrape callback.
+- Rationale (verifiable): scrape callback phải rẻ, đồng bộ và không biến monitoring thành tải DB không kiểm soát. Module tag giữ cardinality bounded theo module thay vì message/event id.
+- Alternatives: query DB mỗi scrape (loại: tải không kiểm soát); chỉ dùng logs/counter (loại: không đo state hiện tại); tag theo event/message (loại: cardinality explosion).
+- Consequences: metric có độ trễ tối đa bằng refresh interval; Host/operator phải cấu hình exporter, dashboard và alert thresholds.
+- Reversibility: High; instrument names là operational contract nên đổi tên cần migration dashboard.
+- Traceability: `operations/SLO.md`, `operations/RUNBOOK.md`, `current-audit-2026-07-19.md`; mở rộng AD-065/087.
+
+### AD-107 — Dead-letter replay phải bounded, dry-run-first và audited trong cùng transaction
+- Status: Confirmed
+- Date: 2026-07-19
+- Decider: AI theo yêu cầu replay tool an toàn; exposure/authorization để Host sở hữu.
+- Provenance/Evidence: `IOutboxReplayService`, `EfOutboxReplayService<TContext>`, `outbox_replay_operation`, `outbox_replay_audit`, migration `AddOutboxReplayAudit`; `OutboxReplayTests` gồm single-use operation guard trên SQLite; operational readiness test bắt buộc runbook và hai audit tables.
+- Context: sửa row bằng SQL tay hoặc replay không audit có thể nhân đôi side effect, replay nhầm phạm vi và xóa dấu vết failure.
+- Decision/Change: request bắt buộc operation id, actor, reason, ít nhất một selector bounded và `MaxMessages` 1–1000; mặc định dry-run; chỉ dead-letter được reset. Execute claim operation row có primary key trước khi mutate, reuse/race cùng id fail; mỗi message có immutable audit snapshot (event type, timestamps, error count/last error); tất cả commit cùng transaction.
+- Rationale (verifiable): bounded selector giới hạn blast radius, dry-run cho operator review, operation primary key chống lặp/race thao tác, transaction ngăn trạng thái replay không có audit hoặc audit không có mutation; snapshot giữ bằng chứng poison ngay cả khi outbox row sau đó được xử lý/retention.
+- Alternatives: generic admin SQL (loại: không enforce invariant); auto-replay mọi DLQ (loại: lặp poison); ship endpoint trong core (loại: core không thể quyết auth policy).
+- Consequences: Host muốn expose replay phải thêm authN/authZ, rate limit và operator UX. Retry count được reset để cấp retry budget mới; lịch sử failure cuối vẫn được giữ ở diagnostic/audit.
+- Reversibility: Medium vì đã thêm schema audit; API service có thể thay implementation nhưng invariant phải giữ.
+- Traceability: `operations/RUNBOOK.md`, `operations/RECOVERY_DRILL.md`, `current-audit-2026-07-19.md`; mở rộng AD-087.
+
+### AD-108 — Public platform surface được khóa bằng compiled API baselines
+- Status: Confirmed
+- Date: 2026-07-19
+- Decider: AI theo yêu cầu ApiCompat/PublicAPI và versioning policy.
+- Provenance/Evidence: `PublicApiCompatibilityTests`, `PublicApiSurfaceRenderer`, `PublicApiSurfaceRendererTests`, `contracts/public-api/*.txt`, `contracts/PUBLIC_API_POLICY.md`; renderer bắt public/protected surface, inheritance/interface, nested nullability, constraints, ref/in/out, defaults, accessor visibility, constants và Obsolete metadata; normal gate pass sau Release build.
+- Context: architecture tests giữ dependency direction nhưng không bắt breaking change như đổi accessibility, parameter, return type hoặc generic constraints của package consumer-facing.
+- Decision/Change: snapshot compiled public members của sáu assembly reusable; reference module/Host không thuộc supported surface. Baseline chỉ update qua env flag có chủ ý và review diff; policy dùng SemVer và deprecation window.
+- Rationale (verifiable): compiled reflection surface phản ánh thứ consumer thực sự link, không chỉ source naming; snapshot fail-closed biến compatibility thành release gate.
+- Alternatives: tin code review/changelog (loại: dễ sót); snapshot toàn Host/module mẫu (loại: khóa nhầm implementation/reference surface); dùng source text (loại: không phản ánh emitted metadata chính xác).
+- Consequences: additive API cũng tạo diff có chủ ý; package release lifecycle thực tế vẫn phải được xây trước khi tuyên bố productization hoàn chỉnh.
+- Reversibility: High về test, Medium về compatibility commitment sau khi package được phát hành.
+- Traceability: `contracts/PUBLIC_API_POLICY.md`, `current-audit-2026-07-19.md`; bổ sung contract snapshot AD-089.
+
+### AD-109 — Frontend base chỉ sở hữu transport/config và semantic tokens, không sở hữu product UI
+- Status: Confirmed
+- Date: 2026-07-19
+- Decider: user yêu cầu đánh giá cả FE của base + AI triển khai boundary trung tính.
+- Provenance/Evidence: `platform/web/packages/web-core` và `platform/web/packages/design-tokens`; frozen pnpm lock; typecheck/build pass; 16/16 frontend tests pass gồm URL/path safety, abort/timeout classification, HTTP media/body handling, headers và WCAG contrast.
+- Context: base trước đây mạnh ở backend nhưng thiếu frontend mechanism contract; đưa một framework/product shell cụ thể vào base sẽ khóa consumer và trộn business policy.
+- Decision/Change: `web-core` cung cấp runtime config, HTTP client, correlation/idempotency, timeout/cancellation, Problem Details và auth preparation seam; `design-tokens` cung cấp semantic theme, contrast/focus/reduced-motion guard. Không routes/pages/roles/stores/auth policy.
+- Rationale (verifiable): transport/error/config là cross-product mechanism; framework rendering, navigation và business state là consumer policy. Semantic token contract cho phép theme khác mà vẫn giữ accessibility invariant.
+- Alternatives: ship full admin template/framework (loại: coupling và AI-slop reuse); không có FE base (loại: mỗi consumer tự lặp HTTP/error/accessibility bugs).
+- Consequences: muốn dùng React/Vue/Svelte cần adapter riêng; component library và browser accessibility harness là productization tiếp theo, không được nhét vào core package. Raw backslash paths bị từ chối để không biến origin-relative URL thành network-path; caller-supplied `TimeoutError` vẫn được phân loại là cancellation.
+- Reversibility: High; packages độc lập và framework-neutral.
+- Traceability: `platform/web/README.md`, `current-audit-2026-07-19.md`.
+
+### AD-110 — Supply chain phải immutable và reproducible, CI sinh SBOM/provenance
+- Status: Confirmed
+- Date: 2026-07-19
+- Decider: AI theo yêu cầu supply-chain P1.
+- Provenance/Evidence: exact SDK `10.0.301` + `rollForward=disable`; 22 NuGet lockfiles; locked restore; actions pin full SHA; Docker/Testcontainers pin digest; CI NuGet audit, SPDX SBOM, vulnerability scan và push-only provenance; `validate_ci.py` PASS và `verify.ps1 all` PASS.
+- Context: floating SDK/packages/actions/images làm build không tái lập, tăng rủi ro dependency substitution và khiến incident khó truy nguyên artifact.
+- Decision/Change: khóa mọi dependency graph có thể khóa; validator fail khi pin/lock/SBOM/scan/provenance biến mất; CI là nơi tạo và lưu software-bill-of-materials và attestation.
+- Rationale (verifiable): immutability làm cùng source resolve cùng inputs; validator bảo vệ policy khỏi workflow drift; provenance gắn artifact với workflow identity thay vì lời khai thủ công.
+- Alternatives: chỉ pin major tags (loại: mutable); chỉ Dependabot (loại: phát hiện update không bảo đảm reproducibility); sinh SBOM thủ công (loại: không gắn release path).
+- Consequences: dependency update phải refresh lock/digest có review; provenance chỉ chạy trên push có quyền OIDC; local chưa thể chứng minh attestation artifact.
+- Reversibility: Medium vì bỏ lock/pin dễ nhưng làm giảm security/reproducibility đáng kể.
+- Traceability: `.github/workflows/ci.yml`, `platform/tests/validate_ci.py`, `current-audit-2026-07-19.md`; mở rộng AD-061/104.
+
+### AD-111 — Boundary discovery phải kiểm compiled assembly, không chỉ project metadata hardcode
+- Status: Confirmed
+- Date: 2026-07-19
+- Decider: AI theo yêu cầu deep assembly discovery.
+- Provenance/Evidence: `CompiledAssemblyBoundaryTests` tự discover module/adapter projects, tìm DLL theo configuration/TFM hiện hành và đọc emitted assembly references; Release architecture suite 42/42 pass.
+- Context: csproj scan có thể bỏ sót reference được sinh/đưa vào qua build logic; danh sách assembly hardcode không fail khi module/adapter mới được thêm mà quên đăng ký test.
+- Decision/Change: discover từ disk và fail nếu project mới chưa build/không resolve được assembly; kiểm dependency direction trên artifact compile thực tế. Negative-control/hardcoded tests cũ vẫn giữ để chứng minh rule bắt vi phạm.
+- Rationale (verifiable): emitted reference là dependency mà runtime/package thực sự mang; disk discovery đóng drift khi solution mở rộng.
+- Alternatives: chỉ NetArchTest trên danh sách cố định (loại: module mới có thể vô hình); chỉ csproj XML (loại: không đủ compiled truth); source analyzer riêng (defer vì chi phí cao hơn lợi ích hiện tại).
+- Consequences: architecture test cần build trước và fail-loud với project mới chưa đăng ký/build; module scaffolder vẫn còn thiếu.
+- Reversibility: High, nhưng gỡ sẽ tái mở blind spot A-11.
+- Traceability: `current-audit-2026-07-19.md`; hoàn thiện phần compiled của AD-099.
+
+### AD-112 — Broker restart phải là fault test có readiness và exactly-once-effect evidence
+- Status: Confirmed
+- Date: 2026-07-19
+- Decider: AI theo yêu cầu fault-injection/soak P2.
+- Provenance/Evidence: `RabbitMqResilienceTests.Broker_restart_recovers_consumer_and_preserves_business_effect` compile trong Release/full suite; test dùng Testcontainers, stop/start RabbitMQ, kiểm readiness transitions, xử lý message trước/sau restart và Inbox/business effect đúng một lần. Local skip vì máy không có Docker; CI workflow bắt Docker-backed suite.
+- Context: unit test retry policy không chứng minh consumer channel/topology/readiness tự hồi phục sau broker process restart.
+- Decision/Change: giữ một fault test end-to-end cho chuỗi Ready→Unready→Recovered và duplicate-effect guard; không mock broker cho proof này.
+- Rationale (verifiable): resilience là thuộc tính của tương tác runtime; Testcontainers process restart kiểm cả adapter, health check, reconnection và inbox path.
+- Alternatives: chỉ mock connection exception (loại: không chứng minh topology/channel recovery); manual drill duy nhất (loại: không regression gate); tuyên bố pass khi test local skip (loại: bằng chứng sai).
+- Consequences: local không Docker chỉ xác nhận compile; cần CI artifact để đóng runtime evidence. Network partition, long soak và cancellation storm vẫn là follow-up riêng.
+- Reversibility: High về test code, nhưng mất test sẽ giảm đáng kể confidence broker recovery.
+- Traceability: `operations/RECOVERY_DRILL.md`, `current-audit-2026-07-19.md`; mở rộng AD-073/095.
+
+### AD-113 — Frontend dependency/build artifacts phải bị loại khỏi Git và CI guard
+- Status: Confirmed
+- Date: 2026-07-19
+- Decider: AI (final diff review sau khi thêm `platform/web`).
+- Provenance/Evidence: `platform/web/.gitignore` chặn `node_modules`, nested `dist`, coverage và tsbuildinfo; `validate_ci.py` kiểm cả tracked .NET lẫn frontend artifacts; validator PASS sau khi workspace đã build/test.
+- Context: package manager tạo hàng nghìn file local; chỉ dựa vào reviewer hoặc một root `.gitignore` thiếu pattern sẽ làm lock/source diff bị lẫn binary/vendor output.
+- Decision/Change: frontend workspace sở hữu `.gitignore` cục bộ và CI fail nếu các path artifact tương ứng từng được track.
+- Rationale (verifiable): lockfile/package manifests là source of truth; node_modules/dist không tái lập cần thiết trong Git và làm SBOM/diff nhiễu.
+- Alternatives: ignore toàn bộ `platform/web` (loại: mất source/lockfile); chỉ rely on global ignore (loại: dễ drift khi workspace tách cây); cleanup thủ công mỗi lần (loại: không enforce).
+- Consequences: build local vẫn sinh artifact bình thường; clone sạch dùng `pnpm install --frozen-lockfile`; tracked artifact drift làm CI đỏ.
+- Reversibility: High (đổi ignore/validator), nhưng không nên nới guard.
+- Traceability: `.github/workflows/ci.yml`, `platform/tests/validate_ci.py`, `platform/web/.gitignore`, current audit 2026-07-19; mở rộng AD-090.
+
+### AD-114 — Module creation phải đi qua template + solution-registration verifier
+- Status: Confirmed
+- Date: 2026-07-19
+- Decider: AI theo residual P1 module scaffolder.
+- Provenance/Evidence: `templates/bedrock-module`, `tools/new_module.py`, `tools/new-module.ps1`, `tools/verify-module-template.py`; verifier đã generate `ScaffoldProbe`, restore/build/test 6 projects (`0 warning`, 1 test pass), đồng thời kiểm tra cross-platform scaffolder đăng ký đủ 6 project vào solution sandbox; CI có job `module-scaffold` và `verify.ps1 all` chạy step này.
+- Context: discovery guard chỉ phát hiện module đã tồn tại; tạo module bằng copy/paste vẫn dễ thiếu layer, project reference, test hoặc `Platform.slnx` registration.
+- Decision/Change: template tạo Contracts/Domain/Application/Infrastructure/Api + UnitTests marker; scaffolder nhận tên/key, validate naming, tạo bằng custom template hive, thêm projects vào `Platform.slnx`, restore/build; verifier disposable chạy trong gate.
+- Rationale (verifiable): generated artifact là bằng chứng mạnh hơn README; compile/test ngay sau scaffold bắt path/reference drift trước khi module được đưa vào CI.
+- Alternatives: chỉ viết hướng dẫn (loại: không executable); source generator (loại: không tạo project/layer/solution); reflection auto-registration (loại: che composition boundary và migration ownership).
+- Consequences: module mới có thể bắt đầu trung tính không business giả; module author vẫn phải thêm persistence/migrations, endpoint/use-case policy và module-specific integration tests.
+- Reversibility: High; template version có thể evolve, generated source không bị runtime phụ thuộc template.
+- Traceability: `current-audit-2026-07-19.md`, `DiscoveredProjectBoundaryTests`, AD-099/111.
+
+### AD-115 — Outbox replay exposure belongs to the Host and must derive actor from authenticated identity
+- Status: Confirmed
+- Date: 2026-07-19
+- Decider: AI implementing the remaining platform operability slice.
+- Provenance/Evidence: `src/Host/Bedrock.ReferenceHost/Operations/OutboxReplayEndpointModule.cs`; `HostSmokeTests` verifies 401, 403, authorized preview and audit lookup; host test suite 5/5 passed.
+- Context: the audited replay service existed but an operator had no safe executable surface. Putting authorization in reusable Infrastructure would couple mechanism to one identity policy; accepting actor in the HTTP body would permit audit spoofing.
+- Decision/Change: the reference Host maps versioned preview, execute and audit endpoints; it requires an explicit permission plus `sub`, derives actor from the authenticated principal, and resolves the owning module's keyed replay service. Application/Infrastructure remain authorization-neutral.
+- Rationale (verifiable): authorization executes before the handler; preview forces dry-run; execute still inherits bounded selectors and single-use operation IDs; audit lookup reads immutable snapshots.
+- Alternatives: expose an unauthenticated generic endpoint (rejected: unsafe); trust caller-supplied actor (rejected: forgeable audit); embed roles in Infrastructure (rejected: product policy leakage).
+- Consequences: consuming Hosts must replace or intentionally retain the reference permission policy; replay API errors are bounded 400/409 responses and do not bypass durable audit.
+- Reversibility: High; the Host endpoint can be replaced without changing the replay contract or persistence model.
+- Traceability: `operations/RUNBOOK.md`, `IOutboxReplayService`, `IOutboxReplayAuditReader`.
+
+### AD-116 — Operational readiness ships executable alert/dashboard templates, not only prose
+- Status: Confirmed
+- Date: 2026-07-19
+- Decider: AI implementing operability productization.
+- Provenance/Evidence: `operations/prometheus-alerts.yml`, `operations/grafana-dashboard.json`, `tools/validate-operations.py`; validator and CI invariant validator passed.
+- Context: metrics and an SLO document do not create an operational feedback loop unless alert rules and a dashboard are versioned, reviewable and validated.
+- Decision/Change: ship neutral Prometheus rules for API burn, oldest pending age, dead-letter depth, backlog growth and publish stalls plus a Grafana dashboard parameterized by module. Validate their required signals in local and CI gates.
+- Rationale (verifiable): the rules reference the normalized OpenTelemetry metric names, all alerts have persistence windows, and dashboard JSON is parsed by the validator.
+- Alternatives: leave queries to each product (rejected: repeats platform-level mistakes); embed a vendor-specific hosted dashboard (rejected: backend coupling).
+- Consequences: products still calibrate thresholds and connect an OTLP/Prometheus backend, but no longer start without an executable baseline.
+- Reversibility: High; templates can evolve without runtime coupling.
+- Traceability: `operations/SLO.md`, `OperationalReadinessTests`, `.github/workflows/ci.yml`.
+
+### AD-117 — Fault evidence is split into PR-safe scenarios and a scheduled long soak
+- Status: Confirmed
+- Date: 2026-07-19
+- Decider: AI implementing the remaining resilience matrix.
+- Provenance/Evidence: `RabbitMqResilienceTests` now contains broker pause/unpause, duplicate delivery, consumer replacement, database interruption and soak scenarios; Release compilation passed; CI schedules `BEDROCK_RUN_SOAK=true` for 600 seconds.
+- Context: restart-only evidence misses black-holed connections, duplicate effects, process cancellation and dependency recovery. Running a ten-minute soak on every PR would be wasteful and increase queueing time.
+- Decision/Change: Docker-backed fault scenarios run in the normal full CI suite; the duration-bound duplicate-heavy soak runs nightly/manual. Docker absence skips locally but fails closed when `CI=true`.
+- Rationale (verifiable): tests assert readiness recovery, one Inbox row and one business effect per message identity; the nightly job is pinned, locked and timeout-bounded.
+- Alternatives: mock faults (rejected: no transport/runtime proof); run soak on every PR (rejected: cost and feedback delay); manual-only drills (rejected: no regression gate).
+- Consequences: local non-Docker evidence remains compile-only; authoritative runtime evidence comes from CI artifacts and should be retained with drill records.
+- Reversibility: High for scheduling, Medium for removing scenarios because confidence would materially regress.
+- Traceability: `operations/RECOVERY_DRILL.md`, `.github/workflows/ci.yml`, AD-112.
+
+### AD-118 — Frontend productization remains framework-neutral but must include browser accessibility proof
+- Status: Confirmed
+- Date: 2026-07-19
+- Decider: AI implementing the FE residual without choosing product policy.
+- Provenance/Evidence: `web/packages/web-adapter`, `web/packages/ui-primitives`, `web/apps/a11y-harness`; 22 unit tests and 2 Playwright/axe desktop/mobile tests passed locally.
+- Context: transport and tokens alone force each product to reimplement async-state races, focus restoration and ARIA relationships. Selecting React/Vue/Svelte in the base would prematurely bind consumers.
+- Decision/Change: add a framework-neutral external-store adapter, accessible DOM primitives and a Playwright+axe harness. Framework packages may wrap these contracts later; no route, role, cache policy or visual brand enters the base.
+- Rationale (verifiable): stale completions are suppressed, cancellation is explicit, dialog focus returns to the trigger, ARIA IDs are normalized, and axe reports no serious/critical violations in desktop/mobile Chromium.
+- Alternatives: ship a full framework design system (rejected: product/framework coupling); keep only unit tests (rejected: no browser accessibility evidence).
+- Consequences: browser installation is a separate CI job; products still own component rendering and visual direction.
+- Reversibility: High; packages are isolated and have no backend dependency.
+- Traceability: `web/README.md`, `.github/workflows/ci.yml`, AD-109/113.
+
+### AD-119 — Supported assemblies and frontend packages release through a tag-gated artifact lifecycle
+- Status: Confirmed
+- Date: 2026-07-19
+- Decider: AI implementing package lifecycle productization.
+- Provenance/Evidence: `Directory.Build.props`, `RELEASE.md`, `CHANGELOG.md`, `tools/validate-release.py`, tag-gated `release-artifacts` CI job; six NuGet + symbol packages and four npm tarballs packed successfully locally.
+- Context: API snapshots without pack metadata and a release path protect source compatibility but do not prove that consumers can receive reproducible artifacts.
+- Decision/Change: only the six supported assemblies are packable; modules, tests and the reference Host are excluded. A `v<semver>` tag validates metadata/API baselines, packs .NET and frontend artifacts, generates SPDX SBOM and attests provenance.
+- Rationale (verifiable): local pack produced the complete expected artifact set; release validation checks the supported boundary; workflow actions and dependency graphs remain pinned/locked.
+- Alternatives: publish the whole solution (rejected: leaks examples/modules); manual package creation (rejected: non-reproducible); auto-publish every branch (rejected: unsafe release authority expansion).
+- Consequences: actual registry publication remains environment-controlled; a successful tag run is still required to close remote attestation evidence.
+- Reversibility: Medium because published package identities become compatibility commitments.
+- Traceability: `contracts/PUBLIC_API_POLICY.md`, `.github/workflows/ci.yml`, AD-108/110.

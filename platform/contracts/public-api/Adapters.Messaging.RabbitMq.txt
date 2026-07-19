@@ -1,0 +1,96 @@
+T:public:enum:none:Adapters.Messaging.RabbitMq.DeliveryAction
+B:Adapters.Messaging.RabbitMq.DeliveryAction:System.Enum
+I:Adapters.Messaging.RabbitMq.DeliveryAction:System.IComparable
+I:Adapters.Messaging.RabbitMq.DeliveryAction:System.IConvertible
+I:Adapters.Messaging.RabbitMq.DeliveryAction:System.IFormattable
+I:Adapters.Messaging.RabbitMq.DeliveryAction:System.ISpanFormattable
+F:Adapters.Messaging.RabbitMq.DeliveryAction.Acknowledge:Adapters.Messaging.RabbitMq.DeliveryAction:public:const:value=0
+F:Adapters.Messaging.RabbitMq.DeliveryAction.DeadLetter:Adapters.Messaging.RabbitMq.DeliveryAction:public:const:value=2
+F:Adapters.Messaging.RabbitMq.DeliveryAction.Retry:Adapters.Messaging.RabbitMq.DeliveryAction:public:const:value=1
+F:Adapters.Messaging.RabbitMq.DeliveryAction.value__:System.Int32:public:none
+T:public:class:sealed:Adapters.Messaging.RabbitMq.RabbitMqConsumer
+B:Adapters.Messaging.RabbitMq.RabbitMqConsumer:Microsoft.Extensions.Hosting.BackgroundService
+I:Adapters.Messaging.RabbitMq.RabbitMqConsumer:Microsoft.Extensions.Hosting.IHostedService
+I:Adapters.Messaging.RabbitMq.RabbitMqConsumer:System.IDisposable
+C:Adapters.Messaging.RabbitMq.RabbitMqConsumer(Adapters.Messaging.RabbitMq.RabbitMqOptions options,Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions consumerOptions,Adapters.Messaging.RabbitMq.RabbitMqConsumerState state,Microsoft.Extensions.DependencyInjection.IServiceScopeFactory scopeFactory,Microsoft.Extensions.Logging.ILogger<Adapters.Messaging.RabbitMq.RabbitMqConsumer> logger):public
+M:Adapters.Messaging.RabbitMq.RabbitMqConsumer.ExecuteAsync(System.Threading.CancellationToken stoppingToken):System.Threading.Tasks.Task:protected:virtual+override
+M:Adapters.Messaging.RabbitMq.RabbitMqConsumer.StopAsync(System.Threading.CancellationToken cancellationToken):System.Threading.Tasks.Task:public:virtual+override
+T:public:class:sealed:Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions
+C:Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions():public
+M:Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions.Validate(Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions options):System.Void:public:static
+P:Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions.ConsumerName:System.String:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions.DeadLetterExchangeName:System.String:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions.DeadLetterQueueName:System.String:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions.DispatcherServiceKey:System.String:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions.EffectiveConsumerName:System.String:get=public:set=none
+P:Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions.MaxDeliveryAttempts:System.Int32:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions.PrefetchCount:System.UInt16:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions.QueueArguments:System.Collections.Generic.IDictionary<System.String,System.Object?>:get=public:set=none
+P:Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions.QueueName:System.String:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions.RetryDelay:System.TimeSpan:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions.RetryExchangeName:System.String:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions.RetryQueueName:System.String:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions.RoutingKeys:System.Collections.Generic.IList<System.String>:get=public:set=none
+F:Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions.AttemptHeader:System.String:public:const:value="x-bedrock-attempt"
+F:Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions.SectionName:System.String:public:const:value="RabbitMqConsumer"
+T:public:class:sealed:Adapters.Messaging.RabbitMq.RabbitMqConsumerSnapshot
+I:Adapters.Messaging.RabbitMq.RabbitMqConsumerSnapshot:System.IEquatable<Adapters.Messaging.RabbitMq.RabbitMqConsumerSnapshot>
+C:Adapters.Messaging.RabbitMq.RabbitMqConsumerSnapshot(System.String QueueName,Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus Status,System.String? ConsumerTag):public
+P:Adapters.Messaging.RabbitMq.RabbitMqConsumerSnapshot.ConsumerTag:System.String?:get=public:init=public
+P:Adapters.Messaging.RabbitMq.RabbitMqConsumerSnapshot.QueueName:System.String:get=public:init=public
+P:Adapters.Messaging.RabbitMq.RabbitMqConsumerSnapshot.Status:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus:get=public:init=public
+T:public:class:sealed:Adapters.Messaging.RabbitMq.RabbitMqConsumerState
+C:Adapters.Messaging.RabbitMq.RabbitMqConsumerState(System.String queueName):public
+M:Adapters.Messaging.RabbitMq.RabbitMqConsumerState.Snapshot():Adapters.Messaging.RabbitMq.RabbitMqConsumerSnapshot:public:none
+T:public:enum:none:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus
+B:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus:System.Enum
+I:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus:System.IComparable
+I:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus:System.IConvertible
+I:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus:System.IFormattable
+I:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus:System.ISpanFormattable
+F:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus.Connecting:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus:public:const:value=1
+F:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus.Consuming:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus:public:const:value=3
+F:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus.Faulted:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus:public:const:value=6
+F:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus.Recovering:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus:public:const:value=4
+F:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus.Stopped:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus:public:const:value=0
+F:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus.Stopping:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus:public:const:value=5
+F:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus.TopologyReady:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus:public:const:value=2
+F:Adapters.Messaging.RabbitMq.RabbitMqConsumerStatus.value__:System.Int32:public:none
+T:public:class:static:Adapters.Messaging.RabbitMq.RabbitMqDeliveryPolicy
+M:Adapters.Messaging.RabbitMq.RabbitMqDeliveryPolicy.ForException(System.Exception exception,System.Int32 priorAttempts,System.Int32 maxAttempts):Adapters.Messaging.RabbitMq.DeliveryAction:public:static
+M:Adapters.Messaging.RabbitMq.RabbitMqDeliveryPolicy.ForOutcome(Bedrock.Application.Messaging.Dispatch.InboxDispatchOutcome outcome):Adapters.Messaging.RabbitMq.DeliveryAction:public:static
+M:Adapters.Messaging.RabbitMq.RabbitMqDeliveryPolicy.IsPermanent(System.Exception exception):System.Boolean:public:static
+T:public:class:sealed:Adapters.Messaging.RabbitMq.RabbitMqEventBusPublisher
+I:Adapters.Messaging.RabbitMq.RabbitMqEventBusPublisher:Bedrock.Application.Messaging.Dispatch.IEventBusPublisher
+I:Adapters.Messaging.RabbitMq.RabbitMqEventBusPublisher:System.IAsyncDisposable
+C:Adapters.Messaging.RabbitMq.RabbitMqEventBusPublisher(Adapters.Messaging.RabbitMq.RabbitMqOptions options):public
+M:Adapters.Messaging.RabbitMq.RabbitMqEventBusPublisher.DisposeAsync():System.Threading.Tasks.ValueTask:public:virtual+final+newslot
+M:Adapters.Messaging.RabbitMq.RabbitMqEventBusPublisher.PublishAsync(Bedrock.Application.Messaging.Dispatch.OutgoingIntegrationMessage message,System.Threading.CancellationToken ct=null):System.Threading.Tasks.Task:public:virtual+final+newslot
+T:public:class:sealed:Adapters.Messaging.RabbitMq.RabbitMqHealthCheck
+I:Adapters.Messaging.RabbitMq.RabbitMqHealthCheck:Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck
+C:Adapters.Messaging.RabbitMq.RabbitMqHealthCheck(Adapters.Messaging.RabbitMq.RabbitMqOptions options):public
+M:Adapters.Messaging.RabbitMq.RabbitMqHealthCheck.CheckHealthAsync(Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckContext context,System.Threading.CancellationToken cancellationToken=null):System.Threading.Tasks.Task<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult>:public:virtual+final+newslot
+T:public:class:static:Adapters.Messaging.RabbitMq.RabbitMqMessagingExtensions
+M:Adapters.Messaging.RabbitMq.RabbitMqMessagingExtensions.AddRabbitMqConsumer(Microsoft.Extensions.DependencyInjection.IServiceCollection services,System.Action<Adapters.Messaging.RabbitMq.RabbitMqConsumerOptions> configure):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+M:Adapters.Messaging.RabbitMq.RabbitMqMessagingExtensions.AddRabbitMqMessaging(Microsoft.Extensions.DependencyInjection.IServiceCollection services,Microsoft.Extensions.Configuration.IConfiguration configuration):Microsoft.Extensions.DependencyInjection.IServiceCollection:public:static+extension
+T:public:class:sealed:Adapters.Messaging.RabbitMq.RabbitMqOptions
+C:Adapters.Messaging.RabbitMq.RabbitMqOptions():public
+M:Adapters.Messaging.RabbitMq.RabbitMqOptions.Validate(Adapters.Messaging.RabbitMq.RabbitMqOptions options):System.Void:public:static
+P:Adapters.Messaging.RabbitMq.RabbitMqOptions.ExchangeName:System.String:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqOptions.HostName:System.String:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqOptions.Password:System.String:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqOptions.Port:System.Int32:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqOptions.Resilience:Adapters.Messaging.RabbitMq.RabbitMqResilienceOptions:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqOptions.UserName:System.String:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqOptions.VirtualHost:System.String:get=public:set=public
+F:Adapters.Messaging.RabbitMq.RabbitMqOptions.SectionName:System.String:public:const:value="RabbitMq"
+T:public:class:sealed:Adapters.Messaging.RabbitMq.RabbitMqResilienceOptions
+C:Adapters.Messaging.RabbitMq.RabbitMqResilienceOptions():public
+M:Adapters.Messaging.RabbitMq.RabbitMqResilienceOptions.Validate(Adapters.Messaging.RabbitMq.RabbitMqResilienceOptions options):System.Void:public:static
+P:Adapters.Messaging.RabbitMq.RabbitMqResilienceOptions.CircuitBreakSeconds:System.Double:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqResilienceOptions.CircuitFailureRatio:System.Double:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqResilienceOptions.CircuitMinimumThroughput:System.Int32:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqResilienceOptions.CircuitSamplingSeconds:System.Double:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqResilienceOptions.RetryAttempts:System.Int32:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqResilienceOptions.RetryBaseDelayMs:System.Double:get=public:set=public
+P:Adapters.Messaging.RabbitMq.RabbitMqResilienceOptions.TimeoutSeconds:System.Double:get=public:set=public

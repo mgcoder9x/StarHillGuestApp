@@ -28,7 +28,7 @@ public sealed class RabbitMqPublishIntegrationTests : IAsyncLifetime
         try
         {
             // Build() validate Docker và NÉM nếu thiếu → phải nằm TRONG try để catch → skip (N-012). Root-cause N-067.
-            _container = new RabbitMqBuilder("rabbitmq:3.13").Build();
+            _container = new RabbitMqBuilder("rabbitmq:3.13@sha256:87178a0ee3e2f52980ba356d38646ed1056705ff2d5ff281f8965456eaa0c1e3").Build();
             await _container.StartAsync().ConfigureAwait(false);
             _dockerAvailable = true;
         }

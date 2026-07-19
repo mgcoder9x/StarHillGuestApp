@@ -81,6 +81,29 @@ public sealed class OutboxMetricsTests
         Assert.Equal(0, capture.Counter("bedrock.outbox.published"));
     }
 
+    [Fact]
+    public async Task Operational_gauges_report_pending_age_and_dead_letter_depth_per_module()
+    {
+        using var capture = new OutboxMetricCapture();
+        await using var harness = await CreateHarnessAsync(
+            new RecordingPublisher(),
+            options =>
+            {
+                options.BatchSize = 1;
+                options.TelemetryName = "identity";
+            });
+
+        await SeedAsync(harness, TimeSpan.FromSeconds(-12));
+        await SeedAsync(harness, TimeSpan.FromSeconds(-5));
+        await RunDispatcherAsync(harness);
+
+        capture.Observe();
+
+        Assert.Equal(1, capture.Gauge("bedrock.outbox.pending", "identity"));
+        Assert.True(capture.Gauge("bedrock.outbox.oldest_pending.age", "identity") >= 5);
+        Assert.Equal(0, capture.Gauge("bedrock.outbox.dead_letter.depth", "identity"));
+    }
+
     private static async Task<PersistenceHarness> CreateHarnessAsync(
         IEventBusPublisher publisher, Action<OutboxDispatcherOptions>? configure = null) =>
         await PersistenceHarness.CreateAsync(services =>
@@ -142,10 +165,24 @@ internal sealed class OutboxMetricCapture : IDisposable
                 listener.EnableMeasurementEvents(instrument);
             }
         };
-        _listener.SetMeasurementEventCallback<long>((instrument, value, _, _) =>
-            _counters.AddOrUpdate(instrument.Name, value, (_, current) => current + value));
-        _listener.SetMeasurementEventCallback<double>((instrument, value, _, _) =>
+        _listener.SetMeasurementEventCallback<long>((instrument, value, tags, _) =>
         {
+            if (instrument is ObservableGauge<long>)
+            {
+                _gauges[GaugeKey(instrument.Name, tags)] = value;
+                return;
+            }
+
+            _counters.AddOrUpdate(instrument.Name, value, (_, current) => current + value);
+        });
+        _listener.SetMeasurementEventCallback<double>((instrument, value, tags, _) =>
+        {
+            if (instrument is ObservableGauge<double>)
+            {
+                _gauges[GaugeKey(instrument.Name, tags)] = value;
+                return;
+            }
+
             var list = _histograms.GetOrAdd(instrument.Name, _ => []);
             lock (list)
             {
@@ -159,6 +196,26 @@ internal sealed class OutboxMetricCapture : IDisposable
 
     public IReadOnlyList<double> Histogram(string name) =>
         _histograms.TryGetValue(name, out var v) ? v : [];
+
+    private readonly ConcurrentDictionary<string, double> _gauges = new(StringComparer.Ordinal);
+
+    public void Observe() => _listener.RecordObservableInstruments();
+
+    public double Gauge(string name, string module) =>
+        _gauges.TryGetValue($"{name}|{module}", out var value) ? value : double.NaN;
+
+    private static string GaugeKey(string name, ReadOnlySpan<KeyValuePair<string, object?>> tags)
+    {
+        foreach (var tag in tags)
+        {
+            if (tag.Key == "module")
+            {
+                return $"{name}|{tag.Value}";
+            }
+        }
+
+        return $"{name}|";
+    }
 
     public void Dispose() => _listener.Dispose();
 }

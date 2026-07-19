@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Bedrock Platform",
+  "classifications": ["Bedrock", "Module", "Modular Monolith"],
+  "identity": "Bedrock.Platform.Module",
+  "name": "Bedrock domain module",
+  "shortName": "bedrock-module",
+  "sourceName": "ModuleName",
+  "preferNameDirectory": false,
+  "symbols": {
+    "moduleKey": {
+      "type": "parameter",
+      "datatype": "string",
+      "defaultValue": "module",
+      "replaces": "MODULE_KEY",
+      "description": "Stable persistence and DI key for the module."
+    }
+  },
+  "sources": [
+    {
+      "source": "./",
+      "exclude": [".template.config/**"]
+    }
+  ]
+}

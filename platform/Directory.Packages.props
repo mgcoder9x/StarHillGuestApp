@@ -54,7 +54,7 @@
     <!--
       Microsoft.AspNetCore.OpenApi 10.0.9 kéo transitive Microsoft.OpenApi 2.0.0
       → GHSA-v5pm-xwqc-g5wc (HIGH). NuGetAudit + TreatWarningsAsErrors → NU1903 fail restore.
-      Pin transitive lên 2.7.5 (đã vá — cùng version resort-qr resolve trong repo). AD-068.
+      Pin transitive lên 2.7.5 (đã vá và đã resolve trong graph khóa hiện tại). AD-068.
     -->
     <PackageVersion Include="Microsoft.OpenApi" Version="2.7.5" />
   </ItemGroup>
@@ -62,6 +62,6 @@
     Package runtime của base (EF Core/Npgsql, Scrutor, Serilog, HtmlSanitizer, JwtBearer,
     Argon2, OpenTelemetry...) sẽ được `dotnet add package` PIN version thật ở đúng bước khi
     introduce (task 6/9/13/14/18...). KHÔNG khai số version bịa ở đây trước khi dùng.
-    Các version dưới đã verify tương thích .NET 10 ở bản foundation cũ, mở sẵn để tái dùng khi tới bước.
+    Chỉ thêm version đã được verify tương thích với SDK hiện tại khi package thực sự được dùng.
   -->
 </Project>

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!--
+    Host / Bedrock.ReferenceHost = COMPOSITION ROOT DUY NHẤT (invariant I7/luật-5): nơi DUY NHẤT được reference đồng thời
+    Bedrock.Api + Bedrock.Infrastructure + Modules (Api-half + Infra-half). Không project nào khác ráp cả hai phía.
+    Host CHỌN provider DB (Npgsql) + bật adapter/module nào. Không có Program.cs/endpoint nghiệp vụ trong Bedrock.*.
+  -->
+  <PropertyGroup>
+    <!-- Secret governance (F35/task 19): dev nạp secret (Jwt.Keys[].Secret, mật khẩu DB) qua User-Secrets —
+         WebApplication.CreateBuilder tự load ở môi trường Development. KHÔNG commit secret vào repo. -->
+    <UserSecretsId>bedrock-reference-host-dev-8f3c1e6a</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Bedrock.Api\Bedrock.Api.csproj" />
+    <ProjectReference Include="..\..\Bedrock.Infrastructure\Bedrock.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Identity\Identity.Infrastructure\Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Identity\Identity.Api\Identity.Api.csproj" />
+    <!-- Adapter công nghệ: Host (composition root) là nơi DUY NHẤT được cắm adapter (F29/CP5). Bật/tắt qua config
+         Bedrock:Messaging:Enabled — bỏ adapter = quay về default fail-loud, KHÔNG sửa lõi. -->
+    <ProjectReference Include="..\..\Adapters\Messaging.RabbitMq\Adapters.Messaging.RabbitMq.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Host chọn provider PostgreSQL (design §1.2 — Postgres là provider đích). -->
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Smoke test boot host qua WebApplicationFactory<Program>. -->
+    <InternalsVisibleTo Include="Bedrock.ReferenceHost.Tests" />
+  </ItemGroup>
+</Project>

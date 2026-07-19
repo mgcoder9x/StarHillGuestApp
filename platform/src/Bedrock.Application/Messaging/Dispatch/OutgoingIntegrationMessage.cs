@@ -6,7 +6,7 @@ namespace Bedrock.Application.Messaging.Dispatch;
 /// các cột retry/persistence mutable của <see cref="OutboxMessage"/> (ProcessedAt/ErrorCount/NextAttemptAt/
 /// DeadLetteredAt/ClaimId/ClaimedUntil). Adapter không cần và KHÔNG NÊN biết trạng thái outbox nội bộ.
 /// <para>
-/// Đối xứng với <c>IncomingIntegrationMessage</c> (phía consume). <see cref="EfOutboxDispatcher{TContext}"/>
+/// Đối xứng với <c>IncomingIntegrationMessage</c> (phía consume). <c>EfOutboxDispatcher</c>
 /// map <see cref="OutboxMessage"/> (record persistence) → envelope này ngay trước khi publish.
 /// </para>
 /// </summary>

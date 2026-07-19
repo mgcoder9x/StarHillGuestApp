@@ -52,6 +52,8 @@ public sealed class OptionsValidationTests
         Assert.False(OutboxDispatcherOptions.IsValid(
             new OutboxDispatcherOptions { BaseDelay = TimeSpan.FromMinutes(10), MaxDelay = TimeSpan.FromMinutes(1) })); // MaxDelay < BaseDelay
         Assert.False(OutboxDispatcherOptions.IsValid(new OutboxDispatcherOptions { ClaimLease = TimeSpan.Zero }));
+        Assert.False(OutboxDispatcherOptions.IsValid(
+            new OutboxDispatcherOptions { OperationalMetricsRefreshInterval = TimeSpan.Zero }));
     }
 
     // ── OutboxDispatcherWorkerOptions ──

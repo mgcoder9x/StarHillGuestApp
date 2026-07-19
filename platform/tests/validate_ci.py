@@ -23,11 +23,17 @@ CI_PATH = REPO_ROOT / ".github" / "workflows" / "ci.yml"
 
 # Bất biến kỳ vọng (AD-061). Cần siết thêm → bổ sung tại đây.
 REQUIRED_PUSH_BRANCHES = ("main", "master", "develop")
-REQUIRED_JOBS = ("build-test", "docker-image", "migration-bundle")
+REQUIRED_JOBS = ("build-test", "docker-image", "migration-bundle", "frontend-base", "frontend-a11y", "module-scaffold", "operations", "fault-soak", "release-artifacts", "supply-chain")
 
-# A-30/AD-090: KHÔNG được track build artifact (bin/obj) trong Git — .gitignore đã chặn, guard này chống ai đó
+# A-30/AD-090: KHÔNG được track build artifact trong Git — .gitignore đã chặn, guard này chống ai đó
 # `git add -f` lại (anti-drift permanent, review A-30 bước 4). Pattern git-pathspec.
-ARTIFACT_PATHSPECS = ("**/bin/**", "**/obj/**")
+ARTIFACT_PATHSPECS = (
+    "**/bin/**",
+    "**/obj/**",
+    "platform/web/**/node_modules/**",
+    "platform/web/**/dist/**",
+    "platform/artifacts/**",
+)
 
 
 def _clean_lines(raw: str) -> list[tuple[int, str]]:
@@ -131,7 +137,7 @@ def validate_without_yaml(raw: str) -> list[str]:
 
 
 def validate_no_tracked_artifacts() -> list[str]:
-    """Fail nếu Git đang track file bin/obj (build artifact) — giữ repo sạch (A-30)."""
+    """Fail nếu Git đang track build/dependency artifacts — giữ repo sạch (A-30)."""
     try:
         result = subprocess.run(
             ["git", "ls-files", "--", *ARTIFACT_PATHSPECS],
@@ -148,9 +154,93 @@ def validate_no_tracked_artifacts() -> list[str]:
     tracked = [line for line in result.stdout.splitlines() if line.strip()]
     if tracked:
         sample = ", ".join(tracked[:3])
-        return [f"Git đang track {len(tracked)} file build-artifact (bin/obj) — phải `git rm --cached` "
+        return [f"Git đang track {len(tracked)} file build/dependency artifact — phải `git rm --cached` "
                 f"(A-30). Ví dụ: {sample} ..."]
     return []
+
+
+def validate_supply_chain(raw: str) -> list[str]:
+    """Fail closed when workflow/image/package inputs are mutable or lock gates disappear."""
+    errors: list[str] = []
+
+    for action, ref in re.findall(r"^\s*uses:\s*([^@\s]+)@([^\s#]+)", raw, flags=re.MULTILINE):
+        if not re.fullmatch(r"[0-9a-f]{40}", ref):
+            errors.append(f"GitHub Action '{action}@{ref}' is not pinned to a 40-character commit SHA")
+
+    required_fragments = (
+        "dotnet restore Platform.slnx --locked-mode",
+        "pnpm install --frozen-lockfile",
+        "python tools/verify_module_template.py",
+        "python tools/validate-operations.py",
+        "BEDROCK_RUN_SOAK",
+        "pnpm a11y",
+        "python tools/validate-release.py",
+        "PublicApiCompatibilityTests",
+        "dotnet pack",
+        "anchore/sbom-action@",
+        "anchore/scan-action@",
+        "actions/attest-build-provenance@",
+    )
+    for fragment in required_fragments:
+        if fragment not in raw:
+            errors.append(f"workflow is missing supply-chain gate '{fragment}'")
+
+    dockerfile = REPO_ROOT / "platform" / "src" / "Host" / "Bedrock.ReferenceHost" / "Dockerfile"
+    compose = REPO_ROOT / "platform" / "docker-compose.yml"
+    for path, pattern, label in (
+        (dockerfile, r"^FROM\s+\S+@sha256:[0-9a-f]{64}(?:\s+AS\s+\w+)?$", "Docker FROM"),
+        (compose, r"^\s*image:\s*\S+@sha256:[0-9a-f]{64}\s*$", "Compose image"),
+    ):
+        if not path.exists():
+            errors.append(f"missing supply-chain input file: {path.relative_to(REPO_ROOT)}")
+            continue
+        text = path.read_text(encoding="utf-8")
+        candidates = [line for line in text.splitlines() if re.match(r"^\s*(FROM|image:)", line)]
+        for line in candidates:
+            if not re.fullmatch(pattern, line, flags=re.IGNORECASE):
+                errors.append(f"{label} is not digest-pinned in {path.relative_to(REPO_ROOT)}: {line.strip()}")
+
+    for source in (REPO_ROOT / "platform" / "tests").rglob("*.cs"):
+        text = source.read_text(encoding="utf-8")
+        for image in re.findall(r'new\s+(?:PostgreSql|RabbitMq)Builder\("([^"]+)"\)', text):
+            if not re.fullmatch(r"\S+@sha256:[0-9a-f]{64}", image):
+                errors.append(
+                    f"Testcontainers image is not digest-pinned in {source.relative_to(REPO_ROOT)}: {image}"
+                )
+
+    platform = REPO_ROOT / "platform"
+    missing_nuget_locks = [
+        project.relative_to(REPO_ROOT).as_posix()
+        for project in platform.rglob("*.csproj")
+        if "templates" not in project.relative_to(platform).parts
+        if not (project.parent / "packages.lock.json").exists()
+    ]
+    if missing_nuget_locks:
+        errors.append(
+            f"{len(missing_nuget_locks)} .NET projects are missing packages.lock.json; first: {missing_nuget_locks[0]}"
+        )
+
+    if not (platform / "web" / "pnpm-lock.yaml").exists():
+        errors.append("platform/web/pnpm-lock.yaml is missing")
+
+    web_gitignore = platform / "web" / ".gitignore"
+    if not web_gitignore.exists():
+        errors.append("platform/web/.gitignore is missing")
+    else:
+        ignored = web_gitignore.read_text(encoding="utf-8")
+        for pattern in ("node_modules/", "**/dist/"):
+            if pattern not in ignored:
+                errors.append(f"platform/web/.gitignore is missing '{pattern}'")
+
+    platform_gitignore = platform / ".gitignore"
+    if "artifacts/" not in platform_gitignore.read_text(encoding="utf-8"):
+        errors.append("platform/.gitignore is missing release artifact output")
+
+    global_json = (platform / "global.json").read_text(encoding="utf-8")
+    if '"rollForward": "disable"' not in global_json:
+        errors.append("platform/global.json must disable SDK roll-forward")
+
+    return errors
 
 
 def validate(doc: dict) -> list[str]:
@@ -207,14 +297,15 @@ def main() -> int:
         doc = yaml.safe_load(raw)
         errors = validate(doc)
     errors += validate_no_tracked_artifacts()
+    errors += validate_supply_chain(raw)
     if errors:
         print("VALIDATE CI: FAIL")
         for e in errors:
             print(f"  - {e}")
         return 1
     print("VALIDATE CI: OK (push⊇main/master/develop + pull_request; concurrency cancel-in-progress; "
-          "permissions.contents=read; jobs build-test/docker-image/migration-bundle + timeouts; "
-          "0 tracked bin/obj artifact)")
+          "permissions.contents=read; required jobs + timeouts; immutable actions/images; locked package graphs; "
+          "module scaffold; SBOM/scan/provenance; 0 tracked build/dependency artifact)")
     return 0
 
 

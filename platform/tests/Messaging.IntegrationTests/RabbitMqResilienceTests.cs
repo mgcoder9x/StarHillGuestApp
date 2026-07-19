@@ -9,6 +9,7 @@ using Bedrock.Infrastructure.Persistence.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
 using Testcontainers.PostgreSql;
@@ -44,8 +45,8 @@ public sealed class RabbitMqResilienceTests : IAsyncLifetime
             // Build() validate Docker và NÉM nếu thiếu → phải nằm TRONG try để catch → skip (N-012/N-067).
             // (Bản cũ để .Build() ở field-initializer/constructor → ném NGOÀI try → test FAIL thay vì skip khi
             // máy không Docker. Đây là fix mirror RabbitMqConsumeEndToEndTests.)
-            _postgres = new PostgreSqlBuilder("postgres:16-alpine").Build();
-            _rabbit = new RabbitMqBuilder("rabbitmq:3.13").Build();
+            _postgres = new PostgreSqlBuilder("postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777").Build();
+            _rabbit = new RabbitMqBuilder("rabbitmq:3.13@sha256:87178a0ee3e2f52980ba356d38646ed1056705ff2d5ff281f8965456eaa0c1e3").Build();
             await _postgres.StartAsync().ConfigureAwait(false);
             await _rabbit.StartAsync().ConfigureAwait(false);
             _available = true;
@@ -253,6 +254,452 @@ public sealed class RabbitMqResilienceTests : IAsyncLifetime
             var db = scope.ServiceProvider.GetRequiredService<MsgTestDbContext>();
             var inboxCount = await db.Set<InboxMessage>().CountAsync(m => ids.Contains(m.MessageId));
             Assert.Equal(messageCount, inboxCount); // inbox mark commit cho TẤT CẢ → không mất, đúng-một-lần.
+        }
+    }
+
+    [SkippableFact]
+    public async Task Broker_restart_recovers_consumer_and_preserves_business_effect()
+    {
+        Skip.IfNot(_available, "Docker/Postgres/RabbitMQ unavailable - skip broker restart test.");
+
+        const string exchange = "resrestart.events";
+        const string queue = "resrestart.queue";
+        var configuration = BuildConfig(exchange);
+        var recorder = new RestartRecorder();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<ICurrentUser>(new StubCurrentUser());
+        services.AddBedrockPersistence<MsgTestDbContext>(options => options.UseNpgsql(_postgres.GetConnectionString()));
+        services.AddBedrockInbox<MsgTestDbContext>();
+        services.AddRabbitMqMessaging(configuration);
+        services.AddIntegrationEventRegistry(typeof(MsgConsumeEvent).Assembly);
+        services.AddIntegrationEventConsumer();
+        services.AddSingleton(recorder);
+        services.AddScoped<IIntegrationEventHandler<MsgConsumeEvent>, RestartHandler>();
+        services.AddRabbitMqConsumer(options =>
+        {
+            options.QueueName = queue;
+            options.RoutingKeys.Add("msg.#");
+        });
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<MsgTestDbContext>().Database.EnsureCreatedAsync();
+        }
+
+        var consumer = provider.GetServices<IHostedService>().OfType<RabbitMqConsumer>().Single();
+        var health = provider.GetRequiredService<HealthCheckService>();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+        await consumer.StartAsync(timeout.Token);
+
+        try
+        {
+            await WaitUntilAsync(async () =>
+            {
+                var report = await health.CheckHealthAsync(
+                    registration => registration.Name == $"rabbitmq-consumer:{queue}",
+                    timeout.Token);
+                return report.Status == HealthStatus.Healthy;
+            }, timeout.Token);
+
+            var publisher = provider.GetRequiredService<IEventBusPublisher>();
+            var firstId = Guid.CreateVersion7();
+            await PublishAsync(publisher, firstId, "before-restart", timeout.Token);
+            await WaitUntilAsync(() => Task.FromResult(recorder.Contains(firstId)), timeout.Token);
+
+            await _rabbit.StopAsync(timeout.Token);
+            await WaitUntilAsync(async () =>
+            {
+                var report = await health.CheckHealthAsync(
+                    registration => registration.Name == $"rabbitmq-consumer:{queue}",
+                    timeout.Token);
+                return report.Status != HealthStatus.Healthy;
+            }, timeout.Token);
+
+            await _rabbit.StartAsync(timeout.Token);
+            await WaitUntilAsync(async () =>
+            {
+                var report = await health.CheckHealthAsync(
+                    registration => registration.Name == $"rabbitmq-consumer:{queue}",
+                    timeout.Token);
+                return report.Status == HealthStatus.Healthy;
+            }, timeout.Token);
+
+            var secondId = Guid.CreateVersion7();
+            await PublishAsync(publisher, secondId, "after-restart", timeout.Token);
+            await WaitUntilAsync(() => Task.FromResult(recorder.Contains(secondId)), timeout.Token);
+
+            Assert.Equal(2, recorder.UniqueCount);
+            await using var verifyScope = provider.CreateAsyncScope();
+            var db = verifyScope.ServiceProvider.GetRequiredService<MsgTestDbContext>();
+            Assert.Equal(2, await db.Set<InboxMessage>().CountAsync(
+                message => message.MessageId == firstId || message.MessageId == secondId,
+                timeout.Token));
+        }
+        finally
+        {
+            await consumer.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [SkippableFact]
+    [Trait("Category", "FaultInjection")]
+    public async Task Broker_pause_partition_recovers_consumer_and_preserves_delivery()
+    {
+        Skip.IfNot(_available, "Docker/Postgres/RabbitMQ unavailable - skip broker partition test.");
+
+        const string exchange = "respartition.events";
+        const string queue = "respartition.queue";
+        var configuration = BuildConfig(exchange);
+        var recorder = new RestartRecorder();
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<ICurrentUser>(new StubCurrentUser());
+        services.AddBedrockPersistence<MsgTestDbContext>(options => options.UseNpgsql(_postgres.GetConnectionString()));
+        services.AddBedrockInbox<MsgTestDbContext>();
+        services.AddRabbitMqMessaging(configuration);
+        services.AddIntegrationEventRegistry(typeof(MsgConsumeEvent).Assembly);
+        services.AddIntegrationEventConsumer();
+        services.AddSingleton(recorder);
+        services.AddScoped<IIntegrationEventHandler<MsgConsumeEvent>, RestartHandler>();
+        services.AddRabbitMqConsumer(options =>
+        {
+            options.QueueName = queue;
+            options.RoutingKeys.Add("msg.#");
+        });
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<MsgTestDbContext>().Database.EnsureCreatedAsync();
+        }
+
+        var consumer = provider.GetServices<IHostedService>().OfType<RabbitMqConsumer>().Single();
+        var health = provider.GetRequiredService<HealthCheckService>();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(120));
+        await consumer.StartAsync(timeout.Token);
+        try
+        {
+            await WaitUntilAsync(async () => await IsConsumerHealthyAsync(health, queue, timeout.Token), timeout.Token);
+            await _rabbit.PauseAsync(timeout.Token);
+            await WaitUntilAsync(async () => !await IsConsumerHealthyAsync(health, queue, timeout.Token), timeout.Token);
+            await _rabbit.UnpauseAsync(timeout.Token);
+            await WaitUntilAsync(async () => await IsConsumerHealthyAsync(health, queue, timeout.Token), timeout.Token);
+
+            var id = Guid.CreateVersion7();
+            await PublishAsync(provider.GetRequiredService<IEventBusPublisher>(), id, "after-partition", timeout.Token);
+            await WaitUntilAsync(() => Task.FromResult(recorder.Contains(id)), timeout.Token);
+            Assert.Equal(1, recorder.UniqueCount);
+        }
+        finally
+        {
+            await consumer.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [SkippableFact]
+    [Trait("Category", "FaultInjection")]
+    public async Task Duplicate_delivery_is_fenced_by_inbox_and_runs_business_effect_once()
+    {
+        Skip.IfNot(_available, "Docker/Postgres/RabbitMQ unavailable - skip duplicate-effect test.");
+
+        const string exchange = "resduplicate.events";
+        const string queue = "resduplicate.queue";
+        var configuration = BuildConfig(exchange);
+        var recorder = new DuplicateRecorder();
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<ICurrentUser>(new StubCurrentUser());
+        services.AddBedrockPersistence<MsgTestDbContext>(options => options.UseNpgsql(_postgres.GetConnectionString()));
+        services.AddBedrockInbox<MsgTestDbContext>();
+        services.AddRabbitMqMessaging(configuration);
+        services.AddIntegrationEventRegistry(typeof(MsgConsumeEvent).Assembly);
+        services.AddIntegrationEventConsumer();
+        services.AddSingleton(recorder);
+        services.AddScoped<IIntegrationEventHandler<MsgConsumeEvent>, DuplicateHandler>();
+        services.AddRabbitMqConsumer(options =>
+        {
+            options.QueueName = queue;
+            options.RoutingKeys.Add("msg.#");
+        });
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<MsgTestDbContext>().Database.EnsureCreatedAsync();
+        }
+
+        var consumer = provider.GetServices<IHostedService>().OfType<RabbitMqConsumer>().Single();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+        await consumer.StartAsync(timeout.Token);
+        try
+        {
+            await Task.Delay(1000, timeout.Token);
+            var id = Guid.CreateVersion7();
+            var publisher = provider.GetRequiredService<IEventBusPublisher>();
+            await PublishAsync(publisher, id, "duplicate-1", timeout.Token);
+            await PublishAsync(publisher, id, "duplicate-2", timeout.Token);
+            await WaitUntilAsync(() => Task.FromResult(recorder.Calls > 0), timeout.Token);
+            await Task.Delay(1000, timeout.Token);
+
+            Assert.Equal(1, recorder.Calls);
+            await using var scope = provider.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<MsgTestDbContext>();
+            Assert.Equal(1, await db.Set<InboxMessage>().CountAsync(message => message.MessageId == id, timeout.Token));
+        }
+        finally
+        {
+            await consumer.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [SkippableFact]
+    [Trait("Category", "Soak")]
+    public async Task Long_soak_repeated_delivery_keeps_effects_idempotent()
+    {
+        Skip.IfNot(IsSoakEnabled(), "Set BEDROCK_RUN_SOAK=true to run the long broker soak.");
+        Skip.IfNot(_available, "Docker/Postgres/RabbitMQ unavailable - skip broker soak test.");
+
+        const string exchange = "ressoak.events";
+        const string queue = "ressoak.queue";
+        var configuration = BuildConfig(exchange);
+        var recorder = new DuplicateRecorder();
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<ICurrentUser>(new StubCurrentUser());
+        services.AddBedrockPersistence<MsgTestDbContext>(options => options.UseNpgsql(_postgres.GetConnectionString()));
+        services.AddBedrockInbox<MsgTestDbContext>();
+        services.AddRabbitMqMessaging(configuration);
+        services.AddIntegrationEventRegistry(typeof(MsgConsumeEvent).Assembly);
+        services.AddIntegrationEventConsumer();
+        services.AddSingleton(recorder);
+        services.AddScoped<IIntegrationEventHandler<MsgConsumeEvent>, DuplicateHandler>();
+        services.AddRabbitMqConsumer(options =>
+        {
+            options.QueueName = queue;
+            options.RoutingKeys.Add("msg.#");
+            options.PrefetchCount = 50;
+        });
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<MsgTestDbContext>().Database.EnsureCreatedAsync();
+        }
+
+        var consumer = provider.GetServices<IHostedService>().OfType<RabbitMqConsumer>().Single();
+        var soakSeconds = ParseSoakSeconds();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(soakSeconds + 90));
+        await consumer.StartAsync(timeout.Token);
+        var uniqueIds = new HashSet<Guid>();
+        try
+        {
+            var deadline = DateTimeOffset.UtcNow.AddSeconds(soakSeconds);
+            var publisher = provider.GetRequiredService<IEventBusPublisher>();
+            var batch = 0;
+            while (DateTimeOffset.UtcNow < deadline)
+            {
+                for (var i = 0; i < 25; i++)
+                {
+                    var id = Guid.CreateVersion7();
+                    uniqueIds.Add(id);
+                    await PublishAsync(publisher, id, $"soak-{batch}-{i}", timeout.Token);
+                    if (i % 5 == 0)
+                    {
+                        await PublishAsync(publisher, id, $"soak-duplicate-{batch}-{i}", timeout.Token);
+                    }
+                }
+
+                await WaitUntilAsync(
+                    () => Task.FromResult(Volatile.Read(ref recorder.Calls) >= uniqueIds.Count),
+                    timeout.Token);
+                batch++;
+            }
+
+            Assert.True(uniqueIds.Count >= 100, "Soak must process a meaningful number of unique messages.");
+            Assert.Equal(uniqueIds.Count, Volatile.Read(ref recorder.Calls));
+            await using var scope = provider.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<MsgTestDbContext>();
+            Assert.Equal(uniqueIds.Count, await db.Set<InboxMessage>().CountAsync(message => uniqueIds.Contains(message.MessageId), timeout.Token));
+        }
+        finally
+        {
+            await consumer.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [SkippableFact]
+    [Trait("Category", "FaultInjection")]
+    public async Task Consumer_cancellation_and_replacement_drains_queued_message_once()
+    {
+        Skip.IfNot(_available, "Docker/Postgres/RabbitMQ unavailable - skip consumer cancellation test.");
+
+        const string exchange = "rescancel.events";
+        const string queue = "rescancel.queue";
+        var recorder = new RestartRecorder();
+        await using var firstProvider = BuildRestartProvider(exchange, queue, recorder);
+        await EnsureDatabaseAsync(firstProvider);
+        var firstConsumer = firstProvider.GetServices<IHostedService>().OfType<RabbitMqConsumer>().Single();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(120));
+        await firstConsumer.StartAsync(timeout.Token);
+        await WaitUntilAsync(
+            async () => await IsConsumerHealthyAsync(firstProvider.GetRequiredService<HealthCheckService>(), queue, timeout.Token),
+            timeout.Token);
+        await firstConsumer.StopAsync(timeout.Token);
+
+        var id = Guid.CreateVersion7();
+        await PublishAsync(firstProvider.GetRequiredService<IEventBusPublisher>(), id, "queued-during-cancellation", timeout.Token);
+
+        await using var replacementProvider = BuildRestartProvider(exchange, queue, recorder);
+        await EnsureDatabaseAsync(replacementProvider);
+        var replacement = replacementProvider.GetServices<IHostedService>().OfType<RabbitMqConsumer>().Single();
+        await replacement.StartAsync(timeout.Token);
+        try
+        {
+            await WaitUntilAsync(() => Task.FromResult(recorder.Contains(id)), timeout.Token);
+            Assert.Equal(1, recorder.UniqueCount);
+            await using var scope = replacementProvider.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<MsgTestDbContext>();
+            Assert.Equal(1, await db.Set<InboxMessage>().CountAsync(message => message.MessageId == id, timeout.Token));
+        }
+        finally
+        {
+            await replacement.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [SkippableFact]
+    [Trait("Category", "FaultInjection")]
+    public async Task Database_interruption_retries_delivery_and_commits_effect_once_after_recovery()
+    {
+        Skip.IfNot(_available, "Docker/Postgres/RabbitMQ unavailable - skip database interruption test.");
+
+        const string exchange = "resdatabase.events";
+        const string queue = "resdatabase.queue";
+        var recorder = new RestartRecorder();
+        await using var provider = BuildRestartProvider(exchange, queue, recorder);
+        await EnsureDatabaseAsync(provider);
+        var consumer = provider.GetServices<IHostedService>().OfType<RabbitMqConsumer>().Single();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(150));
+        await consumer.StartAsync(timeout.Token);
+        try
+        {
+            await WaitUntilAsync(
+                async () => await IsConsumerHealthyAsync(provider.GetRequiredService<HealthCheckService>(), queue, timeout.Token),
+                timeout.Token);
+            await _postgres.StopAsync(timeout.Token);
+            var id = Guid.CreateVersion7();
+            await PublishAsync(provider.GetRequiredService<IEventBusPublisher>(), id, "database-interruption", timeout.Token);
+            await Task.Delay(2000, timeout.Token);
+            Assert.False(recorder.Contains(id));
+
+            await _postgres.StartAsync(timeout.Token);
+            await WaitUntilAsync(() => Task.FromResult(recorder.Contains(id)), timeout.Token);
+            Assert.Equal(1, recorder.UniqueCount);
+            await using var scope = provider.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<MsgTestDbContext>();
+            Assert.Equal(1, await db.Set<InboxMessage>().CountAsync(message => message.MessageId == id, timeout.Token));
+        }
+        finally
+        {
+            await consumer.StopAsync(CancellationToken.None);
+        }
+    }
+
+    private ServiceProvider BuildRestartProvider(string exchange, string queue, RestartRecorder recorder)
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<ICurrentUser>(new StubCurrentUser());
+        services.AddBedrockPersistence<MsgTestDbContext>(options => options.UseNpgsql(_postgres.GetConnectionString()));
+        services.AddBedrockInbox<MsgTestDbContext>();
+        services.AddRabbitMqMessaging(BuildConfig(exchange));
+        services.AddIntegrationEventRegistry(typeof(MsgConsumeEvent).Assembly);
+        services.AddIntegrationEventConsumer();
+        services.AddSingleton(recorder);
+        services.AddScoped<IIntegrationEventHandler<MsgConsumeEvent>, RestartHandler>();
+        services.AddRabbitMqConsumer(options =>
+        {
+            options.QueueName = queue;
+            options.RoutingKeys.Add("msg.#");
+            options.RetryDelay = TimeSpan.FromSeconds(1);
+            options.MaxDeliveryAttempts = 20;
+        });
+        return services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+    }
+
+    private static async Task EnsureDatabaseAsync(ServiceProvider provider)
+    {
+        await using var scope = provider.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<MsgTestDbContext>().Database.EnsureCreatedAsync();
+    }
+
+    private static bool IsSoakEnabled() =>
+        string.Equals(Environment.GetEnvironmentVariable("BEDROCK_RUN_SOAK"), "true", StringComparison.OrdinalIgnoreCase);
+
+    private static int ParseSoakSeconds()
+    {
+        var value = Environment.GetEnvironmentVariable("BEDROCK_SOAK_SECONDS");
+        return int.TryParse(value, out var seconds) ? Math.Clamp(seconds, 30, 1800) : 600;
+    }
+
+    private static async Task<bool> IsConsumerHealthyAsync(HealthCheckService health, string queue, CancellationToken ct)
+    {
+        var report = await health.CheckHealthAsync(
+            registration => registration.Name == $"rabbitmq-consumer:{queue}", ct);
+        return report.Status == HealthStatus.Healthy;
+    }
+
+    private static Task PublishAsync(IEventBusPublisher publisher, Guid id, string data, CancellationToken ct) =>
+        publisher.PublishAsync(new OutgoingIntegrationMessage
+        {
+            Id = id,
+            EventType = "msg.consume_event",
+            SchemaVersion = 1,
+            Payload = System.Text.Encoding.UTF8.GetString(SerializeEvent(id, data)),
+            OccurredAt = DateTimeOffset.UtcNow,
+        }, ct);
+
+    private static async Task WaitUntilAsync(Func<Task<bool>> condition, CancellationToken ct)
+    {
+        while (!await condition().ConfigureAwait(false))
+        {
+            await Task.Delay(200, ct).ConfigureAwait(false);
+        }
+    }
+
+    private sealed class RestartRecorder
+    {
+        private readonly ConcurrentDictionary<Guid, byte> _ids = new();
+
+        public int UniqueCount => _ids.Count;
+
+        public bool Contains(Guid id) => _ids.ContainsKey(id);
+
+        public void Record(Guid id) => _ids.TryAdd(id, 0);
+    }
+
+    private sealed class DuplicateRecorder
+    {
+        public int Calls;
+    }
+
+    private sealed class RestartHandler(RestartRecorder recorder) : IIntegrationEventHandler<MsgConsumeEvent>
+    {
+        public Task HandleAsync(MsgConsumeEvent integrationEvent, CancellationToken ct = default)
+        {
+            ArgumentNullException.ThrowIfNull(integrationEvent);
+            recorder.Record(integrationEvent.Id);
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class DuplicateHandler(DuplicateRecorder recorder) : IIntegrationEventHandler<MsgConsumeEvent>
+    {
+        public Task HandleAsync(MsgConsumeEvent integrationEvent, CancellationToken ct = default)
+        {
+            ArgumentNullException.ThrowIfNull(integrationEvent);
+            Interlocked.Increment(ref recorder.Calls);
+            return Task.CompletedTask;
         }
     }
 

@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\ModuleName.Domain\ModuleName.Domain.csproj" />
+    <ProjectReference Include="..\ModuleName.Contracts\ModuleName.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Bedrock.Application\Bedrock.Application.csproj" />
+  </ItemGroup>
+</Project>

@@ -13,5 +13,39 @@
     <AnalysisLevel>latest-Recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>high</NuGetAuditLevel>
   </PropertyGroup>
+
+  <!-- Supported Bedrock assemblies are packable products; hosts, modules and tests remain composition evidence. -->
+  <PropertyGroup>
+    <BedrockSupportedPackage Condition="'$(MSBuildProjectName)' == 'Bedrock.Domain'">true</BedrockSupportedPackage>
+    <BedrockSupportedPackage Condition="'$(MSBuildProjectName)' == 'Bedrock.Messaging.Contracts'">true</BedrockSupportedPackage>
+    <BedrockSupportedPackage Condition="'$(MSBuildProjectName)' == 'Bedrock.Application'">true</BedrockSupportedPackage>
+    <BedrockSupportedPackage Condition="'$(MSBuildProjectName)' == 'Bedrock.Api'">true</BedrockSupportedPackage>
+    <BedrockSupportedPackage Condition="'$(MSBuildProjectName)' == 'Bedrock.Infrastructure'">true</BedrockSupportedPackage>
+    <BedrockSupportedPackage Condition="'$(MSBuildProjectName)' == 'Adapters.Messaging.RabbitMq'">true</BedrockSupportedPackage>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(BedrockSupportedPackage)' == 'true'">
+    <IsPackable>true</IsPackable>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <VersionPrefix Condition="'$(BEDROCK_PACKAGE_VERSION)' != ''">$(BEDROCK_PACKAGE_VERSION)</VersionPrefix>
+    <VersionPrefix Condition="'$(VersionPrefix)' == ''">0.1.0</VersionPrefix>
+    <Authors>Bedrock Platform Maintainers</Authors>
+    <Description>Domain-agnostic building block for large .NET systems.</Description>
+    <PackageTags>bedrock;platform;modular;outbox;observability</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);0419;1574;1591;1734;1735</NoWarn>
+    <DebugType>portable</DebugType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(BedrockSupportedPackage)' == 'true'">
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
 </Project>

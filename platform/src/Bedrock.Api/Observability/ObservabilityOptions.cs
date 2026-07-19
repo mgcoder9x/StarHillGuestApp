@@ -10,7 +10,7 @@ public sealed class ObservabilityOptions
     public const string SectionName = "Observability";
 
     /// <summary>
-    /// Các prefix path nhạy cảm cần che phần đuôi (thường chứa token). Ví dụ app đăng ký: "/api/guest/resolve/",
+    /// Các prefix path nhạy cảm cần che phần đuôi (thường chứa token). Ví dụ app đăng ký: "/api/access/resolve/",
     /// "/r/". Get-only collection để config binding populate (tránh CA1819 property-trả-mảng).
     /// </summary>
     public IList<string> MaskedPathPrefixes { get; } = new List<string>();

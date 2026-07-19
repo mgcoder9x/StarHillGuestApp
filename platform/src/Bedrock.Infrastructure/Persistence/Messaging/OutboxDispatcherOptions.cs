@@ -21,6 +21,15 @@ public sealed class OutboxDispatcherOptions
     /// <summary>Thời gian giữ claim; dispatcher gia hạn trước mỗi message nên phải dài hơn worst-case một publish.</summary>
     public TimeSpan ClaimLease { get; set; } = TimeSpan.FromMinutes(5);
 
+    /// <summary>
+    /// Interval for refreshing backlog/oldest-pending/dead-letter gauges. The dispatcher throttles this per module
+    /// so a fast poll loop does not turn operational telemetry into constant database load.
+    /// </summary>
+    public TimeSpan OperationalMetricsRefreshInterval { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>Stable value for the <c>module</c> metric tag; null uses the DbContext type name.</summary>
+    public string? TelemetryName { get; set; }
+
     /// <summary>Khóa named-options theo kiểu DbContext → mỗi module có cấu hình dispatcher độc lập.</summary>
     internal static string KeyFor<TContext>() => typeof(TContext).FullName ?? typeof(TContext).Name;
 
@@ -29,5 +38,11 @@ public sealed class OutboxDispatcherOptions
         && options.MaxAttempts > 0
         && options.BaseDelay > TimeSpan.Zero
         && options.MaxDelay >= options.BaseDelay
-        && options.ClaimLease > TimeSpan.Zero;
+        && options.ClaimLease > TimeSpan.Zero
+        && options.OperationalMetricsRefreshInterval > TimeSpan.Zero;
+
+    internal static string TelemetryNameFor<TContext>(OutboxDispatcherOptions options) =>
+        string.IsNullOrWhiteSpace(options.TelemetryName)
+            ? typeof(TContext).Name
+            : options.TelemetryName.Trim();
 }
