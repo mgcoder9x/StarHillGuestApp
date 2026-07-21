@@ -23,6 +23,32 @@ public sealed class HousekeepingTicket : Entity, IHasConcurrencyToken
 
     public HousekeepingStatus Status { get; set; }
 
+    // ---- Chi tiết yêu cầu (Req 6.1) — set TẠI request-time bởi guest (FE.6a). null/0 với ticket staff tạo chủ động (Req 6.9). ----
+
+    /// <summary>Loại dịch vụ khách chọn (null nếu staff tạo chủ động).</summary>
+    public HousekeepingServiceType? ServiceType { get; set; }
+
+    /// <summary>Thời điểm khách muốn phục vụ (null nếu staff tạo chủ động).</summary>
+    public HousekeepingPreferredTime? PreferredTime { get; set; }
+
+    /// <summary>Giờ cụ thể <c>HH:mm</c> khi <see cref="PreferredTime"/> = <see cref="HousekeepingPreferredTime.SpecificTime"/>; ngược lại null.</summary>
+    public string? PreferredTimeText { get; set; }
+
+    /// <summary>Số bàn chải yêu cầu bổ sung (0–5).</summary>
+    public int AmenityToothbrush { get; set; }
+
+    /// <summary>Số khăn yêu cầu bổ sung (0–5).</summary>
+    public int AmenityTowel { get; set; }
+
+    /// <summary>Số chai nước yêu cầu bổ sung (0–5).</summary>
+    public int AmenityWater { get; set; }
+
+    /// <summary>Số bánh xà phòng yêu cầu bổ sung (0–5).</summary>
+    public int AmenitySoap { get; set; }
+
+    /// <summary>Ghi chú thêm (plain-text, đã trim; null nếu rỗng). KHÔNG chứa/hiển thị HTML.</summary>
+    public string? Note { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public DateTimeOffset? StartedAt { get; set; }

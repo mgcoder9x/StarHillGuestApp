@@ -12,8 +12,9 @@ using Microsoft.AspNetCore.Routing;
 
 namespace Housekeeping.Api;
 
-/// <summary>Body tạo yêu cầu dọn phòng — <c>RoomId</c> (phòng khách đang xem; cookie định danh THIẾT BỊ, không phòng).</summary>
-public sealed record RequestHousekeepingRequest(Guid RoomId);
+/// <summary>Body tạo yêu cầu dọn phòng — <c>RoomId</c> (phòng khách đang xem; cookie định danh THIẾT BỊ, không phòng) +
+/// <c>Details</c> chi tiết form (loại dịch vụ/thời gian/vật dụng/ghi chú). Server KHÔNG tin ResortId/session client — resolve từ context.</summary>
+public sealed record RequestHousekeepingRequest(Guid RoomId, HousekeepingRequestDetails Details);
 
 public sealed record RequestHousekeepingResponse(Guid TicketId, Housekeeping.Domain.HousekeepingStatus Status, bool AlreadyOpen);
 
@@ -56,7 +57,10 @@ public sealed class HousekeepingGuestEndpointModule : IEndpointModule
 
         var context = contextResult.Value;
         var result = await useCase
-            .ExecuteAsync(new RequestHousekeepingInput(context.ResortId, context.RoomId, context.GuestSessionId, context.GuestVisitId), ct)
+            .ExecuteAsync(
+                new RequestHousekeepingInput(
+                    context.ResortId, context.RoomId, context.GuestSessionId, context.GuestVisitId, request.Details),
+                ct)
             .ConfigureAwait(false);
         if (result.IsFailure)
         {

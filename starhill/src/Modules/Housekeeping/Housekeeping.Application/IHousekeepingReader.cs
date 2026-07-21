@@ -22,7 +22,8 @@ public interface IHousekeepingReader
         Guid resortId, HousekeepingStatus? status, PagedRequest paging, CancellationToken ct = default);
 }
 
-/// <summary>Item board admin — đầy đủ metadata vận hành (ai hoàn tất, phương thức, mốc thời gian).</summary>
+/// <summary>Item board admin — đầy đủ metadata vận hành (ai hoàn tất, phương thức, mốc thời gian) + CHI TIẾT khách yêu cầu
+/// (loại dịch vụ/thời gian/vật dụng/ghi chú — FE.6a): lễ tân PHẢI thấy khách yêu cầu gì để phục vụ đúng.</summary>
 public sealed record HousekeepingBoardItem(
     Guid TicketId,
     Guid RoomId,
@@ -32,4 +33,12 @@ public sealed record HousekeepingBoardItem(
     DateTimeOffset? StartedAt,
     DateTimeOffset? CompletedAt,
     Guid? CompletedByUserId,
-    HousekeepingCompletionMethod? CompletionMethod);
+    HousekeepingCompletionMethod? CompletionMethod,
+    HousekeepingServiceType? ServiceType,
+    HousekeepingPreferredTime? PreferredTime,
+    string? PreferredTimeText,
+    int AmenityToothbrush,
+    int AmenityTowel,
+    int AmenityWater,
+    int AmenitySoap,
+    string? Note);

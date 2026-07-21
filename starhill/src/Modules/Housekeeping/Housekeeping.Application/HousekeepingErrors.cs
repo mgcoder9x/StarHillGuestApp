@@ -29,6 +29,11 @@ public static class HousekeepingErrors
     public static Error InvalidTransition =>
         Error.Validation("housekeeping_invalid_transition", "Chuyển trạng thái ticket không hợp lệ.");
 
+    /// <summary>Chi tiết yêu cầu dọn phòng không hợp lệ (thiếu/không hợp lệ loại dịch vụ, thời gian, giờ cụ thể sai định dạng,
+    /// số vật dụng ngoài [0,5], hoặc ghi chú quá dài — Req 6.1, INV-HK1/HK2). 400.</summary>
+    public static Error InvalidRequest =>
+        Error.Validation("housekeeping_invalid_request", "Chi tiết yêu cầu dọn phòng không hợp lệ.");
+
     /// <summary>QR quét (complete-by-token) không phân giải được phòng (token lạ/đã thu hồi). TÁI DÙNG mã ổn định
     /// <c>qr_invalid</c> (GuestAccess) — cùng hợp đồng client, snapshot dedup.</summary>
     public static Error QrInvalid =>

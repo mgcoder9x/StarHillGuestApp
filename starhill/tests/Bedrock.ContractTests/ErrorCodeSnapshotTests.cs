@@ -41,6 +41,7 @@ public sealed class ErrorCodeSnapshotTests
         "forbidden",
         "guest_context_missing",         // GuestAccess (C-GA.4: current-guest-context)
         "housekeeping_disabled",         // Housekeeping (H-Hk.2: HousekeepingEnabled=false — 403)
+        "housekeeping_invalid_request",  // Housekeeping (FE.6a: chi tiết yêu cầu không hợp lệ — 400)
         "housekeeping_invalid_transition", // Housekeeping (H-Hk.2: máy trạng thái ticket)
         "housekeeping_no_open_ticket",   // Housekeeping (H-Hk.2: complete không có ticket mở — 404)
         "housekeeping_ticket_not_found", // Housekeeping (H-Hk.2: set-status theo id — 404)

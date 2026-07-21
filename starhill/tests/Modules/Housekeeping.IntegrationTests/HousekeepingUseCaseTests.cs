@@ -90,12 +90,17 @@ public sealed class HousekeepingUseCaseTests
         return new Harness(provider, connection, config, gate, resolver);
     }
 
+    // Chi tiết hợp lệ mặc định (đủ để các test cũ tập trung vào luồng config/gate/idempotency/state-machine).
+    private static HousekeepingRequestDetails ValidDetails() => new(
+        HousekeepingServiceType.Full, HousekeepingPreferredTime.AsSoonAsPossible, null, 0, 0, 0, 0, null);
+
     private static async Task<Result<RequestHousekeepingResult>> RequestAsync(
-        ServiceProvider provider, Guid resortId, Guid roomId, Guid visitId)
+        ServiceProvider provider, Guid resortId, Guid roomId, Guid visitId, HousekeepingRequestDetails? details = null)
     {
         await using var scope = provider.CreateAsyncScope();
         var uc = scope.ServiceProvider.GetRequiredService<IUseCase<RequestHousekeepingInput, RequestHousekeepingResult>>();
-        return await uc.ExecuteAsync(new RequestHousekeepingInput(resortId, roomId, Guid.CreateVersion7(), visitId));
+        return await uc.ExecuteAsync(
+            new RequestHousekeepingInput(resortId, roomId, Guid.CreateVersion7(), visitId, details ?? ValidDetails()));
     }
 
     [Fact]
@@ -354,5 +359,151 @@ public sealed class HousekeepingUseCaseTests
         var second = await StaffCreate();
         Assert.True(second.Value.AlreadyOpen); // idempotent 1-mở/phòng.
         Assert.Equal(first.Value.TicketId, second.Value.TicketId);
+    }
+
+    // ---- FE.6a: chi tiết yêu cầu (loại dịch vụ/thời gian/vật dụng/ghi chú) lưu THẬT + validation (INV-HK1/HK2/HK3) ----
+
+    [Fact]
+    public async Task Request_persists_all_detail_fields()
+    {
+        var h = await BuildAsync();
+        await using var _ = h.Provider; await using var __ = h.Connection;
+        var resortId = Guid.CreateVersion7();
+        var roomId = Guid.CreateVersion7();
+        h.Config.Config = ConfigFor(resortId, housekeepingEnabled: true);
+
+        var details = new HousekeepingRequestDetails(
+            HousekeepingServiceType.Towel, HousekeepingPreferredTime.SpecificTime, "14:30", 2, 1, 3, 0, "  Xin đến sau 14h  ");
+        var result = await RequestAsync(h.Provider, resortId, roomId, Guid.CreateVersion7(), details);
+        Assert.True(result.IsSuccess);
+
+        await using var scope = h.Provider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<HousekeepingDbContext>();
+        var t = await db.HousekeepingTickets.SingleAsync(x => x.RoomId == roomId);
+        Assert.Equal(HousekeepingServiceType.Towel, t.ServiceType);
+        Assert.Equal(HousekeepingPreferredTime.SpecificTime, t.PreferredTime);
+        Assert.Equal("14:30", t.PreferredTimeText);
+        Assert.Equal(2, t.AmenityToothbrush);
+        Assert.Equal(1, t.AmenityTowel);
+        Assert.Equal(3, t.AmenityWater);
+        Assert.Equal(0, t.AmenitySoap);
+        Assert.Equal("Xin đến sau 14h", t.Note); // trim
+    }
+
+    [Fact]
+    public async Task Request_normalizes_time_text_and_note()
+    {
+        var h = await BuildAsync();
+        await using var _ = h.Provider; await using var __ = h.Connection;
+        var resortId = Guid.CreateVersion7();
+        var roomId = Guid.CreateVersion7();
+        h.Config.Config = ConfigFor(resortId, housekeepingEnabled: true);
+
+        // PreferredTime≠SpecificTime nhưng gửi kèm text "99:99" (rác) → ép null; Note toàn khoảng trắng → null.
+        var details = new HousekeepingRequestDetails(
+            HousekeepingServiceType.Full, HousekeepingPreferredTime.WithinOneHour, "99:99", 0, 0, 0, 0, "   ");
+        Assert.True((await RequestAsync(h.Provider, resortId, roomId, Guid.CreateVersion7(), details)).IsSuccess);
+
+        await using var scope = h.Provider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<HousekeepingDbContext>();
+        var t = await db.HousekeepingTickets.SingleAsync(x => x.RoomId == roomId);
+        Assert.Null(t.PreferredTimeText);
+        Assert.Null(t.Note);
+    }
+
+    [Theory]
+    [InlineData((HousekeepingServiceType)99, HousekeepingPreferredTime.AsSoonAsPossible, null, 0, 0, 0, 0)] // enum service không hợp lệ
+    [InlineData(HousekeepingServiceType.Full, (HousekeepingPreferredTime)99, null, 0, 0, 0, 0)]              // enum time không hợp lệ
+    [InlineData(HousekeepingServiceType.Full, HousekeepingPreferredTime.SpecificTime, null, 0, 0, 0, 0)]     // Specific thiếu text
+    [InlineData(HousekeepingServiceType.Full, HousekeepingPreferredTime.SpecificTime, "24:00", 0, 0, 0, 0)]  // giờ sai
+    [InlineData(HousekeepingServiceType.Full, HousekeepingPreferredTime.SpecificTime, "9:5", 0, 0, 0, 0)]    // định dạng sai
+    [InlineData(HousekeepingServiceType.Full, HousekeepingPreferredTime.AsSoonAsPossible, null, 6, 0, 0, 0)] // amenity > 5
+    [InlineData(HousekeepingServiceType.Full, HousekeepingPreferredTime.AsSoonAsPossible, null, -1, 0, 0, 0)]// amenity < 0
+    public async Task Request_rejects_invalid_details(
+        HousekeepingServiceType service, HousekeepingPreferredTime time, string? timeText,
+        int toothbrush, int towel, int water, int soap)
+    {
+        var h = await BuildAsync();
+        await using var _ = h.Provider; await using var __ = h.Connection;
+        var resortId = Guid.CreateVersion7();
+        var roomId = Guid.CreateVersion7();
+        h.Config.Config = ConfigFor(resortId, housekeepingEnabled: true);
+
+        var details = new HousekeepingRequestDetails(service, time, timeText, toothbrush, towel, water, soap, null);
+        var result = await RequestAsync(h.Provider, resortId, roomId, Guid.CreateVersion7(), details);
+        Assert.False(result.IsSuccess);
+        Assert.Equal("housekeeping_invalid_request", result.Error.Code);
+
+        await using var scope = h.Provider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<HousekeepingDbContext>();
+        Assert.Equal(0, await db.HousekeepingTickets.CountAsync()); // không ghi ticket khi validation fail
+    }
+
+    [Fact]
+    public async Task Request_rejects_note_over_max_length()
+    {
+        var h = await BuildAsync();
+        await using var _ = h.Provider; await using var __ = h.Connection;
+        var resortId = Guid.CreateVersion7();
+        var roomId = Guid.CreateVersion7();
+        h.Config.Config = ConfigFor(resortId, housekeepingEnabled: true);
+
+        var details = new HousekeepingRequestDetails(
+            HousekeepingServiceType.Full, HousekeepingPreferredTime.AsSoonAsPossible, null, 0, 0, 0, 0, new string('x', 501));
+        var result = await RequestAsync(h.Provider, resortId, roomId, Guid.CreateVersion7(), details);
+        Assert.False(result.IsSuccess);
+        Assert.Equal("housekeeping_invalid_request", result.Error.Code);
+    }
+
+    [Fact]
+    public async Task Idempotent_returns_existing_without_applying_new_details()
+    {
+        var h = await BuildAsync();
+        await using var _ = h.Provider; await using var __ = h.Connection;
+        var resortId = Guid.CreateVersion7();
+        var roomId = Guid.CreateVersion7();
+        var visitId = Guid.CreateVersion7();
+        h.Config.Config = ConfigFor(resortId, housekeepingEnabled: true);
+
+        var first = new HousekeepingRequestDetails(
+            HousekeepingServiceType.Full, HousekeepingPreferredTime.AsSoonAsPossible, null, 0, 0, 0, 0, "yêu cầu đầu");
+        var firstResult = await RequestAsync(h.Provider, resortId, roomId, visitId, first);
+        Assert.False(firstResult.Value.AlreadyOpen);
+
+        // Gửi lại với Details KHÁC — idempotent trả ticket cũ, KHÔNG ghi đè (INV-HK3).
+        var second = new HousekeepingRequestDetails(
+            HousekeepingServiceType.Refill, HousekeepingPreferredTime.SpecificTime, "09:00", 5, 5, 5, 5, "cố đổi");
+        var secondResult = await RequestAsync(h.Provider, resortId, roomId, visitId, second);
+        Assert.True(secondResult.Value.AlreadyOpen);
+        Assert.Equal(firstResult.Value.TicketId, secondResult.Value.TicketId);
+
+        await using var scope = h.Provider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<HousekeepingDbContext>();
+        var t = await db.HousekeepingTickets.SingleAsync(x => x.RoomId == roomId);
+        Assert.Equal(HousekeepingServiceType.Full, t.ServiceType); // giữ yêu cầu đầu
+        Assert.Equal("yêu cầu đầu", t.Note);
+    }
+
+    [Fact]
+    public async Task Guest_status_view_exposes_detail_fields()
+    {
+        var h = await BuildAsync();
+        await using var _ = h.Provider; await using var __ = h.Connection;
+        var resortId = Guid.CreateVersion7();
+        var roomId = Guid.CreateVersion7();
+        h.Config.Config = ConfigFor(resortId, housekeepingEnabled: true);
+        var details = new HousekeepingRequestDetails(
+            HousekeepingServiceType.Trash, HousekeepingPreferredTime.WithinOneHour, null, 0, 2, 0, 1, "gấp");
+        await RequestAsync(h.Provider, resortId, roomId, Guid.CreateVersion7(), details);
+
+        await using var scope = h.Provider.CreateAsyncScope();
+        var uc = scope.ServiceProvider.GetRequiredService<IUseCase<GetRoomHousekeepingStatusInput, GetRoomHousekeepingStatusResult>>();
+        var view = (await uc.ExecuteAsync(new GetRoomHousekeepingStatusInput(roomId))).Value.Ticket;
+        Assert.NotNull(view);
+        Assert.Equal(HousekeepingServiceType.Trash, view!.ServiceType);
+        Assert.Equal(HousekeepingPreferredTime.WithinOneHour, view.PreferredTime);
+        Assert.Equal(2, view.AmenityTowel);
+        Assert.Equal(1, view.AmenitySoap);
+        Assert.Equal("gấp", view.Note);
     }
 }

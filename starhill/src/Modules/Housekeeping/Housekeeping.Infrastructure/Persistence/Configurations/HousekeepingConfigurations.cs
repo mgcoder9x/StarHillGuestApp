@@ -22,6 +22,16 @@ public sealed class HousekeepingTicketConfiguration : IEntityTypeConfiguration<H
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
         builder.Property(x => x.CompletionMethod).HasConversion<string>().HasMaxLength(16);
 
+        // Chi tiết yêu cầu (FE.6a) — enum lưu STRING (đọc được, ổn định); text HH:mm ≤5; note plain-text ≤500. Amenity int NOT NULL default 0.
+        builder.Property(x => x.ServiceType).HasConversion<string>().HasMaxLength(16);
+        builder.Property(x => x.PreferredTime).HasConversion<string>().HasMaxLength(16);
+        builder.Property(x => x.PreferredTimeText).HasMaxLength(5);
+        builder.Property(x => x.Note).HasMaxLength(500);
+        builder.Property(x => x.AmenityToothbrush).HasDefaultValue(0);
+        builder.Property(x => x.AmenityTowel).HasDefaultValue(0);
+        builder.Property(x => x.AmenityWater).HasDefaultValue(0);
+        builder.Property(x => x.AmenitySoap).HasDefaultValue(0);
+
         // 1 ticket MỞ/phòng (Req 6.2) — filter trên cột enum-string (provider-agnostic; đặt ở config như ux_qr_active).
         builder.HasIndex(x => x.RoomId)
             .IsUnique()

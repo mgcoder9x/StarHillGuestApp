@@ -22,7 +22,9 @@ public sealed class EfHousekeepingReader(HousekeepingDbContext db) : IHousekeepi
             .Where(t => t.RoomId == roomId)
             .OrderByDescending(t => t.Id)
             .Select(t => new HousekeepingTicketView(
-                t.Id, t.RoomId, t.Status, t.CreatedAt, t.StartedAt, t.CompletedAt))
+                t.Id, t.RoomId, t.Status, t.CreatedAt, t.StartedAt, t.CompletedAt,
+                t.ServiceType, t.PreferredTime, t.PreferredTimeText,
+                t.AmenityToothbrush, t.AmenityTowel, t.AmenityWater, t.AmenitySoap, t.Note))
             .FirstOrDefaultAsync(ct)
             .ConfigureAwait(false);
     }
@@ -60,7 +62,9 @@ public sealed class EfHousekeepingReader(HousekeepingDbContext db) : IHousekeepi
             .Take(paging.SafePageSize)
             .Select(t => new HousekeepingBoardItem(
                 t.Id, t.RoomId, t.GuestVisitId, t.Status, t.CreatedAt, t.StartedAt, t.CompletedAt,
-                t.CompletedByUserId, t.CompletionMethod))
+                t.CompletedByUserId, t.CompletionMethod,
+                t.ServiceType, t.PreferredTime, t.PreferredTimeText,
+                t.AmenityToothbrush, t.AmenityTowel, t.AmenityWater, t.AmenitySoap, t.Note))
             .ToListAsync(ct)
             .ConfigureAwait(false);
 

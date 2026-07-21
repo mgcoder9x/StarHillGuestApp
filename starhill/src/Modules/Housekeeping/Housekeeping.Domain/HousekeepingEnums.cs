@@ -30,3 +30,39 @@ public enum HousekeepingActorType
     Staff,
     System,
 }
+
+/// <summary>
+/// Loại dịch vụ dọn phòng khách chọn khi tạo yêu cầu (Req 6.1) — khớp form guest (serviceFull/Towel/Trash/Refill).
+/// <c>null</c> với ticket do nhân viên tạo chủ động (Req 6.9 — vận hành, không qua form). Lưu STRING (mirror
+/// <see cref="HousekeepingStatus"/>): đọc được ở DB, ổn định, provider-agnostic.
+/// </summary>
+public enum HousekeepingServiceType
+{
+    /// <summary>Dọn phòng đầy đủ.</summary>
+    Full,
+
+    /// <summary>Chỉ thay khăn.</summary>
+    Towel,
+
+    /// <summary>Chỉ đổ rác.</summary>
+    Trash,
+
+    /// <summary>Bổ sung tiện ích/vật dụng.</summary>
+    Refill,
+}
+
+/// <summary>
+/// Thời điểm khách muốn được phục vụ (Req 6.1) — khớp form guest (timeNow/time1h/timeSpecific). Khi
+/// <see cref="SpecificTime"/> thì <see cref="HousekeepingTicket.PreferredTimeText"/> mang giờ <c>HH:mm</c> (24h). Lưu STRING.
+/// </summary>
+public enum HousekeepingPreferredTime
+{
+    /// <summary>Càng sớm càng tốt (ngay).</summary>
+    AsSoonAsPossible,
+
+    /// <summary>Trong vòng một giờ.</summary>
+    WithinOneHour,
+
+    /// <summary>Giờ cụ thể — kèm <see cref="HousekeepingTicket.PreferredTimeText"/> = <c>HH:mm</c>.</summary>
+    SpecificTime,
+}
