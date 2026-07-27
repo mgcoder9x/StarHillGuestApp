@@ -82,6 +82,35 @@ public sealed class FrontendDeliveryGuardTests
     }
 
     /// <summary>
+    /// QR-AD-058 (QR-N-089) — MOCK LÀ NĂNG LỰC CHỈ DEV-SERVER: mọi <c>vite build</c> có cờ
+    /// <c>VITE_STARHILL_MOCK=1</c> (từ <c>.env*</c> HOẶC biến shell — Vite nạp cả <c>process.env VITE_*</c>) phải
+    /// THẤT BẠI. Đo được trước khi sửa: <c>VITE_STARHILL_MOCK=1 pnpm build</c> nhúng dữ liệu bịa vào
+    /// <c>dist/assets/*.js</c> của guest-web → khách quét QR thấy phòng/nội quy/feature-flag GIẢ, không gọi backend,
+    /// KHÔNG lỗi nào nổi lên (sai im lặng). Guard khoá cả chốt dùng chung lẫn việc mỗi SPA thực sự gọi nó.
+    /// </summary>
+    [Fact]
+    public void Both_spas_block_the_build_when_mock_mode_is_enabled()
+    {
+        var root = FindRepositoryRoot();
+        var web = Path.Combine(root, "starhill", "web");
+
+        // NB (QR-N-089): chốt sống ở `web/tooling/` — KHÔNG được đặt trong `web/build/` vì `starhill/.gitignore`
+        // ignore `[Bb]uild/` → file sẽ không vào repo và CI vỡ vì thiếu import (đã bị bắt tại chỗ).
+        var gate = File.ReadAllText(Path.Combine(web, "tooling", "assertMockNotBundled.ts"));
+        Assert.Contains("VITE_STARHILL_MOCK", gate);
+        Assert.Contains("command !== 'build'", gate);   // serve (dev/mock) KHÔNG bị chặn.
+        Assert.Contains("process.env[MOCK_ENV_KEY]", gate); // vector biến shell.
+        Assert.Contains("throw new Error(", gate);      // fail-closed, không chỉ cảnh báo.
+
+        foreach (var app in new[] { "guest-web", "admin-web" })
+        {
+            var config = File.ReadAllText(Path.Combine(web, "apps", app, "vite.config.ts"));
+            Assert.Contains("assertMockNotBundled", config);
+            Assert.Contains("loadEnv(mode", config);
+        }
+    }
+
+    /// <summary>
     /// Anti-regression (QR-N-088): guest-web chỉ được có MỘT gateway/MỘT khai báo <c>GuestApiError</c> —
     /// <c>core/apiGateway.ts</c>. Module legacy <c>src/api/guestApi.ts</c> (sót lại sau FE.5a) khai class
     /// <c>GuestApiError</c> THỨ HAI: view bắt lỗi bằng <c>instanceof</c> của gateway mới sẽ TRƯỢT nếu lỗi được
