@@ -1,5 +1,8 @@
+// DEMO-ONLY store (chỉ route `/demo` → HomeView mockup dùng). Đường guest THẬT dùng JourneyCore
+// (`core/journeyCore.ts`) làm nguồn context duy nhất — QR-AD-057. Type lấy từ `core/apiGateway`
+// (MỘT nguồn khai báo; module `api/guestApi.ts` cũ đã bị xoá vì nhân đôi GuestApiError → bẫy `instanceof`).
 import { computed, ref, type ComputedRef } from 'vue';
-import type { GuestResolveResponse } from '../api/guestApi';
+import type { GuestResolveResponse } from '../core/apiGateway';
 
 const STORAGE_KEY = 'starhill_guest_context_v1';
 const context = ref<GuestResolveResponse | null>(null);

@@ -67,16 +67,42 @@ public sealed class FrontendDeliveryGuardTests
     public void QR_AD055_guest_qr_entry_resolves_the_token_and_has_browser_coverage()
     {
         var root = FindRepositoryRoot();
-        var router = File.ReadAllText(Path.Combine(root, "starhill", "web", "apps", "guest-web", "src", "router", "index.ts"));
-        var entryView = File.ReadAllText(Path.Combine(root, "starhill", "web", "apps", "guest-web", "src", "views", "GuestResolveView.vue"));
-        var client = File.ReadAllText(Path.Combine(root, "starhill", "web", "apps", "guest-web", "src", "api", "guestApi.ts"));
+        var guestSrc = Path.Combine(root, "starhill", "web", "apps", "guest-web", "src");
+        var router = File.ReadAllText(Path.Combine(guestSrc, "router", "index.ts"));
+        var entryView = File.ReadAllText(Path.Combine(guestSrc, "views", "GuestResolveView.vue"));
+        var gateway = File.ReadAllText(Path.Combine(guestSrc, "core", "apiGateway.ts"));
         var e2e = File.ReadAllText(Path.Combine(root, "starhill", "web", "e2e", "tests", "guest-resolve.spec.ts"));
 
         Assert.Contains("path: '/r/:token'", router);
-        Assert.Contains("resolveGuestToken", entryView);
-        Assert.Contains("'/v1/guest/resolve'", client);
+        // Seam THẬT sau FE.5a (QR-AD-057): entry view gọi ApiGateway (KHÔNG còn hàm rời `resolveGuestToken`).
+        Assert.Contains("apiGateway.resolve(", entryView);
+        Assert.Contains("'/v1/guest/resolve'", gateway);
         Assert.Contains("never renders a blank page", e2e);
         Assert.Contains("recovery message instead of a blank page", e2e);
+    }
+
+    /// <summary>
+    /// Anti-regression (QR-N-088): guest-web chỉ được có MỘT gateway/MỘT khai báo <c>GuestApiError</c> —
+    /// <c>core/apiGateway.ts</c>. Module legacy <c>src/api/guestApi.ts</c> (sót lại sau FE.5a) khai class
+    /// <c>GuestApiError</c> THỨ HAI: view bắt lỗi bằng <c>instanceof</c> của gateway mới sẽ TRƯỢT nếu lỗi được
+    /// ném từ class cũ → tụt xuống thông báo generic, mất mã lỗi (rule_ack_required/session_expired). Guard này
+    /// chặn việc tái sinh gateway thứ hai bằng cách khoá cả sự tồn tại file lẫn số lượng khai báo class.
+    /// </summary>
+    [Fact]
+    public void Guest_web_has_exactly_one_api_gateway_and_one_error_type()
+    {
+        var root = FindRepositoryRoot();
+        var guestSrc = Path.Combine(root, "starhill", "web", "apps", "guest-web", "src");
+
+        Assert.False(
+            File.Exists(Path.Combine(guestSrc, "api", "guestApi.ts")),
+            "src/api/guestApi.ts là gateway legacy đã xoá (FE.5a) — không được tái sinh; dùng core/apiGateway.ts.");
+
+        var declarations = Directory
+            .EnumerateFiles(guestSrc, "*.ts", SearchOption.AllDirectories)
+            .Count(file => File.ReadAllText(file).Contains("export class GuestApiError", StringComparison.Ordinal));
+
+        Assert.Equal(1, declarations);
     }
 
     [Fact]
