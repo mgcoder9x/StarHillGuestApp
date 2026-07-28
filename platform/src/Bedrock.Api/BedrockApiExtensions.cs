@@ -37,6 +37,17 @@ public static class BedrockApiExtensions
 
         services.AddBedrockObservability(configuration); // F34/R24: OpenTelemetry 3 trụ + W3C traceparent.
 
+        // ProblemDetails cho lỗi do FRAMEWORK sinh (binding/parameter fail của minimal API) → RequestDelegateFactory
+        // phát application/problem+json thay vì 400 body-rỗng. ExceptionHandlingMiddleware (#3) vẫn tự xử exception
+        // ném ra; đây bịt khe 400-trần khi body JSON méo KHÔNG ném (Production ThrowOnBadRequest=false). Mọi 4xx biên
+        // → problem+json nhất quán (hardening R2.5).
+        services.AddProblemDetails();
+
+        // ThrowOnBadRequest=true (mặc định của Development, nay áp MỌI môi trường): lỗi binding/parse của minimal
+        // API (body JSON méo, thiếu/sai param required) NÉM BadHttpRequestException thay vì tự trả 400 body-rỗng ở
+        // Production → ExceptionHandlingMiddleware (#3) bắt → 400 application/problem+json nhất quán (R2.5).
+        services.Configure<Microsoft.AspNetCore.Routing.RouteHandlerOptions>(o => o.ThrowOnBadRequest = true);
+
         services.AddRouting();
         services.AddBedrockApiVersioning(); // F32/R22.1: URL-segment /v{version}, default v1, report versions.
         services.AddHealthChecks();
