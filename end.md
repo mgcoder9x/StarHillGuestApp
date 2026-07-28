@@ -1,96 +1,49 @@
-# HANDOFF — StarHill QR (cập nhật 2026-07-27)
+# HANDOFF — đọc file này để tiếp tục chính xác (cập nhật 2026-07-28)
 
-> File này CHỈ là bản giao việc ngắn. **Nguồn sự thật đầy đủ = journal** `.kiro/specs/starhill-qr/journal/`
-> (01-decisions / 02-deviations / 03-tradeoffs / 04-notes / 05-anti-drift). Nếu file này lệch journal → TIN JOURNAL.
+Ngôn ngữ: trả lời **Tiếng Việt**. Tuân thủ steering `.kiro/steering/thinking-and-answering.md` (kết luận trước, first-principles, đo bằng bằng chứng — KHÔNG bịa, fix tận gốc không fix ngọn, nêu trade-off).
 
-## 1. Vị trí hiện tại
+## 0. Nguồn sự thật
+- **Journal** `.kiro/specs/starhill-qr/journal/` = nguồn sự thật (01-decisions QR-AD, 04-notes QR-N, 05-anti-drift). end.md chỉ là bản giao việc; lệch nhau → tin journal.
+- Spec đang làm: **`.kiro/specs/military-grade-hardening/`** (requirements.md + design.md + tasks.md — đủ 3, đã qua format check). 9 requirement (R1..R9), thứ tự triển khai chốt trong tasks.md.
+- Anti-drift keystone: `StarHillJournalConsistencyTests` INV-1..6 (mọi QR-AD "Implemented" phải có `- Guard-Tests:` trỏ class tồn tại thật). ĐỪNG thêm QR-AD Implemented khi guard class chưa tồn tại.
 
-- Nhánh `develop`, HEAD = commit cuối của phiên này (xem `git log -1`), sync `0/0`.
-- **BE xong 8/8 module** (Identity, ResortConfig, Rooms, GuestAccess, Rules, Faq, Housekeeping, Concierge)
-  + cascade event-driven `GuestVisitEnded` (outbox/inbox at-least-once, đóng CP9) + SignalR hub `/hubs/chat`.
-- **FE xong hành trình khách 4 capability thật** (rules force-read, faq, chat polling ~4s, housekeeping polling ~5s)
-  + admin (login, dashboard, rooms, rules, faq). Route thật: `/r/:token` → `HomeShell` + `JourneyCore`; mockup ở `/demo`.
-- Journal: `QR-AD-058`, `QR-DV-008`, `QR-TO-020`, `QR-N-089`.
+## 1. ĐÃ LÀM (commit + push develop, sync 0/0)
+Chuỗi commit gần nhất trên `develop`:
+- `docs(hardening)` — tạo design.md + tasks.md.
+- `feat(hardening) task 1` — **QR-AD-059** Health probe: `HealthProbe.cs` + nhánh `--healthcheck` đầu `Program.cs` (top-level cần `return 0;` cuối — CS0161); Dockerfile HEALTHCHECK 4 tham số + ghim digest 2 FROM; compose host healthcheck. Guard `DockerfileHardeningGuardTests`. Verify container thật: healthy 5s, unhealthy ≤40s.
+- `fix(migrations)` — **QR-AD-060** BUG có sẵn: base thêm feature outbox-replay-audit nhưng 3 module (Identity/GuestAccess/Housekeeping) thiếu migration → compose crash `PendingModelChangesWarning`. Đã sinh migration `AddOutboxReplayAudit` cho 3 module + guard `PendingModelChangesGuardTests` (Docker-free, 8 context). has-pending 8/8 sạch; compose boot healthy.
+- `docs(journal)` — QR-AD-059/060 + QR-N-090 + đồng bộ design C9.1.
+- `feat(hardening) task 2` — JSON `/health/ready` writer ở base (`platform/src/Bedrock.Api/Health/HealthEndpoints.cs`) liệt kê check thất bại (R1.6/R1.8). `Bedrock.Api.Tests` 62/62.
+- `docs(hardening)` — design C2 revise (DD-11 kiến trúc fuzz).
+- `feat(hardening) task 3 (một phần)` — **Fuzz harness** `starhill/tests/Host/StarHill.Api.Tests/FuzzBoundaryTests.cs` + **fix R2.5 ở base** (`BedrockApiExtensions.AddBedrockApi`: `AddProblemDetails()` + `ThrowOnBadRequest=true`). Fuzz PASS 1/1.
 
-## 2. Baseline XANH (đã đo phiên này)
+**Full BE suite starhill = 421/421** (chạy trước task 2/3). Full suite base có 2 fail môi trường (xem F4).
 
-| Cổng | Kết quả |
-|---|---|
-| `dotnet build starhill/Platform.slnx -c Release` | 0 warning / 0 error |
-| `StarHill.ArchitectureTests` | **40/40** (gồm JournalConsistency INV-1..6) |
-| `pnpm build` (2 SPA, có `vue-tsc --noEmit`) | EXIT=0 |
-| `pnpm e2e` (Playwright) | **65/65** |
+## 2. ĐANG DỞ / LÀM TIẾP NGAY (task 3 chưa xong 100%)
+Fuzz hiện phủ **5 module** (Rooms admin; Rules/Faq/Housekeeping/Concierge admin+guest) ~25 endpoint. **CÒN THIẾU để đủ R2.1**: `POST /v1/identity/token/login` + `/token/refresh`, ResortConfig `/v1/resort/settings`, Dashboard `/v1/dashboard/stats`, `POST /v1/guest/resolve`. → Bổ sung các endpoint này vào `Endpoints()` + đăng ký fake tương ứng (đọc `Authorization/ResortConfigEndpointAuthTests.cs`, `DashboardEndpointTests.cs`, `GuestAccessResolveEndpointTests.cs`, Identity auth test để lấy fake + cách map).
+- **Kiến trúc fuzz (DD-11, đã chốt trong design C2 REVISED):** đặt TRONG `StarHill.Api.Tests`, dùng **pipeline THẬT** `AddBedrockApi(JwtTestTokens.BuildConfig())` + `app.UseBedrockApi()` + đăng ký endpoint module qua `IEndpointModule` + fake use case + `FakeCurrentGuestContextResolver` success. KHÔNG full-Host+DB, KHÔNG project riêng.
+- **Journal:** cần thêm **QR-AD-061** (fuzz + R2.5 problem+json fix, Status Implemented, `- Guard-Tests: FuzzBoundaryTests`) vào 01-decisions.md + token vào 05-anti-drift.md. INV-1 liên tục → số kế tiếp = 061; QR-N kế = 091.
+- **task 3.5** (wire CI): fuzz nằm trong `StarHill.Api.Tests` → đã chạy trong job `build-test` của `dotnet test Platform.slnx`. Coi như đã wired; chỉ cần xác nhận.
 
-Full BE suite (Testcontainers) **chưa chạy lại** ở phiên này — cần Docker bật; lần chạy trước đó 0-fail/0-skip.
+## 3. RỦI RO / CHƯA VERIFY (quan trọng)
+- **Base full suite CHƯA chạy lại** sau khi thêm `ThrowOnBadRequest=true` + `AddProblemDetails()` vào `AddBedrockApi` (user yêu cầu bỏ test cho nhanh). Đây là thay đổi BASE ảnh hưởng mọi consumer → phiên sau **PHẢI** chạy `cd platform; dotnet test Platform.slnx -c Release` xác nhận không vỡ (đặc biệt các test assert lỗi 400/415/binding). Nếu vỡ = hồi quy do thay đổi này.
+- **F4** (đã ghi QR-N-090): 2 test base `RabbitMqResilienceTests` (`Broker_restart...`, `Broker_pause_partition...`) TIMEOUT (`TaskCanceledException`, ngân sách 90s/120s) trên Docker Desktop Windows — **môi trường, KHÔNG phải regression** (dùng `HealthCheckService` trực tiếp, không đụng thay đổi health/fuzz). Gần như xanh trên base CI Linux. Xác nhận qua base CI; đừng chỉnh timeout base mù.
+- **F3 DataProtection** (QR-N-090): base KHÔNG cấu hình `AddDataProtection/PersistKeysTo` → key ephemeral trong container, không mã hoá. Guest session KHÔNG bị ảnh hưởng (token opaque đối chiếu DB). Tác động THẤP ở 1-instance, MAJOR nếu đa-instance. Đề xuất thành requirement hardening riêng — chờ user duyệt.
 
-## 3. Việc phiên này đã làm
+## 4. CÁC TASK CÒN LẠI (tasks.md, thứ tự): 
+task 3 (hoàn tất coverage) → 4 supply-chain (SBOM+Trivy+digest guard) → 5 observability prod (5xx counter, exporter-status SPIKE, bounded buffer, structured log, alert-thresholds.json) → 6 hạ tầng test nặng + trait guard → 7 chaos → 8 latency p99 → 9 soak → 10 CI_Nightly + validate_ci → 11 anti-drift journal cuối. Wave graph trong tasks.md. **task 5.2 (exporter connected/disconnected) là SPIKE** — API OTel 1.16 chưa chắc có seam; có đường lùi (log+counter) ghi trong design C8.2.
 
-1. **QR-N-088** — fix gốc: refactor FE.5a bỏ dở để lại gateway trùng `guest-web/src/api/guestApi.ts`
-   (hàm chết `resolveGuestToken` + class `GuestApiError` THỨ HAI → bẫy `instanceof` im lặng). Đã xoá module,
-   dồn type về `core/apiGateway`, ghim guard vào seam thật, thêm guard "một gateway / một error type".
-2. **QR-AD-058 / QR-N-089** — đo được lỗ thật: `VITE_STARHILL_MOCK=1 pnpm build` từng **nhúng dữ liệu bịa vào bundle guest**
-   (Vite đọc cả `process.env VITE_*`). Fix fail-closed: `starhill/web/tooling/assertMockNotBundled.ts` → mọi `vite build`
-   có cờ mock **FAIL cứng**; `serve`/`--mode mock` không ảnh hưởng. Guard `FrontendDeliveryGuardTests`.
-3. **Spec mới `.kiro/specs/military-grade-hardening/requirements.md`** — 9 requirement EARS, ngưỡng đã chốt (xem §4).
+## 5. BẪY ĐÃ BIẾT (đừng lặp lại)
+- **EF `migrations add/remove` TUYỆT ĐỐI KHÔNG `--no-build`** → assembly cũ khiến remove xoá nhầm migration + add sinh rỗng. Đã dính, phải `git checkout` reset. `has-pending-model-changes --no-build` cũng đọc assembly cũ → rebuild trước khi tin.
+- `ARCHITECTURE-REVIEW-2026-07-26.md` ở repo-root = review DỰ ÁN KHÁC (vision-platform, Python) — untracked, ĐỪNG triển khai CD/S/A items (QR-N-089).
+- `StarHillGuestApp/` (nested, repo-root) = cây stale, untracked — BỎ QUA, đừng commit.
+- `.gitignore`: `starhill/.gitignore` có `[Bb]uild/` → tránh tên thư mục `build/ dist/ obj/ bin/ out/`; luôn `git check-ignore -v <path>`.
+- Docker Desktop hay tắt → `Start-Process "$env:ProgramFiles\Docker\Docker\Docker Desktop.exe"` rồi poll `docker version`. Container broker stop/start trên Windows CHẬM (gây F4).
+- Terminal PowerShell hay nuốt/wrap output → ghi ra file trong workspace rồi `read_file` (temp ngoài workspace KHÔNG đọc được).
+- Commit protocol: stage path TƯỜNG MINH; kiểm `git diff --cached --name-only | Select-String "/bin/|/obj/|node_modules|/dist/"` RỖNG; `git -c core.autocrlf=false commit`; verify `git rev-list --count --left-right origin/develop...HEAD` = `0 0`. Push develop (nhánh tích hợp, KHÔNG main/master).
 
-## 4. Spec đang mở: `military-grade-hardening` (Phase = Requirements XONG, chờ Design)
-
-Thứ tự ưu tiên đã chốt: **health probe → fuzz → chuỗi cung ứng → phân tầng CI → chaos → SLO → soak → observability → journal guard**.
-
-Ngưỡng đã chốt (không hỏi lại):
-- Health probe: `HEALTHCHECK` interval 10s / timeout 3s / retries 3 / start-period 20s; unhealthy ≤40s;
-  **KHÔNG cài package OS vào image runtime**; `/health/ready` = 503 ngay khi mất DB (không ân hạn).
-- Fuzz: ≥500 payload/endpoint, mọi biến dạng → 4xx `application/problem+json`, **không 5xx**, không rò stack/secret;
-  endpoint admin phải kèm JWT role đúng (401 = FAIL bài fuzz).
-- Chuỗi cung ứng: SBOM CycloneDX (BE + web), chặn build khi có `High`/`Critical`, **pin digest `@sha256:`** cả 2 image base.
-- CI: PR nhanh (≤30 phút/job, chạy fuzz + supply-chain + guard) — **nightly riêng** (≤90 phút/job) chạy chaos/latency/soak.
-- SLO: 5 endpoint khách (`resolve`, `rules`, `conversation`, `housekeeping`, `messages`), **p50 ≤ 80ms, p99 ≤ 400ms**.
-- Soak: **60 phiên đồng thời (biên vật lý 60 phòng) = 30 rps**, 30 phút (~54.000 request); PASS = heap ≤ +10%,
-  handle không tăng đơn điệu, connection không tăng, 5xx = 0, outbox tồn ≤ 10; fail nếu generator không đạt 30 rps ±10%.
-- Observability: OTel/OTLP **fail-open** (telemetry không được giết dịch vụ khách) + bounded buffer + drop-not-block
-  + chỉ báo exporter `connected`/`disconnected` + 4 ngưỡng cảnh báo; readiness KHÔNG phụ thuộc exporter.
-- Exactly-once đo bằng **số dòng tác dụng phụ = 1** (không tin cờ nội bộ).
-
-**NEXT trên máy mới:** sinh `design.md` cho spec này (Requirements-first), rồi `tasks.md`, rồi triển khai theo thứ tự ưu tiên.
-
-## 5. Bẫy đã biết — đọc trước khi làm
-
-- `ARCHITECTURE-REVIEW-2026-07-26.md` ở repo-root **KHÔNG phải review của dự án này** — nó review `vision-platform/`
-  (Python, SHM ring, RTSP/ONNX/torch/ZMQ). Grep định danh trong repo = 0 match. **ĐỪNG triển khai CD-1..9 / S-1..7 / A-1..6.**
-  File để untracked; chuyển ra khỏi repo nếu muốn dọn.
-- **`.gitignore` bẫy**: `starhill/.gitignore` có `[Bb]uild/` → file mới trong thư mục tên `build/` sẽ KHÔNG vào repo
-  (local xanh, CI vỡ). Luôn `git check-ignore -v <path>` khi tạo file ở thư mục mới; tránh tên `build/ dist/ obj/ bin/ out/`.
-- **Playwright**: nếu `pnpm e2e` fail hàng loạt kiểu `Executable doesn't exist ... chromium_headless_shell`,
-  đó là **thiếu binary**, không phải lỗi code → `pnpm --filter @starhill/e2e exec playwright install chromium`.
-- **Migration EF**: đừng dùng `--no-build` khi model vừa đổi (sinh migration RỖNG). Commit ngay slice có migration.
-- **Journal INV-4**: nhãn bắt buộc phải đúng nguyên văn `- Provenance/Evidence:` (thêm chú thích trong ngoặc trước dấu `:` = FAIL build).
-- PowerShell 7: khi probe HTTP, Content-Type nằm ở `$_.Exception.Response.Content.Headers`, body ở `$_.ErrorDetails.Message`.
-  Đọc BODY/`code` rồi mới kết luận, đừng nhìn status trần.
-
-## 6. Lệnh hay dùng
-
-```powershell
-# BE
-cd starhill; dotnet build Platform.slnx -c Release
-dotnet test tests/StarHill.ArchitectureTests/StarHill.ArchitectureTests.csproj -c Release --no-build
-dotnet test Platform.slnx -c Release --no-build          # cần Docker cho Testcontainers
-
-# FE
-cd starhill/web; pnpm build; pnpm e2e
-pnpm dev:guest   # 5173   |   pnpm dev:admin   # 5174   |   *:mock để xem UI không cần backend
-
-# Runtime thật (browser-substitute)
-cd starhill; docker compose -f docker-compose.yml up -d --build   # http://localhost:18080
-# overlay messaging (RabbitMQ, cần cho cascade/outbox):
-# docker compose -f docker-compose.yml -f docker-compose.messaging.yml up -d --build
-```
-
-Dev admin (compose): `admin` / `DevAdmin!2026`. Secret JWT dev nằm trong `docker-compose.yml` (placeholder, không phải prod).
-
-## 7. Quy tắc làm việc (giữ nguyên)
-
-- Trả lời **Tiếng Việt**. Design-first: đọc/valid nhiều lần, kiểm chứng được rồi mới code. **Không bịa, không suy đoán.**
-- Fix **tận gốc**, không vá ngọn. Mọi quyết định mới → journal (QR-AD/DV/TO/N) + **guard test** (INV-6) + cập nhật `05-anti-drift.md`.
-- Docker sẵn thì chạy Testcontainers thật; **không lấy test SKIP làm bằng chứng**.
-- Commit: stage path **tường minh**, kiểm `git diff --cached --name-only` không lẫn `bin/ obj/ node_modules/ dist/`,
-  dùng `git -c core.autocrlf=false commit`, rồi verify `git rev-list --count --left-right origin/develop...HEAD` = `0 0`.
+## 6. LỆNH VERIFY BASELINE
+- BE 0-warning + arch/guard (Docker-free phần lớn): `cd starhill; dotnet build Platform.slnx -c Release` + `dotnet test tests/StarHill.ArchitectureTests/StarHill.ArchitectureTests.csproj -c Release --no-build`.
+- Full BE (cần Docker): `cd starhill; dotnet test Platform.slnx -c Release` (kỳ vọng 421/421 + fuzz).
+- Full base (cần Docker, PHẢI chạy sau thay đổi base task 2/3): `cd platform; dotnet test Platform.slnx -c Release` (2 test RabbitMqResilience có thể timeout — F4 môi trường).
+- Fuzz riêng: `cd starhill; dotnet test tests/Host/StarHill.Api.Tests/StarHill.Api.Tests.csproj -c Release --filter "FullyQualifiedName~FuzzBoundaryTests"`.
