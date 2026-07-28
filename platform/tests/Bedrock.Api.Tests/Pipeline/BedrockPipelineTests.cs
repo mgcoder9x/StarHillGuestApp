@@ -213,6 +213,34 @@ public sealed class BedrockPipelineTests
     }
 
     [Fact]
+    public async Task Readiness_body_is_json_listing_failed_checks_when_unhealthy()
+    {
+        // R1.6 (military-grade-hardening): /health/ready trả application/json liệt kê tên check thất bại
+        // (thay plain-text mặc định) để chẩn 503 không cần debug. /health/live vẫn 200 (R1.8, độc lập check ready).
+        var (host, _) = await StartAsync(services => services
+            .AddHealthChecks()
+            .AddCheck("dependency", () => HealthCheckResult.Unhealthy("down"), tags: [HealthEndpoints.ReadyTag]));
+        using (host)
+        {
+            var client = host.GetTestClient();
+
+            var ready = await client.GetAsync(new Uri("/health/ready", UriKind.Relative));
+            Assert.Equal(HttpStatusCode.ServiceUnavailable, ready.StatusCode);
+            Assert.StartsWith(
+                "application/json",
+                ready.Content.Headers.ContentType?.ToString() ?? string.Empty,
+                StringComparison.Ordinal);
+
+            var body = await ready.Content.ReadAsStringAsync();
+            Assert.Contains("dependency", body, StringComparison.Ordinal); // tên check thất bại có trong body
+            Assert.Contains("Unhealthy", body, StringComparison.Ordinal);
+
+            var live = await client.GetAsync(new Uri("/health/live", UriKind.Relative));
+            Assert.Equal(HttpStatusCode.OK, live.StatusCode); // liveness độc lập check ready (R1.8)
+        }
+    }
+
+    [Fact]
     public async Task OpenTelemetry_providers_should_be_registered()
     {
         var (host, _) = await StartAsync();
