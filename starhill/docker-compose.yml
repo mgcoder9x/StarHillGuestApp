@@ -48,5 +48,13 @@ services:
       # Messaging TẮT (không RabbitMQ). Identity (mẫu base) vẫn ghi 1 outbox event khi refresh token → khai TƯỜNG MINH
       # chấp nhận outbox chưa có drainer (P1-15) để boot không bị chặn. Ở 60 phòng, số event này không đáng kể.
       Bedrock__Messaging__AllowOutboxWithoutDispatcher: "true"
+    # Healthcheck cấp compose (R1.9) — cùng bộ tham số với HEALTHCHECK trong Dockerfile; probe chạy bằng DLL app
+    # qua nhánh `--healthcheck` (không cần package OS).
+    healthcheck:
+      test: ["CMD", "dotnet", "StarHill.Api.dll", "--healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 20s
     ports:
       - "18080:8080"

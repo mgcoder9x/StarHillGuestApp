@@ -37,6 +37,13 @@ using StarHill.Api;
 using StarHill.Authorization;
 using StarHill.Html.DependencyInjection;
 
+// Chế độ health-probe (R1.1–R1.5): Docker HEALTHCHECK gọi `dotnet StarHill.Api.dll --healthcheck`. Chạy nhánh này
+// TRƯỚC khi dựng web host — GET /health/live rồi exit 0 (200) / 1 (khác). Không cài package OS vào runtime image.
+if (args is ["--healthcheck", ..])
+{
+    return await HealthProbe.RunAsync(args).ConfigureAwait(false);
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Fail-fast DI MỌI môi trường (I9/F7, design §9.4): validate scope + build ngay lúc Build().
@@ -324,6 +331,10 @@ if (bool.TryParse(configuration["Bedrock:ApplyMigrationsOnStartup"], out var app
 app.UseBedrockApi();
 
 await app.RunAsync().ConfigureAwait(false);
+
+// Đường chạy web host bình thường → exit 0. Cần tường minh vì nhánh `--healthcheck` ở đầu file đã khiến chương trình
+// top-level suy ra kiểu trả `Task<int>` (không còn ngầm return 0 khi có return giá trị ở nhánh khác).
+return 0;
 
 /// <summary>Lộ entry point cho <c>WebApplicationFactory&lt;Program&gt;</c> (smoke test boot). Không dùng runtime.</summary>
 public partial class Program;
