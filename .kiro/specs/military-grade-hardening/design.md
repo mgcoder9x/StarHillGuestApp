@@ -169,11 +169,16 @@ Chạy trong `build-test` (CI_PR) → thoả R1.10, không cần Docker (chỉ �
 
 ## C2 — Fuzz biên HTTP (R2)
 
-### C2.1 Vị trí và cơ chế
+### C2.1 Vị trí và cơ chế (REVISED sau khi ground-truth code — DD-11)
 
-Project mới `starhill/tests/StarHill.FuzzTests/StarHill.FuzzTests.csproj`, `ProjectReference` → `StarHill.Api.csproj`, dùng `WebApplicationFactory<Program>` in-memory (R2.9 — không Docker). Tái dùng `SecretInjectingHostFactory` (G12) để boot Host với secret hợp lệ nhưng KHÔNG chạm DB thật cho các endpoint validate-trước-DB; với endpoint chạm DB, factory override repository/DbContext bằng in-memory fake hoặc SQLite để phản hồi phản ánh **kết quả validate biên** chứ không phải lỗi kết nối DB.
+**Quyết định thực thi (lệch có chủ đích so với bản C2.1 gốc):** đặt fuzz TRONG project test sẵn có `starhill/tests/Host/StarHill.Api.Tests/` (file `FuzzBoundaryTests.cs`), KHÔNG tạo project riêng, KHÔNG dùng full-Host `SecretInjectingHostFactory`+DB-fake. Thay vào đó tái dùng **pattern đã chứng minh** của các `Authorization/*EndpointAuthTests.cs`: dựng `HostBuilder().UseTestServer()`, `AddBedrockAuthCore(JwtTestTokens.BuildConfig())` + `AddStarHillAuthorization()`, **map endpoint module THẬT** của cả 8 module, và **đăng ký các `Fake*` use case + `FakeCurrentGuestContextResolver`** (đã tồn tại, internal cùng assembly → tái dùng trực tiếp).
 
-Vì phần lớn biến dạng bị chặn ở tầng model-binding/validation (short-circuit trước DB, xem `HostSmokeTests` refresh rỗng → 400 không chạm DB), rủi ro DB thật là thấp. Thiết kế chốt: **fuzz chạy với DB fake in-memory** để cô lập đúng biên HTTP (R2 nói về biên HTTP, không phải tầng bền vững).
+**Vì sao lệch (rationale, đo được):**
+- `SecretInjectingHostFactory` auto-wire use case THẬT → mọi request hợp-lệ-hình-thức (vd lớp biến dạng "trường phụ không khai" mà System.Text.Json BỎ QUA) sẽ đi tới DB → 500 vì không có DB (vi phạm R2.9 no-Docker). Fake use case loại bỏ tận gốc lớp 500-do-hạ-tầng: malformed → 4xx ở binding/validation TRƯỚC use case; well-formed → fake trả 2xx (không chạm DB).
+- Guest context: `FakeCurrentGuestContextResolver` trả Success = tương đương "đã có cookie resolve hợp lệ" (cùng INTENT R2.11/R2.13: phản hồi phản ánh kiểm-tra-dữ-liệu-vào, không phải thiếu-context) mà KHÔNG cần seed DB để resolve cấp cookie thật. Lớp biến dạng cookie-sai-định-dạng (R2.3) vẫn gửi cookie rác để chứng minh không-5xx.
+- Fakes + JwtTestTokens + pattern đã tồn tại → tái dùng, không dựng song song (nguyên tắc Overview #1).
+
+**Diễn giải R2.4 (ghi rõ để không lệch):** mục tiêu bất biến là **không 5xx** và **không rò**, 4xx phải `problem+json`. Vì fake use case có thể trả 2xx cho payload không thực sự méo, assertion FAIL khi: (a) status ≥ 500; (b) status 4xx nhưng thiếu `application/problem+json`; (c) body rò chuỗi cấm; (d) admin endpoint nhận 401 dù đã gắn JWT đúng role. 2xx/3xx cho payload hợp-lệ-hình-thức là chấp nhận (không phải ca méo thật).
 
 ### C2.2 Sinh dữ liệu quyết định-luận theo seed (R2.8)
 
@@ -490,6 +495,7 @@ Ghi lại để phiên sau kiểm chứng. Đây là các lựa chọn AI tự r
 | DD-8 | CI_Nightly tách 3 job (chaos/latency/soak) | Cô lập tín hiệu fail + song song + mỗi job có `timeout-minutes` riêng (R9.7 kiểm điều này) | Nhiều job = nhiều lần checkout/setup (chi phí runner). Chấp nhận đổi lấy tín hiệu rõ |
 | DD-9 | Fuzz chạy với DB fake in-memory, không Testcontainers | R2 nói về **biên HTTP**; phần lớn biến dạng short-circuit trước DB (bằng chứng: HostSmoke refresh rỗng→400 không chạm DB); giữ ≤180s + không Docker (R2.9/R2.10) | Không phủ lỗi tầng bền vững; đó là việc của Chaos (C5), không phải fuzz |
 | DD-10 | 5xx counter là counter riêng `bedrock.http.responses.5xx`, không suy từ histogram | R8.2 đòi "bộ đếm phản hồi 5xx" tường minh; suy từ histogram bucket kém tin cậy | Trùng một phần với histogram status; chi phí 1 counter là không đáng kể |
+| DD-11 | Fuzz đặt trong `StarHill.Api.Tests` + map module thật + fake use case/resolver (không project riêng, không full-Host+DB) | Fake use case chặn 500-do-thiếu-DB cho payload hợp-lệ-hình-thức; tái dùng fakes/JwtTestTokens/pattern đã chứng minh; đạt R2.9/R2.10 (no-Docker, ≤180s) | Không phủ tầng bền vững (đó là việc Chaos C5); dùng fake-resolver thay cookie-thật (cùng intent R2.13 nhưng không kiểm đúng đường resolve→cookie) |
 
 ---
 
