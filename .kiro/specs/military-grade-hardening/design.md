@@ -379,16 +379,13 @@ Toàn bộ mã observability ở `Bedrock.Api`/`Bedrock.Application`(shared tele
 
 ### C9.1 Journal QR-AD cho mỗi quyết định (R9.1, R9.2, R9.3)
 
-Khi TRIỂN KHAI (tasks phase, không phải bây giờ), mỗi quyết định hardening thêm 1 mục `QR-AD` vào `.kiro/specs/starhill-qr/journal/01-decisions.md` với dòng `- Guard-Tests:` trỏ test class thật. Dự kiến các QR-AD mới (đánh số tiếp từ QR-AD-058):
-- QR-AD-059 Health probe mode + HEALTHCHECK → Guard `DockerfileHardeningGuardTests`.
-- QR-AD-060 JSON `/health/ready` writer (base) → Guard `DockerfileHardeningGuardTests`/health integration.
-- QR-AD-061 Fuzz harness bất biến no-5xx/no-leak → Guard `StarHill.FuzzTests`.
-- QR-AD-062 Supply-chain gate + digest pin → Guard `DockerfileHardeningGuardTests` (digest) + step CI.
-- QR-AD-063 CI phân tầng + trait → Guard `HeavyTestTraitGuardTests` + `validate_ci.py`.
-- QR-AD-064 Chaos fail-closed → Guard `StarHill.ResilienceTests` (Chaos).
-- QR-AD-065 SLO p99 → Guard latency harness.
-- QR-AD-066 Soak → Guard soak harness.
-- QR-AD-067 Observability exporter-status/5xx/bounded-buffer/thresholds → Guard `AlertThresholdConfigGuardTests` + observability tests.
+Mỗi quyết định hardening thêm 1 mục `QR-AD` vào `.kiro/specs/starhill-qr/journal/01-decisions.md` với dòng `- Guard-Tests:` trỏ test class thật, NGAY khi slice hoàn tất (không dồn tới cuối — ghi khi còn tươi). Số QR-AD gán tại thời điểm triển khai (INV-1 yêu cầu liên tục), KHÔNG cố định trước.
+
+**Đã gán (Implemented):**
+- QR-AD-059 = Health probe (`dotnet --healthcheck`, không cài OS package) + HEALTHCHECK + ghim digest → Guard `DockerfileHardeningGuardTests`. (task 1)
+- QR-AD-060 = Migration integrity: sinh migration base outbox-replay còn thiếu + guard pending-model → Guard `PendingModelChangesGuardTests`. (bugfix phát sinh khi chạy cổng runtime lần đầu — không nằm trong kế hoạch task ban đầu)
+
+**Chỉ định (indicative, số gán khi làm):** JSON `/health/ready` writer (task 2) → guard health integration; Fuzz → `StarHill.FuzzTests`; Supply-chain + digest → `DockerfileHardeningGuardTests`; CI phân tầng + trait → `HeavyTestTraitGuardTests` + `validate_ci.py`; Chaos/Latency/Soak → `StarHill.ResilienceTests`; Observability exporter-status/5xx/bounded-buffer/thresholds → `AlertThresholdConfigGuardTests` + observability tests; DataProtection persistence (F3, chờ user duyệt) → guard cấu hình.
 
 INV_6 giữ xanh (R9.2): mọi QR-AD "Implemented" có `- Guard-Tests:` + class tồn tại thật (R9.3, đã là bất biến `StarHillJournalConsistencyTests`). **Quan trọng:** chỉ thêm QR-AD ở trạng thái Implemented KHI test class đã tồn tại trong cùng slice commit — tránh vỡ INV_6 (bẫy đã biết).
 

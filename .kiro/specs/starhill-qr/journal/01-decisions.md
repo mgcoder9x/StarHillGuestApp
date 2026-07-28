@@ -719,3 +719,28 @@
 - Consequences: `vite build` nay là đường có thể FAIL vì lý do cấu hình — thông báo phải tự-giải-thích (đã viết rõ nguồn cờ + cách sửa). Mock chỉ còn dùng được ở dev-server (`pnpm dev:guest:mock` / `dev:admin:mock`). Nếu sau này cần một bản build demo tĩnh cho khách hàng xem, phải thiết kế tường minh (vd app riêng/route `/demo` mở rộng), KHÔNG bật lại cờ mock ở build.
 - Reversibility: High (gỡ 1 lời gọi trong vite.config). Traceability: QR-N-071 (mock mode dev-only ban đầu); QR-N-083 (`/demo` route); QR-N-089 (đo + triển khai). Nguồn cảm hứng: ARCHITECTURE-REVIEW-2026-07-26.md §4/§5 (nguyên tắc fail-closed) — LƯU Ý file review đó thuộc DỰ ÁN KHÁC, xem QR-N-089.
 - Guard-Tests: `FrontendDeliveryGuardTests`
+
+
+### QR-AD-059 — Health probe cấp container: HEALTHCHECK chạy bằng chính `dotnet ... --healthcheck` (không cài package OS) + ghim digest image base
+- Status: Implemented (2026-07-28; task 1 spec `military-grade-hardening`)
+- Date: 2026-07-28
+- Decider: AI (spec military-grade-hardening R1 + R3.5; đóng GAP#2 mà QR-N-089 để defer).
+- Provenance/Evidence: ĐO ĐƯỢC trên container thật — guard `DockerfileHardeningGuardTests` ĐỎ 3/4 trước khi sửa (thiếu HEALTHCHECK, thiếu `@sha256:` cả 2 FROM, compose host thiếu healthcheck), XANH 4/4 sau; `docker build` phân giải cả hai digest thật (`load metadata ...@sha256:` OK) ⇒ digest không bịa; compose host đạt Docker `healthy` sau ~5s (probe `/health/live` exit 0); container không-phục-vụ chuyển `unhealthy` đo 31.6s (từ probe-fail đầu tiên) / 21.1s (sau start-period) ≤ 40s (R1.4); full BE suite 421/421.
+- Decision/Change: (1) `HealthProbe.cs` + nhánh `if (args is ["--healthcheck", ..]) return await HealthProbe.RunAsync(args)` ở đầu `Program.cs` (top-level cần `return 0;` cuối — CS0161); (2) Dockerfile thêm `HEALTHCHECK --interval=10s --timeout=3s --retries=3 --start-period=20s CMD ["dotnet","StarHill.Api.dll","--healthcheck"]` + ghim `sdk:10.0@sha256:ed034a8b...`/`aspnet:10.0@sha256:1fa23fc4...`; (3) compose service `host` thêm healthcheck cùng tham số.
+- Rationale (verifiable): R1.5 cấm cài package OS vào runtime; image `aspnet:10.0` không có curl/wget → thứ chắc chắn có là muxer `dotnet` + DLL app; probe dùng chính nó là fail-closed (mọi exception → exit 1), không thêm bề mặt CVE.
+- Alternatives: (a) cài curl rồi `HEALTHCHECK CMD curl` (loại: vi phạm R1.5 + tăng bề mặt CVE); (b) chỉ probe ngoài (k8s/reverse-proxy) (loại: image không tự-báo sức khỏe, mất khả năng dùng với Docker/compose trần); (c) tag không digest (loại: build không tái lập, drift base ngầm).
+- Consequences: `dotnet StarHill.Api.dll --healthcheck` là entrypoint-mode thứ hai của Host; cập nhật digest là thao tác có chủ đích (không auto-drift).
+- Reversibility: High. Traceability: QR-N-089 (GAP#2 defer) → QR-N-090 (đóng); spec military-grade-hardening task 1.
+- Guard-Tests: `DockerfileHardeningGuardTests`
+
+### QR-AD-060 — Migration integrity: sinh migration base outbox-replay còn thiếu (3 module) + guard chặn drift "model đổi thiếu migration"
+- Status: Implemented (2026-07-28)
+- Date: 2026-07-28
+- Decider: AI (bug phát hiện khi chạy cổng runtime lần đầu với Docker; fix tận gốc + đóng lỗ hổng cổng).
+- Provenance/Evidence: ĐO ĐƯỢC — `dotnet ef migrations has-pending-model-changes` cho 3/8 context lệch (Identity, GuestAccess, Housekeeping) do base thêm feature `OutboxReplayOperation`/`OutboxReplayAudit` (`Bedrock.Infrastructure`, cấu hình `OutboxInboxModelBuilderExtensions`) mà module starhill chưa sinh migration; compose Host crash Exited(139) vì `ApplyMigrationsOnStartup` → `PendingModelChangesWarning`. Sau khi sinh migration `AddOutboxReplayAudit` cho đúng 3 module: has-pending 8/8 sạch, compose Host boot `healthy`, full BE suite 421/421 (gồm mọi integration test Testcontainers áp migration thật).
+- Decision/Change: (1) sinh migration `AddOutboxReplayAudit` cho Identity/GuestAccess/Housekeeping (delta thuần: 2 bảng + index dead-letter, `Down()` đối xứng); (2) thêm guard `PendingModelChangesGuardTests` (Docker-free, `DbContext.Database.HasPendingModelChanges()` cho ĐỦ 8 context) chạy trong CI_PR — chặn tái diễn.
+- Rationale (verifiable): guard cũ `ModuleMigrationHistorySchemaTests` chỉ kiểm history-table-per-schema (4/8 context), KHÔNG kiểm pending-model → không cổng nào bắt drift; đó là nguyên nhân gốc để bug lọt (cộng việc cổng runtime chưa từng chạy với Docker ở phiên trước). Fix cổng, không chỉ fix dữ liệu.
+- Alternatives: (a) tắt `ApplyMigrationsOnStartup` (loại: che triệu chứng, prod vẫn cần migrate); (b) chỉ sinh migration, không thêm guard (loại: fix ngọn — sẽ tái diễn lần đổi model kế); (c) dùng `--no-build` cho `ef migrations` (loại: đã gây xoá nhầm migration do assembly cũ — cấm dùng `--no-build` với `ef migrations add/remove`).
+- Consequences: mọi thay đổi model thiếu migration nay FAIL ngay CI_PR (build-test), TRƯỚC khi crash boot compose/prod.
+- Reversibility: Medium (migration là schema-forward; `Down()` có sẵn). Traceability: QR-N-090.
+- Guard-Tests: `PendingModelChangesGuardTests`
